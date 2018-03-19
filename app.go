@@ -60,6 +60,7 @@ type App struct {
 	rpcServer        cluster.RPCServer
 	rpcClient        cluster.RPCClient
 	onSessionBind    func(*session.Session)
+	configured       bool
 }
 
 var (
@@ -78,17 +79,27 @@ var (
 		packetDecoder: codec.NewPomeloPacketDecoder(),
 		packetEncoder: codec.NewPomeloPacketEncoder(),
 		serializer:    protobuf.NewSerializer(),
+		configured:    false,
 	}
 	log = logger.Log
 )
 
-// GetApp gets the app
-func GetApp() *App {
-	return app
+// Configure configures the app
+func Configure(isFrontend bool, serverType string) {
+	if app.configured {
+		log.Warn("pitaya configured twice!")
+	}
+	app.server.Frontend = isFrontend
+	app.server.Type = serverType
+	app.configured = true
 }
 
 // AddAcceptor adds a new acceptor to app
 func AddAcceptor(ac acceptor.Acceptor) {
+	if !app.server.Frontend {
+		log.Error("tried to add an acceptor to a backend server, skipping")
+		return
+	}
 	app.acceptors = append(app.acceptors, ac)
 }
 
@@ -197,8 +208,10 @@ func startDefaultRPCClient() {
 
 // Start starts the app
 // TODO fix non cluster mode
-func Start(isFrontend bool) {
-	app.server.Frontend = isFrontend
+func Start() {
+	if !app.configured {
+		log.Fatal("tried to start app without configuring it first!")
+	}
 
 	if app.serviceDiscovery == nil {
 		log.Warn("creating default service discovery because cluster mode is enabled, if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
@@ -218,6 +231,8 @@ func Start(isFrontend bool) {
 
 	listen()
 
+	defer globalTicker.Stop()
+
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
 
@@ -232,28 +247,20 @@ func Start(isFrontend bool) {
 	log.Warn("server is stopping...")
 
 	shutdownModules()
-	// shutdown all components registered by application, that
-	// call by reverse order against register
 	shutdownComponents()
-
 }
 
 func listen() {
 	hbdEncode()
 	startupComponents()
-
 	// create global ticker instance, timer precision could be customized
 	// by SetTimerPrecision
 	globalTicker = time.NewTicker(timerPrecision)
 
 	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-
-	// startup logic dispatcher
 	go handler.dispatch()
 	for _, acc := range app.acceptors {
 		a := acc
-
-		// gets connections from every acceptor and tell handlerservice to handle them
 		go func() {
 			for conn := range a.GetConnChan() {
 				go handler.handle(conn)
@@ -266,6 +273,7 @@ func listen() {
 
 		log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
+
 	startModules()
 
 	// this handles remote messages
