@@ -1,9 +1,12 @@
-package pitaya
+package timer
 
 import (
 	"math"
 	"sync/atomic"
 	"time"
+
+	"github.com/lonnng/nano/logger"
+	"github.com/topfreegames/pitaya/util"
 )
 
 const (
@@ -14,55 +17,52 @@ var (
 	// default timer backlog
 	timerBacklog = 1 << 8
 
-	// timerManager manager for all timers
-	timerManager = &struct {
+	log = logger.Log
+
+	// Manager manager for all Timers
+	Manager = &struct {
 		incrementID    int64            // auto increment id
-		timers         map[int64]*Timer // all timers
-		chClosingTimer chan int64       // timer for closing
-		chCreatedTimer chan *Timer
+		Timers         map[int64]*Timer // all Timers
+		ChClosingTimer chan int64       // timer for closing
+		ChCreatedTimer chan *Timer
 	}{}
 
-	// timerPrecision indicates the precision of timer, default is time.Second
-	timerPrecision = time.Second
+	// Precision indicates the precision of timer, default is time.Second
+	Precision = time.Second
 
-	// globalTicker represents global ticker that all cron job will be executed
+	// GlobalTicker represents global ticker that all cron job will be executed
 	// in globalTicker.
-	globalTicker *time.Ticker
+	GlobalTicker *time.Ticker
 )
 
 type (
-	// TimerFunc represents a function which will be called periodically in main
+	// Func represents a function which will be called periodically in main
 	// logic gorontine.
-	TimerFunc func()
+	Func func()
 
-	// TimerCondition represents a checker that returns true when cron job needs
+	// Condition represents a checker that returns true when cron job needs
 	// to execute
-	TimerCondition interface {
+	Condition interface {
 		Check(now time.Time) bool
 	}
 
 	// Timer represents a cron job
 	Timer struct {
-		id        int64          // timer id
-		fn        TimerFunc      // function that execute
-		createAt  int64          // timer create time
-		interval  time.Duration  // execution interval
-		condition TimerCondition // condition to cron job execution
-		elapse    int64          // total elapse time
-		closed    int32          // is timer closed
-		counter   int            // counter
+		ID        int64         // timer id
+		fn        Func          // function that execute
+		createAt  int64         // timer create time
+		interval  time.Duration // execution interval
+		condition Condition     // condition to cron job execution
+		elapse    int64         // total elapse time
+		closed    int32         // is timer closed
+		counter   int           // counter
 	}
 )
 
 func init() {
-	timerManager.timers = map[int64]*Timer{}
-	timerManager.chClosingTimer = make(chan int64, timerBacklog)
-	timerManager.chCreatedTimer = make(chan *Timer, timerBacklog)
-}
-
-// ID returns id of current timer
-func (t *Timer) ID() int64 {
-	return t.id
+	Manager.Timers = map[int64]*Timer{}
+	Manager.ChClosingTimer = make(chan int64, timerBacklog)
+	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
 }
 
 // Stop turns off a timer. After Stop, fn will not be called forever
@@ -72,8 +72,8 @@ func (t *Timer) Stop() {
 	}
 
 	// guarantee that logic is not blocked
-	if len(timerManager.chClosingTimer) < timerBacklog {
-		timerManager.chClosingTimer <- t.id
+	if len(Manager.ChClosingTimer) < timerBacklog {
+		Manager.ChClosingTimer <- t.ID
 		atomic.StoreInt32(&t.closed, 1)
 	} else {
 		t.counter = 0 // automatically closed in next Cron
@@ -81,29 +81,30 @@ func (t *Timer) Stop() {
 }
 
 // execute job function with protection
-func pexec(id int64, fn TimerFunc) {
+func pexec(id int64, fn Func) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Call timer function error, TimerID=%d, Error=%v", id, err)
-			println(stack())
+			println(util.Stack())
 		}
 	}()
 
 	fn()
 }
 
-// TODO: if closing timers'count in single cron call more than timerBacklog will case problem.
-func cron() {
-	if len(timerManager.timers) < 1 {
+// Cron executes scheduled tasks
+// TODO: if closing Timers'count in single cron call more than timerBacklog will case problem.
+func Cron() {
+	if len(Manager.Timers) < 1 {
 		return
 	}
 
 	now := time.Now()
 	unn := now.UnixNano()
-	for id, t := range timerManager.timers {
-		// prevent chClosingTimer exceed
+	for id, t := range Manager.Timers {
+		// prevent ChClosingTimer exceed
 		if t.counter == 0 {
-			if len(timerManager.chClosingTimer) < timerBacklog {
+			if len(Manager.ChClosingTimer) < timerBacklog {
 				t.Stop()
 			}
 			continue
@@ -135,7 +136,7 @@ func cron() {
 // for slow receivers.
 // The duration d must be greater than zero; if not, NewTimer will panic.
 // Stop the timer to release associated resources.
-func NewTimer(interval time.Duration, fn TimerFunc) *Timer {
+func NewTimer(interval time.Duration, fn Func) *Timer {
 	return NewCountTimer(interval, loopForever, fn)
 }
 
@@ -144,7 +145,7 @@ func NewTimer(interval time.Duration, fn TimerFunc) *Timer {
 // will be stopped automatically, It adjusts the intervals for slow receivers.
 // The duration d must be greater than zero; if not, NewCountTimer will panic.
 // Stop the timer to release associated resources.
-func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
+func NewCountTimer(interval time.Duration, count int, fn Func) *Timer {
 	if fn == nil {
 		panic("pitaya/timer: nil timer function")
 	}
@@ -152,9 +153,9 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 		panic("non-positive interval for NewTimer")
 	}
 
-	id := atomic.AddInt64(&timerManager.incrementID, 1)
+	id := atomic.AddInt64(&Manager.incrementID, 1)
 	t := &Timer{
-		id:       id,
+		ID:       id,
 		fn:       fn,
 		createAt: time.Now().UnixNano(),
 		interval: interval,
@@ -163,7 +164,7 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 	}
 
 	// add to manager
-	timerManager.chCreatedTimer <- t
+	Manager.ChCreatedTimer <- t
 	return t
 }
 
@@ -171,7 +172,7 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 // after duration that specified by the duration argument.
 // The duration d must be greater than zero; if not, NewAfterTimer will panic.
 // Stop the timer to release associated resources.
-func NewAfterTimer(duration time.Duration, fn TimerFunc) *Timer {
+func NewAfterTimer(duration time.Duration, fn Func) *Timer {
 	return NewCountTimer(duration, 1, fn)
 }
 
@@ -179,7 +180,7 @@ func NewAfterTimer(duration time.Duration, fn TimerFunc) *Timer {
 // when condition satisfied that specified by the condition argument.
 // The duration d must be greater than zero; if not, NewCondTimer will panic.
 // Stop the timer to release associated resources.
-func NewCondTimer(condition TimerCondition, fn TimerFunc) *Timer {
+func NewCondTimer(condition Condition, fn Func) *Timer {
 	if condition == nil {
 		panic("pitaya/timer: nil condition")
 	}
@@ -194,10 +195,10 @@ func NewCondTimer(condition TimerCondition, fn TimerFunc) *Timer {
 // than a Millisecond, and can not change after application running. The default
 // precision is time.Second
 func SetTimerPrecision(precision time.Duration) {
-	if precision < time.Millisecond {
+	if Precision < time.Millisecond {
 		panic("time precision can not less than a Millisecond")
 	}
-	timerPrecision = precision
+	Precision = precision
 }
 
 // SetTimerBacklog set the timer created/closing channel backlog, A small backlog

@@ -22,7 +22,6 @@ package pitaya
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"reflect"
@@ -38,11 +37,11 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/module"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
+	"github.com/topfreegames/pitaya/service"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/timer"
 )
 
 // App is the base app struct
@@ -82,6 +81,9 @@ var (
 		configured:    false,
 	}
 	log = logger.Log
+
+	remoteService  *service.RemoteService
+	handlerService *service.HandlerService
 )
 
 // Configure configures the app
@@ -229,9 +231,27 @@ func Start() {
 		RegisterModule(app.rpcClient, "rpcClient")
 	}
 
+	remoteService = service.NewRemoteService(
+		app.rpcClient,
+		app.rpcServer,
+		app.serviceDiscovery,
+		app.packetEncoder,
+		app.serializer,
+	)
+
+	handlerService = service.NewHandlerService(
+		app.dieChan,
+		app.packetDecoder,
+		app.packetEncoder,
+		app.serializer,
+		app.heartbeat,
+		app.server,
+		remoteService,
+	)
+
 	listen()
 
-	defer globalTicker.Stop()
+	defer timer.GlobalTicker.Stop()
 
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
@@ -251,19 +271,18 @@ func Start() {
 }
 
 func listen() {
-	hbdEncode()
 	startupComponents()
 	// create global ticker instance, timer precision could be customized
 	// by SetTimerPrecision
-	globalTicker = time.NewTicker(timerPrecision)
+	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	go handler.dispatch()
+	go handlerService.Dispatch()
 	for _, acc := range app.acceptors {
 		a := acc
 		go func() {
 			for conn := range a.GetConnChan() {
-				go handler.handle(conn)
+				go handlerService.Handle(conn)
 			}
 		}()
 
@@ -282,31 +301,11 @@ func listen() {
 		// TODO config concurrency, should this be done this way?
 		processMsgConcurrency := 100
 		for i := 0; i < processMsgConcurrency; i++ {
-			go processRemoteMessages(i)
+			go remoteService.ProcessRemoteMessages(i)
 			// TODO: use same parellelism?
-			go processUserPush()
+			go remoteService.ProcessUserPush()
 		}
 	}
-}
-
-// TODO own file?
-func remoteCall(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message) ([]byte, error) {
-	svType := route.SvType
-	//TODO this logic should be elsewhere, routing should be changeable
-	serversOfType, err := app.serviceDiscovery.GetServersByType(svType)
-	if err != nil {
-		return nil, err
-	}
-
-	s := rand.NewSource(time.Now().Unix())
-	r := rand.New(s)
-	server := serversOfType[r.Intn(len(serversOfType))]
-
-	res, err := app.rpcClient.Call(rpcType, route, session, msg, server)
-	if err != nil {
-		return nil, err
-	}
-	return res, err
 }
 
 // SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!

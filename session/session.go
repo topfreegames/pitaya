@@ -24,9 +24,8 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
-
-	"github.com/topfreegames/pitaya/service"
 )
 
 // NetworkEntity represent low-level network instance
@@ -45,6 +44,7 @@ var (
 	// OnSessionBind represents the function called after the session in bound
 	OnSessionBind func(s *Session)
 	sessionsMap   = make(map[string]*Session)
+	sessionIDSvc  = newSessionIDService()
 )
 
 // Session represents a client session which could storage temp data during low-level
@@ -61,11 +61,26 @@ type Session struct {
 	OnCloseCallbacks []func()               //onClose callbacks
 }
 
+type sessionIDService struct {
+	sid int64
+}
+
+func newSessionIDService() *sessionIDService {
+	return &sessionIDService{
+		sid: 0,
+	}
+}
+
+// SessionID returns the session id
+func (c *sessionIDService) sessionID() int64 {
+	return atomic.AddInt64(&c.sid, 1)
+}
+
 // New returns a new session instance
 // a NetworkEntity is a low-level network instance
 func New(entity NetworkEntity) *Session {
 	return &Session{
-		id:               service.Connections.SessionID(),
+		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
 		data:             make(map[string]interface{}),
 		lastTime:         time.Now().Unix(),

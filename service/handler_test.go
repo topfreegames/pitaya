@@ -1,4 +1,4 @@
-package pitaya
+package service
 
 import (
 	"reflect"

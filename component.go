@@ -47,12 +47,12 @@ func startupComponents() {
 
 	// register all components
 	for _, c := range comps {
-		if err := handler.register(c.comp, c.opts); err != nil {
+		if err := handlerService.Register(c.comp, c.opts); err != nil {
 			logger.Log.Error(err.Error())
 		}
 	}
 
-	handler.DumpServices()
+	handlerService.DumpServices()
 }
 
 func shutdownComponents() {

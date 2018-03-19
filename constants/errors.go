@@ -18,7 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package constants
 
-// VERSION returns current pitaya version
-var VERSION = "0.1.0"
+import "errors"
+
+// Errors that could be occurred during message handling.
+var (
+	ErrSessionOnNotify    = errors.New("current session working on notify mode")
+	ErrCloseClosedGroup   = errors.New("close closed group")
+	ErrClosedGroup        = errors.New("group closed")
+	ErrMemberNotFound     = errors.New("member not found in the group")
+	ErrCloseClosedSession = errors.New("close closed session")
+	ErrSessionDuplication = errors.New("session has existed in the current group")
+	ErrBrokenPipe         = errors.New("broken low-level pipe")
+	ErrBufferExceed       = errors.New("session send buffer exceed")
+)

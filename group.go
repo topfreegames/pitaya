@@ -24,7 +24,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/util"
 )
 
 const (
@@ -65,7 +67,7 @@ func (c *Group) Member(uid string) (*session.Session, error) {
 		}
 	}
 
-	return nil, ErrMemberNotFound
+	return nil, constants.ErrMemberNotFound
 }
 
 // Members returns all member's UID in current group
@@ -84,10 +86,10 @@ func (c *Group) Members() []string {
 // Multicast  push  the message to the filtered clients
 func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) error {
 	if c.isClosed() {
-		return ErrClosedGroup
+		return constants.ErrClosedGroup
 	}
 
-	data, err := serializeOrRaw(v)
+	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
 		return err
 	}
@@ -112,10 +114,10 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 // Broadcast push  the message(s) to  all members
 func (c *Group) Broadcast(route string, v interface{}) error {
 	if c.isClosed() {
-		return ErrClosedGroup
+		return constants.ErrClosedGroup
 	}
 
-	data, err := serializeOrRaw(v)
+	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
 		return err
 	}
@@ -143,7 +145,7 @@ func (c *Group) Contains(uid string) bool {
 // Add add session to group
 func (c *Group) Add(session *session.Session) error {
 	if c.isClosed() {
-		return ErrClosedGroup
+		return constants.ErrClosedGroup
 	}
 
 	log.Debugf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID())
@@ -154,7 +156,7 @@ func (c *Group) Add(session *session.Session) error {
 	id := session.ID()
 	_, ok := c.sessions[session.ID()]
 	if ok {
-		return ErrSessionDuplication
+		return constants.ErrSessionDuplication
 	}
 
 	c.sessions[id] = session
@@ -164,7 +166,7 @@ func (c *Group) Add(session *session.Session) error {
 // Leave remove specified UID related session from group
 func (c *Group) Leave(s *session.Session) error {
 	if c.isClosed() {
-		return ErrClosedGroup
+		return constants.ErrClosedGroup
 	}
 
 	log.Debugf("Remove session from group %s, UID=%d", c.name, s.UID())
@@ -179,7 +181,7 @@ func (c *Group) Leave(s *session.Session) error {
 // LeaveAll clear all sessions in the group
 func (c *Group) LeaveAll() error {
 	if c.isClosed() {
-		return ErrClosedGroup
+		return constants.ErrClosedGroup
 	}
 
 	c.mu.Lock()
@@ -207,7 +209,7 @@ func (c *Group) isClosed() bool {
 // Close destroy group, which will release all resource in the group
 func (c *Group) Close() error {
 	if c.isClosed() {
-		return ErrCloseClosedGroup
+		return constants.ErrCloseClosedGroup
 	}
 
 	atomic.StoreInt32(&c.status, groupStatusClosed)

@@ -18,88 +18,118 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package agent
 
 import (
 	"net"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/lonnng/nano/serialize"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/util"
 )
 
-// Agent corresponding to another server
-type agentRemote struct {
-	session *session.Session // session
-	lastMid uint             // last message id
-	chDie   chan struct{}    // wait for close
-	reply   string           // nats reply topic
-	srv     reflect.Value    // cached session reflect.Value
+// Remote corresponding to another server
+type Remote struct {
+	Session *session.Session // session
+	// TODO isso da pau igual no front :/ concorrencia
+	lastMid    uint                 // last message id
+	chDie      chan struct{}        // wait for close
+	reply      string               // nats reply topic
+	serializer serialize.Serializer // message serializer
+	rpcClient  cluster.RPCClient    // rpc client
+	encoder    codec.PacketEncoder  // packet encoder
+	srv        reflect.Value        // cached session reflect.Value
 }
 
-// Create new agentRemote instance
-func newAgentRemote(sess *protos.Session, reply string) *agentRemote {
-	a := &agentRemote{
-		chDie: make(chan struct{}),
-		reply: reply, // TODO this is ugly
+// NewRemote create new Remote instance
+func NewRemote(
+	sess *protos.Session,
+	reply string,
+	rpcClient cluster.RPCClient,
+	encoder codec.PacketEncoder,
+	serializer serialize.Serializer,
+) *Remote {
+	a := &Remote{
+		chDie:      make(chan struct{}),
+		reply:      reply, // TODO this is ugly
+		serializer: serializer,
+		encoder:    encoder,
+		rpcClient:  rpcClient,
 	}
 
 	// binding session
 	s := session.New(a)
 	s.SetUID(sess.GetUid())
-	a.session = s
+	a.Session = s
 
 	return a
 }
 
-func (a *agentRemote) Push(route string, v interface{}) error {
+// Push pushes the message to the player
+func (a *Remote) Push(route string, v interface{}) error {
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
-			a.session.ID(), a.session.UID(), route, len(d))
+			a.Session.ID(), a.Session.UID(), route, len(d))
 	default:
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
-			a.session.ID(), a.session.UID(), route, v)
+			a.Session.ID(), a.Session.UID(), route, v)
 	}
 
 	return a.sendPush(
 		pendingMessage{typ: message.Push, route: route, payload: v},
-		cluster.GetUserMessagesTopic(a.session.UID()),
+		cluster.GetUserMessagesTopic(a.Session.UID()),
 	)
 }
 
-func (a *agentRemote) MID() uint { return uint(0) }
+// SetMID sets the lastMid
+func (a *Remote) SetMID(mid uint) {
+	a.lastMid = mid
+}
 
-func (a *agentRemote) Response(v interface{}) error {
+// MID gets the lastMid
+func (a *Remote) MID() uint { return a.lastMid }
+
+// Response responds to the player
+func (a *Remote) Response(v interface{}) error {
 	return a.ResponseMID(a.lastMid, v)
 }
-func (a *agentRemote) ResponseMID(mid uint, v interface{}) error {
+
+// ResponseMID reponds the message with mid to the player
+func (a *Remote) ResponseMID(mid uint, v interface{}) error {
 	if mid <= 0 {
-		return ErrSessionOnNotify
+		return constants.ErrSessionOnNotify
 	}
 
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Response, ID=%d, MID=%d, Data=%dbytes",
-			a.session.ID(), mid, len(d))
+			a.Session.ID(), mid, len(d))
 	default:
 		logger.Log.Infof("Type=Response, ID=%d, MID=%d, Data=%+v",
-			a.session.ID(), mid, v)
+			a.Session.ID(), mid, v)
 	}
 
 	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v}, a.reply)
 }
 
-func (a *agentRemote) Close() error         { return nil }
-func (a *agentRemote) RemoteAddr() net.Addr { return nil }
+// Close closes the remote
+func (a *Remote) Close() error { return nil }
 
-func (a *agentRemote) serialize(m pendingMessage) ([]byte, error) {
-	payload, err := serializeOrRaw(m.payload)
+// RemoteAddr returns the remote address of the player
+func (a *Remote) RemoteAddr() net.Addr { return nil }
+
+func (a *Remote) serialize(m pendingMessage) ([]byte, error) {
+	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +147,7 @@ func (a *agentRemote) serialize(m pendingMessage) ([]byte, error) {
 	}
 
 	// packet encode
-	p, err := app.packetEncoder.Encode(packet.Data, em)
+	p, err := a.encoder.Encode(packet.Data, em)
 	if err != nil {
 		return nil, err
 	}
@@ -125,27 +155,27 @@ func (a *agentRemote) serialize(m pendingMessage) ([]byte, error) {
 	return p, err
 }
 
-func (a *agentRemote) send(m pendingMessage, to string) (err error) {
+func (a *Remote) send(m pendingMessage, to string) (err error) {
 	p, err := a.serialize(m)
 	if err != nil {
 		return err
 	}
-	return app.rpcClient.Answer(to, p)
+	return a.rpcClient.Answer(to, p)
 }
 
-func (a *agentRemote) sendPush(m pendingMessage, to string) (err error) {
-	payload, err := serializeOrRaw(m.payload)
+func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
+	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return err
 	}
 	push := &protos.Push{
 		Route: m.route,
-		Uid:   a.session.UID(),
+		Uid:   a.Session.UID(),
 		Data:  payload,
 	}
 	msg, err := proto.Marshal(push)
 	if err != nil {
 		return err
 	}
-	return app.rpcClient.Answer(to, msg)
+	return a.rpcClient.Answer(to, msg)
 }

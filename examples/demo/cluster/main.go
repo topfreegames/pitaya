@@ -13,8 +13,10 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/timer"
 )
 
 type (
@@ -23,7 +25,7 @@ type (
 	Room struct {
 		component.Base
 		group *pitaya.Group
-		timer *pitaya.Timer
+		timer *timer.Timer
 		stats *stats
 	}
 
@@ -81,7 +83,7 @@ func NewRoom() *Room {
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
-	r.timer = pitaya.NewTimer(time.Minute, func() {
+	r.timer = timer.NewTimer(time.Minute, func() {
 		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
 		println("OutboundBytes", r.stats.outboundBytes)
 		println("InboundBytes", r.stats.outboundBytes)
@@ -142,6 +144,8 @@ func (r *Room) Test2(s *session.Session, data []byte) error {
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "game", "the server type")
+	isFrontend := flag.Bool("frontend", true, "if server is frontend")
+
 	flag.Parse()
 
 	defer (func() {
@@ -159,8 +163,8 @@ func main() {
 	)
 
 	// traffic stats
-	pitaya.Pipeline.Outbound.PushBack(room.stats.outbound)
-	pitaya.Pipeline.Inbound.PushBack(room.stats.inbound)
+	pipeline.Pipeline.Outbound.PushBack(room.stats.outbound)
+	pipeline.Pipeline.Inbound.PushBack(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	//TODO fix pitaya.SetWSPath("/pitaya")
@@ -170,5 +174,6 @@ func main() {
 	//TODO need to fix that? pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", *port), "/pitaya")
 	pitaya.AddAcceptor(ws)
-	pitaya.Start(true)
+	pitaya.Configure(*isFrontend, *svType)
+	pitaya.Start()
 }
