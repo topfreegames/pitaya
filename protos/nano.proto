@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package protos;
+
+enum RPCType {
+  Sys = 0;
+  User = 1;
+}
+
+message Push {
+  string Route = 1;
+  string Uid = 2;
+  bytes Data = 3;
+}
+
+message Session {
+  int64 ID = 1;
+  string Uid = 2;
+  map<string, string> Data = 3;
+}
+
+message Msg {
+  uint64 ID = 1;
+  string Route = 2;
+  bytes Data = 3;
+  string Reply = 4;
+}
+
+message Request {
+  RPCType Type = 1;
+  Session Session = 2;
+  Msg Msg = 3;
+}
