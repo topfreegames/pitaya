@@ -17,15 +17,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
 package pitaya
 
-import "github.com/topfreegames/pitaya/module"
+import (
+	"fmt"
 
-var (
-	// Modules are the modules that will be used by the app
-	modules = make(map[string]module.Module)
+	"github.com/topfreegames/pitaya/interfaces"
 )
 
+var modules = make(map[string]interfaces.Module)
+
+// RegisterModule registers a module
+func RegisterModule(module interfaces.Module, name string) error {
+	if _, ok := modules[name]; ok {
+		return fmt.Errorf("module with name %s already exists", name)
+	}
+	modules[name] = module
+	return nil
+}
+
+// GetModule gets a module with a name
+func GetModule(name string) (interfaces.Module, error) {
+	if m, ok := modules[name]; ok {
+		return m, nil
+	}
+	return nil, fmt.Errorf("module with name %s not found", name)
+}
+
+// StartModules starts all modules
 func startModules() {
 	log.Debug("initializing all modules")
 	for name, mod := range modules {
@@ -41,7 +61,6 @@ func startModules() {
 	}
 }
 
-// shutdownModules shutdown the modules
 func shutdownModules() {
 	for _, mod := range modules {
 		mod.BeforeShutdown()

@@ -21,7 +21,6 @@
 package pitaya
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"reflect"
@@ -32,11 +31,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/module"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/service"
@@ -311,22 +308,6 @@ func listen() {
 // SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
 func SetDictionary(dict map[string]uint16) {
 	message.SetDictionary(dict)
-}
-
-// Register register a component with options
-func Register(c component.Component, options ...component.Option) {
-	comps = append(comps, regComp{c, options})
-}
-
-// RegisterModule register a module
-func RegisterModule(m module.Module, name string) error {
-	if _, ok := modules[name]; ok {
-		return fmt.Errorf(
-			"a module names %s was already registered", name,
-		)
-	}
-	modules[name] = m
-	return nil
 }
 
 // Shutdown send a signal to let 'pitaya' shutdown itself.

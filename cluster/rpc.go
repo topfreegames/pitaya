@@ -21,8 +21,8 @@
 package cluster
 
 import (
+	"github.com/topfreegames/pitaya/interfaces"
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/module"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
@@ -30,15 +30,15 @@ import (
 
 // RPCServer interface
 type RPCServer interface {
-	module.Module
 	GetUnhandledRequestsChannel() chan *protos.Request
 	// TODO user pushs and requests can be merged and processing would have a switch
 	GetUserPushChannel() chan *protos.Push
+	interfaces.Module
 }
 
 // RPCClient interface
 type RPCClient interface {
 	Answer(reply string, data []byte) error
 	Call(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) ([]byte, error)
-	module.Module
+	interfaces.Module
 }

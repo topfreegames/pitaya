@@ -34,6 +34,11 @@ type regComp struct {
 	opts []component.Option
 }
 
+// Register register a component with options
+func Register(c component.Component, options ...component.Option) {
+	comps = append(comps, regComp{c, options})
+}
+
 func startupComponents() {
 	// component initialize hooks
 	for _, c := range comps {
