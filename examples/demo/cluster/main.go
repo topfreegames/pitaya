@@ -174,6 +174,6 @@ func main() {
 	//TODO need to fix that? pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", *port), "/pitaya")
 	pitaya.AddAcceptor(ws)
-	pitaya.Configure(*isFrontend, *svType)
+	pitaya.Configure(*isFrontend, *svType, false)
 	pitaya.Start()
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"strings"
@@ -11,8 +12,10 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/timer"
 )
 
 type (
@@ -21,7 +24,7 @@ type (
 	Room struct {
 		component.Base
 		group *pitaya.Group
-		timer *pitaya.Timer
+		timer *timer.Timer
 		stats *stats
 	}
 
@@ -38,7 +41,7 @@ type (
 
 	// AllMembers contains all members uid
 	AllMembers struct {
-		Members []int64 `json:"members"`
+		Members []string `json:"members"`
 	}
 
 	// JoinResponse represents the result of joining room
@@ -73,7 +76,7 @@ func NewRoom() *Room {
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
-	r.timer = pitaya.NewTimer(time.Minute, func() {
+	r.timer = timer.NewTimer(time.Minute, func() {
 		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
 		println("OutboundBytes", r.stats.outboundBytes)
 		println("InboundBytes", r.stats.outboundBytes)
@@ -82,8 +85,8 @@ func (r *Room) AfterInit() {
 
 // Join room
 func (r *Room) Join(s *session.Session, msg []byte) error {
-	fakeUID := s.ID() //just use s.ID as uid !!!
-	s.Bind(fakeUID)   // binding session uid
+	fakeUID := s.ID()                  //just use s.ID as uid !!!
+	s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
 
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	// notify others
@@ -119,8 +122,8 @@ func main() {
 	)
 
 	// traffic stats
-	pitaya.Pipeline.Outbound.PushBack(room.stats.outbound)
-	pitaya.Pipeline.Inbound.PushBack(room.stats.inbound)
+	pipeline.Pipeline.Outbound.PushBack(room.stats.outbound)
+	pipeline.Pipeline.Inbound.PushBack(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	//TODO fix pitaya.SetWSPath("/pitaya")
@@ -132,5 +135,6 @@ func main() {
 	tcp := acceptor.NewTCPAcceptor(":3255")
 	pitaya.AddAcceptor(ws)
 	pitaya.AddAcceptor(tcp)
+	pitaya.Configure(true, "chat", false)
 	pitaya.Start()
 }

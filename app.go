@@ -55,6 +55,7 @@ type App struct {
 	serviceDiscovery cluster.ServiceDiscovery
 	rpcServer        cluster.RPCServer
 	rpcClient        cluster.RPCClient
+	clusterMode      bool
 	onSessionBind    func(*session.Session)
 	configured       bool
 }
@@ -74,6 +75,7 @@ var (
 		heartbeat:     30 * time.Second,
 		packetDecoder: codec.NewPomeloPacketDecoder(),
 		packetEncoder: codec.NewPomeloPacketEncoder(),
+		clusterMode:   false,
 		serializer:    protobuf.NewSerializer(),
 		configured:    false,
 	}
@@ -84,12 +86,13 @@ var (
 )
 
 // Configure configures the app
-func Configure(isFrontend bool, serverType string) {
+func Configure(isFrontend bool, serverType string, clusterMode bool) {
 	if app.configured {
 		log.Warn("pitaya configured twice!")
 	}
 	app.server.Frontend = isFrontend
 	app.server.Type = serverType
+	app.clusterMode = clusterMode
 	app.configured = true
 }
 
@@ -209,32 +212,35 @@ func startDefaultRPCClient() {
 // TODO fix non cluster mode
 func Start() {
 	if !app.configured {
-		log.Fatal("tried to start app without configuring it first!")
+		log.Fatal("startint app without configuring it first! call pitaya.Configure()")
 	}
 
-	if app.serviceDiscovery == nil {
-		log.Warn("creating default service discovery because cluster mode is enabled, if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
-		startDefaultSD()
-	}
-	if app.rpcServer == nil {
-		log.Warn("creating default rpc server because cluster mode is enabled, if you want to specify yours, use pitaya.SetRPCServer")
-		startDefaultRPCServer()
-	}
-	if app.rpcClient == nil {
-		log.Warn("creating default rpc client because cluster mode is enabled, if you want to specify yours, use pitaya.SetRPCClient")
-		startDefaultRPCClient()
-		RegisterModule(app.serviceDiscovery, "serviceDiscovery")
-		RegisterModule(app.rpcServer, "rpcServer")
-		RegisterModule(app.rpcClient, "rpcClient")
-	}
+	if app.clusterMode {
+		if app.serviceDiscovery == nil {
+			log.Warn("creating default service discovery because cluster mode is enabled, if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
+			startDefaultSD()
+		}
+		if app.rpcServer == nil {
+			log.Warn("creating default rpc server because cluster mode is enabled, if you want to specify yours, use pitaya.SetRPCServer")
+			startDefaultRPCServer()
+		}
+		if app.rpcClient == nil {
+			log.Warn("creating default rpc client because cluster mode is enabled, if you want to specify yours, use pitaya.SetRPCClient")
+			startDefaultRPCClient()
+			RegisterModule(app.serviceDiscovery, "serviceDiscovery")
+			RegisterModule(app.rpcServer, "rpcServer")
+			RegisterModule(app.rpcClient, "rpcClient")
+		}
 
-	remoteService = service.NewRemoteService(
-		app.rpcClient,
-		app.rpcServer,
-		app.serviceDiscovery,
-		app.packetEncoder,
-		app.serializer,
-	)
+		remoteService = service.NewRemoteService(
+			app.rpcClient,
+			app.rpcServer,
+			app.serviceDiscovery,
+			app.packetEncoder,
+			app.serializer,
+		)
+
+	}
 
 	handlerService = service.NewHandlerService(
 		app.dieChan,

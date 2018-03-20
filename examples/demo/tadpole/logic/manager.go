@@ -2,6 +2,7 @@ package logic
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/tadpole/logic/protocol"
@@ -22,7 +23,7 @@ func NewManager() *Manager {
 func (m *Manager) Login(s *session.Session, msg *protocol.JoyLoginRequest) error {
 	log.Println(msg)
 	id := s.ID()
-	s.Bind(id)
+	s.Bind(strconv.Itoa(int(id)))
 	return s.Response(protocol.LoginResponse{
 		Status: protocol.LoginStatusSucc,
 		ID:     id,
