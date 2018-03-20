@@ -23,6 +23,7 @@ package service
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -86,9 +87,7 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 // RPC makes rpcs
 func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...interface{}) (interface{}, error) {
 	data, err := util.GobEncode(args...)
-	fmt.Println("ENCODER", string(data))
 	if err != nil {
-		fmt.Println("AQUI!")
 		return nil, err
 	}
 	msg := &message.Message{
@@ -102,7 +101,14 @@ func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...inter
 		return nil, err
 	}
 
-	err = util.GobDecode(reply, ret)
+	res := &protos.Response{}
+	proto.Unmarshal(ret, res)
+
+	if res.Error != "" {
+		return nil, errors.New(res.Error)
+	}
+
+	err = util.GobDecode(reply, res.GetData())
 	if err != nil {
 		return nil, err
 	}
@@ -184,66 +190,75 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 
 			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), data)
 			// backend session
-
 			// need to create agent
 			//handler.processMessage()
 			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
 			util.Pcall(h.Method, args)
 		case req.Type == protos.RPCType_User:
-			fmt.Printf("CAMILA req %v %v\n", req, req.GetMsg().GetData())
+			reply := req.GetMsg().GetReply()
 			response := &protos.Response{}
 			rt, err := route.Decode(req.GetMsg().GetRoute())
 			if err != nil {
-				// TODO answer rpc with an error
-				continue
-			}
-			remote, ok := remotes[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
-			if !ok {
-				log.Warnf("pitaya/remote: %s not found", req.GetMsg().GetRoute())
-				// TODO answer rpc with an error
-				// response.Error =
+				errMsg := fmt.Sprintf("pitaya/remote: cannot decode route %s", req.GetMsg().GetRoute())
+				response.Error = errMsg
+				r.sendReply(reply, response)
 				continue
 			}
 
-			var args []interface{}
-			gob.NewDecoder(bytes.NewReader(req.GetMsg().GetData())).Decode(&args)
+			remote, ok := remotes[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
+			if !ok {
+				errMsg := fmt.Sprintf("pitaya/remote: %s not found", req.GetMsg().GetRoute())
+				log.Warnf(errMsg)
+				response.Error = errMsg
+				r.sendReply(reply, response)
+				continue
+			}
+
+			args := make([]interface{}, 0)
+			err = gob.NewDecoder(bytes.NewReader(req.GetMsg().GetData())).Decode(&args)
+			if err != nil {
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
+			}
 
 			params := []reflect.Value{remote.Receiver}
 			for _, arg := range args {
 				params = append(params, reflect.ValueOf(arg))
 			}
-			fmt.Printf("ARGS %v \n", args)
-			fmt.Printf("PARAMS %v \n", params)
 
 			ret, err := util.PcallReturn(remote.Method, params)
 			if err != nil {
-				// TODO answer rpc with an error
-				// response.Error = err.Error()
+				response.Error = err.Error()
+				r.sendReply(reply, response)
 				continue
 			}
-			// remote method encountered an error
 			if err := ret[1].Interface(); err != nil {
-				// TODO answer rpc with an error
-				// response.Error = err.(error).Error()
+				response.Error = err.(error).Error()
+				r.sendReply(reply, response)
 				continue
 			}
 			buf := bytes.NewBuffer([]byte(nil))
 			if err := gob.NewEncoder(buf).Encode(ret[0].Interface()); err != nil {
-				// TODO answer rpc with an error
-				// response.Error = err.Error()
+				response.Error = err.Error()
+				r.sendReply(reply, response)
 				continue
 			}
 			response.Data = buf.Bytes()
-			p, err := proto.Marshal(response)
-			if err != nil {
-				// TODO answer rpc with an error
-				continue
-			}
-			// TODO is this correct?
-			r.rpcClient.Send(req.GetMsg().GetReply(), p)
+			r.sendReply(reply, response)
 		}
 	}
+}
+
+func (r *RemoteService) sendReply(reply string, response *protos.Response) {
+	p, err := proto.Marshal(response)
+	if err != nil {
+		res := &protos.Response{}
+		res.Error = err.Error()
+		p, _ = proto.Marshal(response)
+	}
+	r.rpcClient.Send(reply, p)
 }
 
 func (r *RemoteService) remoteCall(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message) ([]byte, error) {

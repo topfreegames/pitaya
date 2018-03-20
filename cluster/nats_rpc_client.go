@@ -106,6 +106,7 @@ func (ns *NatsRPCClient) Call(
 		return nil, err
 	}
 	fmt.Println("OI, CAMILA", m)
+	// TODO desprotobuffear
 	return m.Data, nil
 }
 

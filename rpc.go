@@ -36,6 +36,11 @@ func RPC(routeStr string, reply interface{}, args ...interface{}) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
+
+	if r.SvType == "" {
+		r.SvType = app.server.Type
+	}
+
 	if r.SvType == app.server.Type {
 		return nil, constants.ErrRPCLocal
 	}

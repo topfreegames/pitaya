@@ -136,9 +136,8 @@ func (r *Room) SendRPC(s *session.Session, msg *RPCMessage) error {
 		Name:    "funciona",
 		Content: "please",
 	}
-	b := false
+	b := true
 	str := "AE PQP"
-	gob.Register(UserMessage{})
 	res, err := pitaya.RPC("room.room.messageremote", &UserMessage{}, mmsg, b, str)
 	if err != nil {
 		fmt.Printf("rpc error: %s", err)
@@ -149,12 +148,12 @@ func (r *Room) SendRPC(s *session.Session, msg *RPCMessage) error {
 }
 
 // MessageRemote just echoes the given message
-func (r *Room) MessageRemote(msg *UserMessage, b bool, s string) (*UserMessage, error) {
+func (r *Room) MessageRemote(msg UserMessage, b bool, s string) (*UserMessage, error) {
 	fmt.Println("CHEGOU", b, s)
 	if b {
 		return nil, fmt.Errorf("FUCK")
 	}
-	return msg, nil
+	return &msg, nil
 }
 
 // StatsRemote returns a room stats
@@ -162,10 +161,16 @@ func (r *Room) StatsRemote() (*stats, error) {
 	return r.stats, nil
 }
 
+func registerGobInterfaces() {
+	gob.Register(UserMessage{})
+}
+
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "game", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
+
+	registerGobInterfaces()
 
 	flag.Parse()
 
