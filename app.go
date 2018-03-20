@@ -41,6 +41,17 @@ import (
 	"github.com/topfreegames/pitaya/timer"
 )
 
+// ServerMode represents a server mode
+type ServerMode byte
+
+const (
+	_ ServerMode = iota
+	// Cluster represents a server running with connection to other servers
+	Cluster
+	// Standalone represents a server running without connection to other servers
+	Standalone
+)
+
 // App is the base app struct
 type App struct {
 	server           *cluster.Server
@@ -55,7 +66,7 @@ type App struct {
 	serviceDiscovery cluster.ServiceDiscovery
 	rpcServer        cluster.RPCServer
 	rpcClient        cluster.RPCClient
-	clusterMode      bool
+	serverMode       ServerMode
 	onSessionBind    func(*session.Session)
 	configured       bool
 }
@@ -75,7 +86,7 @@ var (
 		heartbeat:     30 * time.Second,
 		packetDecoder: codec.NewPomeloPacketDecoder(),
 		packetEncoder: codec.NewPomeloPacketEncoder(),
-		clusterMode:   false,
+		serverMode:    Standalone,
 		serializer:    protobuf.NewSerializer(),
 		configured:    false,
 	}
@@ -86,13 +97,13 @@ var (
 )
 
 // Configure configures the app
-func Configure(isFrontend bool, serverType string, clusterMode bool) {
+func Configure(isFrontend bool, serverType string, serverMode ServerMode) {
 	if app.configured {
 		log.Warn("pitaya configured twice!")
 	}
 	app.server.Frontend = isFrontend
 	app.server.Type = serverType
-	app.clusterMode = clusterMode
+	app.serverMode = serverMode
 	app.configured = true
 }
 
@@ -215,7 +226,7 @@ func Start() {
 		log.Fatal("starting app without configuring it first! call pitaya.Configure()")
 	}
 
-	if app.clusterMode {
+	if app.serverMode == Cluster {
 		if app.serviceDiscovery == nil {
 			log.Warn("creating default service discovery because cluster mode is enabled, if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
 			startDefaultSD()

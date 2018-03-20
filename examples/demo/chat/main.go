@@ -134,6 +134,6 @@ func main() {
 	tcp := acceptor.NewTCPAcceptor(":3255")
 	pitaya.AddAcceptor(ws)
 	pitaya.AddAcceptor(tcp)
-	pitaya.Configure(true, "chat", false)
+	pitaya.Configure(true, "chat", pitaya.Standalone)
 	pitaya.Start()
 }
