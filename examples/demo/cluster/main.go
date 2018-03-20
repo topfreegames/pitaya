@@ -82,7 +82,7 @@ func NewRoom() *Room {
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
-	r.timer = timer.NewTimer(time.Minute, func() {
+	r.timer = pitaya.NewTimer(time.Minute, func() {
 		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
 		println("OutboundBytes", r.stats.outboundBytes)
 		println("InboundBytes", r.stats.outboundBytes)
