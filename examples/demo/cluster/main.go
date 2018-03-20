@@ -13,7 +13,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
@@ -163,17 +162,17 @@ func main() {
 	)
 
 	// traffic stats
-	pipeline.Pipeline.Outbound.PushBack(room.stats.outbound)
-	pipeline.Pipeline.Inbound.PushBack(room.stats.inbound)
+	pitaya.AfterHandler(room.stats.outbound)
+	pitaya.BeforeHandler(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	//TODO fix pitaya.SetWSPath("/pitaya")
 
+	//TODO fix pitaya.SetWSPath("/pitaya")
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	//TODO need to fix that? pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", *port), "/pitaya")
 	pitaya.AddAcceptor(ws)
-	pitaya.Configure(*isFrontend, *svType, false)
+	pitaya.Configure(*isFrontend, *svType, true)
 	pitaya.Start()
 }

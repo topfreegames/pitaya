@@ -12,7 +12,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
@@ -122,8 +121,8 @@ func main() {
 	)
 
 	// traffic stats
-	pipeline.Pipeline.Outbound.PushBack(room.stats.outbound)
-	pipeline.Pipeline.Inbound.PushBack(room.stats.inbound)
+	pitaya.AfterHandler(room.stats.outbound)
+	pitaya.BeforeHandler(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	//TODO fix pitaya.SetWSPath("/pitaya")

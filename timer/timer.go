@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonnng/nano/logger"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/util"
 )
 

@@ -28,8 +28,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/lonnng/nano/logger"
-	"github.com/lonnng/nano/serialize"
+	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/serialize"
 )
 
 var log = logger.Log

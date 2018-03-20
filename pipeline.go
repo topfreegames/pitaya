@@ -18,36 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pipeline
+package pitaya
 
-import "github.com/topfreegames/pitaya/session"
+import "github.com/topfreegames/pitaya/pipeline"
 
-var (
-	// BeforeHandler contains the functions to be called before the handler method is executed
-	BeforeHandler = &pipelineChannel{}
-	// AfterHandler contains the functions to be called after the handler method is executed
-	AfterHandler = &pipelineChannel{}
-)
-
-type (
-	// Handler is a function that has the same signature as a handler and will
-	// be called before or after handler methods
-	Handler func(s *session.Session, in []byte) (out []byte, err error)
-
-	pipelineChannel struct {
-		Handlers []Handler
-	}
-)
-
-// PushFront should not be used after pitaya running
-func (p *pipelineChannel) PushFront(h Handler) {
-	Handlers := make([]Handler, len(p.Handlers)+1)
-	Handlers[0] = h
-	copy(Handlers[1:], p.Handlers)
-	p.Handlers = Handlers
+// BeforeHandler pushs a function to the back of the functions pipeline that will
+// be executed before the handler method
+func BeforeHandler(h pipeline.Handler) {
+	pipeline.BeforeHandler.PushBack(h)
 }
 
-// PushBack should not be used after pitaya running
-func (p *pipelineChannel) PushBack(h Handler) {
-	p.Handlers = append(p.Handlers, h)
+// AfterHandler pushs a function to the back of the functions pipeline that will
+// be executed after the handler method
+func AfterHandler(h pipeline.Handler) {
+	pipeline.AfterHandler.PushBack(h)
 }

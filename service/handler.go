@@ -264,8 +264,8 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 
 	var payload = msg.Data
 	var err error
-	if len(pipeline.Pipeline.Inbound.Handlers) > 0 {
-		for _, h := range pipeline.Pipeline.Inbound.Handlers {
+	if len(pipeline.BeforeHandler.Handlers) > 0 {
+		for _, h := range pipeline.BeforeHandler.Handlers {
 			payload, err = h(a.Session, payload)
 			if err != nil {
 				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())

@@ -212,7 +212,7 @@ func startDefaultRPCClient() {
 // TODO fix non cluster mode
 func Start() {
 	if !app.configured {
-		log.Fatal("startint app without configuring it first! call pitaya.Configure()")
+		log.Fatal("starting app without configuring it first! call pitaya.Configure()")
 	}
 
 	if app.clusterMode {

@@ -25,7 +25,6 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/lonnng/nano/serialize"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
@@ -33,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )

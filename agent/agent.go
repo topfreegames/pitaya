@@ -29,13 +29,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonnng/nano/serialize"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/pipeline"
+	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
@@ -375,8 +375,8 @@ func (a *Agent) write() {
 				break
 			}
 
-			if len(pipeline.Pipeline.Outbound.Handlers) > 0 {
-				for _, h := range pipeline.Pipeline.Outbound.Handlers {
+			if len(pipeline.AfterHandler.Handlers) > 0 {
+				for _, h := range pipeline.AfterHandler.Handlers {
 					payload, err = h(a.Session, payload)
 					if err != nil {
 						logger.Log.Debugf("broken pipeline, error: %s", err.Error())
