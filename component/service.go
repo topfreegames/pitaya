@@ -38,7 +38,6 @@ type (
 	Remote struct {
 		Receiver reflect.Value  // receiver of method
 		Method   reflect.Method // method stub
-		Type     reflect.Type   // low-level type of method
 	}
 
 	// Service implements a specific service, some of it's methods will be
@@ -74,45 +73,6 @@ func NewService(comp Component, opts []Option) *Service {
 	return s
 }
 
-func (s *Service) suitableRemoteMethods(typ reflect.Type) map[string]*Remote {
-	methods := make(map[string]*Remote)
-	for m := 0; m < typ.NumMethod(); m++ {
-		method := typ.Method(m)
-		mt := method.Type
-		mn := method.Name
-		if isRemoteMethod(method) {
-			// rewrite remote name
-			if s.Options.nameFunc != nil {
-				mn = s.Options.nameFunc(mn)
-			}
-			methods[mn] = &Remote{Method: method, Type: mt.In(2)}
-		}
-	}
-	return methods
-}
-
-// suitableMethods returns suitable methods of typ
-func (s *Service) suitableHandlerMethods(typ reflect.Type) map[string]*Handler {
-	methods := make(map[string]*Handler)
-	for m := 0; m < typ.NumMethod(); m++ {
-		method := typ.Method(m)
-		mt := method.Type
-		mn := method.Name
-		if isHandlerMethod(method) {
-			raw := false
-			if mt.In(2) == typeOfBytes {
-				raw = true
-			}
-			// rewrite handler name
-			if s.Options.nameFunc != nil {
-				mn = s.Options.nameFunc(mn)
-			}
-			methods[mn] = &Handler{Method: method, Type: mt.In(2), IsRawArg: raw}
-		}
-	}
-	return methods
-}
-
 // ExtractHandler extract the set of methods from the
 // receiver value which satisfy the following conditions:
 // - exported method of exported type
@@ -129,12 +89,12 @@ func (s *Service) ExtractHandler() error {
 	}
 
 	// Install the methods
-	s.Handlers = s.suitableHandlerMethods(s.Type)
+	s.Handlers = suitableHandlerMethods(s.Type, s.Options.nameFunc)
 
 	if len(s.Handlers) == 0 {
 		str := ""
 		// To help the user, see if a pointer receiver would work.
-		method := s.suitableHandlerMethods(reflect.PtrTo(s.Type))
+		method := suitableHandlerMethods(reflect.PtrTo(s.Type), s.Options.nameFunc)
 		if len(method) != 0 {
 			str = "type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
 		} else {
@@ -166,12 +126,12 @@ func (s *Service) ExtractRemote() error {
 	}
 
 	// Install the methods
-	s.Remotes = s.suitableRemoteMethods(s.Type)
+	s.Remotes = suitableRemoteMethods(s.Type, s.Options.nameFunc)
 
 	if len(s.Remotes) == 0 {
 		str := ""
 		// To help the user, see if a pointer receiver would work.
-		method := s.suitableRemoteMethods(reflect.PtrTo(s.Type))
+		method := suitableRemoteMethods(reflect.PtrTo(s.Type), s.Options.nameFunc)
 		if len(method) != 0 {
 			str = "type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
 		} else {

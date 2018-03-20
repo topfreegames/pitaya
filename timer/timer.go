@@ -101,7 +101,7 @@ func NewTimer(fn Func, interval time.Duration, counter int) *Timer {
 	return t
 }
 
-// SetCondition sets the condition used for verifying when the cron job should run0A0A
+// SetCondition sets the condition used for verifying when the cron job should run
 func (t *Timer) SetCondition(condition Condition) {
 	t.condition = condition
 }

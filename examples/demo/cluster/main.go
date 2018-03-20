@@ -99,7 +99,7 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	// notify others
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", fakeUID)})
+	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", fakeUID)})
 	// new user join group
 	r.group.Add(s) // add session to group
 
@@ -140,6 +140,16 @@ func (r *Room) Test2(s *session.Session, data []byte) error {
 //	return nil
 //}
 
+// MessageRemote just echoes the given message
+func (r *Room) MessageRemote(msg *UserMessage) (*UserMessage, error) {
+	return msg, nil
+}
+
+// StatsRemote returns a room stats
+func (r *Room) StatsRemote() (*stats, error) {
+	return r.stats, nil
+}
+
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "game", "the server type")
@@ -157,6 +167,11 @@ func main() {
 	// rewrite component and handler name
 	room := NewRoom()
 	pitaya.Register(room,
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
+
+	pitaya.RegisterRemote(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)

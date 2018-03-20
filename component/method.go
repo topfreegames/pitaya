@@ -39,15 +39,6 @@ func isExported(name string) bool {
 	return unicode.IsUpper(w)
 }
 
-func isExportedOrBuiltinType(t reflect.Type) bool {
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	// PkgPath will be non-empty even for an exported type,
-	// so we need to check the type name as well.
-	return isExported(t.Name()) || t.PkgPath() == ""
-}
-
 // isRemoteMethod decide a method is suitable remote method
 // has to be exported and return interface{}(or byte[]), error
 func isRemoteMethod(method reflect.Method) bool {
@@ -58,7 +49,7 @@ func isRemoteMethod(method reflect.Method) bool {
 	}
 
 	// Method needs two outs: interface{}(or []byte), error
-	if mt.NumOut() != 1 {
+	if mt.NumOut() != 2 {
 		return false
 	}
 
@@ -94,4 +85,41 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 	return true
+}
+
+func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[string]*Remote {
+	methods := make(map[string]*Remote)
+	for m := 0; m < typ.NumMethod(); m++ {
+		method := typ.Method(m)
+		mn := method.Name
+		if isRemoteMethod(method) {
+			// rewrite remote name
+			if nameFunc != nil {
+				mn = nameFunc(mn)
+			}
+			methods[mn] = &Remote{Method: method}
+		}
+	}
+	return methods
+}
+
+func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[string]*Handler {
+	methods := make(map[string]*Handler)
+	for m := 0; m < typ.NumMethod(); m++ {
+		method := typ.Method(m)
+		mt := method.Type
+		mn := method.Name
+		if isHandlerMethod(method) {
+			raw := false
+			if mt.In(2) == typeOfBytes {
+				raw = true
+			}
+			// rewrite handler name
+			if nameFunc != nil {
+				mn = nameFunc(mn)
+			}
+			methods[mn] = &Handler{Method: method, Type: mt.In(2), IsRawArg: raw}
+		}
+	}
+	return methods
 }
