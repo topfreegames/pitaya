@@ -299,6 +299,6 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
 	for name := range handlers {
-		log.Infof("registered service %s", name)
+		log.Infof("registered handler %s", name)
 	}
 }

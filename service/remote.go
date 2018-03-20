@@ -28,6 +28,7 @@ import (
 
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -45,6 +46,7 @@ type RemoteService struct {
 	serializer       serialize.Serializer
 	encoder          codec.PacketEncoder
 	rpcClient        cluster.RPCClient
+	services         map[string]*component.Service // all registered service
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -56,6 +58,7 @@ func NewRemoteService(
 	serializer serialize.Serializer,
 ) *RemoteService {
 	return &RemoteService{
+		services:         make(map[string]*component.Service),
 		rpcClient:        rpcClient,
 		rpcServer:        rpcServer,
 		encoder:          encoder,
@@ -63,6 +66,8 @@ func NewRemoteService(
 		serializer:       serializer,
 	}
 }
+
+var remotes = make(map[string]*component.Remote) // all remote method
 
 func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *message.Message) {
 	var res []byte
@@ -72,6 +77,27 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 		return
 	}
 	a.WriteToChWrite(res)
+}
+
+// Register registers components
+func (r *RemoteService) Register(comp component.Component, opts []component.Option) error {
+	s := component.NewService(comp, opts)
+
+	if _, ok := r.services[s.Name]; ok {
+		return fmt.Errorf("remote: service already defined: %s", s.Name)
+	}
+
+	if err := s.ExtractRemote(); err != nil {
+		return err
+	}
+
+	r.services[s.Name] = s
+	// register all remotes
+	for name, remote := range s.Remotes {
+		remotes[fmt.Sprintf("%s.%s", s.Name, name)] = remote
+	}
+
+	return nil
 }
 
 // ProcessUserPush receives and processes push to users
@@ -158,4 +184,11 @@ func (r *RemoteService) remoteCall(rpcType protos.RPCType, route *route.Route, s
 		return nil, err
 	}
 	return res, err
+}
+
+// DumpServices outputs all registered services
+func (r *RemoteService) DumpServices() {
+	for name := range remotes {
+		log.Infof("registered remote %s", name)
+	}
 }

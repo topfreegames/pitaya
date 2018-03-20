@@ -48,6 +48,26 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 	return isExported(t.Name()) || t.PkgPath() == ""
 }
 
+// isRemoteMethod decide a method is suitable remote method
+// has to be exported and return interface{}(or byte[]), error
+func isRemoteMethod(method reflect.Method) bool {
+	mt := method.Type
+	// Method must be exported.
+	if method.PkgPath != "" {
+		return false
+	}
+
+	// Method needs two outs: interface{}(or []byte), error
+	if mt.NumOut() != 1 {
+		return false
+	}
+
+	if (mt.Out(0).Kind() != reflect.Ptr && mt.Out(0) != typeOfBytes) || mt.Out(1) != typeOfError {
+		return false
+	}
+	return true
+}
+
 // isHandlerMethod decide a method is suitable handler method
 func isHandlerMethod(method reflect.Method) bool {
 	mt := method.Type
