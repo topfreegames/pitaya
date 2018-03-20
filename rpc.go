@@ -18,20 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package constants
+package pitaya
 
-import "errors"
+import (
+	"reflect"
 
-// Errors that could be occurred during message handling.
-var (
-	ErrBrokenPipe         = errors.New("broken low-level pipe")
-	ErrBufferExceed       = errors.New("session send buffer exceed")
-	ErrCloseClosedGroup   = errors.New("close closed group")
-	ErrCloseClosedSession = errors.New("close closed session")
-	ErrClosedGroup        = errors.New("group closed")
-	ErrMemberNotFound     = errors.New("member not found in the group")
-	ErrReplyShouldBePtr   = errors.New("reply must be a pointer")
-	ErrRPCLocal           = errors.New("RPC must be to a different server type")
-	ErrSessionDuplication = errors.New("session has existed in the current group")
-	ErrSessionOnNotify    = errors.New("current session working on notify mode")
+	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/route"
 )
+
+// RPC calls a method in a different server
+func RPC(routeStr string, reply interface{}, args ...interface{}) (interface{}, error) {
+	if reflect.TypeOf(reply).Kind() != reflect.Ptr {
+		return nil, constants.ErrReplyShouldBePtr
+	}
+	r, err := route.Decode(routeStr)
+	if err != nil {
+		return nil, err
+	}
+	if r.SvType == app.server.Type {
+		return nil, constants.ErrRPCLocal
+	}
+
+	return remoteService.RPC(r, reply, args...)
+}
+
+// func RPCTo(serverID, routeStr string, reply interface{}, args ...interface{}) (interface{}, error) {
+// }

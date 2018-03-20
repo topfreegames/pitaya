@@ -23,6 +23,8 @@ package util
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"runtime"
@@ -33,6 +35,25 @@ import (
 )
 
 var log = logger.Log
+
+// PcallReturn call method with protected and return response
+func PcallReturn(method reflect.Method, args []reflect.Value) (rets []reflect.Value, err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Errorf("pitaya/dispatch: %v", rec)
+			log.Error(Stack())
+			if s, ok := rec.(string); ok {
+				err = errors.New(s)
+			} else {
+				err = errors.New("rpc call internal error")
+			}
+		}
+	}()
+
+	fmt.Printf("ARGS %v \n", args)
+	rets = method.Func.Call(args)
+	return rets, err
+}
 
 // Pcall handler with protected
 func Pcall(method reflect.Method, args []reflect.Value) {

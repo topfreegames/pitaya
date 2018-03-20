@@ -31,3 +31,8 @@ message Request {
   Session Session = 2;
   Msg Msg = 3;
 }
+
+message Response {
+  bytes Data = 1;
+  string Error = 2;
+}

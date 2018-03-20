@@ -160,7 +160,7 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 	if err != nil {
 		return err
 	}
-	return a.rpcClient.Answer(to, p)
+	return a.rpcClient.Send(to, p)
 }
 
 func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
@@ -177,5 +177,5 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 	if err != nil {
 		return err
 	}
-	return a.rpcClient.Answer(to, msg)
+	return a.rpcClient.Send(to, msg)
 }

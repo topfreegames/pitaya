@@ -21,10 +21,14 @@
 package service
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"math/rand"
 	"reflect"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
@@ -77,6 +81,32 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 		return
 	}
 	a.WriteToChWrite(res)
+}
+
+// RPC makes rpcs
+func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...interface{}) (interface{}, error) {
+	data, err := util.GobEncode(args...)
+	fmt.Println("ENCODER", string(data))
+	if err != nil {
+		fmt.Println("AQUI!")
+		return nil, err
+	}
+	msg := &message.Message{
+		Type:  message.Request,
+		Route: fmt.Sprintf("%s.%s", route.Service, route.Method),
+		Data:  data,
+	}
+
+	ret, err := r.remoteCall(protos.RPCType_User, route, nil, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = util.GobDecode(reply, ret)
+	if err != nil {
+		return nil, err
+	}
+	return reply, nil
 }
 
 // Register registers components
@@ -135,7 +165,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			}
 			h, ok := handlers[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
 			if !ok {
-				log.Warnf("pitaya/handler: %s not found(forgot registered?)", req.GetMsg().GetRoute())
+				log.Warnf("pitaya/handler: %s not found", req.GetMsg().GetRoute())
 				// TODO answer rpc with an error
 				continue
 			}
@@ -161,8 +191,57 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
 			util.Pcall(h.Method, args)
 		case req.Type == protos.RPCType_User:
-			//TODO
-			break
+			fmt.Printf("CAMILA req %v %v\n", req, req.GetMsg().GetData())
+			response := &protos.Response{}
+			rt, err := route.Decode(req.GetMsg().GetRoute())
+			if err != nil {
+				// TODO answer rpc with an error
+				continue
+			}
+			remote, ok := remotes[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
+			if !ok {
+				log.Warnf("pitaya/remote: %s not found", req.GetMsg().GetRoute())
+				// TODO answer rpc with an error
+				// response.Error =
+				continue
+			}
+
+			var args []interface{}
+			gob.NewDecoder(bytes.NewReader(req.GetMsg().GetData())).Decode(&args)
+
+			params := []reflect.Value{remote.Receiver}
+			for _, arg := range args {
+				params = append(params, reflect.ValueOf(arg))
+			}
+			fmt.Printf("ARGS %v \n", args)
+			fmt.Printf("PARAMS %v \n", params)
+
+			ret, err := util.PcallReturn(remote.Method, params)
+			if err != nil {
+				// TODO answer rpc with an error
+				// response.Error = err.Error()
+				continue
+			}
+			// remote method encountered an error
+			if err := ret[1].Interface(); err != nil {
+				// TODO answer rpc with an error
+				// response.Error = err.(error).Error()
+				continue
+			}
+			buf := bytes.NewBuffer([]byte(nil))
+			if err := gob.NewEncoder(buf).Encode(ret[0].Interface()); err != nil {
+				// TODO answer rpc with an error
+				// response.Error = err.Error()
+				continue
+			}
+			response.Data = buf.Bytes()
+			p, err := proto.Marshal(response)
+			if err != nil {
+				// TODO answer rpc with an error
+				continue
+			}
+			// TODO is this correct?
+			r.rpcClient.Send(req.GetMsg().GetReply(), p)
 		}
 	}
 }

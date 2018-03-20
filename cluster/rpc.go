@@ -38,7 +38,7 @@ type RPCServer interface {
 
 // RPCClient interface
 type RPCClient interface {
-	Answer(reply string, data []byte) error
+	Send(route string, data []byte) error
 	Call(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) ([]byte, error)
 	interfaces.Module
 }

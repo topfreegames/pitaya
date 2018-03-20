@@ -25,11 +25,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
-	nats "github.com/nats-io/go-nats"
 )
 
 // NatsRPCClient struct
@@ -52,10 +52,10 @@ func NewNatsRPCClient(connectString string, server *Server) *NatsRPCClient {
 	return ns
 }
 
-// Answer answers a remote method call
+// Send publishes a message in a given topic
 // TODO handle errors (to the client)
-func (ns *NatsRPCClient) Answer(reply string, data []byte) error {
-	return ns.conn.Publish(reply, data)
+func (ns *NatsRPCClient) Send(topic string, data []byte) error {
+	return ns.conn.Publish(topic, data)
 }
 
 // Call calls a method remotally
@@ -80,15 +80,18 @@ func (ns *NatsRPCClient) Call(
 	// TODO need to send session data, will need to make major encode hacking
 	req := protos.Request{
 		Type: rpcType,
-		Session: &protos.Session{
-			ID:  session.ID(),
-			Uid: session.UID(),
-		},
 		Msg: &protos.Msg{
 			ID:    uint64(mid),
 			Route: route.String(),
 			Data:  msg.Data,
 		},
+	}
+
+	if rpcType == protos.RPCType_Sys {
+		req.Session = &protos.Session{
+			ID:  session.ID(),
+			Uid: session.UID(),
+		}
 	}
 
 	var marshalledData []byte

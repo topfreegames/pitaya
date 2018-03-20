@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"log"
@@ -129,19 +130,30 @@ func (r *Room) Test2(s *session.Session, data []byte) error {
 	return s.Response("okkay2")
 }
 
-//// SendRPC send
-//func (r *Room) SendRPC(s *session.Session, msg *RPCMessage) error {
-//	res, err := pitaya.RPC(msg.ServerID, []byte(msg.Data))
-//	if err != nil {
-//		fmt.Printf("rpc error: %s", err)
-//		return err
-//	}
-//	fmt.Printf("rpc res %s", res)
-//	return nil
-//}
+// SendRPC sends rpc
+func (r *Room) SendRPC(s *session.Session, msg *RPCMessage) error {
+	mmsg := &UserMessage{
+		Name:    "funciona",
+		Content: "please",
+	}
+	b := false
+	str := "AE PQP"
+	gob.Register(UserMessage{})
+	res, err := pitaya.RPC("room.room.messageremote", &UserMessage{}, mmsg, b, str)
+	if err != nil {
+		fmt.Printf("rpc error: %s", err)
+		return err
+	}
+	fmt.Printf("rpc res %s", res)
+	return nil
+}
 
 // MessageRemote just echoes the given message
-func (r *Room) MessageRemote(msg *UserMessage) (*UserMessage, error) {
+func (r *Room) MessageRemote(msg *UserMessage, b bool, s string) (*UserMessage, error) {
+	fmt.Println("CHEGOU", b, s)
+	if b {
+		return nil, fmt.Errorf("FUCK")
+	}
 	return msg, nil
 }
 

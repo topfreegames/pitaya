@@ -196,7 +196,6 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		if _, err := a.Conn.Write(agent.Hrd); err != nil {
 			return err
 		}
-
 		a.SetStatus(constants.StatusHandshake)
 		log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.Conn.RemoteAddr())
 
