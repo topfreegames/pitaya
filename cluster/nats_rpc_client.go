@@ -77,7 +77,6 @@ func (ns *NatsRPCClient) Call(
 		mid = msg.ID
 	}
 
-	// TODO need to send session data, will need to make major encode hacking
 	req := protos.Request{
 		Type: rpcType,
 		Msg: &protos.Msg{
@@ -96,8 +95,9 @@ func (ns *NatsRPCClient) Call(
 
 	if rpcType == protos.RPCType_Sys {
 		req.Session = &protos.Session{
-			ID:  session.ID(),
-			Uid: session.UID(),
+			ID:   session.ID(),
+			Uid:  session.UID(),
+			Data: session.EncodedState(),
 		}
 	}
 

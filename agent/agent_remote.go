@@ -22,7 +22,6 @@ package agent
 
 import (
 	"net"
-	"reflect"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/topfreegames/pitaya/cluster"
@@ -47,7 +46,6 @@ type Remote struct {
 	serializer serialize.Serializer // message serializer
 	rpcClient  cluster.RPCClient    // rpc client
 	encoder    codec.PacketEncoder  // packet encoder
-	srv        reflect.Value        // cached session reflect.Value
 }
 
 // NewRemote create new Remote instance
@@ -57,7 +55,7 @@ func NewRemote(
 	rpcClient cluster.RPCClient,
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
-) *Remote {
+) (*Remote, error) {
 	a := &Remote{
 		chDie:      make(chan struct{}),
 		reply:      reply, // TODO this is ugly
@@ -69,9 +67,13 @@ func NewRemote(
 	// binding session
 	s := session.New(a)
 	s.SetUID(sess.GetUid())
+	err := s.RestoreEncoded(sess.GetData())
+	if err != nil {
+		return nil, err
+	}
 	a.Session = s
 
-	return a
+	return a, nil
 }
 
 // Push pushes the message to the player

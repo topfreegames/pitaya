@@ -21,11 +21,15 @@
 package session
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/topfreegames/pitaya/util"
 )
 
 // NetworkEntity represent low-level network instance
@@ -58,6 +62,7 @@ type Session struct {
 	lastTime         int64                  // last heartbeat time
 	entity           NetworkEntity          // low-level network entity
 	data             map[string]interface{} // session data store
+	encodedData      []byte                 // session data encoded as a byte array
 	OnCloseCallbacks []func()               //onClose callbacks
 }
 
@@ -93,6 +98,16 @@ func GetSessionByUID(uid string) *Session {
 	if val, ok := sessionsMap[uid]; ok {
 		return val
 	}
+	return nil
+}
+
+func (s *Session) updateEncodedData() error {
+	buf := bytes.NewBuffer([]byte(nil))
+	err := gob.NewEncoder(buf).Encode(s.data)
+	if err != nil {
+		return err
+	}
+	s.encodedData = buf.Bytes()
 	return nil
 }
 
@@ -157,7 +172,7 @@ func (s *Session) OnClose(c func()) {
 }
 
 // Close terminate current session, session related data will not be released,
-// all related data should be Clear explicitly in Session closed callback
+// all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
 	delete(sessionsMap, s.UID())
 	s.entity.Close()
@@ -169,19 +184,21 @@ func (s *Session) RemoteAddr() net.Addr {
 }
 
 // Remove delete data associated with the key from session storage
-func (s *Session) Remove(key string) {
+func (s *Session) Remove(key string) error {
 	s.Lock()
 	defer s.Unlock()
 
 	delete(s.data, key)
+	return s.updateEncodedData()
 }
 
 // Set associates value with the key in session storage
-func (s *Session) Set(key string, value interface{}) {
+func (s *Session) Set(key string, value interface{}) error {
 	s.Lock()
 	defer s.Unlock()
 
 	s.data[key] = value
+	return s.updateEncodedData()
 }
 
 // SetOnSessionBind sets the method to be called when a session is bound
@@ -435,9 +452,25 @@ func (s *Session) State() map[string]interface{} {
 	return s.data
 }
 
+// EncodedState returns the session encoded state
+func (s *Session) EncodedState() []byte {
+	return s.encodedData
+}
+
 // Restore session state after reconnect
-func (s *Session) Restore(data map[string]interface{}) {
+func (s *Session) Restore(data map[string]interface{}) error {
 	s.data = data
+	return s.updateEncodedData()
+}
+
+// RestoreEncoded restore session data from encoded valu
+func (s *Session) RestoreEncoded(encodedData []byte) error {
+	var data map[string]interface{}
+	err := util.GobDecode(&data, encodedData)
+	if err != nil {
+		return err
+	}
+	return s.Restore(data)
 }
 
 // Clear releases all data related to current session
@@ -447,4 +480,5 @@ func (s *Session) Clear() {
 
 	s.uid = ""
 	s.data = map[string]interface{}{}
+	s.updateEncodedData()
 }

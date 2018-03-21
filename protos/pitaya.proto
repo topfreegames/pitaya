@@ -23,7 +23,7 @@ message Push {
 message Session {
   int64 ID = 1;
   string Uid = 2;
-  map<string, string> Data = 3;
+  bytes Data = 3;
 }
 
 message Msg {

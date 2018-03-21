@@ -98,6 +98,14 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 		s.Bind(fakeUID)                // binding session uid
 	}
 
+	err := s.Set("level", 10)
+	if err != nil {
+		return err
+	}
+	err = s.Set("struct", &UserMessage{Name: "test", Content: "struct"})
+	if err != nil {
+		return err
+	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	// notify others
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", fakeUID)})

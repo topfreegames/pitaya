@@ -164,12 +164,20 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 		case req.Type == protos.RPCType_Sys:
 			reply := req.GetMsg().GetReply()
 			response := &protos.Response{}
-			a := agent.NewRemote(req.GetSession(),
+			// TODO should we create a new agent for every new request?
+			a, err := agent.NewRemote(
+				req.GetSession(),
 				reply,
 				r.rpcClient,
 				r.encoder,
 				r.serializer,
 			)
+			if err != nil {
+				log.Warn("pitaya/handler: cannot instantiate remote agent")
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
+			}
 			a.SetMID(uint(req.GetMsg().GetID()))
 			rt, err := route.Decode(req.GetMsg().GetRoute())
 			if err != nil {
