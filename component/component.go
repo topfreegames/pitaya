@@ -20,6 +20,10 @@
 
 package component
 
+import "github.com/topfreegames/pitaya/logger"
+
+var log = logger.Log
+
 // Component is the interface that represent a component.
 type Component interface {
 	Init()
