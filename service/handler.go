@@ -94,9 +94,7 @@ func NewHandlerService(
 // Dispatch message to corresponding logic handler
 func (h *HandlerService) Dispatch() {
 	// close chLocalProcess & chCloseSession when application quit
-	defer func() {
-		timer.GlobalTicker.Stop()
-	}()
+	defer timer.GlobalTicker.Stop()
 
 	// handle packet that sent to chLocalProcess
 	for {
@@ -225,7 +223,6 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 
 func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	r, err := route.Decode(msg.Route)
-
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -257,7 +254,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 
 	handler, ok := handlers[fmt.Sprintf("%s.%s", route.Service, route.Method)]
 	if !ok {
-		log.Warnf("pitaya/handler: %s not found(forgot registered?)", msg.Route)
+		log.Warnf("pitaya/handler: %s not found", msg.Route)
 		return
 	}
 

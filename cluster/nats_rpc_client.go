@@ -90,10 +90,8 @@ func (ns *NatsRPCClient) Call(
 	switch msg.Type {
 	case message.Request:
 		req.Msg.Type = protos.MsgType_MsgRequest
-		break
 	case message.Notify:
 		req.Msg.Type = protos.MsgType_MsgNotify
-		break
 	}
 
 	if rpcType == protos.RPCType_Sys {

@@ -46,14 +46,15 @@ const (
 
 var (
 	log = logger.Log
-	hbd []byte // heartbeat packet data
+	// Hbd contains the heartbeat packet data
+	hbd []byte
 	// Hrd contains the handshake response data
-	Hrd  []byte // handshake response data
+	Hrd  []byte
 	once sync.Once
 )
 
 type (
-	// Agent corresponding a user, used for store raw Conn information
+	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
 		// regular agent member
 		Session          *session.Session               // session
@@ -66,7 +67,7 @@ type (
 		chWrite          chan []byte                    // write message to the clients
 		chStopWrite      chan struct{}                  // stop writing messages
 		chStopHeartbeat  chan struct{}                  // stop heartbeats
-		chStopRead       chan struct{}                  //stop reading
+		chStopRead       chan struct{}                  // stop reading
 		lastAt           int64                          // last heartbeat unix time stamp
 		decoder          codec.PacketDecoder            // binary decoder
 		encoder          codec.PacketEncoder            // binary encoder
@@ -79,8 +80,8 @@ type (
 
 	pendingMessage struct {
 		typ     message.Type // message type
-		route   string       // message route(push)
-		mid     uint         // response message id(response)
+		route   string       // message route (push)
+		mid     uint         // response message id (response)
 		payload interface{}  // payload
 	}
 )
@@ -117,7 +118,7 @@ func NewAgent(
 		appDieChan:       dieChan,
 	}
 
-	// binding session
+	// bindng session
 	s := session.New(a)
 	a.Session = s
 	a.Srv = reflect.ValueOf(s)
@@ -195,7 +196,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}) error {
 	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v})
 }
 
-// Close closes the agent, clean inner state and close low-level connection.
+// Close closes the agent, cleans inner state and closes low-level connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (a *Agent) Close() error {
 	if a.GetStatus() == constants.StatusClosed {
@@ -273,13 +274,13 @@ func (a *Agent) Handle() {
 		a.Close()
 		log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
+
 	go a.write()
 	go a.read()
 	go a.heartbeat()
 	select {
 	case <-a.chDie: // agent closed signal
 		return
-
 	case <-a.appDieChan: // application quit
 		return
 	}
@@ -287,9 +288,7 @@ func (a *Agent) Handle() {
 
 func (a *Agent) heartbeat() {
 	ticker := time.NewTicker(a.heartbeatTimeout)
-	defer func() {
-		ticker.Stop()
-	}()
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -331,6 +330,7 @@ func (a *Agent) read() {
 	defer func() {
 		close(a.chRecv)
 	}()
+
 	for {
 		select {
 		case m := <-a.chRecv:
@@ -362,7 +362,7 @@ func (a *Agent) write() {
 	for {
 		select {
 		case data := <-a.chWrite:
-			// close agent while low-level Conn broken
+			// close agent if low-level Conn broken
 			if _, err := a.Conn.Write(data); err != nil {
 				logger.Log.Error(err.Error())
 				return
