@@ -38,6 +38,7 @@ message Request {
   RPCType Type = 1;
   Session Session = 2;
   Msg Msg = 3;
+  string FrontendID = 4;
 }
 
 message Response {

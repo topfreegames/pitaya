@@ -31,7 +31,10 @@ func NewRoute(server, service, method string) *Route {
 
 // String transforms the route into a string
 func (r *Route) String() string {
-	return fmt.Sprintf("%s.%s.%s", r.SvType, r.Service, r.Method)
+	if r.SvType != "" {
+		return fmt.Sprintf("%s.%s.%s", r.SvType, r.Service, r.Method)
+	}
+	return fmt.Sprintf("%s.%s", r.Service, r.Method)
 }
 
 // Decode decodes the route

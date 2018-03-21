@@ -24,8 +24,8 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/topfreegames/pitaya/protos"
 	nats "github.com/nats-io/go-nats"
+	"github.com/topfreegames/pitaya/protos"
 )
 
 // NatsRPCServer struct
@@ -63,7 +63,6 @@ func GetUserMessagesTopic(uid string) string {
 // SubscribeToUserMessages subscribes to user msg channel
 func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) {
 	// TODO maybe use channels to control parallelism
-	fmt.Printf("subscribing to %s", GetUserMessagesTopic(uid))
 	ns.conn.Subscribe(GetUserMessagesTopic(uid), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)

@@ -29,6 +29,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/util"
 )
 
@@ -40,14 +43,17 @@ type NetworkEntity interface {
 	ResponseMID(mid uint, v interface{}) error
 	Close() error
 	RemoteAddr() net.Addr
+	SendRequest(serverID, route string, v interface{}) (*protos.Response, error)
 }
 
 var (
+	log = logger.Log
 	//ErrIllegalUID represents a invalid uid
 	ErrIllegalUID = errors.New("illegal uid")
 	// OnSessionBind represents the function called after the session in bound
 	OnSessionBind func(s *Session)
-	sessionsMap   = make(map[string]*Session)
+	sessionsByUID = make(map[string]*Session)
+	sessionsByID  = make(map[int64]*Session)
 	sessionIDSvc  = newSessionIDService()
 )
 
@@ -56,14 +62,23 @@ var (
 // Session instance related to the client will be passed to Handler method as the first
 // parameter.
 type Session struct {
-	sync.RWMutex                            // protect data
-	id               int64                  // session global unique id
-	uid              string                 // binding user id
-	lastTime         int64                  // last heartbeat time
-	entity           NetworkEntity          // low-level network entity
-	data             map[string]interface{} // session data store
-	encodedData      []byte                 // session data encoded as a byte array
-	OnCloseCallbacks []func()               //onClose callbacks
+	sync.RWMutex                             // protect data
+	id                int64                  // session global unique id
+	uid               string                 // binding user id
+	lastTime          int64                  // last heartbeat time
+	entity            NetworkEntity          // low-level network entity
+	data              map[string]interface{} // session data store
+	encodedData       []byte                 // session data encoded as a byte array
+	OnCloseCallbacks  []func()               //onClose callbacks
+	FrontendID        string                 // the id of the frontend that owns the session
+	FrontendSessionID int64                  // the id of the session on the frontend server
+}
+
+// Data to send over rpc
+type Data struct {
+	ID   int64
+	UID  string
+	Data map[string]interface{}
 }
 
 type sessionIDService struct {
@@ -84,18 +99,28 @@ func (c *sessionIDService) sessionID() int64 {
 // New returns a new session instance
 // a NetworkEntity is a low-level network instance
 func New(entity NetworkEntity) *Session {
-	return &Session{
+	s := &Session{
 		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
 		data:             make(map[string]interface{}),
 		lastTime:         time.Now().Unix(),
 		OnCloseCallbacks: []func(){},
 	}
+	sessionsByID[s.id] = s
+	return s
 }
 
 // GetSessionByUID return a session bound to an user id
 func GetSessionByUID(uid string) *Session {
-	if val, ok := sessionsMap[uid]; ok {
+	if val, ok := sessionsByUID[uid]; ok {
+		return val
+	}
+	return nil
+}
+
+// GetSessionByID return a session bound to an user id
+func GetSessionByID(id int64) *Session {
+	if val, ok := sessionsByID[id]; ok {
 		return val
 	}
 	return nil
@@ -138,6 +163,20 @@ func (s *Session) UID() string {
 	return s.uid
 }
 
+// GetData gets the data
+func (s *Session) GetData() map[string]interface{} {
+	return s.data
+}
+
+// SetData sets the whole session data
+func (s *Session) SetData(data map[string]interface{}) error {
+	s.Lock()
+	defer s.Unlock()
+
+	s.data = data
+	return s.updateEncodedData()
+}
+
 // SetUID sets uid but without binding, TODO remove this method
 // Better to have a backend session type
 func (s *Session) SetUID(uid string) {
@@ -155,12 +194,24 @@ func (s *Session) Bind(uid string) error {
 		return ErrIllegalUID
 	}
 
+	if s.UID() != "" {
+		return constants.ErrSessionAlreadyBound
+	}
+
 	s.uid = uid
 	// TODO should we overwrite or return an error if the session was already bound
 	// TODO MUTEX OR SYNCMAP!
-	sessionsMap[uid] = s
+	sessionsByUID[uid] = s
 	if OnSessionBind != nil {
 		OnSessionBind(s)
+	}
+
+	if s.FrontendID != "" {
+		err := s.bindInFront()
+		if err != nil {
+			log.Error("error while trying to push session to front: ", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -174,7 +225,8 @@ func (s *Session) OnClose(c func()) {
 // Close terminate current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
-	delete(sessionsMap, s.UID())
+	delete(sessionsByUID, s.UID())
+	delete(sessionsByID, s.ID())
 	s.entity.Close()
 }
 
@@ -464,6 +516,43 @@ func (s *Session) State() map[string]interface{} {
 	return s.data
 }
 
+func (s *Session) bindInFront() error {
+	sessionData := &Data{
+		ID:  s.FrontendSessionID,
+		UID: s.uid,
+	}
+	b, err := util.GobEncode(sessionData)
+	if err != nil {
+		return err
+	}
+	res, err := s.entity.SendRequest(s.FrontendID, constants.SessionBindRoute, b)
+	if err != nil {
+		return err
+	}
+	log.Debug("session/bindInFront Got response: ", res)
+	return nil
+
+}
+
+// PushToFront updates the session in the frontend
+func (s *Session) PushToFront() error {
+	sessionData := &Data{
+		ID:   s.FrontendSessionID,
+		UID:  s.uid,
+		Data: s.data,
+	}
+	b, err := util.GobEncode(sessionData)
+	if err != nil {
+		return err
+	}
+	res, err := s.entity.SendRequest(s.FrontendID, constants.SessionPushRoute, b)
+	if err != nil {
+		return err
+	}
+	log.Debug("session/PushToFront Got response: ", res)
+	return nil
+}
+
 // EncodedState returns the session encoded state
 func (s *Session) EncodedState() []byte {
 	return s.encodedData
@@ -477,6 +566,9 @@ func (s *Session) Restore(data map[string]interface{}) error {
 
 // RestoreEncoded restore session data from encoded valu
 func (s *Session) RestoreEncoded(encodedData []byte) error {
+	if len(encodedData) == 0 {
+		return nil
+	}
 	var data map[string]interface{}
 	err := util.GobDecode(&data, encodedData)
 	if err != nil {

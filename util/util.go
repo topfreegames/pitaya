@@ -24,7 +24,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"os"
 	"reflect"
 	"runtime"
@@ -50,7 +49,6 @@ func PcallRemote(method reflect.Method, args []reflect.Value) (rets []reflect.Va
 		}
 	}()
 
-	fmt.Printf("ARGS %v \n", args)
 	rets = method.Func.Call(args)
 	return rets, err
 }
@@ -119,6 +117,15 @@ func SerializeOrRaw(serializer serialize.Serializer, v interface{}) ([]byte, err
 func GobEncode(args ...interface{}) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte(nil))
 	if err := gob.NewEncoder(buf).Encode(args); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobEncodeSingle encodes a single value with goc
+func GobEncodeSingle(arg interface{}) ([]byte, error) {
+	buf := bytes.NewBuffer([]byte(nil))
+	if err := gob.NewEncoder(buf).Encode(arg); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

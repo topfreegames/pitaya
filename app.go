@@ -21,9 +21,11 @@
 package pitaya
 
 import (
+	"encoding/gob"
 	"os"
 	"os/signal"
 	"reflect"
+	"strings"
 	"syscall"
 
 	"time"
@@ -31,9 +33,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/remote"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/service"
@@ -142,7 +146,9 @@ func SetRPCServer(s cluster.RPCServer) {
 	app.rpcServer = s
 	if reflect.TypeOf(s) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
 		session.SetOnSessionBind(func(s *session.Session) {
-			app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
+			if app.server.Frontend {
+				app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
+			}
 		})
 	}
 }
@@ -219,11 +225,24 @@ func startDefaultRPCClient() {
 	}
 }
 
+func initSysRemotes() {
+	gob.Register(&session.Data{})
+	sys := &remote.Sys{}
+	RegisterRemote(sys,
+		component.WithName("sys"),
+		component.WithNameFunc(strings.ToLower),
+	)
+}
+
 // Start starts the app
 // TODO fix non cluster mode
 func Start() {
 	if !app.configured {
 		log.Fatal("starting app without configuring it first! call pitaya.Configure()")
+	}
+
+	if !app.server.Frontend && len(app.acceptors) > 0 {
+		log.Fatal("acceptors are not allowed on backend servers")
 	}
 
 	if app.serverMode == Cluster {
@@ -250,7 +269,7 @@ func Start() {
 			app.packetEncoder,
 			app.serializer,
 		)
-
+		initSysRemotes()
 	}
 
 	handlerService = service.NewHandlerService(

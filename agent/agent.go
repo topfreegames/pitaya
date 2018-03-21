@@ -35,6 +35,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/pipeline"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
@@ -359,6 +360,17 @@ func (a *Agent) WriteToChWrite(data []byte) {
 	a.chWrite <- data
 }
 
+// AnswerWithError answers with an error
+func AnswerWithError(a *Agent, mid uint, err error) {
+	e := a.Session.ResponseMID(mid, &map[string]interface{}{
+		"code":  500,
+		"error": err.Error(),
+	})
+	if e != nil {
+		log.Error("error answering the player with an error: ", e.Error())
+	}
+}
+
 func (a *Agent) write() {
 	// clean func
 	defer func() {
@@ -378,7 +390,8 @@ func (a *Agent) write() {
 		case data := <-a.chSend:
 			payload, err := util.SerializeOrRaw(a.serializer, data.payload)
 			if err != nil {
-				logger.Log.Error(err.Error())
+				log.Error(err.Error())
+				AnswerWithError(a, data.mid, err)
 				break
 			}
 
@@ -386,7 +399,8 @@ func (a *Agent) write() {
 				for _, h := range pipeline.AfterHandler.Handlers {
 					payload, err = h(a.Session, payload)
 					if err != nil {
-						logger.Log.Debugf("broken pipeline, error: %s", err.Error())
+						log.Debugf("broken pipeline, error: %s", err.Error())
+						AnswerWithError(a, data.mid, err)
 						break
 					}
 				}
@@ -417,4 +431,10 @@ func (a *Agent) write() {
 			return
 		}
 	}
+}
+
+// SendRequest sends a request to a server
+func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Response, error) {
+	// TODO implement
+	return nil, fmt.Errorf("not implemented")
 }

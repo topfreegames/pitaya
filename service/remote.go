@@ -171,6 +171,8 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				r.rpcClient,
 				r.encoder,
 				r.serializer,
+				r.serviceDiscovery,
+				req.FrontendID,
 			)
 			if err != nil {
 				log.Warn("pitaya/handler: cannot instantiate remote agent")
@@ -273,13 +275,13 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				r.sendReply(reply, response)
 				continue
 			}
-			buf := bytes.NewBuffer([]byte(nil))
-			if err := gob.NewEncoder(buf).Encode(ret[0].Interface()); err != nil {
+			res, err := util.GobEncodeSingle(ret[0].Interface())
+			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)
 				continue
 			}
-			response.Data = buf.Bytes()
+			response.Data = res
 			r.sendReply(reply, response)
 		}
 	}

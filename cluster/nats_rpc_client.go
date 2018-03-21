@@ -72,18 +72,16 @@ func (ns *NatsRPCClient) Call(
 	server *Server,
 ) (*protos.Response, error) {
 
-	mid := uint(0)
-	if msg.Type == message.Request {
-		mid = msg.ID
-	}
-
 	req := protos.Request{
 		Type: rpcType,
 		Msg: &protos.Msg{
-			ID:    uint64(mid),
 			Route: route.String(),
 			Data:  msg.Data,
 		},
+	}
+
+	if ns.server.Frontend {
+		req.FrontendID = ns.server.ID
 	}
 
 	switch msg.Type {
@@ -94,6 +92,11 @@ func (ns *NatsRPCClient) Call(
 	}
 
 	if rpcType == protos.RPCType_Sys {
+		mid := uint(0)
+		if msg.Type == message.Request {
+			mid = msg.ID
+		}
+		req.Msg.ID = uint64(mid)
 		req.Session = &protos.Session{
 			ID:   session.ID(),
 			Uid:  session.UID(),

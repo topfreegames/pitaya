@@ -31,6 +31,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
@@ -40,12 +41,14 @@ import (
 type Remote struct {
 	Session *session.Session // session
 	// TODO isso da pau igual no front :/ concorrencia
-	lastMid    uint                 // last message id
-	chDie      chan struct{}        // wait for close
-	reply      string               // nats reply topic
-	serializer serialize.Serializer // message serializer
-	rpcClient  cluster.RPCClient    // rpc client
-	encoder    codec.PacketEncoder  // packet encoder
+	lastMid          uint                     // last message id
+	chDie            chan struct{}            // wait for close
+	reply            string                   // nats reply topic
+	serializer       serialize.Serializer     // message serializer
+	rpcClient        cluster.RPCClient        // rpc client
+	encoder          codec.PacketEncoder      // packet encoder
+	serviceDiscovery cluster.ServiceDiscovery // service discovery
+	frontendID       string                   // the frontend that send the request
 }
 
 // NewRemote create new Remote instance
@@ -55,17 +58,23 @@ func NewRemote(
 	rpcClient cluster.RPCClient,
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
+	serviceDiscovery cluster.ServiceDiscovery,
+	frontendID string,
 ) (*Remote, error) {
 	a := &Remote{
-		chDie:      make(chan struct{}),
-		reply:      reply, // TODO this is ugly
-		serializer: serializer,
-		encoder:    encoder,
-		rpcClient:  rpcClient,
+		chDie:            make(chan struct{}),
+		reply:            reply, // TODO this is ugly
+		serializer:       serializer,
+		encoder:          encoder,
+		rpcClient:        rpcClient,
+		serviceDiscovery: serviceDiscovery,
+		frontendID:       frontendID,
 	}
 
 	// binding session
 	s := session.New(a)
+	s.FrontendID = frontendID
+	s.FrontendSessionID = sess.GetID()
 	s.SetUID(sess.GetUid())
 	err := s.RestoreEncoded(sess.GetData())
 	if err != nil {
@@ -187,4 +196,25 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 		return err
 	}
 	return a.rpcClient.Send(to, msg)
+}
+
+// SendRequest sends a request to a server
+func (a *Remote) SendRequest(serverID, reqRoute string, v interface{}) (*protos.Response, error) {
+	payload, err := util.SerializeOrRaw(a.serializer, v)
+	if err != nil {
+		return nil, err
+	}
+	msg := &message.Message{
+		Route: reqRoute,
+		Data:  payload,
+	}
+	server, err := a.serviceDiscovery.GetServer(serverID)
+	if err != nil {
+		return nil, err
+	}
+	r, err := route.Decode(reqRoute)
+	if err != nil {
+		return nil, err
+	}
+	return a.rpcClient.Call(protos.RPCType_User, r, nil, msg, server)
 }

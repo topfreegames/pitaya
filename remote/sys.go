@@ -1,4 +1,4 @@
-// Copyright (c) nano Author and TFG Co. All Rights Reserved.
+// Copyright (c) TFG Co. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,24 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package constants
+package remote
 
-const (
-	_ int32 = iota
-	// StatusStart status
-	StatusStart
-	// StatusHandshake status
-	StatusHandshake
-	// StatusWorking status
-	StatusWorking
-	// StatusClosed status
-	StatusClosed
+import (
+	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/session"
 )
 
-const (
-	// SessionPushRoute is the route used for updating session
-	SessionPushRoute = "sys.pushsession"
+// Sys contains logic for handling sys remotes
+type Sys struct {
+	component.Base
+}
 
-	// SessionBindRoute is the route used for binding session
-	SessionBindRoute = "sys.bindsession"
-)
+// BindSession binds the local session
+func (s *Sys) BindSession(sessionData *session.Data) ([]byte, error) {
+	sess := session.GetSessionByID(sessionData.ID)
+	if sess == nil {
+		return nil, constants.ErrSessionNotFound
+	}
+	if err := sess.Bind(sessionData.UID); err != nil {
+		return nil, err
+	}
+	return []byte("ack"), nil
+}
+
+// PushSession updates the local session
+func (s *Sys) PushSession(sessionData *session.Data) ([]byte, error) {
+	sess := session.GetSessionByID(sessionData.ID)
+	if sess == nil {
+		return nil, constants.ErrSessionNotFound
+	}
+	if err := sess.SetData(sessionData.Data); err != nil {
+		return nil, err
+	}
+	return []byte("ack"), nil
+}

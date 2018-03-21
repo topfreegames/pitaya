@@ -21,6 +21,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -254,7 +255,9 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 
 	handler, ok := handlers[fmt.Sprintf("%s.%s", route.Service, route.Method)]
 	if !ok {
-		log.Warnf("pitaya/handler: %s not found", msg.Route)
+		e := fmt.Sprintf("pitaya/handler: %s not found", msg.Route)
+		log.Warn(e)
+		agent.AnswerWithError(a, msg.ID, errors.New(e))
 		return
 	}
 
@@ -265,6 +268,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 			payload, err = h(a.Session, payload)
 			if err != nil {
 				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
+				agent.AnswerWithError(a, msg.ID, err)
 				return
 			}
 		}
@@ -277,7 +281,9 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		data = reflect.New(handler.Type.Elem()).Interface()
 		err := h.serializer.Unmarshal(payload, data)
 		if err != nil {
-			log.Error("deserialize error", err.Error())
+			e := fmt.Errorf("deserialize error: %s", err.Error())
+			log.Warn(e)
+			agent.AnswerWithError(a, msg.ID, e)
 			return
 		}
 	}
