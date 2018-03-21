@@ -215,6 +215,18 @@ func (s *Session) HasKey(key string) bool {
 	return has
 }
 
+// Get returns a key value
+func (s *Session) Get(key string) interface{} {
+	s.RLock()
+	defer s.RUnlock()
+
+	v, ok := s.data[key]
+	if !ok {
+		return nil
+	}
+	return v
+}
+
 // Int returns the value associated with the key as a int.
 func (s *Session) Int(key string) int {
 	s.RLock()

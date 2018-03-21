@@ -212,7 +212,13 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			//handler.processMessage()
 			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
-			util.Pcall(h.Method, args)
+			err = util.PcallHandler(h.Method, args)
+			if err != nil {
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
+			}
+
 			// TODO this is a special case and should only happen with nats rpc client
 			// because we used nats request we have to answer to it or else a timeout
 			// will happen in the caller server and will be returned to the client
@@ -220,7 +226,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			// with timeouts, maybe we can improve this flow
 			if req.GetMsg().GetType() == protos.MsgType_MsgNotify {
 				response.Data = []byte("ack")
-				r.sendReply(req.GetMsg().GetReply(), response)
+				r.sendReply(reply, response)
 			}
 
 		case req.Type == protos.RPCType_User:
@@ -256,7 +262,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				params = append(params, reflect.ValueOf(arg))
 			}
 
-			ret, err := util.PcallReturn(remote.Method, params)
+			ret, err := util.PcallRemote(remote.Method, params)
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)

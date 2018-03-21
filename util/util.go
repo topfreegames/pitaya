@@ -36,8 +36,8 @@ import (
 
 var log = logger.Log
 
-// PcallReturn call method with protected and return response
-func PcallReturn(method reflect.Method, args []reflect.Value) (rets []reflect.Value, err error) {
+// PcallRemote calls a method that returns an interface and an error and recovers in case of panic
+func PcallRemote(method reflect.Method, args []reflect.Value) (rets []reflect.Value, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Errorf("pitaya/dispatch: %v", rec)
@@ -55,20 +55,30 @@ func PcallReturn(method reflect.Method, args []reflect.Value) (rets []reflect.Va
 	return rets, err
 }
 
-// Pcall handler with protected
-func Pcall(method reflect.Method, args []reflect.Value) {
+// PcallHandler calls a method that returns an error and recovers in case of panic
+func PcallHandler(method reflect.Method, args []reflect.Value) (err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			log.Errorf("pitaya/dispatch: %v", err)
+		if rec := recover(); rec != nil {
+			log.Errorf("pitaya/dispatch: %v", rec)
 			log.Error(Stack())
+			if s, ok := rec.(string); ok {
+				err = errors.New(s)
+			} else {
+				err = errors.New("rpc call internal error")
+			}
 		}
 	}()
 
 	if r := method.Func.Call(args); len(r) > 0 {
-		if err := r[0].Interface(); err != nil {
-			log.Error(err.(error).Error())
+		v := r[0].Interface()
+		if v != nil {
+			err = v.(error)
+			if err != nil {
+				log.Error(err.Error())
+			}
 		}
 	}
+	return
 }
 
 // Pinvoke call handler with protected

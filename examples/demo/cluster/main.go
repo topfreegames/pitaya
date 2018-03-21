@@ -90,9 +90,8 @@ func (r *Room) AfterInit() {
 	})
 }
 
-// Join room
-func (r *Room) Join(s *session.Session, msg []byte) error {
-	var fakeUID string
+// InitSess inits session
+func (r *Room) InitSess(s *session.Session, msg []byte) error {
 	if s.UID() == "" {
 		fakeUID := uuid.New().String() //just use s.ID as uid !!!
 		s.Bind(fakeUID)                // binding session uid
@@ -106,6 +105,31 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 	if err != nil {
 		return err
 	}
+
+	// on session close, remove it from group
+	s.OnClose(func() {
+		r.group.Leave(s)
+	})
+	return s.Response(&JoinResponse{Result: "ok"})
+}
+
+// Join room
+func (r *Room) Join(s *session.Session, msg []byte) error {
+	var fakeUID string
+	if s.UID() == "" {
+		fakeUID := uuid.New().String() //just use s.ID as uid !!!
+		s.Bind(fakeUID)                // binding session uid
+	}
+
+	level := s.Int("level")
+	fmt.Println("LEVEL", level)
+	struc := s.Get("struct")
+	v, ok := struc.(*UserMessage)
+	if !ok {
+		return fmt.Errorf("cannot read struct")
+	}
+	fmt.Printf("STRUCT %+v \n", v)
+
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	// notify others
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", fakeUID)})

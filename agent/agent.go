@@ -335,7 +335,14 @@ func (a *Agent) read() {
 		select {
 		case m := <-a.chRecv:
 			a.lastMid = m.LastMid
-			util.Pcall(m.Handler, m.Args)
+			err := util.PcallHandler(m.Handler, m.Args)
+			if err != nil {
+				a.Session.ResponseMID(m.LastMid, &map[string]interface{}{
+					"code":  500,
+					"error": err.Error(),
+				})
+			}
+
 		case <-a.chStopRead:
 			return
 		}
