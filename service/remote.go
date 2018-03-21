@@ -85,7 +85,11 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 		return
 	}
 	data := res.Data
-	a.WriteToChWrite(data)
+	// TODO we should not return a response to a notify to the client
+	// this is becase of nats
+	if msg.Type == message.Request {
+		a.WriteToChWrite(data)
+	}
 }
 
 // RPC makes rpcs
@@ -201,6 +205,15 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
 			util.Pcall(h.Method, args)
+			// TODO this is a special case and should only happen with nats rpc client
+			// because we used nats request we have to answer to it or else a timeout
+			// will happen in the caller server and will be returned to the client
+			// the reason why we not just Publish is to keep track of failed rpc requests
+			// with timeouts, maybe we can improve this flow
+			if req.GetMsg().GetType() == protos.MsgType_MsgNotify {
+				response.Data = []byte("ack")
+				r.sendReply(req.GetMsg().GetReply(), response)
+			}
 
 		case req.Type == protos.RPCType_User:
 			reply := req.GetMsg().GetReply()

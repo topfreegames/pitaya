@@ -73,7 +73,6 @@ func (ns *NatsRPCClient) Call(
 ) (*protos.Response, error) {
 
 	mid := uint(0)
-	// TODO if response we should also pass msg id
 	if msg.Type == message.Request {
 		mid = msg.ID
 	}
@@ -86,6 +85,15 @@ func (ns *NatsRPCClient) Call(
 			Route: route.String(),
 			Data:  msg.Data,
 		},
+	}
+
+	switch msg.Type {
+	case message.Request:
+		req.Msg.Type = protos.MsgType_MsgRequest
+		break
+	case message.Notify:
+		req.Msg.Type = protos.MsgType_MsgNotify
+		break
 	}
 
 	if rpcType == protos.RPCType_Sys {

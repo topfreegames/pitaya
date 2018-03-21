@@ -7,6 +7,13 @@ enum RPCType {
   User = 1;
 }
 
+enum MsgType {
+  MsgRequest = 0;
+  MsgNotify = 1;
+  MsgResponse = 2;
+  MsgPush = 3;
+}
+
 message Push {
   string Route = 1;
   string Uid = 2;
@@ -24,6 +31,7 @@ message Msg {
   string Route = 2;
   bytes Data = 3;
   string Reply = 4;
+  MsgType Type = 5;
 }
 
 message Request {
