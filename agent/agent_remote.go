@@ -160,7 +160,14 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 	if err != nil {
 		return err
 	}
-	return a.rpcClient.Send(to, p)
+	res := &protos.Response{
+		Data: p,
+	}
+	bt, err := proto.Marshal(res)
+	if err != nil {
+		return err
+	}
+	return a.rpcClient.Send(to, bt)
 }
 
 func (a *Remote) sendPush(m pendingMessage, to string) (err error) {

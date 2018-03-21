@@ -69,7 +69,7 @@ func (ns *NatsRPCClient) Call(
 	session *session.Session,
 	msg *message.Message,
 	server *Server,
-) ([]byte, error) {
+) (*protos.Response, error) {
 
 	mid := uint(0)
 	// TODO if response we should also pass msg id
@@ -105,9 +105,13 @@ func (ns *NatsRPCClient) Call(
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("OI, CAMILA", m)
-	// TODO desprotobuffear
-	return m.Data, nil
+
+	res := &protos.Response{}
+	proto.Unmarshal(m.Data, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 // Init inits nats rpc server

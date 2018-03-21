@@ -75,13 +75,15 @@ func NewRemoteService(
 var remotes = make(map[string]*component.Remote) // all remote method
 
 func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *message.Message) {
-	var res []byte
+	var res *protos.Response
 	var err error
 	if res, err = r.remoteCall(protos.RPCType_Sys, route, a.Session, msg); err != nil {
+		// TODO return
 		log.Errorf(err.Error())
 		return
 	}
-	a.WriteToChWrite(res)
+	data := res.Data
+	a.WriteToChWrite(data)
 }
 
 // RPC makes rpcs
@@ -96,13 +98,10 @@ func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...inter
 		Data:  data,
 	}
 
-	ret, err := r.remoteCall(protos.RPCType_User, route, nil, msg)
+	res, err := r.remoteCall(protos.RPCType_User, route, nil, msg)
 	if err != nil {
 		return nil, err
 	}
-
-	res := &protos.Response{}
-	proto.Unmarshal(ret, res)
 
 	if res.Error != "" {
 		return nil, errors.New(res.Error)
@@ -149,6 +148,7 @@ func (r *RemoteService) ProcessUserPush() {
 }
 
 // ProcessRemoteMessages processes remote messages
+// TODO megazord method should be broken in smaller pieces
 func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 	// TODO need to monitor stuff here to guarantee messages are not being dropped
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
@@ -156,8 +156,9 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 		log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
 		switch {
 		case req.Type == protos.RPCType_Sys:
+			reply := req.GetMsg().GetReply()
 			a := agent.NewRemote(req.GetSession(),
-				req.GetMsg().GetReply(),
+				reply,
 				r.rpcClient,
 				r.encoder,
 				r.serializer,
@@ -166,6 +167,9 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			a.SetMID(uint(req.GetMsg().GetID()))
 			rt, err := route.Decode(req.GetMsg().GetRoute())
 			if err != nil {
+				//errMsg := fmt.Sprintf("pitaya/handler: cannot decode route %s", req.GetMsg().GetRoute())
+				//response.Error = errMsg
+				//r.sendReply(reply, response)
 				// TODO answer rpc with an error
 				continue
 			}
@@ -261,7 +265,7 @@ func (r *RemoteService) sendReply(reply string, response *protos.Response) {
 	r.rpcClient.Send(reply, p)
 }
 
-func (r *RemoteService) remoteCall(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message) ([]byte, error) {
+func (r *RemoteService) remoteCall(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message) (*protos.Response, error) {
 	svType := route.SvType
 	//TODO this logic should be elsewhere, routing should be changeable
 	serversOfType, err := r.serviceDiscovery.GetServersByType(svType)
