@@ -36,7 +36,6 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
@@ -78,8 +77,11 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 	var res *protos.Response
 	var err error
 	if res, err = r.remoteCall(protos.RPCType_Sys, route, a.Session, msg); err != nil {
-		// TODO return
 		log.Errorf(err.Error())
+		a.Session.ResponseMID(msg.ID, &map[string]interface{}{
+			"code":  500,
+			"error": err.Error(),
+		})
 		return
 	}
 	data := res.Data
@@ -140,7 +142,7 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 func (r *RemoteService) ProcessUserPush() {
 	for push := range r.rpcServer.GetUserPushChannel() {
 		s := session.GetSessionByUID(push.GetUid())
-		fmt.Printf("Got PUSH message %v %v\n", push, s == nil)
+		log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
 		if s != nil {
 			s.Push(push.Route, push.Data)
 		}
@@ -157,26 +159,27 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 		switch {
 		case req.Type == protos.RPCType_Sys:
 			reply := req.GetMsg().GetReply()
+			response := &protos.Response{}
 			a := agent.NewRemote(req.GetSession(),
 				reply,
 				r.rpcClient,
 				r.encoder,
 				r.serializer,
 			)
-			// TODO change requestID name
 			a.SetMID(uint(req.GetMsg().GetID()))
 			rt, err := route.Decode(req.GetMsg().GetRoute())
 			if err != nil {
-				//errMsg := fmt.Sprintf("pitaya/handler: cannot decode route %s", req.GetMsg().GetRoute())
-				//response.Error = errMsg
-				//r.sendReply(reply, response)
-				// TODO answer rpc with an error
+				errMsg := fmt.Sprintf("pitaya/handler: cannot decode route %s", req.GetMsg().GetRoute())
+				response.Error = errMsg
+				r.sendReply(reply, response)
 				continue
 			}
 			h, ok := handlers[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
 			if !ok {
-				log.Warnf("pitaya/handler: %s not found", req.GetMsg().GetRoute())
-				// TODO answer rpc with an error
+				errMsg := fmt.Sprintf("pitaya/handler: %s not found", req.GetMsg().GetRoute())
+				log.Warnf(errMsg)
+				response.Error = errMsg
+				r.sendReply(reply, response)
 				continue
 			}
 			var data interface{}
@@ -186,12 +189,11 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				data = reflect.New(h.Type.Elem()).Interface()
 				err := r.serializer.Unmarshal(req.GetMsg().GetData(), data)
 				if err != nil {
-					// TODO answer with error
-					logger.Log.Error("deserialize error", err.Error())
-					return
+					response.Error = err.Error()
+					r.sendReply(reply, response)
+					continue
 				}
 			}
-
 			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), data)
 			// backend session
 			// need to create agent
@@ -199,6 +201,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
 			util.Pcall(h.Method, args)
+
 		case req.Type == protos.RPCType_User:
 			reply := req.GetMsg().GetReply()
 			response := &protos.Response{}

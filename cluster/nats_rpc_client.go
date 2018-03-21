@@ -21,6 +21,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -107,9 +108,14 @@ func (ns *NatsRPCClient) Call(
 	}
 
 	res := &protos.Response{}
-	proto.Unmarshal(m.Data, res)
+	err = proto.Unmarshal(m.Data, res)
+
 	if err != nil {
 		return nil, err
+	}
+
+	if res.Error != "" {
+		return nil, errors.New(res.Error)
 	}
 	return res, nil
 }
