@@ -100,7 +100,7 @@ func (ns *NatsRPCClient) Call(
 		req.Session = &protos.Session{
 			ID:   session.ID(),
 			Uid:  session.UID(),
-			Data: session.EncodedState(),
+			Data: session.GetDataEncoded(),
 		}
 	}
 

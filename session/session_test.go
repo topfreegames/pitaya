@@ -155,7 +155,7 @@ func TestSession_State(t *testing.T) {
 	key := "testkey"
 	value := uint64(1000)
 	s.Set(key, value)
-	state := s.State()
+	state := s.GetData()
 	if value != state[key].(uint64) {
 		t.Fail()
 	}
@@ -167,8 +167,8 @@ func TestSession_Restore(t *testing.T) {
 	key := "testkey"
 	value := uint64(1000)
 	s.Set(key, value)
-	state := s.State()
-	s2.Restore(state)
+	state := s.GetData()
+	s2.SetData(state)
 	if value != s2.Uint64(key) {
 		t.Fail()
 	}

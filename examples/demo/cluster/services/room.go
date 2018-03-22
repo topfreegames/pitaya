@@ -77,8 +77,10 @@ func NewRoom() *Room {
 	}
 }
 
-// Init runs on srevice initialization
+// Init runs on service initialization
 func (r *Room) Init() {
+	// It is necessary to register all structs that will be used in RPC calls
+	// This must be done both in the caller and callee servers
 	gob.Register(&UserMessage{})
 }
 
@@ -93,7 +95,7 @@ func (r *Room) AfterInit() {
 
 // Entry is the entrypoint
 func (r *Room) Entry(s *session.Session, msg []byte) error {
-	fakeUID := uuid.New().String() //just use s.ID as uid !!!
+	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
 		return err
@@ -112,10 +114,10 @@ func (r *Room) SetSessionData(s *session.Session, data *SessionData) error {
 	if err != nil {
 		return err
 	}
+	err = s.PushToFront()
 	if err != nil {
 		return err
 	}
-	err = s.PushToFront()
 	return s.Response("success")
 }
 

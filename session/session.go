@@ -118,7 +118,7 @@ func GetSessionByUID(uid string) *Session {
 	return nil
 }
 
-// GetSessionByID return a session bound to an user id
+// GetSessionByID return a session bound to a frontend server id
 func GetSessionByID(id int64) *Session {
 	if val, ok := sessionsByID[id]; ok {
 		return val
@@ -165,6 +165,9 @@ func (s *Session) UID() string {
 
 // GetData gets the data
 func (s *Session) GetData() map[string]interface{} {
+	s.RLock()
+	defer s.RUnlock()
+
 	return s.data
 }
 
@@ -175,6 +178,24 @@ func (s *Session) SetData(data map[string]interface{}) error {
 
 	s.data = data
 	return s.updateEncodedData()
+}
+
+// GetDataEncoded returns the session data as an encoded value
+func (s *Session) GetDataEncoded() []byte {
+	return s.encodedData
+}
+
+// SetDataEncoded sets the whole session data from an encoded value
+func (s *Session) SetDataEncoded(encodedData []byte) error {
+	if len(encodedData) == 0 {
+		return nil
+	}
+	var data map[string]interface{}
+	err := util.GobDecode(&data, encodedData)
+	if err != nil {
+		return err
+	}
+	return s.SetData(data)
 }
 
 // SetUID sets uid but without binding, TODO remove this method
@@ -207,6 +228,8 @@ func (s *Session) Bind(uid string) error {
 	}
 
 	if s.FrontendID != "" {
+		// If frontentID is set this means it is a remote call and the current server
+		// is not the frontend server that received the user request
 		err := s.bindInFront()
 		if err != nil {
 			log.Error("error while trying to push session to front: ", err)
@@ -508,14 +531,6 @@ func (s *Session) Value(key string) interface{} {
 	return s.data[key]
 }
 
-// State returns all session state
-func (s *Session) State() map[string]interface{} {
-	s.RLock()
-	defer s.RUnlock()
-
-	return s.data
-}
-
 func (s *Session) bindInFront() error {
 	sessionData := &Data{
 		ID:  s.FrontendSessionID,
@@ -551,30 +566,6 @@ func (s *Session) PushToFront() error {
 	}
 	log.Debug("session/PushToFront Got response: ", res)
 	return nil
-}
-
-// EncodedState returns the session encoded state
-func (s *Session) EncodedState() []byte {
-	return s.encodedData
-}
-
-// Restore session state after reconnect
-func (s *Session) Restore(data map[string]interface{}) error {
-	s.data = data
-	return s.updateEncodedData()
-}
-
-// RestoreEncoded restore session data from encoded valu
-func (s *Session) RestoreEncoded(encodedData []byte) error {
-	if len(encodedData) == 0 {
-		return nil
-	}
-	var data map[string]interface{}
-	err := util.GobDecode(&data, encodedData)
-	if err != nil {
-		return err
-	}
-	return s.Restore(data)
 }
 
 // Clear releases all data related to current session

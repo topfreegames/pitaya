@@ -48,7 +48,7 @@ type Remote struct {
 	rpcClient        cluster.RPCClient        // rpc client
 	encoder          codec.PacketEncoder      // packet encoder
 	serviceDiscovery cluster.ServiceDiscovery // service discovery
-	frontendID       string                   // the frontend that send the request
+	frontendID       string                   // the frontend that sent the request
 }
 
 // NewRemote create new Remote instance
@@ -63,7 +63,7 @@ func NewRemote(
 ) (*Remote, error) {
 	a := &Remote{
 		chDie:            make(chan struct{}),
-		reply:            reply, // TODO this is ugly
+		reply:            reply, // TODO this is totally coupled with NATS
 		serializer:       serializer,
 		encoder:          encoder,
 		rpcClient:        rpcClient,
@@ -76,7 +76,7 @@ func NewRemote(
 	s.FrontendID = frontendID
 	s.FrontendSessionID = sess.GetID()
 	s.SetUID(sess.GetUid())
-	err := s.RestoreEncoded(sess.GetData())
+	err := s.SetDataEncoded(sess.GetData())
 	if err != nil {
 		return nil, err
 	}
