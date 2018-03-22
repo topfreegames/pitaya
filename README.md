@@ -133,8 +133,7 @@ The pitaya will remain simple, but you can perform any operations in the compone
 go get github.com/topfreegames/pitaya
 
 # dependencies
-go get -u github.com/golang/protobuf
-go get -u github.com/gorilla/websocket
+dep ensure
 ```
 
 ## Benchmark

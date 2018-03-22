@@ -145,10 +145,17 @@ func SetRPCServer(s cluster.RPCServer) {
 	//TODO
 	app.rpcServer = s
 	if reflect.TypeOf(s) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
-		session.SetOnSessionBind(func(s *session.Session) {
+		// When using nats rpc server the server must start listening to messages
+		// destined to the userID that's binding
+		session.SetOnSessionBind(func(s *session.Session) error {
 			if app.server.Frontend {
-				app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
+				subs, err := app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
+				if err != nil {
+					return err
+				}
+				s.Subscription = subs
 			}
+			return nil
 		})
 	}
 }

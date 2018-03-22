@@ -29,6 +29,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
@@ -51,7 +52,7 @@ var (
 	//ErrIllegalUID represents a invalid uid
 	ErrIllegalUID = errors.New("illegal uid")
 	// OnSessionBind represents the function called after the session in bound
-	OnSessionBind func(s *Session)
+	OnSessionBind func(s *Session) error
 	sessionsByUID = make(map[string]*Session)
 	sessionsByID  = make(map[int64]*Session)
 	sessionIDSvc  = newSessionIDService()
@@ -72,6 +73,7 @@ type Session struct {
 	OnCloseCallbacks  []func()               //onClose callbacks
 	FrontendID        string                 // the id of the frontend that owns the session
 	FrontendSessionID int64                  // the id of the session on the frontend server
+	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
 }
 
 // Data to send over rpc
@@ -224,7 +226,11 @@ func (s *Session) Bind(uid string) error {
 	// TODO MUTEX OR SYNCMAP!
 	sessionsByUID[uid] = s
 	if OnSessionBind != nil {
-		OnSessionBind(s)
+		err := OnSessionBind(s)
+		if err != nil {
+			s.uid = ""
+			return err
+		}
 	}
 
 	if s.FrontendID != "" {
@@ -233,6 +239,7 @@ func (s *Session) Bind(uid string) error {
 		err := s.bindInFront()
 		if err != nil {
 			log.Error("error while trying to push session to front: ", err)
+			s.uid = ""
 			return err
 		}
 	}
@@ -250,6 +257,15 @@ func (s *Session) OnClose(c func()) {
 func (s *Session) Close() {
 	delete(sessionsByUID, s.UID())
 	delete(sessionsByID, s.ID())
+	if s.Subscription != nil {
+		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
+		err := s.Subscription.Unsubscribe()
+		if err != nil {
+			log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
+		} else {
+			log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+		}
+	}
 	s.entity.Close()
 }
 
@@ -277,7 +293,7 @@ func (s *Session) Set(key string, value interface{}) error {
 }
 
 // SetOnSessionBind sets the method to be called when a session is bound
-func SetOnSessionBind(f func(s *Session)) {
+func SetOnSessionBind(f func(s *Session) error) {
 	OnSessionBind = f
 }
 

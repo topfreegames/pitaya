@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/serialize/json"

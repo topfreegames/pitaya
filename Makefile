@@ -9,3 +9,7 @@ run-cluster-example:
 
 run-tadpole-example:
 	@go run examples/demo/tadpole/main.go
+
+protos-compile:
+	@cd benchmark/testdata && ./gen_proto.sh
+	@cd protos && protoc --gogofaster_out=. pitaya.proto

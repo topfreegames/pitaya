@@ -61,9 +61,9 @@ func GetUserMessagesTopic(uid string) string {
 }
 
 // SubscribeToUserMessages subscribes to user msg channel
-func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) {
+func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) (*nats.Subscription, error) {
 	// TODO maybe use channels to control parallelism
-	ns.conn.Subscribe(GetUserMessagesTopic(uid), func(msg *nats.Msg) {
+	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)
 		if err != nil {
@@ -71,6 +71,10 @@ func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) {
 		}
 		ns.userPushCh <- push
 	})
+	if err != nil {
+		return nil, err
+	}
+	return subs, nil
 }
 
 func (ns *NatsRPCServer) handleMessages() {
