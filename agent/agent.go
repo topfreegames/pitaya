@@ -120,7 +120,7 @@ func NewAgent(
 	}
 
 	// bindng session
-	s := session.New(a)
+	s := session.New(a, true)
 	a.Session = s
 	a.Srv = reflect.ValueOf(s)
 

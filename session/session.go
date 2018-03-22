@@ -71,6 +71,7 @@ type Session struct {
 	data              map[string]interface{} // session data store
 	encodedData       []byte                 // session data encoded as a byte array
 	OnCloseCallbacks  []func()               //onClose callbacks
+	frontend          bool                   // if session is a frontend session
 	frontendID        string                 // the id of the frontend that owns the session
 	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
@@ -100,15 +101,18 @@ func (c *sessionIDService) sessionID() int64 {
 
 // New returns a new session instance
 // a NetworkEntity is a low-level network instance
-func New(entity NetworkEntity) *Session {
+func New(entity NetworkEntity, frontend bool) *Session {
 	s := &Session{
 		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
 		data:             make(map[string]interface{}),
 		lastTime:         time.Now().Unix(),
 		OnCloseCallbacks: []func(){},
+		frontend:         frontend,
 	}
-	sessionsByID[s.id] = s
+	if frontend {
+		sessionsByID[s.id] = s
+	}
 	return s
 }
 
@@ -210,7 +214,6 @@ func (s *Session) SetUID(uid string) {
 func (s *Session) SetFrontendData(frontendID string, frontendSessionID int64) {
 	s.frontendID = frontendID
 	s.frontendSessionID = frontendSessionID
-	delete(sessionsByID, s.id)
 }
 
 // MID returns the last message id
@@ -240,7 +243,7 @@ func (s *Session) Bind(uid string) error {
 	}
 
 	// if code running on frontend server
-	if s.frontendID == "" {
+	if s.frontend {
 		sessionsByUID[uid] = s
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
@@ -266,7 +269,7 @@ func (s *Session) OnClose(c func()) {
 func (s *Session) Close() {
 	delete(sessionsByUID, s.UID())
 	delete(sessionsByID, s.ID())
-	if s.Subscription != nil {
+	if s.frontend && s.Subscription != nil {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()
 		if err != nil {
@@ -576,6 +579,9 @@ func (s *Session) bindInFront() error {
 
 // PushToFront updates the session in the frontend
 func (s *Session) PushToFront() error {
+	if s.frontend {
+		return constants.ErrFrontSessionCantPushToFront
+	}
 	sessionData := &Data{
 		ID:   s.frontendSessionID,
 		UID:  s.uid,
