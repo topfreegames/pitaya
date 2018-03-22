@@ -51,7 +51,8 @@ func startModules() {
 	for name, mod := range modules {
 		log.Debugf("initializing module: %s", name)
 		if err := mod.Init(); err != nil {
-			log.Errorf("error starting module %s, error: %s", name, err.Error())
+			// TODO maybe configure max retries and timeout for starting a module
+			log.Fatalf("error starting module %s, error: %s", name, err.Error())
 		}
 	}
 
