@@ -29,12 +29,11 @@ import (
 
 // RPC calls a method in a different server
 func RPC(routeStr string, reply interface{}, args ...interface{}) (interface{}, error) {
+	if app.rpcServer == nil {
+		return nil, constants.ErrRPCServerNotInitialized
+	}
 	if reflect.TypeOf(reply).Kind() != reflect.Ptr {
 		return nil, constants.ErrReplyShouldBePtr
-	}
-	r, err := route.Decode(routeStr)
-	if err != nil {
-		return nil, err
 	}
 
 	if r.SvType == "" {
@@ -43,6 +42,11 @@ func RPC(routeStr string, reply interface{}, args ...interface{}) (interface{}, 
 
 	if r.SvType == app.server.Type {
 		return nil, constants.ErrRPCLocal
+	}
+
+	r, err := route.Decode(routeStr)
+	if err != nil {
+		return nil, err
 	}
 
 	return remoteService.RPC(r, reply, args...)
