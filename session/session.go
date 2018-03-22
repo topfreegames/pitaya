@@ -71,8 +71,8 @@ type Session struct {
 	data              map[string]interface{} // session data store
 	encodedData       []byte                 // session data encoded as a byte array
 	OnCloseCallbacks  []func()               //onClose callbacks
-	FrontendID        string                 // the id of the frontend that owns the session
-	FrontendSessionID int64                  // the id of the session on the frontend server
+	frontendID        string                 // the id of the frontend that owns the session
+	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
 }
 
@@ -206,6 +206,13 @@ func (s *Session) SetUID(uid string) {
 	s.uid = uid
 }
 
+// SetFrontendData sets frontend id and session id
+func (s *Session) SetFrontendData(frontendID string, frontendSessionID int64) {
+	s.frontendID = frontendID
+	s.frontendSessionID = frontendSessionID
+	delete(sessionsByID, s.id)
+}
+
 // MID returns the last message id
 func (s *Session) MID() uint {
 	return s.entity.MID()
@@ -224,7 +231,9 @@ func (s *Session) Bind(uid string) error {
 	s.uid = uid
 	// TODO should we overwrite or return an error if the session was already bound
 	// TODO MUTEX OR SYNCMAP!
-	sessionsByUID[uid] = s
+	if s.frontendID == "" {
+		sessionsByUID[uid] = s
+	}
 	if OnSessionBind != nil {
 		err := OnSessionBind(s)
 		if err != nil {
@@ -233,7 +242,7 @@ func (s *Session) Bind(uid string) error {
 		}
 	}
 
-	if s.FrontendID != "" {
+	if s.frontendID != "" {
 		// If frontentID is set this means it is a remote call and the current server
 		// is not the frontend server that received the user request
 		err := s.bindInFront()
@@ -549,14 +558,14 @@ func (s *Session) Value(key string) interface{} {
 
 func (s *Session) bindInFront() error {
 	sessionData := &Data{
-		ID:  s.FrontendSessionID,
+		ID:  s.frontendSessionID,
 		UID: s.uid,
 	}
 	b, err := util.GobEncode(sessionData)
 	if err != nil {
 		return err
 	}
-	res, err := s.entity.SendRequest(s.FrontendID, constants.SessionBindRoute, b)
+	res, err := s.entity.SendRequest(s.frontendID, constants.SessionBindRoute, b)
 	if err != nil {
 		return err
 	}
@@ -568,7 +577,7 @@ func (s *Session) bindInFront() error {
 // PushToFront updates the session in the frontend
 func (s *Session) PushToFront() error {
 	sessionData := &Data{
-		ID:   s.FrontendSessionID,
+		ID:   s.frontendSessionID,
 		UID:  s.uid,
 		Data: s.data,
 	}
@@ -576,7 +585,7 @@ func (s *Session) PushToFront() error {
 	if err != nil {
 		return err
 	}
-	res, err := s.entity.SendRequest(s.FrontendID, constants.SessionPushRoute, b)
+	res, err := s.entity.SendRequest(s.frontendID, constants.SessionPushRoute, b)
 	if err != nil {
 		return err
 	}

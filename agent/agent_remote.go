@@ -73,8 +73,7 @@ func NewRemote(
 
 	// binding session
 	s := session.New(a)
-	s.FrontendID = frontendID
-	s.FrontendSessionID = sess.GetID()
+	s.SetFrontendData(frontendID, sess.GetID())
 	s.SetUID(sess.GetUid())
 	err := s.SetDataEncoded(sess.GetData())
 	if err != nil {
