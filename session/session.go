@@ -231,9 +231,6 @@ func (s *Session) Bind(uid string) error {
 	s.uid = uid
 	// TODO should we overwrite or return an error if the session was already bound
 	// TODO MUTEX OR SYNCMAP!
-	if s.frontendID == "" {
-		sessionsByUID[uid] = s
-	}
 	if OnSessionBind != nil {
 		err := OnSessionBind(s)
 		if err != nil {
@@ -242,7 +239,10 @@ func (s *Session) Bind(uid string) error {
 		}
 	}
 
-	if s.frontendID != "" {
+	// if code running on frontend server
+	if s.frontendID == "" {
+		sessionsByUID[uid] = s
+	} else {
 		// If frontentID is set this means it is a remote call and the current server
 		// is not the frontend server that received the user request
 		err := s.bindInFront()

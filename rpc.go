@@ -36,17 +36,17 @@ func RPC(routeStr string, reply interface{}, args ...interface{}) (interface{}, 
 		return nil, constants.ErrReplyShouldBePtr
 	}
 
+	r, err := route.Decode(routeStr)
+	if err != nil {
+		return nil, err
+	}
+
 	if r.SvType == "" {
 		r.SvType = app.server.Type
 	}
 
 	if r.SvType == app.server.Type {
 		return nil, constants.ErrRPCLocal
-	}
-
-	r, err := route.Decode(routeStr)
-	if err != nil {
-		return nil, err
 	}
 
 	return remoteService.RPC(r, reply, args...)
