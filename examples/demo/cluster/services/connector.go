@@ -23,17 +23,25 @@ type SessionData struct {
 }
 
 // GetSessionData gets the session data
-func (c *Connector) GetSessionData(s *session.Session, data *SessionData) error {
-	return s.Response(s.GetData())
+func (c *Connector) GetSessionData(s *session.Session, data *SessionData) (map[string]interface{}, error) {
+	return s.GetData(), nil
 }
 
 // SetSessionData sets the session data
-func (c *Connector) SetSessionData(s *session.Session, data *SessionData) error {
+func (c *Connector) SetSessionData(s *session.Session, data *SessionData) (string, error) {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return s.Response("success")
+	return "success", nil
+}
+
+// NotifySessionData sets the session data
+func (c *Connector) NotifySessionData(s *session.Session, data *SessionData) {
+	err := s.SetData(data.Data)
+	if err != nil {
+		fmt.Println("got error on notify", err)
+	}
 }
 
 // RemoteFunc is a function that will be called remotelly

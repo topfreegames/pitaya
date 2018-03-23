@@ -41,10 +41,9 @@ import (
 type Remote struct {
 	Session *session.Session // session
 	// TODO isso da pau igual no front :/ concorrencia
-	lastMid          uint                     // last message id
 	chDie            chan struct{}            // wait for close
 	reply            string                   // nats reply topic
-	serializer       serialize.Serializer     // message serializer
+	Serializer       serialize.Serializer     // message serializer
 	rpcClient        cluster.RPCClient        // rpc client
 	encoder          codec.PacketEncoder      // packet encoder
 	serviceDiscovery cluster.ServiceDiscovery // service discovery
@@ -64,7 +63,7 @@ func NewRemote(
 	a := &Remote{
 		chDie:            make(chan struct{}),
 		reply:            reply, // TODO this is totally coupled with NATS
-		serializer:       serializer,
+		Serializer:       serializer,
 		encoder:          encoder,
 		rpcClient:        rpcClient,
 		serviceDiscovery: serviceDiscovery,
@@ -101,19 +100,6 @@ func (a *Remote) Push(route string, v interface{}) error {
 	)
 }
 
-// SetMID sets the lastMid
-func (a *Remote) SetMID(mid uint) {
-	a.lastMid = mid
-}
-
-// MID gets the lastMid
-func (a *Remote) MID() uint { return a.lastMid }
-
-// Response responds to the player
-func (a *Remote) Response(v interface{}) error {
-	return a.ResponseMID(a.lastMid, v)
-}
-
 // ResponseMID reponds the message with mid to the player
 func (a *Remote) ResponseMID(mid uint, v interface{}) error {
 	if mid <= 0 {
@@ -139,7 +125,7 @@ func (a *Remote) Close() error { return nil }
 func (a *Remote) RemoteAddr() net.Addr { return nil }
 
 func (a *Remote) serialize(m pendingMessage) ([]byte, error) {
-	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
+	payload, err := util.SerializeOrRaw(a.Serializer, m.payload)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +167,7 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 }
 
 func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
-	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
+	payload, err := util.SerializeOrRaw(a.Serializer, m.payload)
 	if err != nil {
 		return err
 	}
@@ -199,7 +185,7 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 
 // SendRequest sends a request to a server
 func (a *Remote) SendRequest(serverID, reqRoute string, v interface{}) (*protos.Response, error) {
-	payload, err := util.SerializeOrRaw(a.serializer, v)
+	payload, err := util.SerializeOrRaw(a.Serializer, v)
 	if err != nil {
 		return nil, err
 	}

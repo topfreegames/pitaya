@@ -77,7 +77,7 @@ type Message struct {
 
 // UnhandledMessage struct
 type UnhandledMessage struct {
-	LastMid uint
+	Mid     uint
 	Handler reflect.Method
 	Args    []reflect.Value
 }

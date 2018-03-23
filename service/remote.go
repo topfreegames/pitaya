@@ -32,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
@@ -86,11 +87,11 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 		})
 		return
 	}
-	data := res.Data
+
 	// TODO we should not return a response to a notify to the client
 	// this is becase of nats
 	if msg.Type == message.Request {
-		a.WriteToChWrite(data)
+		a.Session.ResponseMID(msg.ID, res.Data)
 	}
 }
 
@@ -182,7 +183,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				r.sendReply(reply, response)
 				continue
 			}
-			a.SetMID(uint(req.GetMsg().GetID()))
+
 			rt, err := route.Decode(req.GetMsg().GetRoute())
 			if err != nil {
 				errMsg := fmt.Sprintf("pitaya/handler: cannot decode route %s", req.GetMsg().GetRoute())
@@ -198,6 +199,28 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				r.sendReply(reply, response)
 				continue
 			}
+
+			var msgType message.Type
+			switch req.GetMsg().GetType() {
+			case protos.MsgType_MsgRequest:
+				msgType = message.Request
+			case protos.MsgType_MsgNotify:
+				msgType = message.Notify
+			}
+
+			if h.MessageType != msgType {
+				var e error
+				switch req.GetMsg().GetType() {
+				case protos.MsgType_MsgRequest:
+					response.Error = constants.ErrRequestOnNotify.Error()
+					r.sendReply(reply, response)
+					continue
+				case protos.MsgType_MsgNotify:
+					e = constants.ErrNotifyOnRequest
+					log.Warn(e)
+				}
+			}
+
 			var data interface{}
 			if h.IsRawArg {
 				data = req.GetMsg().GetData()
@@ -216,7 +239,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			//handler.processMessage()
 			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
-			err = util.PcallHandler(h.Method, args)
+			resp, err := util.PcallHandler(h.Method, args)
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)
@@ -231,7 +254,18 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			if req.GetMsg().GetType() == protos.MsgType_MsgNotify {
 				response.Data = []byte("ack")
 				r.sendReply(reply, response)
+				continue
 			}
+
+			ret, err := util.SerializeOrRaw(a.Serializer, resp)
+			if err != nil {
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
+			}
+
+			response.Data = ret
+			r.sendReply(reply, response)
 
 		case req.Type == protos.RPCType_User:
 			reply := req.GetMsg().GetReply()

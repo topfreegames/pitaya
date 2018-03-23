@@ -60,7 +60,6 @@ type (
 		// regular agent member
 		Session          *session.Session               // session
 		Conn             net.Conn                       // low-level conn fd
-		lastMid          uint                           // last message id
 		state            int32                          // current agent state
 		chDie            chan struct{}                  // wait for close
 		chSend           chan pendingMessage            // push message queue
@@ -72,7 +71,7 @@ type (
 		lastAt           int64                          // last heartbeat unix time stamp
 		decoder          codec.PacketDecoder            // binary decoder
 		encoder          codec.PacketEncoder            // binary encoder
-		serializer       serialize.Serializer           // message serializer
+		Serializer       serialize.Serializer           // message serializer
 		appDieChan       chan bool                      // app die channel
 		heartbeatTimeout time.Duration
 
@@ -114,7 +113,7 @@ func NewAgent(
 		chRecv:           make(chan *message.UnhandledMessage),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
-		serializer:       serializer,
+		Serializer:       serializer,
 		heartbeatTimeout: heartbeatTime,
 		appDieChan:       dieChan,
 	}
@@ -137,11 +136,6 @@ func (a *Agent) send(m pendingMessage) (err error) {
 	return
 }
 
-// MID gets the last message id
-func (a *Agent) MID() uint {
-	return a.lastMid
-}
-
 // Push implementation for session.NetworkEntity interface
 func (a *Agent) Push(route string, v interface{}) error {
 	if a.GetStatus() == constants.StatusClosed {
@@ -162,12 +156,6 @@ func (a *Agent) Push(route string, v interface{}) error {
 	}
 
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
-}
-
-// Response implementation for session.NetworkEntity interface
-// Response message to session
-func (a *Agent) Response(v interface{}) error {
-	return a.ResponseMID(a.lastMid, v)
 }
 
 // ResponseMID implementation for session.NetworkEntity interface
@@ -335,13 +323,14 @@ func (a *Agent) read() {
 	for {
 		select {
 		case m := <-a.chRecv:
-			a.lastMid = m.LastMid
-			err := util.PcallHandler(m.Handler, m.Args)
+			ret, err := util.PcallHandler(m.Handler, m.Args)
 			if err != nil {
-				a.Session.ResponseMID(m.LastMid, &map[string]interface{}{
+				a.Session.ResponseMID(m.Mid, &map[string]interface{}{
 					"code":  500,
 					"error": err.Error(),
 				})
+			} else {
+				a.Session.ResponseMID(m.Mid, ret)
 			}
 
 		case <-a.chStopRead:
@@ -388,7 +377,7 @@ func (a *Agent) write() {
 			}
 
 		case data := <-a.chSend:
-			payload, err := util.SerializeOrRaw(a.serializer, data.payload)
+			payload, err := util.SerializeOrRaw(a.Serializer, data.payload)
 			if err != nil {
 				log.Error(err.Error())
 				AnswerWithError(a, data.mid, err)

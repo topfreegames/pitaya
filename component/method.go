@@ -25,6 +25,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/session"
 )
 
@@ -56,6 +57,12 @@ func isRemoteMethod(method reflect.Method) bool {
 	if (mt.Out(0).Kind() != reflect.Ptr && mt.Out(0) != typeOfBytes) || mt.Out(1) != typeOfError {
 		return false
 	}
+
+	// Validate it is not a handler method
+	if isHandlerMethod(method) {
+		return false
+	}
+
 	return true
 }
 
@@ -72,18 +79,23 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Method needs one outs: error
-	if mt.NumOut() != 1 {
-		return false
-	}
-
 	if t1 := mt.In(1); t1.Kind() != reflect.Ptr || t1 != typeOfSession {
 		return false
 	}
 
-	if (mt.In(2).Kind() != reflect.Ptr && mt.In(2) != typeOfBytes) || mt.Out(0) != typeOfError {
+	if mt.In(2).Kind() != reflect.Ptr && mt.In(2) != typeOfBytes {
 		return false
 	}
+
+	// Method needs either no out or two outs: interface{}(or []byte), error
+	if mt.NumOut() != 0 && mt.NumOut() != 2 {
+		return false
+	}
+
+	if mt.NumOut() == 2 && mt.Out(1) != typeOfError {
+		return false
+	}
+
 	return true
 }
 
@@ -118,7 +130,18 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[
 			if nameFunc != nil {
 				mn = nameFunc(mn)
 			}
-			methods[mn] = &Handler{Method: method, Type: mt.In(2), IsRawArg: raw}
+			var msgType message.Type
+			if mt.NumOut() == 0 {
+				msgType = message.Notify
+			} else {
+				msgType = message.Request
+			}
+			methods[mn] = &Handler{
+				Method:      method,
+				Type:        mt.In(2),
+				IsRawArg:    raw,
+				MessageType: msgType,
+			}
 		}
 	}
 	return methods

@@ -83,7 +83,7 @@ func (r *Room) AfterInit() {
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) error {
+func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
 	fakeUID := s.ID()                  //just use s.ID as uid !!!
 	s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
 
@@ -98,12 +98,15 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 		r.group.Leave(s)
 	})
 
-	return s.Response(&JoinResponse{Result: "success"})
+	return &JoinResponse{Result: "success"}, nil
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) error {
-	return r.group.Broadcast("onMessage", msg)
+func (r *Room) Message(s *session.Session, msg *UserMessage) {
+	err := r.group.Broadcast("onMessage", msg)
+	if err != nil {
+		fmt.Println("error broadcasting message", err)
+	}
 }
 
 func main() {

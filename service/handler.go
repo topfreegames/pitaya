@@ -245,12 +245,12 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 }
 
 func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *message.Message) {
-	var lastMid uint
+	var mid uint
 	switch msg.Type {
 	case message.Request:
-		lastMid = msg.ID
+		mid = msg.ID
 	case message.Notify:
-		lastMid = 0
+		mid = 0
 	}
 
 	handler, ok := handlers[fmt.Sprintf("%s.%s", route.Service, route.Method)]
@@ -259,6 +259,19 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		log.Warn(e)
 		agent.AnswerWithError(a, msg.ID, errors.New(e))
 		return
+	}
+
+	if handler.MessageType != msg.Type {
+		var e error
+		switch msg.Type {
+		case message.Request:
+			e = constants.ErrRequestOnNotify
+			agent.AnswerWithError(a, msg.ID, e)
+			return
+		case message.Notify:
+			e = constants.ErrNotifyOnRequest
+			log.Warn(e)
+		}
 	}
 
 	var payload = msg.Data
@@ -292,7 +305,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 
 	args := []reflect.Value{handler.Receiver, a.Srv, reflect.ValueOf(data)}
 	a.WriteToChRecv(&message.UnhandledMessage{
-		LastMid: lastMid,
+		Mid:     mid,
 		Handler: handler.Method,
 		Args:    args,
 	})

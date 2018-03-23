@@ -23,15 +23,18 @@ package component
 import (
 	"errors"
 	"reflect"
+
+	"github.com/topfreegames/pitaya/internal/message"
 )
 
 type (
 	//Handler represents a message.Message's handler's meta information.
 	Handler struct {
-		Receiver reflect.Value  // receiver of method
-		Method   reflect.Method // method stub
-		Type     reflect.Type   // low-level type of method
-		IsRawArg bool           // whether the data need to serialize
+		Receiver    reflect.Value  // receiver of method
+		Method      reflect.Method // method stub
+		Type        reflect.Type   // low-level type of method
+		IsRawArg    bool           // whether the data need to serialize
+		MessageType message.Type   // handler allowed message type (either request or notify)
 	}
 
 	//Remote represents remote's meta information.

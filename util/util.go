@@ -53,8 +53,8 @@ func PcallRemote(method reflect.Method, args []reflect.Value) (rets []reflect.Va
 	return rets, err
 }
 
-// PcallHandler calls a method that returns an error and recovers in case of panic
-func PcallHandler(method reflect.Method, args []reflect.Value) (err error) {
+// PcallHandler calls a method that returns an interface and an error and recovers in case of panic
+func PcallHandler(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Errorf("pitaya/dispatch: %v", rec)
@@ -67,13 +67,15 @@ func PcallHandler(method reflect.Method, args []reflect.Value) (err error) {
 		}
 	}()
 
-	if r := method.Func.Call(args); len(r) > 0 {
-		v := r[0].Interface()
-		if v != nil {
+	r := method.Func.Call(args)
+	if len(r) > 0 {
+		if v := r[1].Interface(); v != nil {
 			err = v.(error)
 			if err != nil {
 				log.Error(err.Error())
 			}
+		} else {
+			rets = r[0].Interface()
 		}
 	}
 	return

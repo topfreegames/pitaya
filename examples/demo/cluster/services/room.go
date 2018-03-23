@@ -93,47 +93,51 @@ func (r *Room) AfterInit() {
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session, msg []byte) error {
+func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return s.Response(&JoinResponse{Result: "ok"})
+	resp := &JoinResponse{Result: "ok"}
+	return resp, nil
 }
 
 // GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session, msg []byte) error {
-	return s.Response(s.GetData())
+func (r *Room) GetSessionData(s *session.Session, msg []byte) (map[string]interface{}, error) {
+	return s.GetData(), nil
 }
 
 // SetSessionData sets the session data
-func (r *Room) SetSessionData(s *session.Session, data *SessionData) error {
+func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = s.PushToFront()
 	if err != nil {
-		return err
+		return "", err
 	}
-	return s.Response("success")
+	return "success", nil
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) error {
+func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	r.group.Add(s)
 	s.OnClose(func() {
 		r.group.Leave(s)
 	})
-	return s.Response(&JoinResponse{Result: "success"})
+	return &JoinResponse{Result: "success"}, nil
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) error {
-	return r.group.Broadcast("onMessage", msg)
+func (r *Room) Message(s *session.Session, msg *UserMessage) {
+	err := r.group.Broadcast("onMessage", msg)
+	if err != nil {
+		fmt.Println("error broadcasting message", err)
+	}
 }
 
 // SendRPC sends rpc
