@@ -23,7 +23,7 @@ type SessionData struct {
 }
 
 // GetSessionData gets the session data
-func (c *Connector) GetSessionData(s *session.Session, data *SessionData) (map[string]interface{}, error) {
+func (c *Connector) GetSessionData(s *session.Session) (map[string]interface{}, error) {
 	return s.GetData(), nil
 }
 

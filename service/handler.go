@@ -290,7 +290,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 	var data interface{}
 	if handler.IsRawArg {
 		data = payload
-	} else {
+	} else if handler.Type != nil {
 		data = reflect.New(handler.Type.Elem()).Interface()
 		err := h.serializer.Unmarshal(payload, data)
 		if err != nil {
@@ -300,10 +300,12 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 			return
 		}
 	}
-
 	log.Debugf("UID=%d, Message={%s}, Data=%+v", a.Session.UID(), msg.String(), data)
 
-	args := []reflect.Value{handler.Receiver, a.Srv, reflect.ValueOf(data)}
+	args := []reflect.Value{handler.Receiver, a.Srv}
+	if data != nil {
+		args = append(args, reflect.ValueOf(data))
+	}
 	a.WriteToChRecv(&message.UnhandledMessage{
 		Mid:     mid,
 		Handler: handler.Method,

@@ -74,8 +74,8 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Method needs three ins: receiver, *Session, []byte or pointer.
-	if mt.NumIn() != 3 {
+	// Method needs two or three ins: receiver, *Session and optional []byte or pointer.
+	if mt.NumIn() != 2 && mt.NumIn() != 3 {
 		return false
 	}
 
@@ -83,7 +83,7 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	if mt.In(2).Kind() != reflect.Ptr && mt.In(2) != typeOfBytes {
+	if mt.NumIn() == 3 && mt.In(2).Kind() != reflect.Ptr && mt.In(2) != typeOfBytes {
 		return false
 	}
 
@@ -123,7 +123,7 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[
 		mn := method.Name
 		if isHandlerMethod(method) {
 			raw := false
-			if mt.In(2) == typeOfBytes {
+			if mt.NumIn() == 3 && mt.In(2) == typeOfBytes {
 				raw = true
 			}
 			// rewrite handler name
@@ -136,12 +136,15 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[
 			} else {
 				msgType = message.Request
 			}
-			methods[mn] = &Handler{
+			handler := &Handler{
 				Method:      method,
-				Type:        mt.In(2),
 				IsRawArg:    raw,
 				MessageType: msgType,
 			}
+			if mt.NumIn() == 3 {
+				handler.Type = mt.In(2)
+			}
+			methods[mn] = handler
 		}
 	}
 	return methods

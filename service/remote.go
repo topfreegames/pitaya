@@ -224,7 +224,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			var data interface{}
 			if h.IsRawArg {
 				data = req.GetMsg().GetData()
-			} else {
+			} else if h.Type != nil {
 				data = reflect.New(h.Type.Elem()).Interface()
 				err := r.serializer.Unmarshal(req.GetMsg().GetData(), data)
 				if err != nil {
@@ -234,11 +234,15 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				}
 			}
 			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), data)
+
 			// backend session
 			// need to create agent
-			//handler.processMessage()
+			// handler.processMessage()
 			// user request proxied from frontend server
-			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session), reflect.ValueOf(data)}
+			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session)}
+			if data != nil {
+				args = append(args, reflect.ValueOf(data))
+			}
 			resp, err := util.PcallHandler(h.Method, args)
 			if err != nil {
 				response.Error = err.Error()
