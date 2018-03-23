@@ -163,7 +163,10 @@ func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (
 // GetServersByType returns a slice with all the servers of a certain type
 func (sd *etcdServiceDiscovery) GetServersByType(serverType string) ([]*Server, error) {
 	if list, ok := sd.serverMapByType.Load(serverType); ok {
-		return list.([]*Server), nil
+		l := list.([]*Server)
+		if len(l) > 0 {
+			return l, nil
+		}
 	}
 	return nil, fmt.Errorf("couldn't find servers with type: %s", serverType)
 }

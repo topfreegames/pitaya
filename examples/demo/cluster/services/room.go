@@ -34,10 +34,9 @@ type (
 		inboundBytes  int
 	}
 
-	// RPCMessage represents a rpc message
-	RPCMessage struct {
-		ServerID string `json:"serverID"`
-		Data     string `json:"data"`
+	// RPCResponse represents a rpc message
+	RPCResponse struct {
+		Msg string `json:"msg"`
 	}
 
 	// NewUser message will be received when new user join room
@@ -138,19 +137,14 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) error {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg *RPCMessage) error {
-	mmsg := &UserMessage{
-		Name:    "funciona",
-		Content: "vai funcionar",
-	}
-	b := true
-	str := "AE PQP"
-	res, err := pitaya.RPC("room.room.messageremote", &UserMessage{}, mmsg, b, str)
+func (r *Room) SendRPC(s *session.Session, msg []byte) error {
+	ret := RPCResponse{}
+	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, "teste")
 	if err != nil {
 		fmt.Printf("rpc error: %s\n", err)
 		return err
 	}
-	fmt.Printf("rpc res %s\n", res)
+	fmt.Printf("rpc ret: %s\n", ret)
 	return nil
 }
 

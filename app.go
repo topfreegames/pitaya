@@ -38,6 +38,8 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/remote"
+	"github.com/topfreegames/pitaya/route"
+	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/service"
@@ -70,6 +72,7 @@ type App struct {
 	serviceDiscovery cluster.ServiceDiscovery
 	rpcServer        cluster.RPCServer
 	rpcClient        cluster.RPCClient
+	router           *router.Router
 	serverMode       ServerMode
 	onSessionBind    func(*session.Session)
 	configured       bool
@@ -93,6 +96,7 @@ var (
 		serverMode:    Standalone,
 		serializer:    protobuf.NewSerializer(),
 		configured:    false,
+		router:        router.New(),
 	}
 	log = logger.Log
 
@@ -269,12 +273,15 @@ func Start() {
 			RegisterModule(app.rpcClient, "rpcClient")
 		}
 
+		app.router.SetServiceDiscovery(app.serviceDiscovery)
+
 		remoteService = service.NewRemoteService(
 			app.rpcClient,
 			app.rpcServer,
 			app.serviceDiscovery,
 			app.packetEncoder,
 			app.serializer,
+			app.router,
 		)
 		initSysRemotes()
 	}
@@ -351,6 +358,23 @@ func listen() {
 // SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
 func SetDictionary(dict map[string]uint16) {
 	message.SetDictionary(dict)
+}
+
+// AddRoute adds a routing function to a server type
+// TODO calling this method with the server already running is VERY dangerous
+func AddRoute(
+	serverType string,
+	routingFunction func(
+		session *session.Session,
+		route *route.Route,
+		servers []*cluster.Server,
+	) (*cluster.Server, error),
+) {
+	if app.router != nil {
+		app.router.AddRoute(serverType, routingFunction)
+	} else {
+		log.Warn("ignoring route add as app router is nil")
+	}
 }
 
 // Shutdown send a signal to let 'pitaya' shutdown itself.

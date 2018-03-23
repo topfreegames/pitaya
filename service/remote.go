@@ -25,9 +25,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"math/rand"
 	"reflect"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -38,6 +36,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
+	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
@@ -51,6 +50,7 @@ type RemoteService struct {
 	encoder          codec.PacketEncoder
 	rpcClient        cluster.RPCClient
 	services         map[string]*component.Service // all registered service
+	router           *router.Router
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -60,6 +60,7 @@ func NewRemoteService(
 	sd cluster.ServiceDiscovery,
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
+	router *router.Router,
 ) *RemoteService {
 	return &RemoteService{
 		services:         make(map[string]*component.Service),
@@ -68,6 +69,7 @@ func NewRemoteService(
 		encoder:          encoder,
 		serviceDiscovery: sd,
 		serializer:       serializer,
+		router:           router,
 	}
 }
 
@@ -93,10 +95,10 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 }
 
 // RPC makes rpcs
-func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...interface{}) (interface{}, error) {
+func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...interface{}) error {
 	data, err := util.GobEncode(args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	msg := &message.Message{
 		Type:  message.Request,
@@ -106,18 +108,18 @@ func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...inter
 
 	res, err := r.remoteCall(protos.RPCType_User, route, nil, msg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if res.Error != "" {
-		return nil, errors.New(res.Error)
+		return errors.New(res.Error)
 	}
 
 	err = util.GobDecode(reply, res.GetData())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return reply, nil
+	return nil
 }
 
 // Register registers components
@@ -297,19 +299,20 @@ func (r *RemoteService) sendReply(reply string, response *protos.Response) {
 	r.rpcClient.Send(reply, p)
 }
 
-func (r *RemoteService) remoteCall(rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message) (*protos.Response, error) {
+func (r *RemoteService) remoteCall(
+	rpcType protos.RPCType,
+	route *route.Route,
+	session *session.Session,
+	msg *message.Message,
+) (*protos.Response, error) {
 	svType := route.SvType
-	//TODO this logic should be elsewhere, routing should be changeable
-	serversOfType, err := r.serviceDiscovery.GetServersByType(svType)
+
+	target, err := r.router.Route(rpcType, svType, session, route)
 	if err != nil {
 		return nil, err
 	}
 
-	s := rand.NewSource(time.Now().Unix())
-	rnd := rand.New(s)
-	server := serversOfType[rnd.Intn(len(serversOfType))]
-
-	res, err := r.rpcClient.Call(rpcType, route, session, msg, server)
+	res, err := r.rpcClient.Call(rpcType, route, session, msg, target)
 	if err != nil {
 		return nil, err
 	}

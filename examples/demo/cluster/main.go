@@ -8,9 +8,12 @@ import (
 
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
+	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
+	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/session"
 )
 
 func configureBackend() {
@@ -36,13 +39,26 @@ func configureFrontend(port int) {
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
-	pitaya.AddAcceptor(ws)
+	pitaya.RegisterRemote(&services.ConnectorRemote{},
+		component.WithName("connectorremote"),
+		component.WithNameFunc(strings.ToLower),
+	)
 
+	pitaya.AddRoute("room", func(
+		session *session.Session,
+		route *route.Route,
+		servers []*cluster.Server,
+	) (*cluster.Server, error) {
+		// will return the first server
+		return servers[0], nil
+	})
+
+	pitaya.AddAcceptor(ws)
 }
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
-	svType := flag.String("type", "game", "the server type")
+	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 
 	flag.Parse()
