@@ -47,10 +47,13 @@ func configureFrontend(port int) {
 	pitaya.AddRoute("room", func(
 		session *session.Session,
 		route *route.Route,
-		servers []*cluster.Server,
+		servers map[string]*cluster.Server,
 	) (*cluster.Server, error) {
 		// will return the first server
-		return servers[0], nil
+		for k := range servers {
+			return servers[k], nil
+		}
+		return nil, nil
 	})
 
 	pitaya.AddAcceptor(ws)

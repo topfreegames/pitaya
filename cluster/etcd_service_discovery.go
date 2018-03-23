@@ -111,25 +111,13 @@ func (sd *etcdServiceDiscovery) BeforeShutdown() {
 }
 
 func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
-	toDelete := -1
 	if actual, ok := sd.serverMapByID.Load(serverID); ok {
 		sv := actual.(*Server)
 		sd.serverMapByID.Delete(sv.ID)
-		if svList, ok := sd.serverMapByType.Load(sv.Type); ok {
-			list := svList.([]*Server)
-			for i, sv := range list {
-				if sv.ID == serverID {
-					toDelete = i
-				}
-			}
-			if toDelete > -1 {
-				list[toDelete] = list[len(list)-1]
-				list[len(list)-1] = nil
-				list = list[:len(list)-1]
-				sd.serverMapByType.Store(sv.Type, list)
-			}
+		if svMap, ok := sd.serverMapByType.Load(sv.Type); ok {
+			sm := svMap.(map[string]*Server)
+			delete(sm, sv.ID)
 		}
-
 	}
 }
 
@@ -161,11 +149,11 @@ func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (
 }
 
 // GetServersByType returns a slice with all the servers of a certain type
-func (sd *etcdServiceDiscovery) GetServersByType(serverType string) ([]*Server, error) {
-	if list, ok := sd.serverMapByType.Load(serverType); ok {
-		l := list.([]*Server)
-		if len(l) > 0 {
-			return l, nil
+func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]*Server, error) {
+	if m, ok := sd.serverMapByType.Load(serverType); ok {
+		sm := m.(map[string]*Server)
+		if len(sm) > 0 {
+			return sm, nil
 		}
 	}
 	return nil, fmt.Errorf("couldn't find servers with type: %s", serverType)
@@ -338,12 +326,12 @@ func (sd *etcdServiceDiscovery) Stop() {
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 	if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
-		listSvByType, ok := sd.serverMapByType.Load(sv.Type)
+		mapSvByType, ok := sd.serverMapByType.Load(sv.Type)
 		if !ok {
-			listSvByType = []*Server{}
+			mapSvByType = make(map[string]*Server)
+			sd.serverMapByType.Store(sv.Type, mapSvByType)
 		}
-		listSvByType = append(listSvByType.([]*Server), sv)
-		sd.serverMapByType.Store(sv.Type, listSvByType)
+		mapSvByType.(map[string]*Server)[sv.ID] = sv
 	}
 }
 

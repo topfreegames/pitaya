@@ -40,7 +40,7 @@ type Router struct {
 	routesMap        map[string]func(
 		session *session.Session,
 		route *route.Route,
-		servers []*cluster.Server,
+		servers map[string]*cluster.Server,
 	) (*cluster.Server, error)
 }
 
@@ -50,7 +50,7 @@ func New() *Router {
 		routesMap: make(map[string]func(
 			session *session.Session,
 			route *route.Route,
-			servers []*cluster.Server,
+			servers map[string]*cluster.Server,
 		) (*cluster.Server, error)),
 	}
 }
@@ -62,11 +62,15 @@ func (r *Router) SetServiceDiscovery(sd cluster.ServiceDiscovery) {
 
 func (r *Router) defaultRoute(
 	svType string,
-	servers []*cluster.Server,
+	servers map[string]*cluster.Server,
 ) (*cluster.Server, error) {
+	srvList := make([]*cluster.Server, 0)
 	s := rand.NewSource(time.Now().Unix())
 	rnd := rand.New(s)
-	server := servers[rnd.Intn(len(servers))]
+	for _, v := range servers {
+		srvList = append(srvList, v)
+	}
+	server := srvList[rnd.Intn(len(srvList))]
 	return server, nil
 }
 
@@ -102,7 +106,7 @@ func (r *Router) AddRoute(
 	routingFunction func(
 		session *session.Session,
 		route *route.Route,
-		servers []*cluster.Server,
+		servers map[string]*cluster.Server,
 	) (*cluster.Server, error),
 ) {
 	if _, ok := r.routesMap[serverType]; ok {

@@ -367,7 +367,7 @@ func AddRoute(
 	routingFunction func(
 		session *session.Session,
 		route *route.Route,
-		servers []*cluster.Server,
+		servers map[string]*cluster.Server,
 	) (*cluster.Server, error),
 ) {
 	if app.router != nil {

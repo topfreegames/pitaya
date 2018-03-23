@@ -4,8 +4,11 @@ setup:
 run-chat-example:
 	@go run examples/demo/chat/main.go
 
-run-cluster-example:
+run-cluster-example-frontend:
 	@go run examples/demo/cluster/main.go
+
+run-cluster-example-backend:
+	@go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-tadpole-example:
 	@go run examples/demo/tadpole/main.go
