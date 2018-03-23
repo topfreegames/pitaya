@@ -164,3 +164,12 @@ func Stack() string {
 	})
 	return s[index+1:]
 }
+
+// GetErrorPayload creates and serializes an error payload
+func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
+	errPayload := &map[string]interface{}{
+		"code":  500,
+		"error": err.Error(),
+	}
+	return SerializeOrRaw(serializer, errPayload)
+}

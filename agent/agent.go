@@ -380,17 +380,20 @@ func (a *Agent) write() {
 			payload, err := util.SerializeOrRaw(a.Serializer, data.payload)
 			if err != nil {
 				log.Error(err.Error())
-				AnswerWithError(a, data.mid, err)
-				break
+				payload, err = util.GetErrorPayload(a.Serializer, err)
+				if err != nil {
+					log.Error("cannot serialize message and respond to the client ", err.Error())
+					break
+				}
 			}
 
-			if len(pipeline.AfterHandler.Handlers) > 0 {
+			if err == nil && len(pipeline.AfterHandler.Handlers) > 0 {
 				for _, h := range pipeline.AfterHandler.Handlers {
 					payload, err = h(a.Session, payload)
 					if err != nil {
 						log.Debugf("broken pipeline, error: %s", err.Error())
-						AnswerWithError(a, data.mid, err)
-						break
+						// err can be ignored since payload was previously successfully serialized
+						payload, _ = util.GetErrorPayload(a.Serializer, err)
 					}
 				}
 			}
