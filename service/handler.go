@@ -237,7 +237,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		h.localProcess(a, r, msg)
 	} else {
 		if h.remoteService != nil {
-			h.remoteService.remoteProcess(a, r, msg)
+			h.remoteService.remoteProcess(nil, a, r, msg)
 		} else {
 			log.Warnf("request made to another server type but no remoteService running")
 		}

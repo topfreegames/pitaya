@@ -29,6 +29,15 @@ import (
 
 // RPC calls a method in a different server
 func RPC(routeStr string, reply interface{}, args ...interface{}) error {
+	return doSendRPC("", routeStr, reply, args...)
+}
+
+// RPCTo send a rpc to a specific server
+func RPCTo(serverID, routeStr string, reply interface{}, args ...interface{}) error {
+	return doSendRPC(serverID, routeStr, reply, args...)
+}
+
+func doSendRPC(serverID, routeStr string, reply interface{}, args ...interface{}) error {
 	if app.rpcServer == nil {
 		return constants.ErrRPCServerNotInitialized
 	}
@@ -43,15 +52,13 @@ func RPC(routeStr string, reply interface{}, args ...interface{}) error {
 	}
 
 	if r.SvType == "" {
-		r.SvType = app.server.Type
+		return constants.ErrNoServerTypeChosenForRPC
 	}
 
-	if r.SvType == app.server.Type {
-		return constants.ErrRPCLocal
+	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
+		return constants.ErrNonsenseRPC
 	}
 
-	return remoteService.RPC(r, reply, args...)
+	return remoteService.RPC(serverID, r, reply, args...)
+
 }
-
-// func RPCTo(serverID, routeStr string, reply interface{}, args ...interface{}) (interface{}, error) {
-// }

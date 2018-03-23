@@ -41,4 +41,7 @@ var (
 	ErrSessionDuplication             = errors.New("session has existed in the current group")
 	ErrSessionNotFound                = errors.New("session not found")
 	ErrSessionOnNotify                = errors.New("current session working on notify mode")
+	ErrNoServerTypeChosenForRPC       = errors.New("no server type chosen for sending RPC, send a full route in the format server.service.component")
+	ErrServerNotFound                 = errors.New("server not found")
+	ErrNonsenseRPC                    = errors.New("you are making a rpc that may be processed locally, either specify a different server type or specify a server id")
 )

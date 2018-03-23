@@ -39,6 +39,13 @@ type (
 		Msg string `json:"msg"`
 	}
 
+	// SendRPCMsg represents a rpc message
+	SendRPCMsg struct {
+		ServerID string `json:"serverId"`
+		Route    string `json:"route"`
+		Msg      string `json:"msg"`
+	}
+
 	// NewUser message will be received when new user join room
 	NewUser struct {
 		Content string `json:"content"`
@@ -141,13 +148,15 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session) {
-	ret := RPCResponse{}
-	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, "teste")
+func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error) {
+	ret := &RPCResponse{}
+	err := pitaya.RPCTo(msg.ServerID, msg.Route, ret, msg.Msg)
 	if err != nil {
 		fmt.Printf("rpc error: %s\n", err)
+		return nil, err
 	}
 	fmt.Printf("rpc ret: %s\n", ret)
+	return ret, nil
 }
 
 // MessageRemote just echoes the given message

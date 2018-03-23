@@ -76,10 +76,10 @@ func NewRemoteService(
 
 var remotes = make(map[string]*component.Remote) // all remote method
 
-func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *message.Message) {
+func (r *RemoteService) remoteProcess(server *cluster.Server, a *agent.Agent, route *route.Route, msg *message.Message) {
 	var res *protos.Response
 	var err error
-	if res, err = r.remoteCall(protos.RPCType_Sys, route, a.Session, msg); err != nil {
+	if res, err = r.remoteCall(server, protos.RPCType_Sys, route, a.Session, msg); err != nil {
 		log.Errorf(err.Error())
 		a.Session.ResponseMID(msg.ID, &map[string]interface{}{
 			"code":  500,
@@ -96,7 +96,7 @@ func (r *RemoteService) remoteProcess(a *agent.Agent, route *route.Route, msg *m
 }
 
 // RPC makes rpcs
-func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...interface{}) error {
+func (r *RemoteService) RPC(serverID string, route *route.Route, reply interface{}, args ...interface{}) error {
 	data, err := util.GobEncode(args...)
 	if err != nil {
 		return err
@@ -107,7 +107,12 @@ func (r *RemoteService) RPC(route *route.Route, reply interface{}, args ...inter
 		Data:  data,
 	}
 
-	res, err := r.remoteCall(protos.RPCType_User, route, nil, msg)
+	target, _ := r.serviceDiscovery.GetServer(serverID)
+	if serverID != "" && target == nil {
+		return constants.ErrServerNotFound
+	}
+
+	res, err := r.remoteCall(target, protos.RPCType_User, route, nil, msg)
 	if err != nil {
 		return err
 	}
@@ -282,9 +287,11 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				continue
 			}
 
-			remote, ok := remotes[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
+			rStr := fmt.Sprintf("%s.%s", rt.Service, rt.Method)
+
+			remote, ok := remotes[rStr]
 			if !ok {
-				errMsg := fmt.Sprintf("pitaya/remote: %s not found", req.GetMsg().GetRoute())
+				errMsg := fmt.Sprintf("pitaya/remote: %s not found", rStr)
 				log.Warnf(errMsg)
 				response.Error = errMsg
 				r.sendReply(reply, response)
@@ -338,6 +345,7 @@ func (r *RemoteService) sendReply(reply string, response *protos.Response) {
 }
 
 func (r *RemoteService) remoteCall(
+	server *cluster.Server,
 	rpcType protos.RPCType,
 	route *route.Route,
 	session *session.Session,
@@ -345,9 +353,14 @@ func (r *RemoteService) remoteCall(
 ) (*protos.Response, error) {
 	svType := route.SvType
 
-	target, err := r.router.Route(rpcType, svType, session, route)
-	if err != nil {
-		return nil, err
+	var err error
+	target := server
+
+	if target == nil {
+		target, err = r.router.Route(rpcType, svType, session, route)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	res, err := r.rpcClient.Call(rpcType, route, session, msg, target)
