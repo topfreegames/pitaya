@@ -22,15 +22,11 @@ mobile games, etc of all sizes.
 
 #### What does a `pitaya` application look like?
 
-The simplest "pitaya" application as shown in the following figure, you can make powerful applications by combining different components.
-
-![Application](./application.png)
-
-In fact, the `pitaya` application is a collection of  [Component ](./docs/get_started.md#component) , and a component is a bundle of  [Handler](./docs/get_started.md#handler), once you register a component to pitaya, pitaya will register all methods that can be converted to `Handler` to pitaya service container. Service was accessed by `Component.Handler`, and the handler will be called while client request. The handler will receive two parameters while handling a message:
+In fact, the `pitaya` application is a collection of  [Component ](./docs/get_started.md#component) , and a component is a bundle of  [Handler](./docs/get_started.md#handler), once you register a component to pitaya, pitaya will register all methods that can be converted to `Handler` to pitaya service container. Service is accessed by `Component.Handler`, and the handler will be called when the client makes a request. The handler receives two parameters while handling a message:
   - `*session.Session`: corresponding a client that apply this request or notify.
   - `*protocol.FooBar`: the payload of the request.
 
-While you had processed your logic, you can response or push message to the client by `session.Response(payload)` and `session.Push('eventName', payload)`, or returns error when some unexpected data received.
+When the server has processed the logic, it can respond or push message to the client by `session.Response(payload)` and `session.Push('eventName', payload)`, or return error if some unexpected error happens.
 
 #### How to build distributed system with `pitaya`
 
@@ -79,7 +75,7 @@ func (r *RemoteComponent) client(s *session.Session) *grpc.ClientConn {
 }
 
 // Your handler, accessed by:
-// nanoClient.Request("RemoteComponent.DemoHandler", &pb.DemoMsg{/*...*/})
+// client.Request("RemoteComponent.DemoHandler", &pb.DemoMsg{/*...*/})
 func (r *RemoteComponent) DemoHandler(s *session.Session, msg *pb.DemoMsg) error {
 	client := r.client(s)
 	// do something with client
@@ -101,13 +97,6 @@ The pitaya will remain simple, but you can perform any operations in the compone
     + [API Reference(Server)](https://godoc.org/github.com/topfreegames/pitaya)
     + [How to integrate `Lua` into `pitaya` component(incomplete)](.)
 
-- 简体中文
-    + [如何构建你的第一个pitaya应用](./docs/get_started_zh_CN.md)
-    + [路由压缩](./docs/route_compression_zh_CN.md)
-    + [通信协议](./docs/communication_protocol_zh_CN.md)
-    + [API参考(服务器)](https://godoc.org/github.com/topfreegames/pitaya)
-    + [如何将`lua`脚本集成到`pitaya`组件中(未完成)](.)
-
 ## Resources
 
 - Javascript
@@ -118,14 +107,6 @@ The pitaya will remain simple, but you can perform any operations in the compone
   + [Implement a chat room in 100 lines with pitaya and WebSocket](./examples/demo/chat)
   + [Tadpole demo](./examples/demo/tadpole)
 
-## Community
-
-- QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
-- Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
-
-## Successful cases
-
-- [空来血战](https://fir.im/tios)
 
 ## Installation
 
@@ -139,11 +120,6 @@ dep ensure
 ## Benchmark
 
 ```shell
-# Case:   PingPong
-# OS:     Windows 10
-# Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
-# Other:  ...
-
 cd $GOPATH/src/github.com/topfreegames/pitaya/benchmark/io
 go test -v -tags "benchmark"
 ```
