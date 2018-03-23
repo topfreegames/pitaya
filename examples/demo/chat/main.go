@@ -134,9 +134,7 @@ func main() {
 
 	//TODO need to fix that? pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	ws := acceptor.NewWSAcceptor(":3250", "/pitaya")
-	tcp := acceptor.NewTCPAcceptor(":3255")
 	pitaya.AddAcceptor(ws)
-	pitaya.AddAcceptor(tcp)
 	pitaya.Configure(true, "chat", pitaya.Standalone)
 	pitaya.Start()
 }

@@ -104,25 +104,25 @@ func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
 }
 
 // GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session) (map[string]interface{}, error) {
+func (r *Room) GetSessionData(s *session.Session, msg []byte) (map[string]interface{}, error) {
 	return s.GetData(), nil
 }
 
-//// SetSessionData sets the session data
-//func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
-//	err := s.SetData(data.Data)
-//	if err != nil {
-//		return "", err
-//	}
-//	err = s.PushToFront()
-//	if err != nil {
-//		return "", err
-//	}
-//	return "success", nil
-//}
+// SetSessionData sets the session data
+func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
+	err := s.SetData(data.Data)
+	if err != nil {
+		return "", err
+	}
+	err = s.PushToFront()
+	if err != nil {
+		return "", err
+	}
+	return "success", nil
+}
 
 // Join room
-func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
+func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	r.group.Add(s)
@@ -141,13 +141,15 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session) {
+func (r *Room) SendRPC(s *session.Session, msg []byte) error {
 	ret := RPCResponse{}
 	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, "teste")
 	if err != nil {
 		fmt.Printf("rpc error: %s\n", err)
+		return err
 	}
 	fmt.Printf("rpc ret: %s\n", ret)
+	return nil
 }
 
 // MessageRemote just echoes the given message
