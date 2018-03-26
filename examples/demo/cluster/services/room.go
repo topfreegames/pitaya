@@ -115,18 +115,18 @@ func (r *Room) GetSessionData(s *session.Session) (map[string]interface{}, error
 	return s.GetData(), nil
 }
 
-//// SetSessionData sets the session data
-//func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
-//	err := s.SetData(data.Data)
-//	if err != nil {
-//		return "", err
-//	}
-//	err = s.PushToFront()
-//	if err != nil {
-//		return "", err
-//	}
-//	return "success", nil
-//}
+// SetSessionData sets the session data
+func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
+	err := s.SetData(data.Data)
+	if err != nil {
+		return "", err
+	}
+	err = s.PushToFront()
+	if err != nil {
+		return "", err
+	}
+	return "success", nil
+}
 
 // Join room
 func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
@@ -161,6 +161,5 @@ func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error
 
 // MessageRemote just echoes the given message
 func (r *Room) MessageRemote(msg *UserMessage, b bool, s string) (*UserMessage, error) {
-	fmt.Println("CHEGOU", b, s)
 	return msg, nil
 }

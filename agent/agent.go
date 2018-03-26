@@ -240,7 +240,10 @@ func (a *Agent) SetStatus(state int32) {
 func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
 	data, err := json.Marshal(map[string]interface{}{
 		"code": 200,
-		"sys":  map[string]float64{"heartbeat": heartbeatTimeout.Seconds()},
+		"sys": map[string]interface{}{
+			"heartbeat": heartbeatTimeout.Seconds(),
+			"dict":      message.GetDictionary(),
+		},
 	})
 	if err != nil {
 		panic(err)

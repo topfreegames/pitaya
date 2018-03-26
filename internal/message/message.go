@@ -241,3 +241,8 @@ func SetDictionary(dict map[string]uint16) {
 		codes[code] = r
 	}
 }
+
+// GetDictionary gets the routes map which is used to compress route.
+func GetDictionary() map[string]uint16 {
+	return routes
+}
