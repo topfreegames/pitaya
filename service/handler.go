@@ -49,6 +49,7 @@ const funcBacklog = 1 << 8
 var log = logger.Log
 
 var (
+	// TODO needs to be configurable
 	handlers = make(map[string]*component.Handler) // all handler method
 )
 
@@ -57,6 +58,8 @@ type (
 	HandlerService struct {
 		services         map[string]*component.Service // all registered service
 		chFunction       chan func()                   // function that called in logic gorontine
+		chLocalProcess   chan unhandledLocalMessage    // channel of messages that will be processed locally
+		chRemoteProcess  chan unhandledRemoteMessage   // channel of messages that will be processed remotelly
 		appDieChan       chan bool                     // die channel app
 		decoder          codec.PacketDecoder           // binary decoder
 		encoder          codec.PacketEncoder           // binary encoder
@@ -64,6 +67,19 @@ type (
 		heartbeatTimeout time.Duration
 		server           *cluster.Server // server obj
 		remoteService    *RemoteService
+	}
+
+	unhandledLocalMessage struct {
+		agent   *agent.Agent
+		mid     uint
+		handler reflect.Method
+		args    []reflect.Value
+	}
+
+	unhandledRemoteMessage struct {
+		agent *agent.Agent
+		route *route.Route
+		msg   *message.Message
 	}
 )
 
@@ -76,10 +92,14 @@ func NewHandlerService(
 	heartbeatTime time.Duration,
 	server *cluster.Server,
 	remoteService *RemoteService,
+	dispatchConcurrency int,
 ) *HandlerService {
 	h := &HandlerService{
-		services:         make(map[string]*component.Service),
-		chFunction:       make(chan func(), funcBacklog),
+		services:   make(map[string]*component.Service),
+		chFunction: make(chan func(), funcBacklog),
+		// TODO what is the best channel size for both channels?
+		chLocalProcess:   make(chan unhandledLocalMessage, dispatchConcurrency),
+		chRemoteProcess:  make(chan unhandledRemoteMessage, dispatchConcurrency),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		serializer:       serializer,
@@ -93,13 +113,27 @@ func NewHandlerService(
 }
 
 // Dispatch message to corresponding logic handler
-func (h *HandlerService) Dispatch() {
+func (h *HandlerService) Dispatch(thread int) {
 	// close chLocalProcess & chCloseSession when application quit
 	defer timer.GlobalTicker.Stop()
 
 	// handle packet that sent to chLocalProcess
 	for {
 		select {
+		case m := <-h.chLocalProcess:
+			ret, err := util.PcallHandler(m.handler, m.args)
+			if err != nil {
+				m.agent.Session.ResponseMID(m.mid, &map[string]interface{}{
+					"code":  500,
+					"error": err.Error(),
+				})
+			} else {
+				m.agent.Session.ResponseMID(m.mid, ret)
+			}
+
+		case rm := <-h.chRemoteProcess:
+			h.remoteService.remoteProcess(nil, rm.agent, rm.route, rm.msg)
+
 		case fn := <-h.chFunction:
 			util.Pinvoke(fn)
 
@@ -237,7 +271,11 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		h.localProcess(a, r, msg)
 	} else {
 		if h.remoteService != nil {
-			h.remoteService.remoteProcess(nil, a, r, msg)
+			h.chRemoteProcess <- unhandledRemoteMessage{
+				agent: a,
+				route: r,
+				msg:   msg,
+			}
 		} else {
 			log.Warnf("request made to another server type but no remoteService running")
 		}
@@ -306,11 +344,13 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 	if data != nil {
 		args = append(args, reflect.ValueOf(data))
 	}
-	a.WriteToChRecv(&message.UnhandledMessage{
-		Mid:     mid,
-		Handler: handler.Method,
-		Args:    args,
-	})
+
+	h.chLocalProcess <- unhandledLocalMessage{
+		agent:   a,
+		mid:     mid,
+		handler: handler.Method,
+		args:    args,
+	}
 }
 
 // DumpServices outputs all registered services

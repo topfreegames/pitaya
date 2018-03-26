@@ -101,6 +101,7 @@ func (r *Room) AfterInit() {
 
 // Entry is the entrypoint
 func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
+	time.Sleep(time.Duration(3) * time.Second)
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {

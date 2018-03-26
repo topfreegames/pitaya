@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"reflect"
 	"strings"
 )
 
@@ -73,13 +72,6 @@ type Message struct {
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
-}
-
-// UnhandledMessage struct
-type UnhandledMessage struct {
-	Mid     uint
-	Handler reflect.Method
-	Args    []reflect.Value
 }
 
 // New returns a new message instance

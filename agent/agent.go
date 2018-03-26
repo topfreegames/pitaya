@@ -58,21 +58,19 @@ type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
 		// regular agent member
-		Session          *session.Session               // session
-		Conn             net.Conn                       // low-level conn fd
-		state            int32                          // current agent state
-		chDie            chan struct{}                  // wait for close
-		chSend           chan pendingMessage            // push message queue
-		chRecv           chan *message.UnhandledMessage // unhandledMessages
-		chWrite          chan []byte                    // write message to the clients
-		chStopWrite      chan struct{}                  // stop writing messages
-		chStopHeartbeat  chan struct{}                  // stop heartbeats
-		chStopRead       chan struct{}                  // stop reading
-		lastAt           int64                          // last heartbeat unix time stamp
-		decoder          codec.PacketDecoder            // binary decoder
-		encoder          codec.PacketEncoder            // binary encoder
-		Serializer       serialize.Serializer           // message serializer
-		appDieChan       chan bool                      // app die channel
+		Session          *session.Session     // session
+		Conn             net.Conn             // low-level conn fd
+		state            int32                // current agent state
+		chDie            chan struct{}        // wait for close
+		chSend           chan pendingMessage  // push message queue
+		chWrite          chan []byte          // write message to the clients
+		chStopWrite      chan struct{}        // stop writing messages
+		chStopHeartbeat  chan struct{}        // stop heartbeats
+		lastAt           int64                // last heartbeat unix time stamp
+		decoder          codec.PacketDecoder  // binary decoder
+		encoder          codec.PacketEncoder  // binary encoder
+		Serializer       serialize.Serializer // message serializer
+		appDieChan       chan bool            // app die channel
 		heartbeatTimeout time.Duration
 
 		Srv reflect.Value // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
@@ -106,11 +104,9 @@ func NewAgent(
 		chDie:            make(chan struct{}),
 		chStopWrite:      make(chan struct{}),
 		chStopHeartbeat:  make(chan struct{}),
-		chStopRead:       make(chan struct{}),
 		chWrite:          make(chan []byte, agentWriteBacklog),
 		lastAt:           time.Now().Unix(),
 		chSend:           make(chan pendingMessage, agentWriteBacklog),
-		chRecv:           make(chan *message.UnhandledMessage),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		Serializer:       serializer,
@@ -203,7 +199,6 @@ func (a *Agent) Close() error {
 	default:
 		close(a.chStopWrite)
 		close(a.chStopHeartbeat)
-		close(a.chStopRead)
 		close(a.chDie)
 		onSessionClosed(a.Session)
 	}
@@ -268,7 +263,6 @@ func (a *Agent) Handle() {
 	}()
 
 	go a.write()
-	go a.read()
 	go a.heartbeat()
 	select {
 	case <-a.chDie: // agent closed signal
@@ -318,37 +312,8 @@ func onSessionClosed(s *session.Session) {
 	}
 }
 
-func (a *Agent) read() {
-	defer func() {
-		close(a.chRecv)
-	}()
-
-	for {
-		select {
-		case m := <-a.chRecv:
-			ret, err := util.PcallHandler(m.Handler, m.Args)
-			if err != nil {
-				a.Session.ResponseMID(m.Mid, &map[string]interface{}{
-					"code":  500,
-					"error": err.Error(),
-				})
-			} else {
-				a.Session.ResponseMID(m.Mid, ret)
-			}
-
-		case <-a.chStopRead:
-			return
-		}
-	}
-}
-
-// WriteToChRecv writes to agent recv chan
-func (a *Agent) WriteToChRecv(msg *message.UnhandledMessage) {
-	a.chRecv <- msg
-}
-
-// WriteToChWrite writes to agent write chan
-func (a *Agent) WriteToChWrite(data []byte) {
+// SendToChWrite sends a message to the agent
+func (a *Agent) SendToChWrite(data []byte) {
 	a.chWrite <- data
 }
 

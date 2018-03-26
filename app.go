@@ -58,6 +58,12 @@ const (
 	Standalone
 )
 
+// TODO this NEEDS better configuration
+const (
+	processRemoteMsgConcurrency = 10
+	dispatchConcurrency         = 10
+)
+
 // App is the base app struct
 type App struct {
 	server           *cluster.Server
@@ -294,6 +300,7 @@ func Start() {
 		app.heartbeat,
 		app.server,
 		remoteService,
+		dispatchConcurrency,
 	)
 
 	listen()
@@ -324,7 +331,9 @@ func listen() {
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	go handlerService.Dispatch()
+	for i := 0; i < dispatchConcurrency; i++ {
+		go handlerService.Dispatch(i)
+	}
 	for _, acc := range app.acceptors {
 		a := acc
 		go func() {
@@ -345,13 +354,12 @@ func listen() {
 	// this handles remote messages
 	// TODO probably this shouldnt be here :/
 	if app.rpcServer != nil {
-		// TODO config concurrency, should this be done this way?
-		processMsgConcurrency := 100
-		for i := 0; i < processMsgConcurrency; i++ {
+		// TODO should this be done this way?
+		for i := 0; i < processRemoteMsgConcurrency; i++ {
 			go remoteService.ProcessRemoteMessages(i)
-			// TODO: use same parellelism?
-			go remoteService.ProcessUserPush()
 		}
+		// TODO: use same parellelism?
+		go remoteService.ProcessUserPush()
 	}
 }
 

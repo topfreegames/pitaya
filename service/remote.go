@@ -153,8 +153,8 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 // TODO: probably handle concurrency (threadID?)
 func (r *RemoteService) ProcessUserPush() {
 	for push := range r.rpcServer.GetUserPushChannel() {
-		s := session.GetSessionByUID(push.GetUid())
 		log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+		s := session.GetSessionByUID(push.GetUid())
 		if s != nil {
 			s.Push(push.Route, push.Data)
 		}
