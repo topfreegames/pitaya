@@ -136,9 +136,12 @@ func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
 	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
-	s.OnClose(func() {
+	err = s.OnClose(func() {
 		r.group.Leave(s)
 	})
+	if err != nil {
+		return nil, err
+	}
 	return &JoinResponse{Result: "success"}, nil
 }
 

@@ -248,8 +248,12 @@ func (s *Session) Bind(uid string) error {
 
 // OnClose adds the function it receives to the callbacks that will be called
 // when the session is closed
-func (s *Session) OnClose(c func()) {
+func (s *Session) OnClose(c func()) error {
+	if !s.IsFrontend {
+		return constants.ErrOnCloseBackend
+	}
 	s.OnCloseCallbacks = append(s.OnCloseCallbacks, c)
+	return nil
 }
 
 // Close terminate current session, session related data will not be released,
