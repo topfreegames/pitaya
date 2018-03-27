@@ -69,7 +69,7 @@ type Session struct {
 	data              map[string]interface{} // session data store
 	encodedData       []byte                 // session data encoded as a byte array
 	OnCloseCallbacks  []func()               //onClose callbacks
-	frontend          bool                   // if session is a frontend session
+	IsFrontend        bool                   // if session is a frontend session
 	frontendID        string                 // the id of the frontend that owns the session
 	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
@@ -106,7 +106,7 @@ func New(entity NetworkEntity, frontend bool) *Session {
 		data:             make(map[string]interface{}),
 		lastTime:         time.Now().Unix(),
 		OnCloseCallbacks: []func(){},
-		frontend:         frontend,
+		IsFrontend:       frontend,
 	}
 	if frontend {
 		sessionsByID[s.id] = s
@@ -231,7 +231,7 @@ func (s *Session) Bind(uid string) error {
 	}
 
 	// if code running on frontend server
-	if s.frontend {
+	if s.IsFrontend {
 		sessionsByUID[uid] = s
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
@@ -257,7 +257,7 @@ func (s *Session) OnClose(c func()) {
 func (s *Session) Close() {
 	delete(sessionsByUID, s.UID())
 	delete(sessionsByID, s.ID())
-	if s.frontend && s.Subscription != nil {
+	if s.IsFrontend && s.Subscription != nil {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()
 		if err != nil {
@@ -567,7 +567,7 @@ func (s *Session) bindInFront() error {
 
 // PushToFront updates the session in the frontend
 func (s *Session) PushToFront() error {
-	if s.frontend {
+	if s.IsFrontend {
 		return constants.ErrFrontSessionCantPushToFront
 	}
 	sessionData := &Data{

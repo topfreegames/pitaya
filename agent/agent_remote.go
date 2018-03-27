@@ -22,6 +22,7 @@ package agent
 
 import (
 	"net"
+	"reflect"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/cluster"
@@ -85,6 +86,10 @@ func NewRemote(
 
 // Push pushes the message to the player
 func (a *Remote) Push(route string, v interface{}) error {
+	if (reflect.TypeOf(a.rpcClient) == reflect.TypeOf(&cluster.NatsRPCClient{}) &&
+		a.Session.UID() == "") {
+		return constants.ErrNoUIDBind
+	}
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",

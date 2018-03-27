@@ -101,7 +101,6 @@ func (r *Room) AfterInit() {
 
 // Entry is the entrypoint
 func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
-	time.Sleep(time.Duration(3) * time.Second)
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
@@ -131,9 +130,12 @@ func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, er
 
 // Join room
 func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
+	err := r.group.Add(s)
+	if err != nil {
+		return nil, err
+	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
-	r.group.Add(s)
 	s.OnClose(func() {
 		r.group.Leave(s)
 	})

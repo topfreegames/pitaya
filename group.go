@@ -42,9 +42,9 @@ type SessionFilter func(*session.Session) bool
 // sessions, data send to the group will send to all session in it.
 type Group struct {
 	mu       sync.RWMutex
-	status   int32                      // channel current status
-	name     string                     // channel name
-	sessions map[int64]*session.Session // session id map to session instance
+	status   int32                       // channel current status
+	name     string                      // channel name
+	sessions map[string]*session.Session // session id map to session instance
 }
 
 // NewGroup returns a new group instance
@@ -52,7 +52,7 @@ func NewGroup(n string) *Group {
 	return &Group{
 		status:   groupStatusWorking,
 		name:     n,
-		sessions: make(map[int64]*session.Session),
+		sessions: make(map[string]*session.Session),
 	}
 }
 
@@ -144,6 +144,9 @@ func (c *Group) Contains(uid string) bool {
 
 // Add add session to group
 func (c *Group) Add(session *session.Session) error {
+	if session.UID() == "" {
+		return constants.ErrNoUIDBind
+	}
 	if c.isClosed() {
 		return constants.ErrClosedGroup
 	}
@@ -153,8 +156,8 @@ func (c *Group) Add(session *session.Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	id := session.ID()
-	_, ok := c.sessions[session.ID()]
+	id := session.UID()
+	_, ok := c.sessions[id]
 	if ok {
 		return constants.ErrSessionDuplication
 	}
@@ -174,7 +177,7 @@ func (c *Group) Leave(s *session.Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	delete(c.sessions, s.ID())
+	delete(c.sessions, s.UID())
 	return nil
 }
 
@@ -187,7 +190,7 @@ func (c *Group) LeaveAll() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.sessions = make(map[int64]*session.Session)
+	c.sessions = make(map[string]*session.Session)
 	return nil
 }
 
@@ -215,6 +218,6 @@ func (c *Group) Close() error {
 	atomic.StoreInt32(&c.status, groupStatusClosed)
 
 	// release all reference
-	c.sessions = make(map[int64]*session.Session)
+	c.sessions = make(map[string]*session.Session)
 	return nil
 }
