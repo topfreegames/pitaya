@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
@@ -95,7 +96,7 @@ func NewAgent(
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder)
+		hbdEncode(heartbeatTime, packetEncoder, serializer)
 	})
 
 	a := &Agent{
@@ -232,14 +233,26 @@ func (a *Agent) SetStatus(state int32) {
 	atomic.StoreInt32(&a.state, state)
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
-	data, err := json.Marshal(map[string]interface{}{
+func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, serializer serialize.Serializer) {
+	var protos, protosMapping string
+	if s, ok := serializer.(*protobuf.Serializer); ok {
+		protos = s.Protos
+		protosMapping = s.ProtosMapping
+	}
+	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat": heartbeatTimeout.Seconds(),
 			"dict":      message.GetDictionary(),
 		},
-	})
+	}
+	if protos != "" {
+		hData["sys"].(map[string]interface{})["protos"] = map[string]interface{}{
+			"messages": protos,
+			"mappings": protosMapping,
+		}
+	}
+	data, err := json.Marshal(hData)
 	if err != nil {
 		panic(err)
 	}
@@ -319,10 +332,12 @@ func (a *Agent) SendToChWrite(data []byte) {
 
 // AnswerWithError answers with an error
 func AnswerWithError(a *Agent, mid uint, err error) {
-	e := a.Session.ResponseMID(mid, &map[string]interface{}{
-		"code":  500,
-		"error": err.Error(),
-	})
+	p, e := util.GetErrorPayload(a.Serializer, err)
+	if e != nil {
+		log.Error("error answering the player with an error: ", e.Error())
+		return
+	}
+	e = a.Session.ResponseMID(mid, p)
 	if e != nil {
 		log.Error("error answering the player with an error: ", e.Error())
 	}

@@ -123,10 +123,7 @@ func (h *HandlerService) Dispatch(thread int) {
 		case m := <-h.chLocalProcess:
 			ret, err := util.PcallHandler(m.handler, m.args)
 			if err != nil {
-				m.agent.Session.ResponseMID(m.mid, &map[string]interface{}{
-					"code":  500,
-					"error": err.Error(),
-				})
+				agent.AnswerWithError(m.agent, m.mid, err)
 			} else {
 				m.agent.Session.ResponseMID(m.mid, ret)
 			}

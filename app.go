@@ -41,7 +41,7 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/serialize/protobuf"
+	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/service"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
@@ -100,7 +100,7 @@ var (
 		packetDecoder: codec.NewPomeloPacketDecoder(),
 		packetEncoder: codec.NewPomeloPacketEncoder(),
 		serverMode:    Standalone,
-		serializer:    protobuf.NewSerializer(),
+		serializer:    json.NewSerializer(),
 		configured:    false,
 		router:        router.New(),
 	}

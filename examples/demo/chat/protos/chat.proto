@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package protos;
+
+message JoinResponse {
+  int32 Code = 1;
+  string Result = 2;
+}
+
+message UserMessage {
+  string Name = 1;
+  string Content =2;
+}
+
+message NewUser {
+  string Content = 1;
+}
+
+message AllMembers {
+  repeated string Members =1;
+}
+

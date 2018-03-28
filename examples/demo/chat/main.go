@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -12,7 +13,8 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/examples/demo/chat/protos"
+	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 )
@@ -25,28 +27,6 @@ type (
 		group *pitaya.Group
 		timer *timer.Timer
 		stats *stats
-	}
-
-	// UserMessage represents a message that user sent
-	UserMessage struct {
-		Name    string `json:"name"`
-		Content string `json:"content"`
-	}
-
-	// NewUser message will be received when new user join room
-	NewUser struct {
-		Content string `json:"content"`
-	}
-
-	// AllMembers contains all members uid
-	AllMembers struct {
-		Members []string `json:"members"`
-	}
-
-	// JoinResponse represents the result of joining room
-	JoinResponse struct {
-		Code   int    `json:"code"`
-		Result string `json:"result"`
 	}
 
 	stats struct {
@@ -83,13 +63,13 @@ func (r *Room) AfterInit() {
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
+func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error) {
 	fakeUID := s.ID()                  //just use s.ID as uid !!!
 	s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
 
-	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
+	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
 	// notify others
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	r.group.Broadcast("onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	// new user join group
 	r.group.Add(s) // add session to group
 
@@ -98,11 +78,11 @@ func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
 		r.group.Leave(s)
 	})
 
-	return &JoinResponse{Result: "success"}, nil
+	return &protos.JoinResponse{Result: "success"}, nil
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) {
+func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
 	err := r.group.Broadcast("onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -114,7 +94,23 @@ func main() {
 		pitaya.Shutdown()
 	})()
 
-	pitaya.SetSerializer(json.NewSerializer())
+	protos, err := os.Open("./protos/chat.proto")
+	if err != nil {
+		panic(err)
+	}
+
+	protosMapping, err := os.Open("./protos/mapping.json")
+	if err != nil {
+		panic(err)
+	}
+
+	s, err := protobuf.NewSerializer(protos, protosMapping)
+
+	if err != nil {
+		panic(err)
+	}
+
+	pitaya.SetSerializer(s)
 
 	// rewrite component and handler name
 	room := NewRoom()

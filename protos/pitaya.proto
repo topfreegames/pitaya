@@ -14,6 +14,11 @@ enum MsgType {
   MsgPush = 3;
 }
 
+message ErrorPayload {
+  int32 Code = 1;
+  string Reason = 2;
+}
+
 message Push {
   string Route = 1;
   string Uid = 2;

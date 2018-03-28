@@ -2,7 +2,7 @@ setup:
 	@dep ensure
 
 run-chat-example:
-	@go run examples/demo/chat/main.go
+	@cd examples/demo/chat/ && go run main.go
 
 run-cluster-example-frontend:
 	@go run examples/demo/cluster/main.go

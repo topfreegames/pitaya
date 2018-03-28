@@ -22,6 +22,8 @@ package protobuf
 
 import (
 	"errors"
+	"io"
+	"io/ioutil"
 
 	"github.com/gogo/protobuf/proto"
 )
@@ -30,11 +32,36 @@ import (
 var ErrWrongValueType = errors.New("protobuf: convert on wrong type value")
 
 // Serializer implements the serialize.Serializer interface
-type Serializer struct{}
+type Serializer struct {
+	Protos        string
+	ProtosMapping string
+}
 
 // NewSerializer returns a new Serializer.
-func NewSerializer() *Serializer {
-	return &Serializer{}
+// ProtosMapping is a mapping between route and proto to be used for in and out
+// e.g:
+//	{
+//		connector.getsessiondata: {
+//			server: SessionData
+//		},
+//		connector.setsessiondata: {
+//			client: SessionData,
+//			server: SetSessionDataAnswer
+//		}
+//	}
+func NewSerializer(protos io.Reader, protosMapping io.Reader) (*Serializer, error) {
+	b, err := ioutil.ReadAll(protos)
+	if err != nil {
+		return nil, err
+	}
+	bm, err := ioutil.ReadAll(protosMapping)
+	if err != nil {
+		return nil, err
+	}
+	return &Serializer{
+		Protos:        string(b),
+		ProtosMapping: string(bm),
+	}, nil
 }
 
 // Marshal returns the protobuf encoding of v.

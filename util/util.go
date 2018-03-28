@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 )
 
@@ -167,9 +168,9 @@ func Stack() string {
 
 // GetErrorPayload creates and serializes an error payload
 func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
-	errPayload := &map[string]interface{}{
-		"code":  500,
-		"error": err.Error(),
+	errPayload := &protos.ErrorPayload{
+		Code:   500,
+		Reason: err.Error(),
 	}
 	return SerializeOrRaw(serializer, errPayload)
 }
