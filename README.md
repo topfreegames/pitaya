@@ -1,3 +1,8 @@
+# Attention
+
+Pitaya is currently under development and is not yet ready for production use.
+We're working on tests and better documentation and we'll update the project as soon as possible.
+
 # pitaya [![Build Status][1]][2] [![GoDoc][3]][4] [![Go Report Card][5]][6] [![MIT licensed][7]][8]
 
 [1]: https://travis-ci.org/topfreegames/pitaya.svg?branch=master
@@ -9,7 +14,7 @@
 [7]: https://img.shields.io/badge/license-MIT-blue.svg
 [8]: LICENSE
 
-pitaya is an easy to use, fast, lightweight game server networking library for Go.
+pitaya is an easy to use, fast, lightweight game server networking library for Go built on top of [nano](https://github.com/lonnng/nano).
 It provides a core network architecture and a series of tools and libraries that
 can help developers eliminate boring duplicate work for common underlying logic.
 The goal of pitaya is to improve development efficiency by eliminating the need to
