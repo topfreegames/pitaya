@@ -159,136 +159,105 @@ func (r *RemoteService) ProcessUserPush() {
 }
 
 // ProcessRemoteMessages processes remote messages
-// TODO megazord method should be broken in smaller pieces
 func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 	// TODO need to monitor stuff here to guarantee messages are not being dropped
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
 		// TODO should deserializer be decoupled?
 		log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
-		reply := req.GetMsg().GetReply()
-		response := &protos.Response{}
 		rt, err := route.Decode(req.GetMsg().GetRoute())
 		if err != nil {
-			errMsg := fmt.Sprintf("pitaya: cannot decode route %s", req.GetMsg().GetRoute())
-			response.Error = errMsg
-			r.sendReply(reply, response)
+			response := &protos.Response{
+				Error: fmt.Sprintf("pitaya: cannot decode route %s", req.GetMsg().GetRoute()),
+			}
+			r.sendReply(req.GetMsg().GetReply(), response)
 			continue
 		}
 
 		switch {
 		case req.Type == protos.RPCType_Sys:
-			// TODO should we create a new agent for every new request?
-			a, err := agent.NewRemote(
-				req.GetSession(),
-				reply,
-				r.rpcClient,
-				r.encoder,
-				r.serializer,
-				r.serviceDiscovery,
-				req.FrontendID,
-			)
-			if err != nil {
-				log.Warn("pitaya/handler: cannot instantiate remote agent")
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-
-			h, err := getHandler(rt)
-			if err != nil {
-				log.Warnf(err.Error())
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-
-			exit, err := h.ValidateMessageType(util.ConvertProtoToMessageType(req.GetMsg().GetType()))
-			if err != nil && exit {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			} else if err != nil {
-				log.Warn(err.Error())
-			}
-
-			arg, err := unmarshalHandlerArg(h, r.serializer, req.GetMsg().GetData())
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), arg)
-
-			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session)}
-			if arg != nil {
-				args = append(args, reflect.ValueOf(arg))
-			}
-			resp, err := util.Pcall(h.Method, args)
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-
-			// TODO this is a special case and should only happen with nats rpc client
-			// because we used nats request we have to answer to it or else a timeout
-			// will happen in the caller server and will be returned to the client
-			// the reason why we not just Publish is to keep track of failed rpc requests
-			// with timeouts, maybe we can improve this flow
-			if req.GetMsg().GetType() == protos.MsgType_MsgNotify {
-				response.Data = []byte("ack")
-				r.sendReply(reply, response)
-				continue
-			}
-
-			ret, err := util.SerializeOrRaw(a.Serializer, resp)
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-
-			response.Data = ret
-			r.sendReply(reply, response)
-
+			r.handleRPCSys(req, rt)
 		case req.Type == protos.RPCType_User:
-			remote, ok := remotes[rt.Short()]
-			if !ok {
-				errMsg := fmt.Sprintf("pitaya/remote: %s not found", rt.Short())
-				log.Warnf(errMsg)
-				response.Error = errMsg
-				r.sendReply(reply, response)
-				continue
-			}
-
-			args, err := unmarshalRemoteArg(req.GetMsg().GetData())
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-
-			params := []reflect.Value{remote.Receiver}
-			for _, arg := range args {
-				params = append(params, reflect.ValueOf(arg))
-			}
-
-			ret, err := util.Pcall(remote.Method, params)
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-			res, err := util.GobEncodeSingle(ret)
-			if err != nil {
-				response.Error = err.Error()
-				r.sendReply(reply, response)
-				continue
-			}
-			response.Data = res
-			r.sendReply(reply, response)
+			r.handleRPCUser(req, rt)
 		}
 	}
+}
+
+func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
+	reply := req.GetMsg().GetReply()
+	response := &protos.Response{}
+
+	remote, ok := remotes[rt.Short()]
+	if !ok {
+		errMsg := fmt.Sprintf("pitaya/remote: %s not found", rt.Short())
+		log.Warnf(errMsg)
+		response.Error = errMsg
+		r.sendReply(reply, response)
+		return
+	}
+
+	args, err := unmarshalRemoteArg(req.GetMsg().GetData())
+	if err != nil {
+		response.Error = err.Error()
+		r.sendReply(reply, response)
+		return
+	}
+
+	params := []reflect.Value{remote.Receiver}
+	for _, arg := range args {
+		params = append(params, reflect.ValueOf(arg))
+	}
+
+	ret, err := util.Pcall(remote.Method, params)
+	if err != nil {
+		response.Error = err.Error()
+		r.sendReply(reply, response)
+		return
+	}
+
+	res, err := util.GobEncodeSingle(ret)
+	if err != nil {
+		response.Error = err.Error()
+		r.sendReply(reply, response)
+		return
+	}
+
+	response.Data = res
+	r.sendReply(reply, response)
+}
+
+func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
+	reply := req.GetMsg().GetReply()
+	response := &protos.Response{}
+
+	// TODO should we create a new agent for every new request?
+	a, err := agent.NewRemote(
+		req.GetSession(),
+		reply,
+		r.rpcClient,
+		r.encoder,
+		r.serializer,
+		r.serviceDiscovery,
+		req.FrontendID,
+	)
+	if err != nil {
+		log.Warn("pitaya/handler: cannot instantiate remote agent")
+		response.Error = err.Error()
+		r.sendReply(reply, response)
+		return
+	}
+
+	ret, err := processHandlerMessage(rt, r.serializer, a.Srv, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
+	if err != nil {
+		log.Warnf(err.Error())
+		response = &protos.Response{
+			Error: err.Error(),
+		}
+	} else {
+		response = &protos.Response{
+			Data: ret,
+		}
+	}
+	r.sendReply(reply, response)
 }
 
 func (r *RemoteService) sendReply(reply string, response *protos.Response) {

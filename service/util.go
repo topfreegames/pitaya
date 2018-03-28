@@ -23,12 +23,18 @@ package service
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/pipeline"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/util"
 )
 
 func getHandler(rt *route.Route) (*component.Handler, error) {
@@ -65,4 +71,107 @@ func unmarshalRemoteArg(payload []byte) ([]interface{}, error) {
 		return nil, err
 	}
 	return args, nil
+}
+
+func getMsgType(msgTypeIface interface{}) (message.Type, error) {
+	var msgType message.Type
+	if val, ok := msgTypeIface.(message.Type); ok {
+		msgType = val
+	} else if val, ok := msgTypeIface.(protos.MsgType); ok {
+		msgType = util.ConvertProtoToMessageType(val)
+	} else {
+		return msgType, errors.New("invalid message type provided")
+	}
+	return msgType, nil
+}
+
+// TODO: new megazord method, break it into smaller pieces
+// TODO: should this be here in utils?
+func processHandlerMessage(
+	rt *route.Route,
+	serializer serialize.Serializer,
+	cachedSession reflect.Value,
+	session *session.Session,
+	data []byte,
+	msgTypeIface interface{},
+	remote bool,
+) ([]byte, error) {
+	h, err := getHandler(rt)
+	if err != nil {
+		return nil, err
+	}
+
+	msgType, err := getMsgType(msgTypeIface)
+	if err != nil {
+		return nil, err
+	}
+	exit, err := h.ValidateMessageType(msgType)
+	if err != nil && exit {
+		return nil, err
+	} else if err != nil {
+		log.Warn(err.Error())
+	}
+
+	if len(pipeline.BeforeHandler.Handlers) > 0 {
+		for _, h := range pipeline.BeforeHandler.Handlers {
+			data, err = h(session, data)
+			if err != nil {
+				// TODO: not sure if this should be logged
+				// one may want to have a before filter that prevents handler execution
+				// example: auth
+				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
+				return nil, err
+			}
+		}
+	}
+
+	arg, err := unmarshalHandlerArg(h, serializer, data)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: find out how to log this without needing the full request
+	// log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), arg)
+	args := []reflect.Value{h.Receiver, cachedSession}
+	if arg != nil {
+		args = append(args, reflect.ValueOf(arg))
+	}
+	resp, err := util.Pcall(h.Method, args)
+	if err != nil {
+		return nil, err
+	}
+
+	if remote && msgType == message.Notify {
+		// TODO this is a special case and should only happen with nats rpc client
+		// because we used nats request we have to answer to it or else a timeout
+		// will happen in the caller server and will be returned to the client
+		// the reason why we not just Publish is to keep track of failed rpc requests
+		// with timeouts, maybe we can improve this flow
+		resp = []byte("ack")
+	}
+
+	ret, err := util.SerializeOrRaw(serializer, resp)
+	if err != nil {
+		log.Error(err.Error())
+		ret, err = util.GetErrorPayload(serializer, err)
+		if err != nil {
+			log.Error("cannot serialize message and respond to the client ", err.Error())
+			return nil, err
+		}
+		return ret, err
+	}
+
+	if err == nil && len(pipeline.AfterHandler.Handlers) > 0 {
+		for _, h := range pipeline.AfterHandler.Handlers {
+			ret, err = h(session, ret)
+			if err != nil {
+				log.Debugf("broken pipeline, error: %s", err.Error())
+				// err can be ignored since serializer was already tested previously
+				ret, _ = util.GetErrorPayload(serializer, err)
+				return ret, nil
+			}
+		}
+	}
+
+	return ret, nil
 }

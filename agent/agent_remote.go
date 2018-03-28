@@ -40,15 +40,15 @@ import (
 
 // Remote corresponding to another server
 type Remote struct {
-	Session *session.Session // session
-	// TODO isso da pau igual no front :/ concorrencia
-	chDie            chan struct{}            // wait for close
-	reply            string                   // nats reply topic
 	Serializer       serialize.Serializer     // message serializer
-	rpcClient        cluster.RPCClient        // rpc client
-	encoder          codec.PacketEncoder      // packet encoder
-	serviceDiscovery cluster.ServiceDiscovery // service discovery
+	Session          *session.Session         // session
+	Srv              reflect.Value            // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
+	chDie            chan struct{}            // wait for close
+	encoder          codec.PacketEncoder      // binary encoder
 	frontendID       string                   // the frontend that sent the request
+	reply            string                   // nats reply topic
+	rpcClient        cluster.RPCClient        // rpc client
+	serviceDiscovery cluster.ServiceDiscovery // service discovery
 }
 
 // NewRemote create new Remote instance
@@ -80,6 +80,7 @@ func NewRemote(
 		return nil, err
 	}
 	a.Session = s
+	a.Srv = reflect.ValueOf(s)
 
 	return a, nil
 }

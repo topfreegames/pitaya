@@ -34,7 +34,6 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
@@ -58,23 +57,21 @@ var (
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
-		// regular agent member
-		Session          *session.Session     // session
 		Conn             net.Conn             // low-level conn fd
-		state            int32                // current agent state
+		Serializer       serialize.Serializer // message serializer
+		Session          *session.Session     // session
+		Srv              reflect.Value        // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
+		appDieChan       chan bool            // app die channel
 		chDie            chan struct{}        // wait for close
 		chSend           chan pendingMessage  // push message queue
-		chWrite          chan []byte          // write message to the clients
-		chStopWrite      chan struct{}        // stop writing messages
 		chStopHeartbeat  chan struct{}        // stop heartbeats
-		lastAt           int64                // last heartbeat unix time stamp
+		chStopWrite      chan struct{}        // stop writing messages
+		chWrite          chan []byte          // write message to the clients
 		decoder          codec.PacketDecoder  // binary decoder
 		encoder          codec.PacketEncoder  // binary encoder
-		Serializer       serialize.Serializer // message serializer
-		appDieChan       chan bool            // app die channel
 		heartbeatTimeout time.Duration
-
-		Srv reflect.Value // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
+		lastAt           int64 // last heartbeat unix time stamp
+		state            int32 // current agent state
 	}
 
 	pendingMessage struct {
@@ -354,18 +351,6 @@ func (a *Agent) write() {
 				if err != nil {
 					log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
-				}
-			}
-
-			if err == nil && len(pipeline.AfterHandler.Handlers) > 0 {
-				for _, h := range pipeline.AfterHandler.Handlers {
-					payload, err = h(a.Session, payload)
-					if err != nil {
-						log.Debugf("broken pipeline, error: %s", err.Error())
-						// err can be ignored since payload was previously successfully serialized
-						payload, _ = util.GetErrorPayload(a.Serializer, err)
-						break
-					}
 				}
 			}
 

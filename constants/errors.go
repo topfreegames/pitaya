@@ -33,7 +33,7 @@ var (
 	ErrMemberNotFound                 = errors.New("member not found in the group")
 	ErrNotifyOnRequest                = errors.New("tried to notify a request route")
 	ErrRPCLocal                       = errors.New("RPC must be to a different server type")
-	ErrRPCServerNotInitialized        = errors.New("rpc server is not running")
+	ErrRPCServerNotInitialized        = errors.New("RPC server is not running")
 	ErrReplyShouldBePtr               = errors.New("reply must be a pointer")
 	ErrRequestOnNotify                = errors.New("tried to request a notify route")
 	ErrServiceDiscoveryNotInitialized = errors.New("service discovery client is not initialized")

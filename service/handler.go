@@ -23,7 +23,6 @@ package service
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"time"
 
 	"github.com/topfreegames/pitaya/agent"
@@ -34,7 +33,6 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/timer"
@@ -57,8 +55,8 @@ type (
 	HandlerService struct {
 		services         map[string]*component.Service // all registered service
 		chFunction       chan func()                   // function that called in logic gorontine
-		chLocalProcess   chan unhandledLocalMessage    // channel of messages that will be processed locally
-		chRemoteProcess  chan unhandledRemoteMessage   // channel of messages that will be processed remotely
+		chLocalProcess   chan unhandledMessage         // channel of messages that will be processed locally
+		chRemoteProcess  chan unhandledMessage         // channel of messages that will be processed remotely
 		appDieChan       chan bool                     // die channel app
 		decoder          codec.PacketDecoder           // binary decoder
 		encoder          codec.PacketEncoder           // binary encoder
@@ -68,14 +66,7 @@ type (
 		remoteService    *RemoteService
 	}
 
-	unhandledLocalMessage struct {
-		agent   *agent.Agent
-		mid     uint
-		handler reflect.Method
-		args    []reflect.Value
-	}
-
-	unhandledRemoteMessage struct {
+	unhandledMessage struct {
 		agent *agent.Agent
 		route *route.Route
 		msg   *message.Message
@@ -97,8 +88,8 @@ func NewHandlerService(
 		services:   make(map[string]*component.Service),
 		chFunction: make(chan func(), funcBacklog),
 		// TODO what is the best channel size for both channels?
-		chLocalProcess:   make(chan unhandledLocalMessage, dispatchConcurrency),
-		chRemoteProcess:  make(chan unhandledRemoteMessage, dispatchConcurrency),
+		chLocalProcess:   make(chan unhandledMessage, dispatchConcurrency),
+		chRemoteProcess:  make(chan unhandledMessage, dispatchConcurrency),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		serializer:       serializer,
@@ -119,14 +110,8 @@ func (h *HandlerService) Dispatch(thread int) {
 	// handle packet that sent to chLocalProcess
 	for {
 		select {
-		case m := <-h.chLocalProcess:
-			ret, err := util.Pcall(m.handler, m.args)
-			if err != nil {
-				log.Error(err)
-			} else {
-				m.agent.Session.ResponseMID(m.mid, ret)
-			}
-
+		case lm := <-h.chLocalProcess:
+			h.localProcess(lm.agent, lm.route, lm.msg)
 		case rm := <-h.chRemoteProcess:
 			h.remoteService.remoteProcess(nil, rm.agent, rm.route, rm.msg)
 
@@ -263,15 +248,16 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		r.SvType = h.server.Type
 	}
 
+	message := unhandledMessage{
+		agent: a,
+		route: r,
+		msg:   msg,
+	}
 	if r.SvType == h.server.Type {
-		h.localProcess(a, r, msg)
+		h.chLocalProcess <- message
 	} else {
 		if h.remoteService != nil {
-			h.chRemoteProcess <- unhandledRemoteMessage{
-				agent: a,
-				route: r,
-				msg:   msg,
-			}
+			h.chRemoteProcess <- message
 		} else {
 			log.Warnf("request made to another server type but no remoteService running")
 		}
@@ -287,48 +273,11 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		mid = 0
 	}
 
-	handler, err := getHandler(route)
+	ret, err := processHandlerMessage(route, h.serializer, a.Srv, a.Session, msg.Data, msg.Type, false)
 	if err != nil {
-		log.Warn(err.Error())
-		return
-	}
-
-	exit, err := handler.ValidateMessageType(msg.Type)
-	if err != nil && exit {
-		log.Warn(err)
-		return
-	} else if err != nil {
-		log.Warn(err.Error())
-	}
-
-	var payload = msg.Data
-	if len(pipeline.BeforeHandler.Handlers) > 0 {
-		for _, h := range pipeline.BeforeHandler.Handlers {
-			payload, err = h(a.Session, payload)
-			if err != nil {
-				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
-				return
-			}
-		}
-	}
-
-	arg, err := unmarshalHandlerArg(handler, h.serializer, payload)
-	if err != nil {
-		log.Warn(err.Error())
-		return
-	}
-	log.Debugf("UID=%d, Message={%s}, Data=%+v", a.Session.UID(), msg.String(), arg)
-
-	args := []reflect.Value{handler.Receiver, a.Srv}
-	if arg != nil {
-		args = append(args, reflect.ValueOf(arg))
-	}
-
-	h.chLocalProcess <- unhandledLocalMessage{
-		agent:   a,
-		mid:     mid,
-		handler: handler.Method,
-		args:    args,
+		log.Error(err)
+	} else {
+		a.Session.ResponseMID(mid, ret)
 	}
 }
 
