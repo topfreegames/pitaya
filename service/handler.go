@@ -137,10 +137,10 @@ func (h *HandlerService) Dispatch(thread int) {
 			timer.Cron()
 
 		case t := <-timer.Manager.ChCreatedTimer: // new Timers
-			timer.Manager.Timers[t.ID] = t
+			timer.AddTimer(t)
 
 		case id := <-timer.Manager.ChClosingTimer: // closing Timers
-			delete(timer.Manager.Timers, id)
+			timer.RemoveTimer(id)
 
 		case <-h.appDieChan: // application quit signal
 			return

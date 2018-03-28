@@ -21,6 +21,7 @@
 package timer
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -41,9 +42,9 @@ var (
 
 	// Manager manager for all Timers
 	Manager = &struct {
-		incrementID    int64            // auto increment id
-		Timers         map[int64]*Timer // all Timers
-		ChClosingTimer chan int64       // timer for closing
+		incrementID    int64      // auto increment id
+		timers         sync.Map   // all Timers
+		ChClosingTimer chan int64 // timer for closing
 		ChCreatedTimer chan *Timer
 	}{}
 
@@ -80,9 +81,18 @@ type (
 )
 
 func init() {
-	Manager.Timers = map[int64]*Timer{}
 	Manager.ChClosingTimer = make(chan int64, timerBacklog)
 	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
+}
+
+// AddTimer adds a timer to the manager
+func AddTimer(t *Timer) {
+	Manager.timers.Store(t.ID, t)
+}
+
+// RemoveTimer removes a timer to the manager
+func RemoveTimer(id int64) {
+	Manager.timers.Delete(id)
 }
 
 // NewTimer creates a cron job
@@ -137,19 +147,17 @@ func pexec(id int64, fn Func) {
 // Cron executes scheduled tasks
 // TODO: if closing Timers'count in single cron call more than timerBacklog will case problem.
 func Cron() {
-	if len(Manager.Timers) < 1 {
-		return
-	}
-
 	now := time.Now()
 	unn := now.UnixNano()
-	for id, t := range Manager.Timers {
+	Manager.timers.Range(func(idInterface, tInterface interface{}) bool {
+		t := tInterface.(*Timer)
+		id := idInterface.(int64)
 		// prevent ChClosingTimer exceed
 		if t.counter == 0 {
 			if len(Manager.ChClosingTimer) < timerBacklog {
 				t.Stop()
 			}
-			continue
+			return true
 		}
 
 		// condition timer
@@ -157,7 +165,7 @@ func Cron() {
 			if t.condition.Check(now) {
 				pexec(id, t.fn)
 			}
-			continue
+			return true
 		}
 
 		// execute job
@@ -170,7 +178,8 @@ func Cron() {
 				t.counter--
 			}
 		}
-	}
+		return true
+	})
 }
 
 // SetTimerBacklog set the timer created/closing channel backlog, A small backlog
