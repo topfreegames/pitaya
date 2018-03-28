@@ -21,7 +21,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -121,7 +120,7 @@ func (h *HandlerService) Dispatch(thread int) {
 	for {
 		select {
 		case m := <-h.chLocalProcess:
-			ret, err := util.PcallHandler(m.handler, m.args)
+			ret, err := util.Pcall(m.handler, m.args)
 			if err != nil {
 				agent.AnswerWithError(m.agent, m.mid, err)
 			} else {
@@ -288,29 +287,22 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		mid = 0
 	}
 
-	handler, ok := handlers[fmt.Sprintf("%s.%s", route.Service, route.Method)]
-	if !ok {
-		e := fmt.Sprintf("pitaya/handler: %s not found", msg.Route)
-		log.Warn(e)
-		agent.AnswerWithError(a, msg.ID, errors.New(e))
+	handler, err := getHandler(route)
+	if err != nil {
+		log.Warn(err.Error())
+		agent.AnswerWithError(a, msg.ID, err)
 		return
 	}
 
-	if handler.MessageType != msg.Type {
-		var e error
-		switch msg.Type {
-		case message.Request:
-			e = constants.ErrRequestOnNotify
-			agent.AnswerWithError(a, msg.ID, e)
-			return
-		case message.Notify:
-			e = constants.ErrNotifyOnRequest
-			log.Warn(e)
-		}
+	exit, err := handler.ValidateMessageType(msg.Type)
+	if err != nil && exit {
+		agent.AnswerWithError(a, msg.ID, err)
+		return
+	} else if err != nil {
+		log.Warn(err.Error())
 	}
 
 	var payload = msg.Data
-	var err error
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
 		for _, h := range pipeline.BeforeHandler.Handlers {
 			payload, err = h(a.Session, payload)
@@ -322,24 +314,17 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		}
 	}
 
-	var data interface{}
-	if handler.IsRawArg {
-		data = payload
-	} else if handler.Type != nil {
-		data = reflect.New(handler.Type.Elem()).Interface()
-		err := h.serializer.Unmarshal(payload, data)
-		if err != nil {
-			e := fmt.Errorf("deserialize error: %s", err.Error())
-			log.Warn(e)
-			agent.AnswerWithError(a, msg.ID, e)
-			return
-		}
+	arg, err := unmarshalHandlerArg(handler, h.serializer, payload)
+	if err != nil {
+		log.Warn(err.Error())
+		agent.AnswerWithError(a, msg.ID, err)
+		return
 	}
-	log.Debugf("UID=%d, Message={%s}, Data=%+v", a.Session.UID(), msg.String(), data)
+	log.Debugf("UID=%d, Message={%s}, Data=%+v", a.Session.UID(), msg.String(), arg)
 
 	args := []reflect.Value{handler.Receiver, a.Srv}
-	if data != nil {
-		args = append(args, reflect.ValueOf(data))
+	if arg != nil {
+		args = append(args, reflect.ValueOf(arg))
 	}
 
 	h.chLocalProcess <- unhandledLocalMessage{

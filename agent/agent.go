@@ -377,6 +377,7 @@ func (a *Agent) write() {
 						log.Debugf("broken pipeline, error: %s", err.Error())
 						// err can be ignored since payload was previously successfully serialized
 						payload, _ = util.GetErrorPayload(a.Serializer, err)
+						break
 					}
 				}
 			}

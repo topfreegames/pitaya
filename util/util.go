@@ -29,6 +29,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
@@ -36,26 +37,8 @@ import (
 
 var log = logger.Log
 
-// PcallRemote calls a method that returns an interface and an error and recovers in case of panic
-func PcallRemote(method reflect.Method, args []reflect.Value) (rets []reflect.Value, err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Errorf("pitaya/dispatch: %v", rec)
-			log.Error(Stack())
-			if s, ok := rec.(string); ok {
-				err = errors.New(s)
-			} else {
-				err = errors.New("rpc call internal error")
-			}
-		}
-	}()
-
-	rets = method.Func.Call(args)
-	return rets, err
-}
-
-// PcallHandler calls a method that returns an interface and an error and recovers in case of panic
-func PcallHandler(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
+// Pcall calls a method that returns an interface and an error and recovers in case of panic
+func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Errorf("pitaya/dispatch: %v", rec)
@@ -69,6 +52,8 @@ func PcallHandler(method reflect.Method, args []reflect.Value) (rets interface{}
 	}()
 
 	r := method.Func.Call(args)
+	// r can have 0 length in case of notify handlers
+	// otherwise it will have 2 outputs: an interface and an error
 	if len(r) > 0 {
 		if v := r[1].Interface(); v != nil {
 			err = v.(error)
@@ -173,4 +158,16 @@ func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error)
 		Reason: err.Error(),
 	}
 	return SerializeOrRaw(serializer, errPayload)
+}
+
+// ConvertProtoToMessageType converts a protos.MsgType to a message.Type
+func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
+	var msgType message.Type
+	switch protoMsgType {
+	case protos.MsgType_MsgRequest:
+		msgType = message.Request
+	case protos.MsgType_MsgNotify:
+		msgType = message.Notify
+	}
+	return msgType
 }

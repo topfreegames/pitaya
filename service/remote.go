@@ -21,8 +21,6 @@
 package service
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -168,10 +166,18 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
 		// TODO should deserializer be decoupled?
 		log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
+		reply := req.GetMsg().GetReply()
+		response := &protos.Response{}
+		rt, err := route.Decode(req.GetMsg().GetRoute())
+		if err != nil {
+			errMsg := fmt.Sprintf("pitaya: cannot decode route %s", req.GetMsg().GetRoute())
+			response.Error = errMsg
+			r.sendReply(reply, response)
+			continue
+		}
+
 		switch {
 		case req.Type == protos.RPCType_Sys:
-			reply := req.GetMsg().GetReply()
-			response := &protos.Response{}
 			// TODO should we create a new agent for every new request?
 			a, err := agent.NewRemote(
 				req.GetSession(),
@@ -189,66 +195,36 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				continue
 			}
 
-			rt, err := route.Decode(req.GetMsg().GetRoute())
+			h, err := getHandler(rt)
 			if err != nil {
-				errMsg := fmt.Sprintf("pitaya/handler: cannot decode route %s", req.GetMsg().GetRoute())
-				response.Error = errMsg
-				r.sendReply(reply, response)
-				continue
-			}
-			h, ok := handlers[fmt.Sprintf("%s.%s", rt.Service, rt.Method)]
-			if !ok {
-				errMsg := fmt.Sprintf("pitaya/handler: %s not found", req.GetMsg().GetRoute())
-				log.Warnf(errMsg)
-				response.Error = errMsg
+				log.Warnf(err.Error())
+				response.Error = err.Error()
 				r.sendReply(reply, response)
 				continue
 			}
 
-			var msgType message.Type
-			switch req.GetMsg().GetType() {
-			case protos.MsgType_MsgRequest:
-				msgType = message.Request
-			case protos.MsgType_MsgNotify:
-				msgType = message.Notify
+			exit, err := h.ValidateMessageType(util.ConvertProtoToMessageType(req.GetMsg().GetType()))
+			if err != nil && exit {
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
+			} else if err != nil {
+				log.Warn(err.Error())
 			}
 
-			if h.MessageType != msgType {
-				var e error
-				switch req.GetMsg().GetType() {
-				case protos.MsgType_MsgRequest:
-					response.Error = constants.ErrRequestOnNotify.Error()
-					r.sendReply(reply, response)
-					continue
-				case protos.MsgType_MsgNotify:
-					e = constants.ErrNotifyOnRequest
-					log.Warn(e)
-				}
+			arg, err := unmarshalHandlerArg(h, r.serializer, req.GetMsg().GetData())
+			if err != nil {
+				response.Error = err.Error()
+				r.sendReply(reply, response)
+				continue
 			}
+			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), arg)
 
-			var data interface{}
-			if h.IsRawArg {
-				data = req.GetMsg().GetData()
-			} else if h.Type != nil {
-				data = reflect.New(h.Type.Elem()).Interface()
-				err := r.serializer.Unmarshal(req.GetMsg().GetData(), data)
-				if err != nil {
-					response.Error = err.Error()
-					r.sendReply(reply, response)
-					continue
-				}
-			}
-			log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), data)
-
-			// backend session
-			// need to create agent
-			// handler.processMessage()
-			// user request proxied from frontend server
 			args := []reflect.Value{h.Receiver, reflect.ValueOf(a.Session)}
-			if data != nil {
-				args = append(args, reflect.ValueOf(data))
+			if arg != nil {
+				args = append(args, reflect.ValueOf(arg))
 			}
-			resp, err := util.PcallHandler(h.Method, args)
+			resp, err := util.Pcall(h.Method, args)
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)
@@ -277,29 +253,16 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			r.sendReply(reply, response)
 
 		case req.Type == protos.RPCType_User:
-			reply := req.GetMsg().GetReply()
-			response := &protos.Response{}
-			rt, err := route.Decode(req.GetMsg().GetRoute())
-			if err != nil {
-				errMsg := fmt.Sprintf("pitaya/remote: cannot decode route %s", req.GetMsg().GetRoute())
-				response.Error = errMsg
-				r.sendReply(reply, response)
-				continue
-			}
-
-			rStr := fmt.Sprintf("%s.%s", rt.Service, rt.Method)
-
-			remote, ok := remotes[rStr]
+			remote, ok := remotes[rt.Short()]
 			if !ok {
-				errMsg := fmt.Sprintf("pitaya/remote: %s not found", rStr)
+				errMsg := fmt.Sprintf("pitaya/remote: %s not found", rt.Short())
 				log.Warnf(errMsg)
 				response.Error = errMsg
 				r.sendReply(reply, response)
 				continue
 			}
 
-			args := make([]interface{}, 0)
-			err = gob.NewDecoder(bytes.NewReader(req.GetMsg().GetData())).Decode(&args)
+			args, err := unmarshalRemoteArg(req.GetMsg().GetData())
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)
@@ -311,18 +274,13 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 				params = append(params, reflect.ValueOf(arg))
 			}
 
-			ret, err := util.PcallRemote(remote.Method, params)
+			ret, err := util.Pcall(remote.Method, params)
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)
 				continue
 			}
-			if err := ret[1].Interface(); err != nil {
-				response.Error = err.(error).Error()
-				r.sendReply(reply, response)
-				continue
-			}
-			res, err := util.GobEncodeSingle(ret[0].Interface())
+			res, err := util.GobEncodeSingle(ret)
 			if err != nil {
 				response.Error = err.Error()
 				r.sendReply(reply, response)

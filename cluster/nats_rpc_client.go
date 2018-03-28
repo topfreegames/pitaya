@@ -71,7 +71,6 @@ func (ns *NatsRPCClient) Call(
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
-
 	req := protos.Request{
 		Type: rpcType,
 		Msg: &protos.Msg{
@@ -79,7 +78,6 @@ func (ns *NatsRPCClient) Call(
 			Data:  msg.Data,
 		},
 	}
-
 	if ns.server.Frontend {
 		req.FrontendID = ns.server.ID
 	}
