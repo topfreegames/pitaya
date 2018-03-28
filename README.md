@@ -48,7 +48,7 @@ You can start the backend and frontend servers with the following commands:
 
 ```make 
 make run-cluster-example-frontend
-make run-cluster-example-backedn
+make run-cluster-example-backend
 ```
 
 ##### Frontend and backend servers
@@ -58,8 +58,6 @@ In short, frontend servers handle client calls while backend servers only handle
 ## Resources
 
 - Documents
-    + [How to build your first pitaya application](./docs/get_started.md)
-    + [Communication protocol](./docs/communication_protocol.md)
     + [API Reference](https://godoc.org/github.com/topfreegames/pitaya)
 
 - Demo
