@@ -61,8 +61,8 @@ In short, frontend servers handle client calls while backend servers only handle
     + [API Reference](https://godoc.org/github.com/topfreegames/pitaya)
 
 - Demo
-  + [Implement a chat room in ~100 lines with pitaya and WebSocket](./examples/demo/chat) (adpted from [nano](https://github.com/lonnng/nano)'s example)
-  + [Tadpole demo](./examples/demo/tadpole) (adpted from [nano](https://github.com/lonnng/nano)'s example)
+  + [Implement a chat room in ~100 lines with pitaya and WebSocket](./examples/demo/chat) (adapted from [nano](https://github.com/lonnng/nano)'s example)
+  + [Tadpole demo](./examples/demo/tadpole) (adapted from [nano](https://github.com/lonnng/nano)'s example)
   + [Pitaya cluster mode example](./examples/demo/cluster)
   + [Pitaya cluster mode with protobuf compression example](./examples/demo/cluster_protobuf)
 
