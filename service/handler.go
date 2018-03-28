@@ -58,7 +58,7 @@ type (
 		services         map[string]*component.Service // all registered service
 		chFunction       chan func()                   // function that called in logic gorontine
 		chLocalProcess   chan unhandledLocalMessage    // channel of messages that will be processed locally
-		chRemoteProcess  chan unhandledRemoteMessage   // channel of messages that will be processed remotelly
+		chRemoteProcess  chan unhandledRemoteMessage   // channel of messages that will be processed remotely
 		appDieChan       chan bool                     // die channel app
 		decoder          codec.PacketDecoder           // binary decoder
 		encoder          codec.PacketEncoder           // binary encoder

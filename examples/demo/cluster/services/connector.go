@@ -44,7 +44,7 @@ func (c *Connector) NotifySessionData(s *session.Session, data *SessionData) {
 	}
 }
 
-// RemoteFunc is a function that will be called remotelly
+// RemoteFunc is a function that will be called remotely
 func (c *ConnectorRemote) RemoteFunc(message string) (*RPCResponse, error) {
 	fmt.Printf("received a remote call with this message: %s\n", message)
 	return &RPCResponse{
