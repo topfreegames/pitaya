@@ -79,17 +79,16 @@ func (r *RemoteService) remoteProcess(server *cluster.Server, a *agent.Agent, ro
 	var err error
 	if res, err = r.remoteCall(server, protos.RPCType_Sys, route, a.Session, msg); err != nil {
 		log.Errorf(err.Error())
-		a.Session.ResponseMID(msg.ID, &map[string]interface{}{
-			"code":  500,
-			"error": err.Error(),
-		})
 		return
 	}
-
 	// TODO we should not return a response to a notify to the client
 	// this is becase of nats
-	if msg.Type == message.Request {
+	// we should not send an error to the client because the only thing
+	// returned to the client should be the return type in the handler
+	if msg.Type == message.Request && res.Error == "" {
 		a.Session.ResponseMID(msg.ID, res.Data)
+	} else {
+		log.Error(res.Error)
 	}
 }
 

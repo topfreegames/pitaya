@@ -1,5 +1,23 @@
 {
-  "connector.getsessiondata": {
-    "out": "SessionData"
+  "room.room.sendrpc": {
+    "server": "Response"
+  },
+  "room.room.entry": {
+    "server": "Response"
+  },
+  "room.room.message": {
+    "client": "UserMessage"
+  },
+  "room.room.join": {
+    "server": "Response"
+  },
+  "onMessage": {
+    "server": "UserMessage"
+  },
+  "onNewUser": {
+    "server": "NewUser"
+  },
+  "onMembers": {
+    "server": "AllMembers"
   }
 }

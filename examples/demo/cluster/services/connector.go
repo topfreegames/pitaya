@@ -22,18 +22,35 @@ type SessionData struct {
 	Data map[string]interface{}
 }
 
+// Response struct
+type Response struct {
+	Code int32
+	Msg  string
+}
+
+func reply(code int32, msg string) *Response {
+	res := &Response{
+		Code: code,
+		Msg:  msg,
+	}
+	return res
+}
+
 // GetSessionData gets the session data
-func (c *Connector) GetSessionData(s *session.Session) (map[string]interface{}, error) {
-	return s.GetData(), nil
+func (c *Connector) GetSessionData(s *session.Session) *SessionData {
+	res := &SessionData{
+		Data: s.GetData(),
+	}
+	return res
 }
 
 // SetSessionData sets the session data
-func (c *Connector) SetSessionData(s *session.Session, data *SessionData) (string, error) {
+func (c *Connector) SetSessionData(s *session.Session, data *SessionData) *Response {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return "", err
+		return reply(500, err.Error())
 	}
-	return "success", nil
+	return reply(200, "success")
 }
 
 // NotifySessionData sets the session data

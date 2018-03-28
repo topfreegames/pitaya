@@ -58,11 +58,6 @@ func isRemoteMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Validate it is not a handler method
-	if isHandlerMethod(method) {
-		return false
-	}
-
 	return true
 }
 
@@ -87,12 +82,12 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Method needs either no out or two outs: interface{}(or []byte), error
-	if mt.NumOut() != 0 && mt.NumOut() != 2 {
+	// Method needs either no out or one out: interface{}(or []byte)
+	if mt.NumOut() != 0 && mt.NumOut() != 1 {
 		return false
 	}
 
-	if mt.NumOut() == 2 && mt.Out(1) != typeOfError {
+	if mt.NumOut() == 1 && mt.Out(0) != typeOfBytes && mt.Out(0).Kind() != reflect.Ptr {
 		return false
 	}
 

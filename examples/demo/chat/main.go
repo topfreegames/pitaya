@@ -63,9 +63,15 @@ func (r *Room) AfterInit() {
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error) {
-	fakeUID := s.ID()                  //just use s.ID as uid !!!
-	s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
+func (r *Room) Join(s *session.Session, msg []byte) *protos.JoinResponse {
+	res := &protos.JoinResponse{}
+	fakeUID := s.ID()                         //just use s.ID as uid !!!
+	err := s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
+
+	if err != nil {
+		res.Result = err.Error()
+		return res
+	}
 
 	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
 	// notify others
@@ -78,7 +84,8 @@ func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error
 		r.group.Leave(s)
 	})
 
-	return &protos.JoinResponse{Result: "success"}, nil
+	res.Result = "success"
+	return res
 }
 
 // Message sync last message to all members

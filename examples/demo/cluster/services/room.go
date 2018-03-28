@@ -100,39 +100,43 @@ func (r *Room) AfterInit() {
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
+func (r *Room) Entry(s *session.Session, msg []byte) *JoinResponse {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
-		return nil, err
+		return &JoinResponse{Result: err.Error()}
 	}
-	resp := &JoinResponse{Result: "ok"}
-	return resp, nil
+	return &JoinResponse{Result: "ok"}
 }
 
 // GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session) (map[string]interface{}, error) {
-	return s.GetData(), nil
+func (r *Room) GetSessionData(s *session.Session) *SessionData {
+	return &SessionData{
+		Data: s.GetData(),
+	}
 }
 
 // SetSessionData sets the session data
-func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
+func (r *Room) SetSessionData(s *session.Session, data *SessionData) []byte {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return "", err
+		return []byte(err.Error())
 	}
 	err = s.PushToFront()
 	if err != nil {
-		return "", err
+		return []byte(err.Error())
 	}
-	return "success", nil
+	return []byte("success")
 }
 
 // Join room
-func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
+func (r *Room) Join(s *session.Session) *JoinResponse {
 	err := r.group.Add(s)
 	if err != nil {
-		return nil, err
+		return &JoinResponse{
+			Code:   500,
+			Result: err.Error(),
+		}
 	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
@@ -140,9 +144,12 @@ func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
 		r.group.Leave(s)
 	})
 	if err != nil {
-		return nil, err
+		return &JoinResponse{
+			Code:   500,
+			Result: err.Error(),
+		}
 	}
-	return &JoinResponse{Result: "success"}, nil
+	return &JoinResponse{Result: "success"}
 }
 
 // Message sync last message to all members
@@ -154,15 +161,15 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error) {
+func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) *RPCResponse {
 	ret := &RPCResponse{}
 	err := pitaya.RPCTo(msg.ServerID, msg.Route, ret, msg.Msg)
 	if err != nil {
-		fmt.Printf("rpc error: %s\n", err)
-		return nil, err
+		ret.Msg = err.Error()
+		return ret
 	}
 	fmt.Printf("rpc ret: %s\n", ret)
-	return ret, nil
+	return ret
 }
 
 // MessageRemote just echoes the given message

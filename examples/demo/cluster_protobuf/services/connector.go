@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
 )
 
 // ConnectorRemote is a remote that will receive rpc's
@@ -17,6 +17,7 @@ type Connector struct {
 	component.Base
 }
 
+<<<<<<< HEAD
 // SessionData is the session data struct
 type SessionData struct {
 	Data map[string]interface{} `json:"data"`
@@ -44,10 +45,10 @@ func (c *Connector) NotifySessionData(s *session.Session, data *SessionData) {
 	}
 }
 
-// RemoteFunc is a function that will be called remotely
-func (c *ConnectorRemote) RemoteFunc(message string) (*RPCResponse, error) {
+// RemoteFunc is a function that will be called remotelly
+func (c *ConnectorRemote) RemoteFunc(message []byte) (*protos.Response, error) {
 	fmt.Printf("received a remote call with this message: %s\n", message)
-	return &RPCResponse{
-		Msg: message,
+	return &protos.Response{
+		Msg: string(message),
 	}, nil
 }

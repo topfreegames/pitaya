@@ -53,8 +53,11 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 
 	r := method.Func.Call(args)
 	// r can have 0 length in case of notify handlers
-	// otherwise it will have 2 outputs: an interface and an error
-	if len(r) > 0 {
+	// otherwise it will have 1 (an interface) or 2 outputs: an interface and an error
+	if len(r) == 1 {
+		rets = r[0].Interface()
+	}
+	if len(r) == 2 {
 		if v := r[1].Interface(); v != nil {
 			err = v.(error)
 			if err != nil {

@@ -330,19 +330,6 @@ func (a *Agent) SendToChWrite(data []byte) {
 	a.chWrite <- data
 }
 
-// AnswerWithError answers with an error
-func AnswerWithError(a *Agent, mid uint, err error) {
-	p, e := util.GetErrorPayload(a.Serializer, err)
-	if e != nil {
-		log.Error("error answering the player with an error: ", e.Error())
-		return
-	}
-	e = a.Session.ResponseMID(mid, p)
-	if e != nil {
-		log.Error("error answering the player with an error: ", e.Error())
-	}
-}
-
 func (a *Agent) write() {
 	// clean func
 	defer func() {

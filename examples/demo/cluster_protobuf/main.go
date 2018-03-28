@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
+	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
@@ -70,7 +71,21 @@ func main() {
 		pitaya.Shutdown()
 	})()
 
-	pitaya.SetSerializer(protobuf.NewSerializer())
+	protos, err := os.Open("./protos/cluster.proto")
+	if err != nil {
+		panic(err)
+	}
+	protosMapping, err := os.Open("./protos/protos_mapping.json")
+	if err != nil {
+		panic(err)
+	}
+
+	ser, err := protobuf.NewSerializer(protos, protosMapping)
+	if err != nil {
+		panic(err)
+	}
+
+	pitaya.SetSerializer(ser)
 	pitaya.SetServerType(*svType)
 
 	if !*isFrontend {

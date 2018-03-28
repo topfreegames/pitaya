@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 )
@@ -22,37 +23,10 @@ type (
 		Stats *Stats
 	}
 
-	// UserMessage represents a message that user sent
-	UserMessage struct {
-		Name    string `json:"name"`
-		Content string `json:"content"`
-	}
-
 	// Stats exports the room status
 	Stats struct {
 		outboundBytes int
 		inboundBytes  int
-	}
-
-	// RPCResponse represents a rpc message
-	RPCResponse struct {
-		Msg string `json:"msg"`
-	}
-
-	// NewUser message will be received when new user join room
-	NewUser struct {
-		Content string `json:"content"`
-	}
-
-	// AllMembers contains all members uid
-	AllMembers struct {
-		Members []string `json:"members"`
-	}
-
-	// JoinResponse represents the result of joining room
-	JoinResponse struct {
-		Code   int    `json:"code"`
-		Result string `json:"result"`
 	}
 )
 
@@ -80,7 +54,7 @@ func NewRoom() *Room {
 func (r *Room) Init() {
 	// It is necessary to register all structs that will be used in RPC calls
 	// This must be done both in the caller and callee servers
-	gob.Register(&UserMessage{})
+	gob.Register(&protos.UserMessage{})
 }
 
 // AfterInit component lifetime callback
@@ -92,48 +66,36 @@ func (r *Room) AfterInit() {
 	})
 }
 
+func reply(code int32, msg string) *protos.Response {
+	return &protos.Response{
+		Code: code,
+		Msg:  msg,
+	}
+}
+
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
+func (r *Room) Entry(s *session.Session) *protos.Response {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
-		return nil, err
+		return reply(500, err.Error())
 	}
-	resp := &JoinResponse{Result: "ok"}
-	return resp, nil
-}
-
-// GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session, msg []byte) (map[string]interface{}, error) {
-	return s.GetData(), nil
-}
-
-// SetSessionData sets the session data
-func (r *Room) SetSessionData(s *session.Session, data *SessionData) (string, error) {
-	err := s.SetData(data.Data)
-	if err != nil {
-		return "", err
-	}
-	err = s.PushToFront()
-	if err != nil {
-		return "", err
-	}
-	return "success", nil
+	return reply(200, "ok")
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) (*JoinResponse, error) {
-	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+func (r *Room) Join(s *session.Session) *protos.Response {
+	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
+	r.group.Broadcast("onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	r.group.Add(s)
 	s.OnClose(func() {
 		r.group.Leave(s)
 	})
-	return &JoinResponse{Result: "success"}, nil
+	return &protos.Response{Msg: "success"}
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) {
+func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
 	err := r.group.Broadcast("onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -141,19 +103,11 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg []byte) error {
-	ret := RPCResponse{}
-	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, "teste")
+func (r *Room) SendRPC(s *session.Session, msg []byte) *protos.Response {
+	ret := protos.Response{}
+	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, msg)
 	if err != nil {
-		fmt.Printf("rpc error: %s\n", err)
-		return err
+		return reply(500, err.Error())
 	}
-	fmt.Printf("rpc ret: %s\n", ret)
-	return nil
-}
-
-// MessageRemote just echoes the given message
-func (r *Room) MessageRemote(msg *UserMessage, b bool, s string) (*UserMessage, error) {
-	fmt.Println("CHEGOU", b, s)
-	return msg, nil
+	return reply(200, ret.Msg)
 }

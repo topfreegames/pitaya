@@ -122,7 +122,7 @@ func (h *HandlerService) Dispatch(thread int) {
 		case m := <-h.chLocalProcess:
 			ret, err := util.Pcall(m.handler, m.args)
 			if err != nil {
-				agent.AnswerWithError(m.agent, m.mid, err)
+				log.Error(err)
 			} else {
 				m.agent.Session.ResponseMID(m.mid, ret)
 			}
@@ -290,13 +290,12 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 	handler, err := getHandler(route)
 	if err != nil {
 		log.Warn(err.Error())
-		agent.AnswerWithError(a, msg.ID, err)
 		return
 	}
 
 	exit, err := handler.ValidateMessageType(msg.Type)
 	if err != nil && exit {
-		agent.AnswerWithError(a, msg.ID, err)
+		log.Warn(err)
 		return
 	} else if err != nil {
 		log.Warn(err.Error())
@@ -308,7 +307,6 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 			payload, err = h(a.Session, payload)
 			if err != nil {
 				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
-				agent.AnswerWithError(a, msg.ID, err)
 				return
 			}
 		}
@@ -317,7 +315,6 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 	arg, err := unmarshalHandlerArg(handler, h.serializer, payload)
 	if err != nil {
 		log.Warn(err.Error())
-		agent.AnswerWithError(a, msg.ID, err)
 		return
 	}
 	log.Debugf("UID=%d, Message={%s}, Data=%+v", a.Session.UID(), msg.String(), arg)
