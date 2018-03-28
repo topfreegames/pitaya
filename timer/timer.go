@@ -29,6 +29,7 @@ import (
 )
 
 const (
+	// LoopForever is a constant indicating that timer should loop forever
 	LoopForever = -1
 )
 
