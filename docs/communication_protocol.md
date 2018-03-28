@@ -1,30 +1,30 @@
 # Communication protocol
 
-pitaya's binary protocol can be divided into two layers: package layer and message layer. Message
+The binary protocol can be divided into two layers: package layer and message layer. Message
 layer works on route compression and protobuf/json encoding/decoding, and the result from message
 layer will be passed to the package layer. The package layer provides a series of mechanisms
 including  handshake, heartbeat and byte-stream-based message encoding/decoding. The result from
 package layer can be transmitted on tcp or WebSocket. Both of the message layer and package layer
 can be replaced independently since neither of them relies on each other directly.
 
-The layers of pitaya protocol is shown as below :
+The layers of the communication protocol is shown as below :
 
-![pitaya Protocol](images/data-trans.png)
+![communication Protocol](images/data-trans.png)
 
-## pitaya Package
+## Package
 
-Package layer is used to encapsulate pitaya message for transmitting via a connection-oriented
+Package layer is used to encapsulate a message for transmitting via a connection-oriented
 communication such as tcp. There are two kinds of package: control package and data package.
 The former is used to control the communication process such as handshake, heartbeat, and the
 latter is used to transmit data between clients and servers.
 
 #### Package Format
 
-pitaya package is composed of two parts: header and body. The header part describes type and
+A package is composed of two parts: header and body. The header part describes type and
 length of the package while body contains the binary payload which is encoded/decoded by
 message layer. The format is shown as follows:
 
-![pitaya package](images/packet-format.png)
+![package](images/packet-format.png)
 
 * type - package type, 1 byte
     - 0x01: package for handshake request from client to server and handshake response from server to client;
@@ -120,17 +120,17 @@ When server wants to break a client connection, such as kicking an online player
 will first sends a control message  and then breaks the connection. Client can use this
 control message to determine whether server breaks the connection.
 
-## pitaya Message
+## Message
 
-pitaya message layer does work on building message header. Different message types has different
-header, so message header format is complex for it supporting several message types.
+The message layer does work on building message header. Different message types have different
+headers, so the message header format is complex for supporting several message types.
 
-Message header is composed of three parts: flag, message id (a.k.a requestId), route. As
+Message header is composed of three parts: flag, message id (a.k.a requestId) and route. As
 shown below:
 
 ![Message Head](images/message-header.png)
 
-As can be seen from the figure, pitaya message header is variant, depending on the particular
+As can be seen from the figure, the message header is variant, depending on the particular
 message type and content:
 
 * flag is required and occupies one byte, which determines type of the message and format of
@@ -175,9 +175,10 @@ As seen from the figure above:
 
 ## Summary
 
-This document describes the wire-protocol for pitaya, including package layer and message layer. When
+This document describes the wire-protocol for Pitaya, including package layer and message layer. When
 developers uses pitaya underlying network library, they can implement client SDK for various platforms
 according to the protocol illustrated here.
 
 
-***Copyright***:Parts of above content and figures come from [Pomelo Protocol](https://github.com/NetEase/pomelo/wiki/Communication-Protocol)
+***Copyright***: 
+Parts of above content and figures come from [Pomelo Protocol](https://github.com/NetEase/pomelo/wiki/Communication-Protocol) and [Nano Protocol](https://github.com/lonnng/nano/blob/159f842b52db3a119f5151b1eded9cc1caf5d4a2/docs/communication_protocol.md).

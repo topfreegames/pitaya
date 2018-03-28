@@ -1,3 +1,0 @@
-# Design patterns
-
-Plan...

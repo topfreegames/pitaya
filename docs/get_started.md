@@ -1,30 +1,30 @@
-# How to build your first pitaya application
+# How to build your first Pitaya application
 
 In this tutorial, we will build a chat application which based web browser and WebSocket.
 
 Because of the complexity of the game in scene management, client animation, they are
-not suitable entry level application for the pitaya. The chat application is more suitable
-as a developer to contact pitaya's first application and therefore more suitable for the
+not suitable entry level application for the Pitaya. The chat application is more suitable
+as a developer to contact Pitaya's first application and therefore more suitable for the
 tutorial.
 
-pitaya is really a game server framework, but it is essentially a high real-time, application
+Pitaya is really a game server framework, but it is essentially a high real-time, application
 framework. In addition to some special parts of the game library in the library section,
 the rest of the framework can be used for development of real-time web application.
 
 ## Preface
 
-- This tutorial is suitable for beginners, if you have some development experience in pitaya,
+- This tutorial is suitable for beginners, if you have some development experience in Pitaya,
 please skip this tutorial. You can read the developer guide, there will be some topics
 discussed in detail.
 
-- Since pitaya is based on Go, so we hope you have some familiarity with Go before reading this
+- Since Pitaya is based on Go, so we hope you have some familiarity with Go before reading this
 tutorial.
 
 - The tutorial examples' source code is on github, [complete code](https://github.com/topfreegames/pitaya/tree/master/examples/demo/chat)
 
 - This tutorial uses a real-time chat application as an example, and we make some modifications
-of the example to show different features of pitaya, allowing users to have a general understanding
-of pitaya, and be familiar with it and be able to use it for application development.
+of the example to show different features of Pitaya, allowing users to have a general understanding
+of Pitaya, and be familiar with it and be able to use it for application development.
 
 - This tutorial assumes that your development environment is Unix-like system, if you use
 Windows, we hope you know the corresponding manner, such as some .sh script, and uses a bat
@@ -32,14 +32,15 @@ file with the same name. This tutorial would not make any special instructions f
 
 ## Terminologies
 
-pitaya has it's own terminology which some may find confusing without a brief explanation. Here
+Pitaya has it's own terminology which some may find confusing without a brief explanation. Here
 we will try and give readers an overview of some common terms you may come across in this tutorial.
 
 ### Component
 
-The pitaya framework is composed of a number of loosely coupled components and the pitaya framework
+The Pitaya framework is composed of a number of loosely coupled components and the Pitaya framework
 can be regarded as a container of component. Each component defines callbacks: `Init`, `AfterInit`,
 `BeforeShutdown`, `Shutdown`.
+
 ```go
 type DemoComponent struct{}
 
@@ -54,21 +55,25 @@ func (c *DemoComponent) Shutdown()       {}
 Handler is used to do business logic, which signature is declared as follows:
 ```go
 // handler that receives unmarshalled data
-func (c *DemoComponent) DemoHandler(s *session.Session, payload *pb.DemoPayload) error {
+func (c *DemoComponent) DemoHandler(s *session.Session, payload *pb.DemoPayload) *pb.DemoReponse {
     // business logic begin
     // ...
     // business logic end
 
-    return nil
+    resp := &pb.DemoReponse{}
+    // populate response
+    return resp
 }
 
 // handler that receives raw data from client
-func (c *DemoComponent) DemoHandler(s *session.Session, raw []byte) error {
+func (c *DemoComponent) DemoHandler(s *session.Session, raw []byte) []byte {
     // business logic begin
     // ...
     // business logic end
 
-    return nil
+    resp := []byte
+    // populate response
+    return resp
 }
 ```
 
@@ -78,7 +83,7 @@ A "route" is a unique identifier to a specific service endpoint where clients pu
 your servers, or where clients handle data received from servers. For servers, routes are usually
 reached with the following route naming convention: .., such as "Room.Message". In our example,
 `Room` is the component that contains a bundle of handler,  `Message` is the handler defined in
-`Room` component, all handler methods that defined in component will be registered by pitaya
+`Room` component, all handler methods that defined in component will be registered by Pitaya
 automatically.
 
 For the client, its general form will be on[ExpectedEventName] (for our example, onMessage). When
@@ -98,7 +103,7 @@ broadcasting message. A player can be contained by multiple group.
 
 ### Request, Response, Notify, Push
 
-There are four types of messages in pitaya: request, response, notify and push. Client initiates
+There are four types of messages in Pitaya: request, response, notify and push. Client initiates
 request to server, and then server returns a response after handling the request. Notify message
 is also sent to server by client, but it does not need a response. Pushing message is sent by
 server to client actively.
@@ -106,87 +111,8 @@ server to client actively.
 ## Get started
 
 ### Server
-```go
-package main
 
-import (
-	"fmt"
-	"log"
-	"net/http"
-
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/serialize/json"
-	"github.com/topfreegames/pitaya/session"
-)
-
-type (
-	// define component
-	Room struct {
-		component.Base
-		group *pitaya.Group
-	}
-
-	// protocol messages
-	UserMessage struct {
-		Name    string `json:"name"`
-		Content string `json:"content"`
-	}
-
-	NewUser struct {
-		Content string `json:"content"`
-	}
-
-	AllMembers struct {
-		Members []int64 `json:"members"`
-	}
-
-	JoinResponse struct {
-		Code   int    `json:"code"`
-		Result string `json:"result"`
-	}
-)
-
-func NewRoom() *Room {
-	return &Room{
-		group: pitaya.NewGroup("room"),
-	}
-}
-
-func (r *Room) AfterInit() {
-	pitaya.OnSessionClosed(func(s *session.Session) {
-		r.group.Leave(s)
-	})
-}
-
-// Join room
-func (r *Room) Join(s *session.Session, msg []byte) error {
-	s.Bind(s.ID()) // binding session uid
-	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
-	// notify others
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
-	// new user join group
-	r.group.Add(s) // add session to group
-	return s.Response(&JoinResponse{Result: "sucess"})
-}
-
-// Send message
-func (r *Room) Message(s *session.Session, msg *UserMessage) error {
-	return r.group.Broadcast("onMessage", msg)
-}
-
-func main() {
-	pitaya.Register(NewRoom())
-	pitaya.SetSerializer(json.NewSerializer())
-	pitaya.EnableDebug()
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-
-	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
-
-	pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-	pitaya.ListenWS(":3250")
-}
-```
+[main server code](https://github.com/topfreegames/pitaya/tree/master/examples/demo/chat/main.go)
 
 1. First of all, we import packages that required in this code snippet.
 2. Define room component
@@ -208,3 +134,7 @@ Reference Client SDK documents.
 
 In this section, we obtain a simple chat application and make it run, and briefly analyze its
 source code.
+
+***Copyright***: 
+Parts of above content come from [Nano Get Started](https://github.com/lonnng/nano/blob/159f842b52db3a119f5151b1eded9cc1caf5d4a2/docs/get_started.md).
+
