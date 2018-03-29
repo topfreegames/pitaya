@@ -85,6 +85,52 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
+func executeBeforePipeline(h *component.Handler, s *session.Session, data []byte) ([]byte, error) {
+	if len(pipeline.BeforeHandler.Handlers) > 0 {
+		for _, h := range pipeline.BeforeHandler.Handlers {
+			res, err := h(s, data)
+			if err != nil {
+				// TODO: not sure if this should be logged
+				// one may want to have a before filter that prevents handler execution
+				// example: auth
+				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
+				return res, err
+			}
+			return res, nil
+		}
+	}
+	return data, nil
+}
+
+func executeAfterPipeline(h *component.Handler, s *session.Session, ser serialize.Serializer, res []byte) []byte {
+	if len(pipeline.AfterHandler.Handlers) > 0 {
+		for _, h := range pipeline.AfterHandler.Handlers {
+			ret, err := h(s, res)
+			if err != nil {
+				log.Debugf("broken pipeline, error: %s", err.Error())
+				// err can be ignored since serializer was already tested previously
+				ret, _ = util.GetErrorPayload(ser, err)
+				return ret
+			}
+		}
+	}
+	return nil
+}
+
+func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
+	res, err := util.SerializeOrRaw(ser, ret)
+	if err != nil {
+		log.Error(err.Error())
+		ret, err = util.GetErrorPayload(ser, err)
+		if err != nil {
+			log.Error("cannot serialize message and respond to the client ", err.Error())
+			return nil, err
+		}
+		return res, err
+	}
+	return res, nil
+}
+
 // TODO: new megazord method, break it into smaller pieces
 // TODO: should this be here in utils?
 func processHandlerMessage(
@@ -112,17 +158,8 @@ func processHandlerMessage(
 		log.Warn(err.Error())
 	}
 
-	if len(pipeline.BeforeHandler.Handlers) > 0 {
-		for _, h := range pipeline.BeforeHandler.Handlers {
-			data, err = h(session, data)
-			if err != nil {
-				// TODO: not sure if this should be logged
-				// one may want to have a before filter that prevents handler execution
-				// example: auth
-				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
-				return nil, err
-			}
-		}
+	if data, err = executeBeforePipeline(h, session, data); err != nil {
+		return nil, err
 	}
 
 	arg, err := unmarshalHandlerArg(h, serializer, data)
@@ -150,26 +187,10 @@ func processHandlerMessage(
 		resp = []byte("ack")
 	}
 
-	ret, err := util.SerializeOrRaw(serializer, resp)
-	if err != nil {
-		log.Error(err.Error())
-		ret, err = util.GetErrorPayload(serializer, err)
-		if err != nil {
-			log.Error("cannot serialize message and respond to the client ", err.Error())
-			return nil, err
-		}
-		return ret, err
-	}
-
-	if err == nil && len(pipeline.AfterHandler.Handlers) > 0 {
-		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err = h(session, ret)
-			if err != nil {
-				log.Debugf("broken pipeline, error: %s", err.Error())
-				// err can be ignored since serializer was already tested previously
-				ret, _ = util.GetErrorPayload(serializer, err)
-				return ret, nil
-			}
+	ret, err := serializeReturn(serializer, resp)
+	if err == nil {
+		if r := executeAfterPipeline(h, session, serializer, ret); r != nil {
+			return r, nil
 		}
 	}
 
