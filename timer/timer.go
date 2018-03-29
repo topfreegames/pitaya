@@ -25,9 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/util"
 )
+
+var timerBacklog int
 
 const (
 	// LoopForever is a constant indicating that timer should loop forever
@@ -35,9 +38,6 @@ const (
 )
 
 var (
-	// default timer backlog
-	timerBacklog = 1 << 8
-
 	log = logger.Log
 
 	// Manager manager for all Timers
@@ -81,6 +81,7 @@ type (
 )
 
 func init() {
+	timerBacklog = config.GetConcurrency("timer")
 	Manager.ChClosingTimer = make(chan int64, timerBacklog)
 	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
 }

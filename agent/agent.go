@@ -29,6 +29,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -39,10 +40,6 @@ import (
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
-)
-
-const (
-	agentWriteBacklog = 16
 )
 
 var (
@@ -99,10 +96,10 @@ func NewAgent(
 	a := &Agent{
 		appDieChan:       dieChan,
 		chDie:            make(chan struct{}),
-		chSend:           make(chan pendingMessage, agentWriteBacklog),
+		chSend:           make(chan pendingMessage, config.GetConcurrency("agent.messages")),
 		chStopHeartbeat:  make(chan struct{}),
 		chStopWrite:      make(chan struct{}),
-		chWrite:          make(chan []byte, agentWriteBacklog),
+		chWrite:          make(chan []byte, config.GetConcurrency("agent.write")),
 		conn:             conn,
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
@@ -136,7 +133,7 @@ func (a *Agent) Push(route string, v interface{}) error {
 		return constants.ErrBrokenPipe
 	}
 
-	if len(a.chSend) >= agentWriteBacklog {
+	if len(a.chSend) >= config.GetConcurrency("agent.messages") {
 		return constants.ErrBufferExceed
 	}
 
@@ -163,7 +160,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}) error {
 		return constants.ErrSessionOnNotify
 	}
 
-	if len(a.chSend) >= agentWriteBacklog {
+	if len(a.chSend) >= config.GetConcurrency("agent.messages") {
 		return constants.ErrBufferExceed
 	}
 

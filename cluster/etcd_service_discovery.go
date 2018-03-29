@@ -50,7 +50,6 @@ type etcdServiceDiscovery struct {
 }
 
 // NewEtcdServiceDiscovery ctor
-// TODO needs better configuration
 func NewEtcdServiceDiscovery(
 	endpoints []string,
 	etcdDialTimeout time.Duration,

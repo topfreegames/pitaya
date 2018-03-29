@@ -28,6 +28,7 @@ import (
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -39,22 +40,16 @@ import (
 	"github.com/topfreegames/pitaya/util"
 )
 
-// Unhandled message buffer size
-const packetBacklog = 1024
-const funcBacklog = 1 << 8
-
-var log = logger.Log
-
 var (
-	// TODO needs to be configurable
 	handlers = make(map[string]*component.Handler) // all handler method
+	log      = logger.Log
 )
 
 type (
 	// HandlerService service
 	HandlerService struct {
 		services         map[string]*component.Service // all registered service
-		chFunction       chan func()                   // function that called in logic gorontine
+		chFunction       chan func()                   // function that called in logic goroutine
 		chLocalProcess   chan unhandledMessage         // channel of messages that will be processed locally
 		chRemoteProcess  chan unhandledMessage         // channel of messages that will be processed remotely
 		appDieChan       chan bool                     // die channel app
@@ -82,13 +77,12 @@ func NewHandlerService(
 	heartbeatTime time.Duration,
 	server *cluster.Server,
 	remoteService *RemoteService,
-	dispatchConcurrency int,
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
-		chFunction:       make(chan func(), funcBacklog),
-		chLocalProcess:   make(chan unhandledMessage, dispatchConcurrency),
-		chRemoteProcess:  make(chan unhandledMessage, dispatchConcurrency),
+		chFunction:       make(chan func(), config.GetConcurrency("handler.function")),
+		chLocalProcess:   make(chan unhandledMessage, config.GetConcurrency("handler.localprocess")),
+		chRemoteProcess:  make(chan unhandledMessage, config.GetConcurrency("handler.remoteprocess")),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		serializer:       serializer,
