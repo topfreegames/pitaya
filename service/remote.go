@@ -81,12 +81,12 @@ func (r *RemoteService) remoteProcess(server *cluster.Server, a *agent.Agent, ro
 		log.Errorf(err.Error())
 		return
 	}
-	// TODO we should not return a response to a notify to the client
-	// this is becase of nats
-	// we should not send an error to the client because the only thing
-	// returned to the client should be the return type in the handler
 	if msg.Type == message.Request && res.Error == "" {
-		a.Session.ResponseMID(msg.ID, res.Data)
+		// TODO I guess we need to send the reply to the caller if this fails
+		err := a.Session.ResponseMID(msg.ID, res.Data)
+		if err != nil {
+			log.Error(err)
+		}
 	} else {
 		log.Error(res.Error)
 	}

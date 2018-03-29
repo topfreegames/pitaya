@@ -54,16 +54,11 @@ func NewNatsRPCClient(connectString string, server *Server) *NatsRPCClient {
 }
 
 // Send publishes a message in a given topic
-// TODO handle errors (to the client)
 func (ns *NatsRPCClient) Send(topic string, data []byte) error {
 	return ns.conn.Publish(topic, data)
 }
 
 // Call calls a method remotally
-// TODO use channel and create async Go method
-// TODO oh my, this is hacky! will it perform good?
-// even if it performs we need better concurrency control!!!
-// TODO should we permit bigger mailbox size? current design only allows 1 message per user to be processes at a time
 func (ns *NatsRPCClient) Call(
 	rpcType protos.RPCType,
 	route *route.Route,

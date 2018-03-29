@@ -47,11 +47,10 @@ func NewNatsRPCServer(connectString string, server *Server) *NatsRPCServer {
 		server:     server,
 		stopChan:   make(chan bool),
 		// TODO configure max pending messages
-		subChan: make(chan *nats.Msg, 1000),
-		// TODO configure concurrency, limit size?
+		subChan:        make(chan *nats.Msg, 1000),
 		unhandledReqCh: make(chan *protos.Request),
-		// TODO limit size?
-		userPushCh: make(chan *protos.Push),
+		// TODO needs better configuration
+		userPushCh: make(chan *protos.Push, 100),
 	}
 	return ns
 }
