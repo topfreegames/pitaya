@@ -47,11 +47,11 @@ func NewNatsRPCServer(connectString string, server *Server) *NatsRPCServer {
 		connString:     connectString,
 		server:         server,
 		stopChan:       make(chan bool),
-		subChan:        make(chan *nats.Msg, config.GetConcurrency("cluster.rpc.server.messages")),
+		subChan:        make(chan *nats.Msg, config.GetBuffer("cluster.rpc.server.messages")),
 		unhandledReqCh: make(chan *protos.Request),
 		// the reason this channel is buffered is that we can achieve more performance by not
 		// blocking producers on a massive push
-		userPushCh: make(chan *protos.Push, config.GetConcurrency("cluster.rpc.server.push")),
+		userPushCh: make(chan *protos.Push, config.GetBuffer("cluster.rpc.server.push")),
 	}
 	return ns
 }

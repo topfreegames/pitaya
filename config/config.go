@@ -30,16 +30,15 @@ import (
 // TODO allow receiving a config from the user
 
 func fillDefaultValues() {
-	viper.SetDefault("pitaya.concurrency.agent.messages", 16)
-	viper.SetDefault("pitaya.concurrency.agent.write", 16)
-	viper.SetDefault("pitaya.concurrency.cluster.rpc.server.messages", 1000)
-	viper.SetDefault("pitaya.concurrency.cluster.rpc.server.push", 100)
+	viper.SetDefault("pitaya.buffer.agent.messages", 16)
+	viper.SetDefault("pitaya.buffer.cluster.rpc.server.messages", 1000)
+	viper.SetDefault("pitaya.buffer.cluster.rpc.server.push", 100)
+	viper.SetDefault("pitaya.buffer.handler.localprocess", 10)
+	viper.SetDefault("pitaya.buffer.handler.remoteprocess", 10)
+	viper.SetDefault("pitaya.buffer.timer", 1<<8)
+
 	viper.SetDefault("pitaya.concurrency.handler.dispatch", 10)
-	viper.SetDefault("pitaya.concurrency.handler.function", 1<<8)
-	viper.SetDefault("pitaya.concurrency.handler.localprocess", 10)
-	viper.SetDefault("pitaya.concurrency.handler.remoteprocess", 10)
 	viper.SetDefault("pitaya.concurrency.remote.service", 10)
-	viper.SetDefault("pitaya.concurrency.timer", 1<<8)
 
 	viper.SetDefault("pitaya.cluster.rpc.client.nats.connect", "nats://localhost:4222")
 	viper.SetDefault("pitaya.cluster.rpc.client.nats.requesttimeout", "5s")
@@ -56,6 +55,11 @@ func fillDefaultValues() {
 // GetConcurrency retrieves concurrency config for a given suffix
 func GetConcurrency(s string) int {
 	return viper.GetInt(fmt.Sprintf("pitaya.concurrency.%s", s))
+}
+
+// GetBuffer retrieves buffer config for a given suffix
+func GetBuffer(s string) int {
+	return viper.GetInt(fmt.Sprintf("pitaya.buffer.%s", s))
 }
 
 func init() {

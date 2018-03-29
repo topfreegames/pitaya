@@ -54,21 +54,22 @@ var (
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
-		Session          *session.Session    // session
-		Srv              reflect.Value       // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
-		appDieChan       chan bool           // app die channel
-		chDie            chan struct{}       // wait for close
-		chSend           chan pendingMessage // push message queue
-		chStopHeartbeat  chan struct{}       // stop heartbeats
-		chStopWrite      chan struct{}       // stop writing messages
-		chWrite          chan []byte         // write message to the clients
-		conn             net.Conn            // low-level conn fd
-		decoder          codec.PacketDecoder // binary decoder
-		encoder          codec.PacketEncoder // binary encoder
-		heartbeatTimeout time.Duration
-		lastAt           int64                // last heartbeat unix time stamp
-		serializer       serialize.Serializer // message serializer
-		state            int32                // current agent state
+		Session            *session.Session    // session
+		Srv                reflect.Value       // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
+		appDieChan         chan bool           // app die channel
+		chDie              chan struct{}       // wait for close
+		chSend             chan pendingMessage // push message queue
+		chStopHeartbeat    chan struct{}       // stop heartbeats
+		chStopWrite        chan struct{}       // stop writing messages
+		chWrite            chan []byte         // write message to the clients
+		conn               net.Conn            // low-level conn fd
+		decoder            codec.PacketDecoder // binary decoder
+		encoder            codec.PacketEncoder // binary encoder
+		heartbeatTimeout   time.Duration
+		lastAt             int64                // last heartbeat unix time stamp
+		messagesBufferSize int                  // size of the pending messages buffer
+		serializer         serialize.Serializer // message serializer
+		state              int32                // current agent state
 	}
 
 	pendingMessage struct {
@@ -93,20 +94,22 @@ func NewAgent(
 		hbdEncode(heartbeatTime, packetEncoder, serializer)
 	})
 
+	messagesBufferSize := config.GetBuffer("agent.messages")
 	a := &Agent{
-		appDieChan:       dieChan,
-		chDie:            make(chan struct{}),
-		chSend:           make(chan pendingMessage, config.GetConcurrency("agent.messages")),
-		chStopHeartbeat:  make(chan struct{}),
-		chStopWrite:      make(chan struct{}),
-		chWrite:          make(chan []byte, config.GetConcurrency("agent.write")),
-		conn:             conn,
-		decoder:          packetDecoder,
-		encoder:          packetEncoder,
-		heartbeatTimeout: heartbeatTime,
-		lastAt:           time.Now().Unix(),
-		serializer:       serializer,
-		state:            constants.StatusStart,
+		appDieChan:         dieChan,
+		chDie:              make(chan struct{}),
+		chSend:             make(chan pendingMessage, messagesBufferSize),
+		messagesBufferSize: messagesBufferSize,
+		chStopHeartbeat:    make(chan struct{}),
+		chStopWrite:        make(chan struct{}),
+		chWrite:            make(chan []byte),
+		conn:               conn,
+		decoder:            packetDecoder,
+		encoder:            packetEncoder,
+		heartbeatTimeout:   heartbeatTime,
+		lastAt:             time.Now().Unix(),
+		serializer:         serializer,
+		state:              constants.StatusStart,
 	}
 
 	// bindng session
@@ -133,7 +136,7 @@ func (a *Agent) Push(route string, v interface{}) error {
 		return constants.ErrBrokenPipe
 	}
 
-	if len(a.chSend) >= config.GetConcurrency("agent.messages") {
+	if len(a.chSend) >= a.messagesBufferSize {
 		return constants.ErrBufferExceed
 	}
 
@@ -160,7 +163,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}) error {
 		return constants.ErrSessionOnNotify
 	}
 
-	if len(a.chSend) >= config.GetConcurrency("agent.messages") {
+	if len(a.chSend) >= a.messagesBufferSize {
 		return constants.ErrBufferExceed
 	}
 

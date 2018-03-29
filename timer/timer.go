@@ -81,7 +81,7 @@ type (
 )
 
 func init() {
-	timerBacklog = config.GetConcurrency("timer")
+	timerBacklog = config.GetBuffer("timer")
 	Manager.ChClosingTimer = make(chan int64, timerBacklog)
 	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
 }

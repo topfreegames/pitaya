@@ -78,8 +78,8 @@ func NewHandlerService(
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
-		chLocalProcess:   make(chan unhandledMessage, config.GetConcurrency("handler.localprocess")),
-		chRemoteProcess:  make(chan unhandledMessage, config.GetConcurrency("handler.remoteprocess")),
+		chLocalProcess:   make(chan unhandledMessage, config.GetBuffer("handler.localprocess")),
+		chRemoteProcess:  make(chan unhandledMessage, config.GetBuffer("handler.remoteprocess")),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		serializer:       serializer,
