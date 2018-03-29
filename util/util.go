@@ -70,7 +70,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	return
 }
 
-// Pinvoke call handler with protected
+// Pinvoke call handler and recovers in case of panic
 func Pinvoke(fn func()) {
 	defer func() {
 		if err := recover(); err != nil {

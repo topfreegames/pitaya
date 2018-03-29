@@ -67,9 +67,7 @@ func main() {
 
 	flag.Parse()
 
-	defer (func() {
-		pitaya.Shutdown()
-	})()
+	defer pitaya.Shutdown()
 
 	protos, err := os.Open("./protos/cluster.proto")
 	if err != nil {

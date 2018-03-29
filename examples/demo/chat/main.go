@@ -97,9 +97,7 @@ func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
 }
 
 func main() {
-	defer (func() {
-		pitaya.Shutdown()
-	})()
+	defer pitaya.Shutdown()
 
 	protos, err := os.Open("./protos/chat.proto")
 	if err != nil {

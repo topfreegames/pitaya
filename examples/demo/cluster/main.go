@@ -74,9 +74,7 @@ func main() {
 
 	flag.Parse()
 
-	defer (func() {
-		pitaya.Shutdown()
-	})()
+	defer pitaya.Shutdown()
 
 	pitaya.SetSerializer(json.NewSerializer())
 	pitaya.SetServerType(*svType)
