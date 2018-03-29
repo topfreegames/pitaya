@@ -134,7 +134,6 @@ func main() {
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
-	//TODO need to fix that? pitaya.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	ws := acceptor.NewWSAcceptor(":3250", "/pitaya")
 	pitaya.AddAcceptor(ws)
 	pitaya.Configure(true, "chat", pitaya.Standalone)

@@ -49,7 +49,8 @@ func NewNatsRPCServer(connectString string, server *Server) *NatsRPCServer {
 		// TODO configure max pending messages
 		subChan:        make(chan *nats.Msg, 1000),
 		unhandledReqCh: make(chan *protos.Request),
-		// TODO needs better configuration
+		// the reason this channel is buffered is that we can achieve more performance by not
+		// blocking producers on a massive push
 		userPushCh: make(chan *protos.Push, 100),
 	}
 	return ns
@@ -62,7 +63,6 @@ func GetUserMessagesTopic(uid string) string {
 
 // SubscribeToUserMessages subscribes to user msg channel
 func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) (*nats.Subscription, error) {
-	// TODO maybe use channels to control parallelism
 	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)

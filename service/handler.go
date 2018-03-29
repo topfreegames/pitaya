@@ -85,9 +85,8 @@ func NewHandlerService(
 	dispatchConcurrency int,
 ) *HandlerService {
 	h := &HandlerService{
-		services:   make(map[string]*component.Service),
-		chFunction: make(chan func(), funcBacklog),
-		// TODO what is the best channel size for both channels?
+		services:         make(map[string]*component.Service),
+		chFunction:       make(chan func(), funcBacklog),
 		chLocalProcess:   make(chan unhandledMessage, dispatchConcurrency),
 		chRemoteProcess:  make(chan unhandledMessage, dispatchConcurrency),
 		decoder:          packetDecoder,
@@ -183,7 +182,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 			return
 		}
 
-		// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
+		// (warning): decoder use slice for performance, packet data should be copy before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
 		if err != nil {
 			log.Error(err.Error())

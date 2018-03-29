@@ -152,7 +152,6 @@ func SetHeartbeatTime(interval time.Duration) {
 
 // SetRPCServer to be used
 func SetRPCServer(s cluster.RPCServer) {
-	//TODO
 	app.rpcServer = s
 	if reflect.TypeOf(s) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
 		// When using nats rpc server the server must start listening to messages
@@ -356,7 +355,7 @@ func listen() {
 		for i := 0; i < processRemoteMsgConcurrency; i++ {
 			go remoteService.ProcessRemoteMessages(i)
 		}
-		// TODO: use same parellelism?
+		// this should be so fast that we shoudn't need concurrency
 		go remoteService.ProcessUserPush()
 	}
 }

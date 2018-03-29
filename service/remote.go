@@ -147,7 +147,6 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 }
 
 // ProcessUserPush receives and processes push to users
-// TODO: probably handle concurrency (threadID?)
 func (r *RemoteService) ProcessUserPush() {
 	for push := range r.rpcServer.GetUserPushChannel() {
 		log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
@@ -229,7 +228,7 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 	reply := req.GetMsg().GetReply()
 	response := &protos.Response{}
 
-	// TODO should we create a new agent for every new request?
+	// (warning) a new agent is created for every new request
 	a, err := agent.NewRemote(
 		req.GetSession(),
 		reply,

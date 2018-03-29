@@ -178,7 +178,7 @@ func processHandlerMessage(
 	}
 
 	if remote && msgType == message.Notify {
-		// TODO this is a special case and should only happen with nats rpc client
+		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout
 		// will happen in the caller server and will be returned to the client
 		// the reason why we not just Publish is to keep track of failed rpc requests

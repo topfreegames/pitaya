@@ -57,7 +57,6 @@ func (c *PomeloPacketDecoder) forward() error {
 }
 
 // Decode decode the network bytes slice to packet.Packet(s)
-// TODO(Warning): shared slice
 func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
 	c.buf.Write(data)
 

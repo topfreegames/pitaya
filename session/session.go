@@ -51,8 +51,8 @@ var (
 	ErrIllegalUID = errors.New("illegal uid")
 	// OnSessionBind represents the function called after the session in bound
 	OnSessionBind func(s *Session) error
-	sessionsByUID = make(map[string]*Session)
-	sessionsByID  = make(map[int64]*Session)
+	sessionsByUID sync.Map
+	sessionsByID  sync.Map
 	sessionIDSvc  = newSessionIDService()
 )
 
@@ -99,7 +99,7 @@ func (c *sessionIDService) sessionID() int64 {
 
 // New returns a new session instance
 // a NetworkEntity is a low-level network instance
-func New(entity NetworkEntity, frontend bool) *Session {
+func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 	s := &Session{
 		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
@@ -109,23 +109,26 @@ func New(entity NetworkEntity, frontend bool) *Session {
 		IsFrontend:       frontend,
 	}
 	if frontend {
-		sessionsByID[s.id] = s
+		sessionsByID.Store(s.id, s)
+	}
+	if len(UID) > 0 {
+		s.uid = UID[0]
 	}
 	return s
 }
 
 // GetSessionByUID return a session bound to an user id
 func GetSessionByUID(uid string) *Session {
-	if val, ok := sessionsByUID[uid]; ok {
-		return val
+	if val, ok := sessionsByUID.Load(uid); ok {
+		return val.(*Session)
 	}
 	return nil
 }
 
 // GetSessionByID return a session bound to a frontend server id
 func GetSessionByID(id int64) *Session {
-	if val, ok := sessionsByID[id]; ok {
-		return val
+	if val, ok := sessionsByID.Load(id); ok {
+		return val.(*Session)
 	}
 	return nil
 }
@@ -157,7 +160,6 @@ func (s *Session) ID() int64 {
 }
 
 // UID returns uid that bind to current session
-// TODO this used to use atomic, is it necessary?
 func (s *Session) UID() string {
 	return s.uid
 }
@@ -197,12 +199,6 @@ func (s *Session) SetDataEncoded(encodedData []byte) error {
 	return s.SetData(data)
 }
 
-// SetUID sets uid but without binding, TODO remove this method
-// Better to have a backend session type
-func (s *Session) SetUID(uid string) {
-	s.uid = uid
-}
-
 // SetFrontendData sets frontend id and session id
 func (s *Session) SetFrontendData(frontendID string, frontendSessionID int64) {
 	s.frontendID = frontendID
@@ -220,8 +216,6 @@ func (s *Session) Bind(uid string) error {
 	}
 
 	s.uid = uid
-	// TODO should we overwrite or return an error if the session was already bound
-	// TODO MUTEX OR SYNCMAP!
 	if OnSessionBind != nil {
 		err := OnSessionBind(s)
 		if err != nil {
@@ -232,7 +226,7 @@ func (s *Session) Bind(uid string) error {
 
 	// if code running on frontend server
 	if s.IsFrontend {
-		sessionsByUID[uid] = s
+		sessionsByUID.Store(uid, s)
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
 		// is not the frontend server that received the user request
@@ -259,8 +253,8 @@ func (s *Session) OnClose(c func()) error {
 // Close terminate current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
-	delete(sessionsByUID, s.UID())
-	delete(sessionsByID, s.ID())
+	sessionsByID.Delete(s.ID())
+	sessionsByUID.Delete(s.UID())
 	if s.IsFrontend && s.Subscription != nil {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()
