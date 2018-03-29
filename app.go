@@ -252,7 +252,6 @@ func initSysRemotes() {
 }
 
 // Start starts the app
-// TODO fix non cluster mode
 func Start() {
 	if !app.configured {
 		log.Fatal("starting app without configuring it first! call pitaya.Configure()")
@@ -352,7 +351,6 @@ func listen() {
 	startModules()
 
 	// this handles remote messages
-	// TODO probably this shouldnt be here :/
 	if app.rpcServer != nil {
 		// TODO should this be done this way?
 		for i := 0; i < processRemoteMsgConcurrency; i++ {

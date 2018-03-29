@@ -131,7 +131,6 @@ func main() {
 	pitaya.BeforeHandler(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	//TODO fix pitaya.SetWSPath("/pitaya")
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 

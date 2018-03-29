@@ -384,6 +384,5 @@ func (a *Agent) write() {
 
 // SendRequest sends a request to a server
 func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Response, error) {
-	// TODO implement
 	return nil, fmt.Errorf("not implemented")
 }

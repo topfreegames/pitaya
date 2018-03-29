@@ -34,10 +34,10 @@ type NatsRPCServer struct {
 	server         *Server
 	conn           *nats.Conn
 	stopChan       chan bool
-	subChan        chan *nats.Msg
-	sub            *nats.Subscription
+	subChan        chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
 	unhandledReqCh chan *protos.Request
 	userPushCh     chan *protos.Push
+	sub            *nats.Subscription
 }
 
 // NewNatsRPCServer ctor
