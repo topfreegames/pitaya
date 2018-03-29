@@ -38,7 +38,7 @@ var (
 	ErrRequestOnNotify                = errors.New("tried to request a notify route")
 	ErrServiceDiscoveryNotInitialized = errors.New("service discovery client is not initialized")
 	ErrSessionAlreadyBound            = errors.New("session is already bound to an uid")
-	ErrSessionDuplication             = errors.New("session has existed in the current group")
+	ErrSessionDuplication             = errors.New("session exists in the current group")
 	ErrSessionNotFound                = errors.New("session not found")
 	ErrSessionOnNotify                = errors.New("current session working on notify mode")
 	ErrNoServerTypeChosenForRPC       = errors.New("no server type chosen for sending RPC, send a full route in the format server.service.component")
