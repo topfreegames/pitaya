@@ -37,7 +37,6 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/timer"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var (
@@ -49,7 +48,6 @@ type (
 	// HandlerService service
 	HandlerService struct {
 		services         map[string]*component.Service // all registered service
-		chFunction       chan func()                   // function that called in logic goroutine
 		chLocalProcess   chan unhandledMessage         // channel of messages that will be processed locally
 		chRemoteProcess  chan unhandledMessage         // channel of messages that will be processed remotely
 		appDieChan       chan bool                     // die channel app
@@ -80,7 +78,6 @@ func NewHandlerService(
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
-		chFunction:       make(chan func(), config.GetConcurrency("handler.function")),
 		chLocalProcess:   make(chan unhandledMessage, config.GetConcurrency("handler.localprocess")),
 		chRemoteProcess:  make(chan unhandledMessage, config.GetConcurrency("handler.remoteprocess")),
 		decoder:          packetDecoder,
@@ -108,9 +105,6 @@ func (h *HandlerService) Dispatch(thread int) {
 		case rm := <-h.chRemoteProcess:
 			h.remoteService.remoteProcess(nil, rm.agent, rm.route, rm.msg)
 
-		case fn := <-h.chFunction:
-			util.Pinvoke(fn)
-
 		case <-timer.GlobalTicker.C: // execute cron task
 			timer.Cron()
 
@@ -124,11 +118,6 @@ func (h *HandlerService) Dispatch(thread int) {
 			return
 		}
 	}
-}
-
-// Invoke invokes function in main logic goroutine
-func (h *HandlerService) Invoke(fn func()) {
-	h.chFunction <- fn
 }
 
 // Register registers components

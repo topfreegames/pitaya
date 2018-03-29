@@ -30,27 +30,27 @@ import (
 type Server struct {
 	ID       string            `json:"id"`
 	Type     string            `json:"type"`
-	Data     map[string]string `json:"data"`
+	Metadata map[string]string `json:"metadata"`
 	Frontend bool              `json:"frontend"`
 }
 
 // NewServer ctor
-func NewServer(id, serverType string, frontend bool, data ...map[string]string) *Server {
+func NewServer(id, serverType string, frontend bool, metadata ...map[string]string) *Server {
 	d := make(map[string]string)
-	if len(data) > 0 {
-		d = data[0]
+	if len(metadata) > 0 {
+		d = metadata[0]
 	}
 	return &Server{
 		ID:       id,
 		Type:     serverType,
-		Data:     d,
+		Metadata: d,
 		Frontend: frontend,
 	}
 }
 
 // AsJSONString returns the server as a json string
 func (s *Server) AsJSONString() string {
-	if s.Data == nil {
+	if s.Metadata == nil {
 		return "{}"
 	}
 	str, err := json.Marshal(s)

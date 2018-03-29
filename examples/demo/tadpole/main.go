@@ -48,7 +48,7 @@ func serve(ctx *cli.Context) error {
 
 	addr := ctx.String("addr")
 	pitaya.AddAcceptor(acceptor.NewWSAcceptor(addr))
-	pitaya.Configure(true, "tadpole", pitaya.Standalone)
+	pitaya.Configure(true, "tadpole", pitaya.Standalone, map[string]string{})
 	pitaya.Start()
 
 	return nil

@@ -134,6 +134,6 @@ func main() {
 
 	ws := acceptor.NewWSAcceptor(":3250", "/pitaya")
 	pitaya.AddAcceptor(ws)
-	pitaya.Configure(true, "chat", pitaya.Standalone)
+	pitaya.Configure(true, "chat", pitaya.Standalone, map[string]string{})
 	pitaya.Start()
 }

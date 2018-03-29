@@ -161,7 +161,6 @@ func (r *RemoteService) ProcessUserPush() {
 func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 	// TODO need to monitor stuff here to guarantee messages are not being dropped
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
-		// TODO should deserializer be decoupled?
 		log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
 		rt, err := route.Decode(req.GetMsg().GetRoute())
 		if err != nil {

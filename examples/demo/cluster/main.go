@@ -77,7 +77,6 @@ func main() {
 	defer pitaya.Shutdown()
 
 	pitaya.SetSerializer(json.NewSerializer())
-	pitaya.SetServerType(*svType)
 
 	if !*isFrontend {
 		configureBackend()
@@ -85,6 +84,6 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster)
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
 	pitaya.Start()
 }

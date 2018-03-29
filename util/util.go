@@ -70,18 +70,6 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	return
 }
 
-// Pinvoke call handler and recovers in case of panic
-func Pinvoke(fn func()) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Log.Errorf("pitaya/invoke: %v", err)
-			logger.Log.Error(Stack())
-		}
-	}()
-
-	fn()
-}
-
 // SliceContainsString returns true if a slice contains the string
 func SliceContainsString(slice []string, str string) bool {
 	for _, value := range slice {

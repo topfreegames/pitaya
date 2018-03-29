@@ -85,7 +85,7 @@ var (
 		server: &cluster.Server{
 			ID:       uuid.New().String(),
 			Type:     "game",
-			Data:     map[string]string{},
+			Metadata: map[string]string{},
 			Frontend: true,
 		},
 		debug:         false,
@@ -107,7 +107,11 @@ var (
 )
 
 // Configure configures the app
-func Configure(isFrontend bool, serverType string, serverMode ServerMode) {
+func Configure(isFrontend bool,
+	serverType string,
+	serverMode ServerMode,
+	serverMetadata map[string]string,
+) {
 	if app.configured {
 		log.Warn("pitaya configured twice!")
 	}
@@ -115,6 +119,7 @@ func Configure(isFrontend bool, serverType string, serverMode ServerMode) {
 	app.server.Type = serverType
 	app.serverMode = serverMode
 	app.configured = true
+	app.server.Metadata = serverMetadata
 }
 
 // AddAcceptor adds a new acceptor to app
@@ -179,18 +184,6 @@ func SetServiceDiscoveryClient(s cluster.ServiceDiscovery) {
 // and UnMarshal handler payload
 func SetSerializer(seri serialize.Serializer) {
 	app.serializer = seri
-}
-
-// SetServerType sets the server type
-// TODO need to specify in start
-func SetServerType(t string) {
-	app.server.Type = t
-}
-
-// SetServerData sets the server data that will be broadcasted using service discovery to other servers
-// TODO need to specify in start
-func SetServerData(data map[string]string) {
-	app.server.Data = data
 }
 
 func startDefaultSD() {
@@ -346,7 +339,6 @@ func listen() {
 
 	// this handles remote messages
 	if app.rpcServer != nil {
-		// TODO should this be done this way?
 		for i := 0; i < config.GetConcurrency("remote.service"); i++ {
 			go remoteService.ProcessRemoteMessages(i)
 		}
