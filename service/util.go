@@ -121,7 +121,7 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 	res, err := util.SerializeOrRaw(ser, ret)
 	if err != nil {
 		log.Error(err.Error())
-		ret, err = util.GetErrorPayload(ser, err)
+		res, err = util.GetErrorPayload(ser, err)
 		if err != nil {
 			log.Error("cannot serialize message and respond to the client ", err.Error())
 			return nil, err
@@ -131,7 +131,6 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 	return res, nil
 }
 
-// TODO: new megazord method, break it into smaller pieces
 // TODO: should this be here in utils?
 func processHandlerMessage(
 	rt *route.Route,
