@@ -1,6 +1,10 @@
 setup:
 	@dep ensure
 
+setup-protobuf-macos:
+	@brew install protobuf
+	@go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
+
 run-chat-example:
 	@cd examples/demo/chat/ && go run main.go
 
