@@ -207,20 +207,20 @@ func (h *HandlerService) Handle(conn net.Conn) {
 func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
-		if _, err := a.Conn.Write(agent.Hrd); err != nil {
+		if err := a.SendHandshakeResponse(); err != nil {
 			return err
 		}
 		a.SetStatus(constants.StatusHandshake)
-		log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.Conn.RemoteAddr())
+		log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
-		log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.Conn.RemoteAddr())
+		log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
 
 	case packet.Data:
 		if a.GetStatus() < constants.StatusWorking {
 			return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
-				a.Conn.RemoteAddr().String())
+				a.RemoteAddr().String())
 		}
 
 		msg, err := message.Decode(p.Data)

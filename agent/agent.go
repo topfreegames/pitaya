@@ -47,31 +47,31 @@ const (
 
 var (
 	log = logger.Log
-	// Hbd contains the heartbeat packet data
+	// hbd contains the heartbeat packet data
 	hbd []byte
-	// Hrd contains the handshake response data
-	Hrd  []byte
+	// hrd contains the handshake response data
+	hrd  []byte
 	once sync.Once
 )
 
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
-		Conn             net.Conn             // low-level conn fd
-		Serializer       serialize.Serializer // message serializer
-		Session          *session.Session     // session
-		Srv              reflect.Value        // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
-		appDieChan       chan bool            // app die channel
-		chDie            chan struct{}        // wait for close
-		chSend           chan pendingMessage  // push message queue
-		chStopHeartbeat  chan struct{}        // stop heartbeats
-		chStopWrite      chan struct{}        // stop writing messages
-		chWrite          chan []byte          // write message to the clients
-		decoder          codec.PacketDecoder  // binary decoder
-		encoder          codec.PacketEncoder  // binary encoder
+		Session          *session.Session    // session
+		Srv              reflect.Value       // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
+		appDieChan       chan bool           // app die channel
+		chDie            chan struct{}       // wait for close
+		chSend           chan pendingMessage // push message queue
+		chStopHeartbeat  chan struct{}       // stop heartbeats
+		chStopWrite      chan struct{}       // stop writing messages
+		chWrite          chan []byte         // write message to the clients
+		conn             net.Conn            // low-level conn fd
+		decoder          codec.PacketDecoder // binary decoder
+		encoder          codec.PacketEncoder // binary encoder
 		heartbeatTimeout time.Duration
-		lastAt           int64 // last heartbeat unix time stamp
-		state            int32 // current agent state
+		lastAt           int64                // last heartbeat unix time stamp
+		serializer       serialize.Serializer // message serializer
+		state            int32                // current agent state
 	}
 
 	pendingMessage struct {
@@ -97,19 +97,19 @@ func NewAgent(
 	})
 
 	a := &Agent{
-		Conn:             conn,
-		state:            constants.StatusStart,
+		appDieChan:       dieChan,
 		chDie:            make(chan struct{}),
-		chStopWrite:      make(chan struct{}),
-		chStopHeartbeat:  make(chan struct{}),
-		chWrite:          make(chan []byte, agentWriteBacklog),
-		lastAt:           time.Now().Unix(),
 		chSend:           make(chan pendingMessage, agentWriteBacklog),
+		chStopHeartbeat:  make(chan struct{}),
+		chStopWrite:      make(chan struct{}),
+		chWrite:          make(chan []byte, agentWriteBacklog),
+		conn:             conn,
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
-		Serializer:       serializer,
 		heartbeatTimeout: heartbeatTime,
-		appDieChan:       dieChan,
+		lastAt:           time.Now().Unix(),
+		serializer:       serializer,
+		state:            constants.StatusStart,
 	}
 
 	// bindng session
@@ -188,7 +188,7 @@ func (a *Agent) Close() error {
 	a.SetStatus(constants.StatusClosed)
 
 	log.Debugf("Session closed, ID=%d, UID=%d, IP=%s",
-		a.Session.ID(), a.Session.UID(), a.Conn.RemoteAddr())
+		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
 	select {
@@ -201,18 +201,18 @@ func (a *Agent) Close() error {
 		onSessionClosed(a.Session)
 	}
 
-	return a.Conn.Close()
+	return a.conn.Close()
 }
 
 // RemoteAddr implementation for session.NetworkEntity interface
 // returns the remote network address.
 func (a *Agent) RemoteAddr() net.Addr {
-	return a.Conn.RemoteAddr()
+	return a.conn.RemoteAddr()
 }
 
 // String, implementation for Stringer interface
 func (a *Agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.Conn.RemoteAddr().String(), a.lastAt)
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
 }
 
 // GetStatus gets the status
@@ -254,7 +254,7 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		panic(err)
 	}
 
-	Hrd, err = packetEncoder.Encode(packet.Handshake, data)
+	hrd, err = packetEncoder.Encode(packet.Handshake, data)
 	if err != nil {
 		panic(err)
 	}
@@ -295,7 +295,7 @@ func (a *Agent) heartbeat() {
 				close(a.chDie)
 				return
 			}
-			if _, err := a.Conn.Write(hbd); err != nil {
+			if _, err := a.conn.Write(hbd); err != nil {
 				close(a.chDie)
 				return
 			}
@@ -322,9 +322,10 @@ func onSessionClosed(s *session.Session) {
 	}
 }
 
-// SendToChWrite sends a message to the agent
-func (a *Agent) SendToChWrite(data []byte) {
-	a.chWrite <- data
+// SendHandshakeResponse sends a handshake response
+func (a *Agent) SendHandshakeResponse() error {
+	_, err := a.conn.Write(hrd)
+	return err
 }
 
 func (a *Agent) write() {
@@ -338,16 +339,16 @@ func (a *Agent) write() {
 		select {
 		case data := <-a.chWrite:
 			// close agent if low-level Conn broken
-			if _, err := a.Conn.Write(data); err != nil {
+			if _, err := a.conn.Write(data); err != nil {
 				logger.Log.Error(err.Error())
 				return
 			}
 
 		case data := <-a.chSend:
-			payload, err := util.SerializeOrRaw(a.Serializer, data.payload)
+			payload, err := util.SerializeOrRaw(a.serializer, data.payload)
 			if err != nil {
 				log.Error(err.Error())
-				payload, err = util.GetErrorPayload(a.Serializer, err)
+				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
 					log.Error("cannot serialize message and respond to the client ", err.Error())
 					break

@@ -40,7 +40,6 @@ import (
 
 // Remote corresponding to another server
 type Remote struct {
-	Serializer       serialize.Serializer     // message serializer
 	Session          *session.Session         // session
 	Srv              reflect.Value            // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
 	chDie            chan struct{}            // wait for close
@@ -48,6 +47,7 @@ type Remote struct {
 	frontendID       string                   // the frontend that sent the request
 	reply            string                   // nats reply topic
 	rpcClient        cluster.RPCClient        // rpc client
+	serializer       serialize.Serializer     // message serializer
 	serviceDiscovery cluster.ServiceDiscovery // service discovery
 }
 
@@ -64,7 +64,7 @@ func NewRemote(
 	a := &Remote{
 		chDie:            make(chan struct{}),
 		reply:            reply, // TODO this is totally coupled with NATS
-		Serializer:       serializer,
+		serializer:       serializer,
 		encoder:          encoder,
 		rpcClient:        rpcClient,
 		serviceDiscovery: serviceDiscovery,
@@ -131,7 +131,7 @@ func (a *Remote) Close() error { return nil }
 func (a *Remote) RemoteAddr() net.Addr { return nil }
 
 func (a *Remote) serialize(m pendingMessage) ([]byte, error) {
-	payload, err := util.SerializeOrRaw(a.Serializer, m.payload)
+	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 }
 
 func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
-	payload, err := util.SerializeOrRaw(a.Serializer, m.payload)
+	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 
 // SendRequest sends a request to a server
 func (a *Remote) SendRequest(serverID, reqRoute string, v interface{}) (*protos.Response, error) {
-	payload, err := util.SerializeOrRaw(a.Serializer, v)
+	payload, err := util.SerializeOrRaw(a.serializer, v)
 	if err != nil {
 		return nil, err
 	}
