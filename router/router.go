@@ -100,7 +100,6 @@ func (r *Router) Route(
 }
 
 // AddRoute adds a routing function to a server type
-// TODO calling this method with the server already running is VERY dangerous
 func (r *Router) AddRoute(
 	serverType string,
 	routingFunction func(

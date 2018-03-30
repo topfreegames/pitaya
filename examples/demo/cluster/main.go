@@ -44,7 +44,7 @@ func configureFrontend(port int) {
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.AddRoute("room", func(
+	err := pitaya.AddRoute("room", func(
 		session *session.Session,
 		route *route.Route,
 		servers map[string]*cluster.Server,
@@ -56,13 +56,21 @@ func configureFrontend(port int) {
 		return nil, nil
 	})
 
-	pitaya.SetDictionary(map[string]uint16{
+	if err != nil {
+		fmt.Printf("error adding route %s\n", err.Error())
+	}
+
+	err = pitaya.SetDictionary(map[string]uint16{
 		"connector.getsessiondata": 1,
 		"connector.setsessiondata": 2,
 		"room.room.getsessiondata": 3,
 		"onMessage":                4,
 		"onMembers":                5,
 	})
+
+	if err != nil {
+		fmt.Printf("error setting route dictionary %s\n", err.Error())
+	}
 
 	pitaya.AddAcceptor(ws)
 }

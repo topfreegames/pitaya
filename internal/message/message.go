@@ -24,8 +24,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/topfreegames/pitaya/logger"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -56,6 +57,7 @@ var types = map[Type]string{
 var (
 	routes = make(map[string]uint16) // route map to code
 	codes  = make(map[uint16]string) // code map to route
+	log    = logger.Log
 )
 
 // Errors that could be occurred in message codec
@@ -214,18 +216,18 @@ func Decode(data []byte) (*Message, error) {
 }
 
 // SetDictionary set routes map which be used to compress route.
-// TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
 func SetDictionary(dict map[string]uint16) {
+	log.Warn("SetDictionary should only be called from pitaya package")
 	for route, code := range dict {
 		r := strings.TrimSpace(route)
 
 		// duplication check
 		if _, ok := routes[r]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Warnf("duplicated route(route: %s, code: %d)\n", r, code)
 		}
 
 		if _, ok := codes[code]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Warnf("duplicated route(route: %s, code: %d)\n", r, code)
 		}
 
 		// update map, using last value when key duplicated

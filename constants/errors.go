@@ -46,4 +46,7 @@ var (
 	ErrNonsenseRPC                    = errors.New("you are making a rpc that may be processed locally, either specify a different server type or specify a server id")
 	ErrNoUIDBind                      = errors.New("you have to bind an UID to the session to use groups")
 	ErrOnCloseBackend                 = errors.New("onclose callbacks are not allowed on backend servers")
+	ErrChangeDictionaryWhileRunning   = errors.New("you shouldn't change the dictionary while the app is already running")
+	ErrChangeRouteWhileRunning        = errors.New("you shouldn't change routes while app is already running")
+	ErrRouterNotInitialized           = errors.New("router is not initialized")
 )

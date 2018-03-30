@@ -45,7 +45,7 @@ func configureFrontend(port int) {
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.AddRoute("room", func(
+	err := pitaya.AddRoute("room", func(
 		session *session.Session,
 		route *route.Route,
 		servers map[string]*cluster.Server,
@@ -56,6 +56,10 @@ func configureFrontend(port int) {
 		}
 		return nil, nil
 	})
+
+	if err != nil {
+		fmt.Printf("error adding route: %s\n", err.Error())
+	}
 
 	pitaya.AddAcceptor(ws)
 }

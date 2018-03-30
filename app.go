@@ -36,6 +36,7 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -73,6 +74,7 @@ type App struct {
 	router           *router.Router
 	rpcClient        cluster.RPCClient
 	rpcServer        cluster.RPCServer
+	running          bool
 	serializer       serialize.Serializer
 	server           *cluster.Server
 	serverMode       ServerMode
@@ -98,6 +100,7 @@ var (
 		serverMode:    Standalone,
 		serializer:    json.NewSerializer(),
 		configured:    false,
+		running:       false,
 		router:        router.New(),
 	}
 	log = logger.Log
@@ -291,7 +294,10 @@ func Start() {
 
 	listen()
 
-	defer timer.GlobalTicker.Stop()
+	defer func() {
+		timer.GlobalTicker.Stop()
+		app.running = false
+	}()
 
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
@@ -345,15 +351,20 @@ func listen() {
 		// this should be so fast that we shoudn't need concurrency
 		go remoteService.ProcessUserPush()
 	}
+
+	app.running = true
 }
 
-// SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
-func SetDictionary(dict map[string]uint16) {
+// SetDictionary set routes map
+func SetDictionary(dict map[string]uint16) error {
+	if app.running {
+		return constants.ErrChangeDictionaryWhileRunning
+	}
 	message.SetDictionary(dict)
+	return nil
 }
 
 // AddRoute adds a routing function to a server type
-// TODO calling this method with the server already running is VERY dangerous
 func AddRoute(
 	serverType string,
 	routingFunction func(
@@ -361,12 +372,16 @@ func AddRoute(
 		route *route.Route,
 		servers map[string]*cluster.Server,
 	) (*cluster.Server, error),
-) {
+) error {
 	if app.router != nil {
+		if app.running {
+			return constants.ErrChangeRouteWhileRunning
+		}
 		app.router.AddRoute(serverType, routingFunction)
 	} else {
-		log.Warn("ignoring route add as app router is nil")
+		return constants.ErrRouterNotInitialized
 	}
+	return nil
 }
 
 // Shutdown send a signal to let 'pitaya' shutdown itself.
