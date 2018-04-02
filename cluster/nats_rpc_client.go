@@ -27,7 +27,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -44,10 +43,10 @@ type NatsRPCClient struct {
 }
 
 // NewNatsRPCClient ctor
-func NewNatsRPCClient(connectString string, server *Server) *NatsRPCClient {
+func NewNatsRPCClient(connectString string, server *Server, reqTimeout time.Duration) *NatsRPCClient {
 	ns := &NatsRPCClient{
 		connString: connectString,
-		reqTimeout: viper.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout"),
+		reqTimeout: reqTimeout,
 		server:     server,
 		running:    false,
 	}

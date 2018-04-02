@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/logger"
 )
 
@@ -80,7 +79,8 @@ type (
 )
 
 func init() {
-	timerBacklog = config.GetBuffer("timer")
+	// since this runs on init it is better to leave the value hardcoded here
+	timerBacklog = 1 << 8
 	Manager.ChClosingTimer = make(chan int64, timerBacklog)
 	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
 }

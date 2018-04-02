@@ -64,6 +64,7 @@ const (
 // App is the base app struct
 type App struct {
 	acceptors        []acceptor.Acceptor
+	config           *config.Config
 	configured       bool
 	debug            bool
 	dieChan          chan bool
@@ -94,7 +95,6 @@ var (
 		startAt:       time.Now(),
 		dieChan:       make(chan bool),
 		acceptors:     []acceptor.Acceptor{},
-		heartbeat:     viper.GetDuration("pitaya.heartbeat.interval"),
 		packetDecoder: codec.NewPomeloPacketDecoder(),
 		packetEncoder: codec.NewPomeloPacketEncoder(),
 		serverMode:    Standalone,
@@ -110,13 +110,19 @@ var (
 )
 
 // Configure configures the app
-func Configure(isFrontend bool,
+func Configure(
+	isFrontend bool,
 	serverType string,
 	serverMode ServerMode,
 	serverMetadata map[string]string,
+	cfgs ...*viper.Viper,
 ) {
 	if app.configured {
 		log.Warn("pitaya configured twice!")
+	}
+	app.config = config.NewConfig(cfgs...)
+	if app.heartbeat == time.Duration(0) {
+		app.heartbeat = app.config.GetDuration("pitaya.heartbeat.interval")
 	}
 	app.server.Frontend = isFrontend
 	app.server.Type = serverType
@@ -193,12 +199,12 @@ func startDefaultSD() {
 	// initialize default service discovery
 	var err error
 	app.serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(
-		viper.GetStringSlice("pitaya.cluster.sd.etcd.endpoints"),
-		viper.GetDuration("pitaya.cluster.sd.etcd.dialtimeout"),
+		app.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints"),
+		app.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout"),
 		"pitaya/",
-		viper.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval"),
-		viper.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl"),
-		viper.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval"),
+		app.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval"),
+		app.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl"),
+		app.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval"),
 		app.server,
 	)
 	if err != nil {
@@ -210,8 +216,10 @@ func startDefaultRPCServer() {
 	// initialize default rpc server
 	var err error
 	SetRPCServer(cluster.NewNatsRPCServer(
-		viper.GetString("pitaya.cluster.rpc.server.nats.connect"),
+		app.config.GetString("pitaya.cluster.rpc.server.nats.connect"),
 		app.server,
+		app.config.GetBuffer("cluster.rpc.server.messages"),
+		app.config.GetBuffer("cluster.rpc.server.push"),
 	))
 	if err != nil {
 		log.Fatalf("error starting cluster rpc server component: %s", err.Error())
@@ -222,8 +230,9 @@ func startDefaultRPCClient() {
 	// initialize default rpc client
 	var err error
 	app.rpcClient = cluster.NewNatsRPCClient(
-		viper.GetString("pitaya.cluster.rpc.client.nats.connect"),
+		app.config.GetString("pitaya.cluster.rpc.client.nats.connect"),
 		app.server,
+		app.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout"),
 	)
 	if err != nil {
 		log.Fatalf("error starting cluster rpc client component: %s", err.Error())
@@ -288,6 +297,9 @@ func Start() {
 		app.packetEncoder,
 		app.serializer,
 		app.heartbeat,
+		app.config.GetBuffer("agent.messages"),
+		app.config.GetBuffer("handler.localprocess"),
+		app.config.GetBuffer("handler.remoteprocess"),
 		app.server,
 		remoteService,
 	)
@@ -323,7 +335,7 @@ func listen() {
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	for i := 0; i < config.GetConcurrency("handler.dispatch"); i++ {
+	for i := 0; i < app.config.GetConcurrency("handler.dispatch"); i++ {
 		go handlerService.Dispatch(i)
 	}
 	for _, acc := range app.acceptors {
@@ -345,7 +357,7 @@ func listen() {
 
 	// this handles remote messages
 	if app.rpcServer != nil {
-		for i := 0; i < config.GetConcurrency("remote.service"); i++ {
+		for i := 0; i < app.config.GetConcurrency("remote.service"); i++ {
 			go remoteService.ProcessRemoteMessages(i)
 		}
 		// this should be so fast that we shoudn't need concurrency

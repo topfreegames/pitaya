@@ -10,6 +10,7 @@ import (
 
 	"strings"
 
+	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
@@ -134,6 +135,12 @@ func main() {
 
 	ws := acceptor.NewWSAcceptor(":3250", "/pitaya")
 	pitaya.AddAcceptor(ws)
-	pitaya.Configure(true, "chat", pitaya.Standalone, map[string]string{})
+
+	config := viper.New()
+	config.SetDefault("pitaya.buffer.handler.localprocess", 15)
+	config.Set("pitaya.heartbeat.interval", "15s")
+	config.Set("pitaya.buffer.agent.messages", 32)
+
+	pitaya.Configure(true, "chat", pitaya.Standalone, map[string]string{}, config)
 	pitaya.Start()
 }

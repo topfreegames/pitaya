@@ -29,7 +29,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -87,6 +86,7 @@ func NewAgent(
 	packetEncoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	heartbeatTime time.Duration,
+	messagesBufferSize int,
 	dieChan chan bool,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
@@ -94,7 +94,6 @@ func NewAgent(
 		hbdEncode(heartbeatTime, packetEncoder, serializer)
 	})
 
-	messagesBufferSize := config.GetBuffer("agent.messages")
 	a := &Agent{
 		appDieChan:         dieChan,
 		chDie:              make(chan struct{}),

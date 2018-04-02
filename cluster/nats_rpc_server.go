@@ -25,7 +25,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/protos"
 )
 
@@ -42,16 +41,16 @@ type NatsRPCServer struct {
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(connectString string, server *Server) *NatsRPCServer {
+func NewNatsRPCServer(connectString string, server *Server, messagesBufferSize, pushBufferSize int) *NatsRPCServer {
 	ns := &NatsRPCServer{
 		connString:     connectString,
 		server:         server,
 		stopChan:       make(chan bool),
-		subChan:        make(chan *nats.Msg, config.GetBuffer("cluster.rpc.server.messages")),
+		subChan:        make(chan *nats.Msg, messagesBufferSize),
 		unhandledReqCh: make(chan *protos.Request),
 		// the reason this channel is buffered is that we can achieve more performance by not
 		// blocking producers on a massive push
-		userPushCh: make(chan *protos.Push, config.GetBuffer("cluster.rpc.server.push")),
+		userPushCh: make(chan *protos.Push, pushBufferSize),
 	}
 	return ns
 }

@@ -28,7 +28,6 @@ import (
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -47,16 +46,17 @@ var (
 type (
 	// HandlerService service
 	HandlerService struct {
-		services         map[string]*component.Service // all registered service
-		chLocalProcess   chan unhandledMessage         // channel of messages that will be processed locally
-		chRemoteProcess  chan unhandledMessage         // channel of messages that will be processed remotely
-		appDieChan       chan bool                     // die channel app
-		decoder          codec.PacketDecoder           // binary decoder
-		encoder          codec.PacketEncoder           // binary encoder
-		serializer       serialize.Serializer          // message serializer
-		heartbeatTimeout time.Duration
-		server           *cluster.Server // server obj
-		remoteService    *RemoteService
+		appDieChan         chan bool             // die channel app
+		chLocalProcess     chan unhandledMessage // channel of messages that will be processed locally
+		chRemoteProcess    chan unhandledMessage // channel of messages that will be processed remotely
+		decoder            codec.PacketDecoder   // binary decoder
+		encoder            codec.PacketEncoder   // binary encoder
+		heartbeatTimeout   time.Duration
+		messagesBufferSize int
+		remoteService      *RemoteService
+		serializer         serialize.Serializer          // message serializer
+		server             *cluster.Server               // server obj
+		services           map[string]*component.Service // all registered service
 	}
 
 	unhandledMessage struct {
@@ -73,13 +73,16 @@ func NewHandlerService(
 	packetEncoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	heartbeatTime time.Duration,
+	messagesBufferSize,
+	localProcessBufferSize,
+	remoteProcessBufferSize int,
 	server *cluster.Server,
 	remoteService *RemoteService,
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
-		chLocalProcess:   make(chan unhandledMessage, config.GetBuffer("handler.localprocess")),
-		chRemoteProcess:  make(chan unhandledMessage, config.GetBuffer("handler.remoteprocess")),
+		chLocalProcess:   make(chan unhandledMessage, localProcessBufferSize),
+		chRemoteProcess:  make(chan unhandledMessage, remoteProcessBufferSize),
 		decoder:          packetDecoder,
 		encoder:          packetEncoder,
 		serializer:       serializer,
@@ -143,7 +146,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.appDieChan)
+	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan)
 
 	// startup agent goroutine
 	go a.Handle()

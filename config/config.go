@@ -23,49 +23,86 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
-// TODO allow receiving a config from the user
+// Config is a wrapper around a viper config
+type Config struct {
+	config *viper.Viper
+}
 
-func fillDefaultValues() {
-	viper.SetDefault("pitaya.buffer.agent.messages", 16)
-	viper.SetDefault("pitaya.buffer.cluster.rpc.server.messages", 1000)
-	viper.SetDefault("pitaya.buffer.cluster.rpc.server.push", 100)
-	viper.SetDefault("pitaya.buffer.handler.localprocess", 10)
-	viper.SetDefault("pitaya.buffer.handler.remoteprocess", 10)
-	viper.SetDefault("pitaya.buffer.timer", 1<<8)
+// NewConfig creates a new config with a given viper config if given
+func NewConfig(cfgs ...*viper.Viper) *Config {
 
-	viper.SetDefault("pitaya.concurrency.handler.dispatch", 10)
-	viper.SetDefault("pitaya.concurrency.remote.service", 10)
+	var cfg *viper.Viper
+	if len(cfgs) > 0 {
+		cfg = cfgs[0]
+	} else {
+		cfg := viper.New()
+		cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		cfg.AutomaticEnv()
+	}
 
-	viper.SetDefault("pitaya.cluster.rpc.client.nats.connect", "nats://localhost:4222")
-	viper.SetDefault("pitaya.cluster.rpc.client.nats.requesttimeout", "5s")
-	viper.SetDefault("pitaya.cluster.rpc.server.nats.connect", "nats://localhost:4222")
-	viper.SetDefault("pitaya.cluster.sd.etcd.dialtimeout", "5s")
-	viper.SetDefault("pitaya.cluster.sd.etcd.endpoints", "localhost:2379")
-	viper.SetDefault("pitaya.cluster.sd.etcd.heartbeat.interval", "20s")
-	viper.SetDefault("pitaya.cluster.sd.etcd.heartbeat.ttl", "60s")
-	viper.SetDefault("pitaya.cluster.sd.etcd.syncservers.interval", "120s")
+	c := &Config{config: cfg}
+	c.fillDefaultValues()
+	return c
+}
 
-	viper.SetDefault("pitaya.heartbeat.interval", "30s")
+func (c *Config) fillDefaultValues() {
+	defaultsMap := map[string]interface{}{
+		"pitaya.buffer.agent.messages":                  16,
+		"pitaya.buffer.cluster.rpc.server.messages":     1000,
+		"pitaya.buffer.cluster.rpc.server.push":         100,
+		"pitaya.buffer.handler.localprocess":            10,
+		"pitaya.buffer.handler.remoteprocess":           10,
+		"pitaya.concurrency.handler.dispatch":           10,
+		"pitaya.concurrency.remote.service":             10,
+		"pitaya.cluster.rpc.client.nats.connect":        "nats://localhost:4222",
+		"pitaya.cluster.rpc.client.nats.requesttimeout": "5s",
+		"pitaya.cluster.rpc.server.nats.connect":        "nats://localhost:4222",
+		"pitaya.cluster.sd.etcd.dialtimeout":            "5s",
+		"pitaya.cluster.sd.etcd.endpoints":              "localhost:2379",
+		"pitaya.cluster.sd.etcd.heartbeat.interval":     "20s",
+		"pitaya.cluster.sd.etcd.heartbeat.ttl":          "60s",
+		"pitaya.cluster.sd.etcd.syncservers.interval":   "120s",
+		"pitaya.heartbeat.interval":                     "30s",
+	}
+
+	for param := range defaultsMap {
+		if c.config.Get(param) == nil {
+			c.config.SetDefault(param, defaultsMap[param])
+		}
+	}
 }
 
 // GetConcurrency retrieves concurrency config for a given suffix
-func GetConcurrency(s string) int {
-	return viper.GetInt(fmt.Sprintf("pitaya.concurrency.%s", s))
+func (c *Config) GetConcurrency(s string) int {
+	return c.config.GetInt(fmt.Sprintf("pitaya.concurrency.%s", s))
 }
 
 // GetBuffer retrieves buffer config for a given suffix
-func GetBuffer(s string) int {
-	return viper.GetInt(fmt.Sprintf("pitaya.buffer.%s", s))
+func (c *Config) GetBuffer(s string) int {
+	return c.config.GetInt(fmt.Sprintf("pitaya.buffer.%s", s))
 }
 
-func init() {
-	viper.AddConfigPath(".")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+// GetDuration returns a duration from the inner config
+func (c *Config) GetDuration(s string) time.Duration {
+	return c.config.GetDuration(s)
+}
 
-	fillDefaultValues()
+// GetString returns a string from the inner config
+func (c *Config) GetString(s string) string {
+	return c.config.GetString(s)
+}
+
+// GetInt returns an int from the inner config
+func (c *Config) GetInt(s string) int {
+	return c.config.GetInt(s)
+}
+
+// GetInt returns a string slice from the inner config
+func (c *Config) GetStringSlice(s string) []string {
+	return c.config.GetStringSlice(s)
 }
