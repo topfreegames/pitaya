@@ -26,8 +26,6 @@ import (
 	"errors"
 	"os"
 	"reflect"
-	"runtime"
-	"strings"
 
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -42,7 +40,6 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Errorf("pitaya/dispatch: %v", rec)
-			log.Error(Stack())
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {
@@ -110,27 +107,6 @@ func GobDecode(reply interface{}, data []byte) error {
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
-}
-
-// Stack prints the stack trace
-func Stack() string {
-	buf := make([]byte, 10000)
-	n := runtime.Stack(buf, false)
-	buf = buf[:n]
-
-	s := string(buf)
-
-	// skip pitaya frames lines
-	const skip = 7
-	count := 0
-	index := strings.IndexFunc(s, func(c rune) bool {
-		if c != '\n' {
-			return false
-		}
-		count++
-		return count == skip
-	})
-	return s[index+1:]
 }
 
 // GetErrorPayload creates and serializes an error payload

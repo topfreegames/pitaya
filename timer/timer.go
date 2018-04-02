@@ -27,7 +27,6 @@ import (
 
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var timerBacklog int
@@ -138,7 +137,6 @@ func pexec(id int64, fn Func) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Call timer function error, TimerID=%d, Error=%v", id, err)
-			println(util.Stack())
 		}
 	}()
 

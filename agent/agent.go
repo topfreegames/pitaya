@@ -309,7 +309,6 @@ func onSessionClosed(s *session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Log.Errorf("pitaya/onSessionClosed: %v", err)
-			logger.Log.Error(util.Stack())
 		}
 	}()
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -26,6 +27,14 @@ type someStruct struct {
 	B string
 }
 
+func (s *someStruct) TestFunc(arg1 int, arg2 string) *someStruct {
+	return &someStruct{A: arg1, B: arg2}
+}
+
+func (s *someStruct) TestFuncErr(arg string) (*someStruct, error) {
+	return nil, errors.New(arg)
+}
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -39,7 +48,40 @@ func setup() {
 
 func shutdown() {}
 
+func TestPcall(t *testing.T) {
+	t.Parallel()
+	s := &someStruct{}
+	tables := []struct {
+		name       string
+		obj        interface{}
+		methodName string
+		args       []reflect.Value
+		out        interface{}
+	}{
+		{"test_pcall_1", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(10), reflect.ValueOf("bla")}, &someStruct{A: 10, B: "bla"}},
+		{"test_pcall_2", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(20), reflect.ValueOf("ble")}, &someStruct{A: 20, B: "ble"}},
+		{"test_pcall_3", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(11), reflect.ValueOf("blb")}, &someStruct{A: 11, B: "blb"}},
+		{"test_pcall_4", s, "TestFuncErr", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf("blberror")}, nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			m, ok := reflect.TypeOf(table.obj).MethodByName(table.methodName)
+			assert.True(t, ok)
+			r, err := util.Pcall(m, table.args)
+			if table.methodName == "TestFunc" {
+				assert.NoError(t, err)
+			} else if table.methodName == "TableFuncErr" {
+				assert.Error(t, err)
+			}
+			assert.IsType(t, table.out, r)
+			assert.Equal(t, table.out, r)
+		})
+	}
+}
+
 func TestSliceContainsString(t *testing.T) {
+	t.Parallel()
 	tables := []struct {
 		slice []string
 		str   string
@@ -63,6 +105,7 @@ func TestSliceContainsString(t *testing.T) {
 }
 
 func TestSerializeOrRaw(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -140,6 +183,7 @@ func TestGobDecode(t *testing.T) {
 }
 
 func TestFileExists(t *testing.T) {
+	t.Parallel()
 	ins := []struct {
 		name string
 		out  bool
@@ -161,6 +205,7 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestGetErrorPayload(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -185,6 +230,7 @@ func TestGetErrorPayload(t *testing.T) {
 }
 
 func TestConvertProtoToMessageType(t *testing.T) {
+	t.Parallel()
 	tables := []struct {
 		in  protos.MsgType
 		out message.Type
