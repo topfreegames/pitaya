@@ -30,3 +30,21 @@ protos-compile:
 test:
 	@go test ./...
 
+test-coverage:
+	@go test ./... -coverprofile coverprofile.out
+
+test-coverage-html: test-coverage
+	@go tool cover -html=coverprofile.out
+
+merge-profiles:
+	@rm -f coverage-all.out
+	@gocovmerge *.out > coverage-all.out
+
+test-coverage-func coverage-func: test-coverage merge-profiles
+	@echo
+	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
+	@echo "\033[1;34mFunctions NOT COVERED by Tests\033[0m"
+	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
+	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
+
+
