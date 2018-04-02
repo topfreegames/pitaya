@@ -26,3 +26,7 @@ run-tadpole-example:
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@cd protos && protoc --gogofaster_out=. pitaya.proto
+
+test:
+	@go test ./...
+

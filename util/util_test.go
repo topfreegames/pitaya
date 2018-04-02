@@ -160,7 +160,6 @@ func TestGobEncode(t *testing.T) {
 }
 
 func TestGobDecode(t *testing.T) {
-
 	ins := []struct {
 		name string
 		out  []interface{}
