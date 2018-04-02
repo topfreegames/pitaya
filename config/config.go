@@ -35,7 +35,6 @@ type Config struct {
 
 // NewConfig creates a new config with a given viper config if given
 func NewConfig(cfgs ...*viper.Viper) *Config {
-
 	var cfg *viper.Viper
 	if len(cfgs) > 0 {
 		cfg = cfgs[0]
@@ -102,7 +101,12 @@ func (c *Config) GetInt(s string) int {
 	return c.config.GetInt(s)
 }
 
-// GetInt returns a string slice from the inner config
+// GetStringSlice returns a string slice from the inner config
 func (c *Config) GetStringSlice(s string) []string {
 	return c.config.GetStringSlice(s)
+}
+
+// Get returns an interface from the inner config
+func (c *Config) Get(s string) interface{} {
+	return c.config.Get(s)
 }
