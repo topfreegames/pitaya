@@ -63,7 +63,7 @@ func pollFuncReturn(f interface{}) (interface{}, error) {
 }
 
 // ShouldEventuallyReturn asserts that eventually the return of f should be v, timeouts: 0 - evaluation interval, 1 - timeout
-func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts ...time.Duration) bool {
+func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts ...time.Duration) {
 	t.Helper()
 	interval := 10 * time.Millisecond
 	timeout := time.After(50 * time.Millisecond)
@@ -87,12 +87,12 @@ func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts
 					t.Fatal(err)
 				}
 				if v == val {
-					return true
+					return
 				}
 			}
 		}
 	} else {
 		t.Fatal("ShouldEventuallyEqual should receive a function with no args and more than 0 outs")
-		return false
+		return
 	}
 }
