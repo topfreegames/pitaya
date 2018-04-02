@@ -21,6 +21,8 @@
 package service
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -212,14 +214,14 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 		return
 	}
 
-	res, err := util.GobEncodeSingle(ret)
-	if err != nil {
+	buf := bytes.NewBuffer([]byte(nil))
+	if err := gob.NewEncoder(buf).Encode(ret); err != nil {
 		response.Error = err.Error()
 		r.sendReply(reply, response)
 		return
 	}
 
-	response.Data = res
+	response.Data = buf.Bytes()
 	r.sendReply(reply, response)
 }
 

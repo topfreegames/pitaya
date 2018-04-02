@@ -102,7 +102,7 @@ func NewAgent(
 		messagesBufferSize: messagesBufferSize,
 		chStopHeartbeat:    make(chan struct{}),
 		chStopWrite:        make(chan struct{}),
-		chWrite:            make(chan []byte),
+		chWrite:            make(chan []byte, messagesBufferSize),
 		conn:               conn,
 		decoder:            packetDecoder,
 		encoder:            packetEncoder,

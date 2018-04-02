@@ -101,15 +101,6 @@ func GobEncode(args ...interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// GobEncodeSingle encodes a single value with goc
-func GobEncodeSingle(arg interface{}) ([]byte, error) {
-	buf := bytes.NewBuffer([]byte(nil))
-	if err := gob.NewEncoder(buf).Encode(arg); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
 // GobDecode decodes a gob encoded binary
 func GobDecode(reply interface{}, data []byte) error {
 	return gob.NewDecoder(bytes.NewReader(data)).Decode(reply)
