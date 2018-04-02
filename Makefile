@@ -1,6 +1,12 @@
 setup:
 	@dep ensure
 
+setup-ci:
+	@go get github.com/mattn/goveralls
+	@go get -u github.com/golang/dep/cmd/dep
+	@go get -u github.com/wadey/gocovmerge
+	@dep ensure
+
 setup-protobuf-macos:
 	@brew install protobuf
 	@go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
