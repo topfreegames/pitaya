@@ -21,6 +21,7 @@ var tables = []struct {
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
+	t.Parallel()
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
@@ -30,6 +31,7 @@ func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 }
 
 func TestGetAddr(t *testing.T) {
+	t.Parallel()
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
@@ -40,6 +42,7 @@ func TestGetAddr(t *testing.T) {
 }
 
 func TestGetConnChan(t *testing.T) {
+	t.Parallel()
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
@@ -49,6 +52,7 @@ func TestGetConnChan(t *testing.T) {
 }
 
 func TestListenAndServer(t *testing.T) {
+	t.Parallel()
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
