@@ -35,6 +35,7 @@ import (
 type WSAcceptor struct {
 	addr     string
 	wsPath   string
+	server   *http.Server
 	connChan chan net.Conn
 }
 
@@ -53,7 +54,10 @@ func NewWSAcceptor(addr string, wsPath ...string) *WSAcceptor {
 
 // GetAddr returns the addr the acceptor will listen on
 func (w *WSAcceptor) GetAddr() string {
-	return w.addr
+	if w.server != nil {
+		return w.server.Addr
+	}
+	return ""
 }
 
 // GetConnChan gets a connection channel
@@ -84,9 +88,20 @@ func (w *WSAcceptor) ListenAndServe() {
 		w.connChan <- c
 	})
 
-	if err := http.ListenAndServe(w.addr, nil); err != nil {
+	w.server = &http.Server{
+		Addr: w.addr,
+	}
+
+	defer w.Stop()
+
+	if err := w.server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Stop stops the acceptor
+func (w *WSAcceptor) Stop() {
+	w.server.Close()
 }
 
 // wsConn is an adapter to t.Conn, which implements all t.Conn

@@ -76,6 +76,8 @@ func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts
 		timeout = time.After(timeouts[1])
 	}
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
 	if isAFunction(f) {
 		for {
 			select {

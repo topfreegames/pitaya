@@ -32,6 +32,8 @@ var log = logger.Log
 type TCPAcceptor struct {
 	addr     string
 	connChan chan net.Conn
+	listener net.Listener
+	running  bool
 }
 
 // NewTCPAcceptor creates a new instance of tcp acceptor
@@ -39,17 +41,27 @@ func NewTCPAcceptor(addr string) *TCPAcceptor {
 	return &TCPAcceptor{
 		addr:     addr,
 		connChan: make(chan net.Conn),
+		running:  false,
 	}
 }
 
 // GetAddr returns the addr the acceptor will listen on
 func (a *TCPAcceptor) GetAddr() string {
-	return a.addr
+	if a.listener != nil {
+		return a.listener.Addr().String()
+	}
+	return ""
 }
 
 // GetConnChan gets a connection channel
 func (a *TCPAcceptor) GetConnChan() chan net.Conn {
 	return a.connChan
+}
+
+// Stop stops the acceptor
+func (a *TCPAcceptor) Stop() {
+	a.running = false
+	a.listener.Close()
 }
 
 // ListenAndServe using tcp acceptor
@@ -58,15 +70,15 @@ func (a *TCPAcceptor) ListenAndServe() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer listener.Close()
-	for {
+	a.listener = listener
+	a.running = true
+	defer a.Stop()
+	for a.running {
 		conn, err := listener.Accept()
 		if err != nil {
 			logger.Log.Error(err.Error())
 			continue
 		}
-
 		a.connChan <- conn
 	}
 }

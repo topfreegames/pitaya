@@ -10,19 +10,19 @@ import (
 	"github.com/topfreegames/pitaya/helpers"
 )
 
-var tables = []struct {
+var tcpAcceptorTables = []struct {
 	name string
 	addr string
 }{
-	{"table_test_1", "0.0.0.0:2515"},
-	{"table_test_2", "0.0.0.0:2516"},
-	{"table_test_3", "0.0.0.0:2517"},
-	{"table_test_4", "127.0.0.1:2517"},
+	{"test_1", "0.0.0.0:0"},
+	{"test_2", "0.0.0.0:0"},
+	{"test_3", "0.0.0.0:0"},
+	{"test_4", "127.0.0.1:0"},
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 	t.Parallel()
-	for _, table := range tables {
+	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
 			assert.NotNil(t, a)
@@ -32,10 +32,11 @@ func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 
 func TestGetAddr(t *testing.T) {
 	t.Parallel()
-	for _, table := range tables {
+	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
-			assert.Equal(t, a.GetAddr(), table.addr)
+			// returns nothing because not listening yet
+			assert.Equal(t, a.GetAddr(), "")
 		})
 	}
 
@@ -43,7 +44,7 @@ func TestGetAddr(t *testing.T) {
 
 func TestGetConnChan(t *testing.T) {
 	t.Parallel()
-	for _, table := range tables {
+	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
 			assert.NotNil(t, a.GetConnChan())
@@ -52,19 +53,37 @@ func TestGetConnChan(t *testing.T) {
 }
 
 func TestListenAndServer(t *testing.T) {
-	t.Parallel()
-	for _, table := range tables {
+	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			a := acceptor.NewTCPAcceptor(table.addr)
+			defer a.Stop()
 			c := a.GetConnChan()
 			go a.ListenAndServe()
 			// should be able to connect within 100 milliseconds
 			helpers.ShouldEventuallyReturn(t, func() error {
-				_, err := net.Dial("tcp", table.addr)
+				n, err := net.Dial("tcp", a.GetAddr())
+				defer n.Close()
 				return err
 			}, nil, 10*time.Millisecond, 100*time.Millisecond)
 			conn := <-c
 			assert.NotNil(t, conn)
+		})
+	}
+}
+
+func TestStop(t *testing.T) {
+	for _, table := range tcpAcceptorTables {
+		t.Run(table.name, func(t *testing.T) {
+			a := acceptor.NewTCPAcceptor(table.addr)
+			go a.ListenAndServe()
+			// should be able to connect within 100 milliseconds
+			helpers.ShouldEventuallyReturn(t, func() error {
+				_, err := net.Dial("tcp", a.GetAddr())
+				return err
+			}, nil, 10*time.Millisecond, 100*time.Millisecond)
+			a.Stop()
+			_, err := net.Dial("tcp", table.addr)
+			assert.Error(t, err)
 		})
 	}
 }

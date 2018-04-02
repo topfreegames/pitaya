@@ -25,6 +25,7 @@ import "net"
 // Acceptor type interface
 type Acceptor interface {
 	ListenAndServe()
+	Stop()
 	GetAddr() string
 	GetConnChan() chan net.Conn
 }
