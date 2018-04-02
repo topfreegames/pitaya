@@ -85,7 +85,7 @@ func (w *WSAcceptor) ListenAndServe() {
 	})
 
 	if err := http.ListenAndServe(w.addr, nil); err != nil {
-		logger.Log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 }
 

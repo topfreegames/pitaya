@@ -166,8 +166,7 @@ func processHandlerMessage(
 		return nil, err
 	}
 
-	// TODO: find out how to log this without needing the full request
-	// log.Debugf("SID=%d, Data=%s", req.GetSession().GetID(), arg)
+	log.Debugf("SID=%d, Data=%s", session.ID(), data)
 	args := []reflect.Value{h.Receiver, cachedSession}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))

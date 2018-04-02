@@ -26,6 +26,8 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 )
 
+var log = logger.Log
+
 // TCPAcceptor struct
 type TCPAcceptor struct {
 	addr     string
@@ -54,7 +56,7 @@ func (a *TCPAcceptor) GetConnChan() chan net.Conn {
 func (a *TCPAcceptor) ListenAndServe() {
 	listener, err := net.Listen("tcp", a.addr)
 	if err != nil {
-		logger.Log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	defer listener.Close()
