@@ -137,10 +137,10 @@ func main() {
 	pitaya.AddAcceptor(ws)
 
 	config := viper.New()
+	config.SetEnvPrefix("chat") // allows using env vars in the CHAT_PITAYA_ format
 	config.SetDefault("pitaya.buffer.handler.localprocess", 15)
 	config.Set("pitaya.heartbeat.interval", "15s")
 	config.Set("pitaya.buffer.agent.messages", 32)
-
 	pitaya.Configure(true, "chat", pitaya.Standalone, map[string]string{}, config)
 	pitaya.Start()
 }

@@ -40,11 +40,11 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 	if len(cfgs) > 0 {
 		cfg = cfgs[0]
 	} else {
-		cfg := viper.New()
-		cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-		cfg.AutomaticEnv()
+		cfg = viper.New()
 	}
 
+	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	cfg.AutomaticEnv()
 	c := &Config{config: cfg}
 	c.fillDefaultValues()
 	return c
