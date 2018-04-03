@@ -18,3 +18,7 @@
 vendor
 debug
 .vscode
+
+# vim temp files
+*.swp
+*.swo
