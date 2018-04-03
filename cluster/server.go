@@ -50,9 +50,6 @@ func NewServer(id, serverType string, frontend bool, metadata ...map[string]stri
 
 // AsJSONString returns the server as a json string
 func (s *Server) AsJSONString() string {
-	if s.Metadata == nil {
-		return "{}"
-	}
 	str, err := json.Marshal(s)
 	if err != nil {
 		logger.Log.Errorf("error getting server as json: %s", err.Error())
