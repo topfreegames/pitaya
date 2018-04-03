@@ -61,9 +61,8 @@ func (r *Router) SetServiceDiscovery(sd cluster.ServiceDiscovery) {
 }
 
 func (r *Router) defaultRoute(
-	svType string,
 	servers map[string]*cluster.Server,
-) (*cluster.Server, error) {
+) *cluster.Server {
 	srvList := make([]*cluster.Server, 0)
 	s := rand.NewSource(time.Now().Unix())
 	rnd := rand.New(s)
@@ -71,7 +70,7 @@ func (r *Router) defaultRoute(
 		srvList = append(srvList, v)
 	}
 	server := srvList[rnd.Intn(len(srvList))]
-	return server, nil
+	return server
 }
 
 // Route gets the right server to use in the call
@@ -89,12 +88,14 @@ func (r *Router) Route(
 		return nil, err
 	}
 	if rpcType == protos.RPCType_User {
-		return r.defaultRoute(svType, serversOfType)
+		server := r.defaultRoute(serversOfType)
+		return server, nil
 	}
 	routeFunc, ok := r.routesMap[svType]
 	if !ok {
 		log.Debugf("no specific route for svType: %s, using default route", svType)
-		return r.defaultRoute(svType, serversOfType)
+		server := r.defaultRoute(serversOfType)
+		return server, nil
 	}
 	return routeFunc(session, route, serversOfType)
 }
