@@ -58,7 +58,7 @@ func pollFuncReturn(f interface{}) (interface{}, error) {
 }
 
 // ShouldEventuallyReceive should asserts that eventually channel c receives a value
-func ShouldEventuallyReceive(t *testing.T, c interface{}, recv interface{}, timeouts ...time.Duration) interface{} {
+func ShouldEventuallyReceive(t *testing.T, c interface{}, timeouts ...time.Duration) interface{} {
 	t.Helper()
 	if !isChan(c) {
 		t.Fatal("ShouldEventuallyReceive c argument should be a channel")
