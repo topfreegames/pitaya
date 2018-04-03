@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package config_test
+package config
 
 import (
 	"fmt"
@@ -28,7 +28,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
 )
 
 func TestMain(m *testing.M) {
@@ -79,7 +78,7 @@ func TestNewConfig(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("arguments:%d", len(table.in)), func(t *testing.T) {
-			c := config.NewConfig(table.in...)
+			c := NewConfig(table.in...)
 			assert.Equal(t, c.Get(table.key), table.val)
 		})
 	}
@@ -88,7 +87,7 @@ func TestNewConfig(t *testing.T) {
 func TestGetConcurrency(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val int
@@ -108,7 +107,7 @@ func TestGetConcurrency(t *testing.T) {
 func TestGetBuffer(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val int
@@ -128,7 +127,7 @@ func TestGetBuffer(t *testing.T) {
 func TestGetDuration(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val time.Duration
@@ -148,7 +147,7 @@ func TestGetDuration(t *testing.T) {
 func TestGetString(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val string
@@ -167,7 +166,7 @@ func TestGetString(t *testing.T) {
 func TestGetInt(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val int
@@ -186,7 +185,7 @@ func TestGetInt(t *testing.T) {
 func TestGetStringSlice(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val []string
@@ -205,7 +204,7 @@ func TestGetStringSlice(t *testing.T) {
 func TestGet(t *testing.T) {
 	t.Parallel()
 
-	c := config.NewConfig()
+	c := NewConfig()
 	tables := []struct {
 		key string
 		val interface{}

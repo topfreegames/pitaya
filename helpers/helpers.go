@@ -13,7 +13,7 @@ import (
 func WriteFile(t *testing.T, filepath string, bytes []byte) {
 	t.Helper()
 	if err := ioutil.WriteFile(filepath, bytes, 0644); err != nil {
-		t.Fatalf("failed writing .golden: %s", err)
+		t.Fatalf("failed writing file: %s", err)
 	}
 }
 
@@ -22,14 +22,9 @@ func ReadFile(t *testing.T, filepath string) []byte {
 	t.Helper()
 	b, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		t.Fatalf("failed reading .golden: %s", err)
+		t.Fatalf("failed reading file: %s", err)
 	}
 	return b
-}
-
-func isAFunction(f interface{}) bool {
-	actual := reflect.TypeOf(f)
-	return actual.Kind() == reflect.Func && actual.NumIn() == 0 && actual.NumOut() > 0
 }
 
 func vetExtras(extras []interface{}) (bool, string) {
@@ -37,7 +32,7 @@ func vetExtras(extras []interface{}) (bool, string) {
 		if extra != nil {
 			zeroValue := reflect.Zero(reflect.TypeOf(extra)).Interface()
 			if !reflect.DeepEqual(zeroValue, extra) {
-				message := fmt.Sprintf("Unexpected non-nil/non-zero extra argument at index %d:\n\t<%T>: %#v", i+1, extra, extra)
+				message := fmt.Sprintf("unexpected non-nil/non-zero extra argument at index %d:\n\t<%T>: %#v", i+1, extra, extra)
 				return false, message
 			}
 		}
@@ -62,6 +57,39 @@ func pollFuncReturn(f interface{}) (interface{}, error) {
 	return values[0].Interface(), nil
 }
 
+// ShouldEventuallyReceive should asserts that eventually channel c receives a value
+func ShouldEventuallyReceive(t *testing.T, c interface{}, recv interface{}, timeouts ...time.Duration) interface{} {
+	t.Helper()
+	if !isChan(c) {
+		t.Fatal("ShouldEventuallyReceive c argument should be a channel")
+	}
+	v := reflect.ValueOf(c)
+
+	timeout := time.After(100 * time.Millisecond)
+
+	if len(timeouts) > 0 {
+		timeout = time.After(timeouts[0])
+	}
+
+	recvChan := make(chan reflect.Value)
+
+	go func() {
+		v, ok := v.Recv()
+		if ok {
+			recvChan <- v
+		}
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal(errors.New("timed out waiting for channel to receive"))
+	case a := <-recvChan:
+		return a.Interface()
+	}
+
+	return nil
+}
+
 // ShouldEventuallyReturn asserts that eventually the return of f should be v, timeouts: 0 - evaluation interval, 1 - timeout
 func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts ...time.Duration) {
 	t.Helper()
@@ -78,7 +106,7 @@ func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	if isAFunction(f) {
+	if isFunction(f) {
 		for {
 			select {
 			case <-timeout:

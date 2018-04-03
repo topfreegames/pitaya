@@ -24,7 +24,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -34,28 +33,23 @@ import (
 // WSAcceptor struct
 type WSAcceptor struct {
 	addr     string
-	wsPath   string
-	server   *http.Server
 	connChan chan net.Conn
+	listener net.Listener
 }
 
 // NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string, wsPath ...string) *WSAcceptor {
+func NewWSAcceptor(addr string) *WSAcceptor {
 	w := &WSAcceptor{
 		addr:     addr,
 		connChan: make(chan net.Conn),
-		wsPath:   "",
-	}
-	if len(wsPath) > 0 {
-		w.wsPath = wsPath[0]
 	}
 	return w
 }
 
 // GetAddr returns the addr the acceptor will listen on
 func (w *WSAcceptor) GetAddr() string {
-	if w.server != nil {
-		return w.server.Addr
+	if w.listener != nil {
+		return w.listener.Addr().String()
 	}
 	return ""
 }
@@ -65,6 +59,26 @@ func (w *WSAcceptor) GetConnChan() chan net.Conn {
 	return w.connChan
 }
 
+type connHandler struct {
+	upgrader *websocket.Upgrader
+	connChan chan net.Conn
+}
+
+func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	conn, err := h.upgrader.Upgrade(rw, r, nil)
+	if err != nil {
+		logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
+		return
+	}
+
+	c, err := newWSConn(conn)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	h.connChan <- c
+}
+
 // ListenAndServe listens and serve in the specified addr
 func (w *WSAcceptor) ListenAndServe() {
 	var upgrader = websocket.Upgrader{
@@ -72,36 +86,27 @@ func (w *WSAcceptor) ListenAndServe() {
 		WriteBufferSize: 1024,
 	}
 
-	http.HandleFunc("/"+strings.TrimPrefix(w.wsPath, "/"), func(rw http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(rw, r, nil)
-		if err != nil {
-			logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
-			return
-		}
-
-		c, err := newWSConn(conn)
-		if err != nil {
-			logger.Log.Error(err)
-			return
-		}
-
-		w.connChan <- c
-	})
-
-	w.server = &http.Server{
-		Addr: w.addr,
+	listener, err := net.Listen("tcp", w.addr)
+	if err != nil {
+		log.Fatal(err)
 	}
+	w.listener = listener
 
 	defer w.Stop()
 
-	if err := w.server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
+	http.Serve(listener, &connHandler{
+		upgrader: &upgrader,
+		connChan: w.connChan,
+	})
+
 }
 
 // Stop stops the acceptor
 func (w *WSAcceptor) Stop() {
-	w.server.Close()
+	err := w.listener.Close()
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // wsConn is an adapter to t.Conn, which implements all t.Conn
@@ -189,11 +194,11 @@ func (c *wsConn) RemoteAddr() net.Addr {
 //
 // A zero value for t means I/O operations will not time out.
 func (c *wsConn) SetDeadline(t time.Time) error {
-	if err := c.conn.SetReadDeadline(t); err != nil {
+	if err := c.SetReadDeadline(t); err != nil {
 		return err
 	}
 
-	return c.conn.SetWriteDeadline(t)
+	return c.SetWriteDeadline(t)
 }
 
 // SetReadDeadline sets the deadline for future Read calls

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package util_test
+package util
 
 import (
 	"encoding/gob"
@@ -37,7 +37,6 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -101,7 +100,7 @@ func TestPcall(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			m, ok := reflect.TypeOf(table.obj).MethodByName(table.methodName)
 			assert.True(t, ok)
-			r, err := util.Pcall(m, table.args)
+			r, err := Pcall(m, table.args)
 			if table.methodName == "TestFunc" || table.methodName == "TestFunc2RetNoErr" {
 				assert.NoError(t, err)
 			} else {
@@ -131,7 +130,7 @@ func TestSliceContainsString(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("slice:%s str:%s", table.slice, table.str), func(t *testing.T) {
-			res := util.SliceContainsString(table.slice, table.str)
+			res := SliceContainsString(table.slice, table.str)
 			assert.Equal(t, res, table.ret)
 		})
 	}
@@ -158,7 +157,7 @@ func TestSerializeOrRaw(t *testing.T) {
 
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			res, err := util.SerializeOrRaw(mockSerializer, table.in)
+			res, err := SerializeOrRaw(mockSerializer, table.in)
 			assert.NoError(t, err)
 			assert.Equal(t, table.out, res)
 		})
@@ -178,7 +177,7 @@ func TestGobEncode(t *testing.T) {
 
 	for _, in := range ins {
 		t.Run(in.name, func(t *testing.T) {
-			b, err := util.GobEncode(in.data...)
+			b, err := GobEncode(in.data...)
 			require.NoError(t, err)
 			gp := filepath.Join("fixtures", in.name+".golden")
 			if *update {
@@ -207,7 +206,7 @@ func TestGobDecode(t *testing.T) {
 			gp := filepath.Join("fixtures", in.name+".golden")
 			data := helpers.ReadFile(t, gp)
 			var reply []interface{}
-			err := util.GobDecode(&reply, data)
+			err := GobDecode(&reply, data)
 			require.NoError(t, err)
 			assert.Equal(t, reply, in.out)
 		})
@@ -229,7 +228,7 @@ func TestFileExists(t *testing.T) {
 	for _, in := range ins {
 		t.Run(in.name, func(t *testing.T) {
 			gp := filepath.Join("fixtures", in.name+".golden")
-			out := util.FileExists(gp)
+			out := FileExists(gp)
 			assert.Equal(t, out, in.out)
 		})
 	}
@@ -254,7 +253,7 @@ func TestGetErrorPayload(t *testing.T) {
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mockSerializer.EXPECT().Marshal(gomock.Any()).Return(table.out, nil)
-			b, err := util.GetErrorPayload(mockSerializer, table.in)
+			b, err := GetErrorPayload(mockSerializer, table.in)
 			assert.NoError(t, err)
 			assert.Equal(t, table.out, b)
 		})
@@ -273,7 +272,7 @@ func TestConvertProtoToMessageType(t *testing.T) {
 
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			out := util.ConvertProtoToMessageType(table.in)
+			out := ConvertProtoToMessageType(table.in)
 			assert.Equal(t, out, table.out)
 		})
 	}

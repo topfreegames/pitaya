@@ -76,7 +76,7 @@ func (a *TCPAcceptor) ListenAndServe() {
 	for a.running {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Log.Error(err.Error())
+			log.Error(err.Error())
 			continue
 		}
 		a.connChan <- conn

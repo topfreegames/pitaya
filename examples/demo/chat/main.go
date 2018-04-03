@@ -133,7 +133,7 @@ func main() {
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
-	ws := acceptor.NewWSAcceptor(":3250", "/pitaya")
+	ws := acceptor.NewWSAcceptor(":3250")
 	pitaya.AddAcceptor(ws)
 
 	config := viper.New()
