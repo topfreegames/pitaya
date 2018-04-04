@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/coreos/bbolt"
   packages = ["."]
-  revision = "583e8937c61f1af6513608ccc75c97b6abdf4ff9"
-  version = "v1.3.0"
+  revision = "48ea1b39c25fc1bab3506fbc712ecbaa842c4d2d"
+  source = "https://github.com/coreos/bbolt"
 
 [[projects]]
   name = "github.com/coreos/etcd"
@@ -208,8 +208,7 @@
     "runtime/internal",
     "utilities"
   ]
-  revision = "07f5e79768022f9a3265235f0db4ac8c3f675fec"
-  version = "v1.3.1"
+  revision = "8cc3a55af3bcf171a1c23a90c4df9cf591706104"
 
 [[projects]]
   branch = "master"
@@ -507,6 +506,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f0c8d21f8d41ce3743369ebd07ecd998e40f9a42a0e5e843da53cefda26f0d92"
+  inputs-digest = "84f58fad4795b1b6a8ec6a01d27027e9d4c55f161e1ee8353179661e0bc29b43"
   solver-name = "gps-cdcl"
   solver-version = 1

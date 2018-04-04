@@ -60,3 +60,9 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.1"
+
+# v1.3.1-coreos.6
+[[override]]
+  name = "github.com/coreos/bbolt"
+  source = "https://github.com/coreos/bbolt"
+  revision = "48ea1b39c25fc1bab3506fbc712ecbaa842c4d2d"
