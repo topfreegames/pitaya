@@ -20,7 +20,7 @@ var forwardTables = map[string]struct {
 var (
 	// headers
 	handshakeHeader = []byte{packet.Handshake, 0x00, 0x00, 0x01}
-	invalidHeader   = []byte{0x06, 0x00, 0x00, 0x01}
+	invalidHeader   = []byte{0xff, 0x00, 0x00, 0x01}
 )
 
 var decodeTables = map[string][]struct {
