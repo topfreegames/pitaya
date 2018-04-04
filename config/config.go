@@ -63,6 +63,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.connect":        "nats://localhost:4222",
 		"pitaya.cluster.sd.etcd.dialtimeout":            "5s",
 		"pitaya.cluster.sd.etcd.endpoints":              "localhost:2379",
+		"pitaya.cluster.sd.etcd.prefix":                 "pitaya/",
 		"pitaya.cluster.sd.etcd.heartbeat.interval":     "20s",
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":          "60s",
 		"pitaya.cluster.sd.etcd.syncservers.interval":   "120s",

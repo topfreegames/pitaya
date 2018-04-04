@@ -217,7 +217,6 @@ func Decode(data []byte) (*Message, error) {
 
 // SetDictionary set routes map which be used to compress route.
 func SetDictionary(dict map[string]uint16) {
-	log.Warn("SetDictionary should only be called from pitaya package")
 	for route, code := range dict {
 		r := strings.TrimSpace(route)
 

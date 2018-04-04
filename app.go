@@ -199,12 +199,7 @@ func startDefaultSD() {
 	// initialize default service discovery
 	var err error
 	app.serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(
-		app.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints"),
-		app.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout"),
-		"pitaya/",
-		app.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval"),
-		app.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl"),
-		app.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval"),
+		app.config,
 		app.server,
 	)
 	if err != nil {

@@ -21,44 +21,16 @@
 package cluster
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/coreos/etcd/integration"
 )
 
-var svTestTables = []struct {
-	id       string
-	svType   string
-	metadata map[string]string
-	frontend bool
-}{
-	{"someid-1", "somesvtype", map[string]string{"bla": "ola"}, true},
-	{"someid-2", "somesvtype", nil, true},
-	{"someid-3", "somesvtype", map[string]string{"sv": "game"}, false},
-	{"someid-4", "somesvtype", map[string]string{}, false},
-}
+var etcdSDTables = []struct {
+}{}
 
-func TestNewServer(t *testing.T) {
-	t.Parallel()
-	for _, table := range svTestTables {
-		t.Run(table.id, func(t *testing.T) {
-			s := NewServer(table.id, table.svType, table.frontend, table.metadata)
-			assert.Equal(t, table.id, s.ID)
-			assert.Equal(t, table.metadata, s.Metadata)
-			assert.Equal(t, table.frontend, s.Frontend)
-		})
-	}
-}
-
-func TestAsJSONString(t *testing.T) {
-	t.Parallel()
-	for _, table := range svTestTables {
-		t.Run(table.id, func(t *testing.T) {
-			s := NewServer(table.id, table.svType, table.frontend, table.metadata)
-			b, err := json.Marshal(s)
-			assert.NoError(t, err)
-			assert.Equal(t, string(b), s.AsJSONString())
-		})
-	}
+func TestNewEtcdServiceDiscovery(t *testing.T) {
+	c := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
+	defer c.Terminate(t)
+	//	cli := c.RandClient()
 }

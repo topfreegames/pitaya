@@ -30,11 +30,13 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/util"
 )
 
 type etcdServiceDiscovery struct {
 	cli                 *clientv3.Client
+	config              *config.Config
 	heartbeatInterval   time.Duration
 	syncServersInterval time.Duration
 	heartbeatTTL        time.Duration
@@ -51,27 +53,34 @@ type etcdServiceDiscovery struct {
 
 // NewEtcdServiceDiscovery ctor
 func NewEtcdServiceDiscovery(
-	endpoints []string,
-	etcdDialTimeout time.Duration,
-	etcdPrefix string,
-	heartbeatInterval time.Duration,
-	heartbeatTTL time.Duration,
-	syncServersInterval time.Duration,
-	server *Server) (ServiceDiscovery, error) {
-
+	config *config.Config,
+	server *Server,
+	cli ...*clientv3.Client,
+) (ServiceDiscovery, error) {
+	var client *clientv3.Client
+	if len(cli) > 0 {
+		client = cli[0]
+	}
 	sd := &etcdServiceDiscovery{
-		heartbeatInterval:   heartbeatInterval,
-		syncServersInterval: syncServersInterval,
-		heartbeatTTL:        heartbeatTTL,
-		running:             false,
-		etcdDialTimeout:     etcdDialTimeout,
-		etcdEndpoints:       endpoints,
-		etcdPrefix:          etcdPrefix,
-		server:              server,
-		stopChan:            make(chan bool),
+		config:   config,
+		running:  false,
+		server:   server,
+		stopChan: make(chan bool),
+		cli:      client,
 	}
 
+	sd.configure()
+
 	return sd, nil
+}
+
+func (sd *etcdServiceDiscovery) configure() {
+	sd.etcdEndpoints = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints")
+	sd.etcdDialTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
+	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
+	sd.heartbeatInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval")
+	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
+	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
 }
 
 func (sd *etcdServiceDiscovery) bootstrapLease() error {
@@ -169,19 +178,23 @@ func (sd *etcdServiceDiscovery) GetServer(id string) (*Server, error) {
 // Init starts the service discovery client
 func (sd *etcdServiceDiscovery) Init() error {
 	sd.running = true
-	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   sd.etcdEndpoints,
-		DialTimeout: sd.etcdDialTimeout,
-	})
-	if err != nil {
-		return err
+	var cli *clientv3.Client
+	var err error
+	if sd.cli == nil {
+		cli, err = clientv3.New(clientv3.Config{
+			Endpoints:   sd.etcdEndpoints,
+			DialTimeout: sd.etcdDialTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		sd.cli = cli
 	}
-	sd.cli = cli
 
 	// namespaced etcd :)
-	cli.KV = namespace.NewKV(cli.KV, sd.etcdPrefix)
-	cli.Watcher = namespace.NewWatcher(cli.Watcher, sd.etcdPrefix)
-	cli.Lease = namespace.NewLease(cli.Lease, sd.etcdPrefix)
+	sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
+	sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
+	sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
 
 	err = sd.bootstrapLease()
 	if err != nil {
