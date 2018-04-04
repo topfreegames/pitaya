@@ -216,23 +216,29 @@ func Decode(data []byte) (*Message, error) {
 }
 
 // SetDictionary set routes map which be used to compress route.
-func SetDictionary(dict map[string]uint16) {
+func SetDictionary(dict map[string]uint16) error {
+	if dict == nil {
+		return nil
+	}
+
 	for route, code := range dict {
 		r := strings.TrimSpace(route)
 
 		// duplication check
 		if _, ok := routes[r]; ok {
-			log.Warnf("duplicated route(route: %s, code: %d)\n", r, code)
+			return fmt.Errorf("duplicated route(route: %s, code: %d)", r, code)
 		}
 
 		if _, ok := codes[code]; ok {
-			log.Warnf("duplicated route(route: %s, code: %d)\n", r, code)
+			return fmt.Errorf("duplicated route(route: %s, code: %d)", r, code)
 		}
 
 		// update map, using last value when key duplicated
 		routes[r] = code
 		codes[code] = r
 	}
+
+	return nil
 }
 
 // GetDictionary gets the routes map which is used to compress route.

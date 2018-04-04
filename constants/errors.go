@@ -51,4 +51,5 @@ var (
 	ErrRouterNotInitialized           = errors.New("router is not initialized")
 	ErrNoServersAvailableOfType       = errors.New("no servers available of this type")
 	ErrNoServerWithID                 = errors.New("can't find any server with the provided ID")
+	ErrMessageWithNotEnoughLength     = errors.New("buffer has less bytes than head length requires")
 )
