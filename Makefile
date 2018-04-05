@@ -33,11 +33,17 @@ protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@cd protos && protoc --gogofaster_out=. pitaya.proto
 
+rm-test-temp-files:
+	@rm -f cluster/127.0.0.1*
+	@rm -f cluster/localhost*
+
 test:
 	@go test ./...
+	@make rm-test-temp-files
 
 test-coverage:
 	@go test ./... -coverprofile coverprofile.out
+	@make rm-test-temp-files
 
 test-coverage-html: test-coverage
 	@go tool cover -html=coverprofile.out

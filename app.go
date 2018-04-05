@@ -211,10 +211,8 @@ func startDefaultRPCServer() {
 	// initialize default rpc server
 	var err error
 	SetRPCServer(cluster.NewNatsRPCServer(
-		app.config.GetString("pitaya.cluster.rpc.server.nats.connect"),
+		app.config,
 		app.server,
-		app.config.GetBuffer("cluster.rpc.server.messages"),
-		app.config.GetBuffer("cluster.rpc.server.push"),
 	))
 	if err != nil {
 		log.Fatalf("error starting cluster rpc server component: %s", err.Error())
@@ -292,9 +290,9 @@ func Start() {
 		app.packetEncoder,
 		app.serializer,
 		app.heartbeat,
-		app.config.GetBuffer("agent.messages"),
-		app.config.GetBuffer("handler.localprocess"),
-		app.config.GetBuffer("handler.remoteprocess"),
+		app.config.GetInt("pitaya.buffer.agent.messages"),
+		app.config.GetInt("pitaya.buffer.handler.localprocess"),
+		app.config.GetInt("pitaya.buffer.handler.remoteprocess"),
 		app.server,
 		remoteService,
 	)
@@ -330,7 +328,7 @@ func listen() {
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	for i := 0; i < app.config.GetConcurrency("handler.dispatch"); i++ {
+	for i := 0; i < app.config.GetInt("pitaya.concurrency.handler.dispatch"); i++ {
 		go handlerService.Dispatch(i)
 	}
 	for _, acc := range app.acceptors {
@@ -352,7 +350,7 @@ func listen() {
 
 	// this handles remote messages
 	if app.rpcServer != nil {
-		for i := 0; i < app.config.GetConcurrency("remote.service"); i++ {
+		for i := 0; i < app.config.GetInt("pitaya.concurrency.remote.service"); i++ {
 			go remoteService.ProcessRemoteMessages(i)
 		}
 		// this should be so fast that we shoudn't need concurrency

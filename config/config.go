@@ -21,7 +21,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -75,16 +74,6 @@ func (c *Config) fillDefaultValues() {
 			c.config.SetDefault(param, defaultsMap[param])
 		}
 	}
-}
-
-// GetConcurrency retrieves concurrency config for a given suffix
-func (c *Config) GetConcurrency(s string) int {
-	return c.config.GetInt(fmt.Sprintf("pitaya.concurrency.%s", s))
-}
-
-// GetBuffer retrieves buffer config for a given suffix
-func (c *Config) GetBuffer(s string) int {
-	return c.config.GetInt(fmt.Sprintf("pitaya.buffer.%s", s))
 }
 
 // GetDuration returns a duration from the inner config

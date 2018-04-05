@@ -25,34 +25,46 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/protos"
 )
 
 // NatsRPCServer struct
 type NatsRPCServer struct {
-	connString     string
-	server         *Server
-	conn           *nats.Conn
-	stopChan       chan bool
-	subChan        chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
-	unhandledReqCh chan *protos.Request
-	userPushCh     chan *protos.Push
-	sub            *nats.Subscription
+	connString         string
+	server             *Server
+	conn               *nats.Conn
+	connectString      string
+	pushBufferSize     int
+	messagesBufferSize int
+	config             *config.Config
+	stopChan           chan bool
+	subChan            chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
+	unhandledReqCh     chan *protos.Request
+	userPushCh         chan *protos.Push
+	sub                *nats.Subscription
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(connectString string, server *Server, messagesBufferSize, pushBufferSize int) *NatsRPCServer {
+func NewNatsRPCServer(config *config.Config, server *Server) *NatsRPCServer {
 	ns := &NatsRPCServer{
-		connString:     connectString,
+		config:         config,
 		server:         server,
 		stopChan:       make(chan bool),
-		subChan:        make(chan *nats.Msg, messagesBufferSize),
 		unhandledReqCh: make(chan *protos.Request),
-		// the reason this channel is buffered is that we can achieve more performance by not
-		// blocking producers on a massive push
-		userPushCh: make(chan *protos.Push, pushBufferSize),
 	}
+	ns.configure()
 	return ns
+}
+
+func (ns *NatsRPCServer) configure() {
+	ns.connectString = ns.config.GetString("pitaya.cluster.rpc.server.nats.connect")
+	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
+	ns.pushBufferSize = ns.config.GetInt("pitays.buffer.cluster.rpc.server.push")
+	ns.subChan = make(chan *nats.Msg, ns.messagesBufferSize)
+	// the reason this channel is buffered is that we can achieve more performance by not
+	// blocking producers on a massive push
+	ns.userPushCh = make(chan *protos.Push, ns.pushBufferSize)
 }
 
 // GetUserMessagesTopic get the topic for user

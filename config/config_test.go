@@ -84,46 +84,6 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestGetConcurrency(t *testing.T) {
-	t.Parallel()
-
-	c := NewConfig()
-	tables := []struct {
-		key string
-		val int
-	}{
-		{"handler.dispatch", 10},
-		{"test", 42},
-		{"unexistent", 0},
-	}
-
-	for _, table := range tables {
-		t.Run(fmt.Sprintf("key:%s val:%d", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetConcurrency(table.key), table.val)
-		})
-	}
-}
-
-func TestGetBuffer(t *testing.T) {
-	t.Parallel()
-
-	c := NewConfig()
-	tables := []struct {
-		key string
-		val int
-	}{
-		{"agent.messages", 16},
-		{"test", 14},
-		{"unexistent", 0},
-	}
-
-	for _, table := range tables {
-		t.Run(fmt.Sprintf("key:%s val:%d", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetBuffer(table.key), table.val)
-		})
-	}
-}
-
 func TestGetDuration(t *testing.T) {
 	t.Parallel()
 
