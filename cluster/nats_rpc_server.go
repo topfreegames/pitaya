@@ -34,7 +34,6 @@ type NatsRPCServer struct {
 	connString         string
 	server             *Server
 	conn               *nats.Conn
-	connectString      string
 	pushBufferSize     int
 	messagesBufferSize int
 	config             *config.Config
@@ -58,7 +57,7 @@ func NewNatsRPCServer(config *config.Config, server *Server) *NatsRPCServer {
 }
 
 func (ns *NatsRPCServer) configure() {
-	ns.connectString = ns.config.GetString("pitaya.cluster.rpc.server.nats.connect")
+	ns.connString = ns.config.GetString("pitaya.cluster.rpc.server.nats.connect")
 	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
 	ns.pushBufferSize = ns.config.GetInt("pitays.buffer.cluster.rpc.server.push")
 	ns.subChan = make(chan *nats.Msg, ns.messagesBufferSize)
