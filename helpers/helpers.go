@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -25,6 +26,12 @@ func ReadFile(t *testing.T, filepath string) []byte {
 		t.Fatalf("failed reading file: %s", err)
 	}
 	return b
+}
+
+// FixtureGoldenFileName returns the golden file name on fixtures path
+func FixtureGoldenFileName(t *testing.T, name string) string {
+	t.Helper()
+	return filepath.Join("fixtures", name+".golden")
 }
 
 func vetExtras(extras []interface{}) (bool, string) {
