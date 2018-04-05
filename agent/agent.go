@@ -163,6 +163,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}) error {
 	}
 
 	if len(a.chSend) >= a.messagesBufferSize {
+		// TODO monitorar
 		return constants.ErrBufferExceed
 	}
 

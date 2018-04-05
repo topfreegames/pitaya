@@ -80,16 +80,17 @@ func NewHandlerService(
 	remoteService *RemoteService,
 ) *HandlerService {
 	h := &HandlerService{
-		services:         make(map[string]*component.Service),
-		chLocalProcess:   make(chan unhandledMessage, localProcessBufferSize),
-		chRemoteProcess:  make(chan unhandledMessage, remoteProcessBufferSize),
-		decoder:          packetDecoder,
-		encoder:          packetEncoder,
-		serializer:       serializer,
-		heartbeatTimeout: heartbeatTime,
-		appDieChan:       dieChan,
-		server:           server,
-		remoteService:    remoteService,
+		services:           make(map[string]*component.Service),
+		chLocalProcess:     make(chan unhandledMessage, localProcessBufferSize),
+		chRemoteProcess:    make(chan unhandledMessage, remoteProcessBufferSize),
+		decoder:            packetDecoder,
+		encoder:            packetEncoder,
+		messagesBufferSize: messagesBufferSize,
+		serializer:         serializer,
+		heartbeatTimeout:   heartbeatTime,
+		appDieChan:         dieChan,
+		server:             server,
+		remoteService:      remoteService,
 	}
 
 	return h
