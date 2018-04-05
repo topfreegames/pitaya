@@ -365,8 +365,7 @@ func SetDictionary(dict map[string]uint16) error {
 	if app.running {
 		return constants.ErrChangeDictionaryWhileRunning
 	}
-	message.SetDictionary(dict)
-	return nil
+	return message.SetDictionary(dict)
 }
 
 // AddRoute adds a routing function to a server type

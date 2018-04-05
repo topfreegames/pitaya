@@ -23,6 +23,7 @@ package codec
 import (
 	"bytes"
 
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/packet"
 )
 
@@ -66,7 +67,7 @@ func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
 	)
 	// check length
 	if c.buf.Len() < HeadLength {
-		return nil, err
+		return nil, constants.ErrMessageWithNotEnoughLength
 	}
 
 	// first time
@@ -88,9 +89,7 @@ func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
 
 		if err = c.forward(); err != nil {
 			return nil, err
-
 		}
-
 	}
 
 	return packets, nil

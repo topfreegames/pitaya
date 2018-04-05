@@ -1,0 +1,46 @@
+package codec
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/internal/packet"
+)
+
+func helperConcatBytes(packetType packet.Type, length, data []byte) []byte {
+	if data == nil {
+		return nil
+	}
+
+	bytes := []byte{}
+	bytes = append(bytes, byte(packetType))
+	bytes = append(bytes, length...)
+	bytes = append(bytes, data...)
+	return bytes
+}
+
+var encodeTables = map[string]struct {
+	packetType packet.Type
+	length     []byte
+	data       []byte
+	err        error
+}{
+	"test_encode_handshake":    {packet.Handshake, []byte{0x00, 0x00, 0x02}, []byte{0x01, 0x00}, nil},
+	"test_invalid_packet_type": {0xff, nil, nil, packet.ErrWrongPomeloPacketType},
+}
+
+func TestEncode(t *testing.T) {
+	t.Parallel()
+
+	for name, table := range encodeTables {
+		t.Run(name, func(t *testing.T) {
+			ppe := NewPomeloPacketEncoder()
+
+			encoded, err := ppe.Encode(table.packetType, table.data)
+
+			expectedEncoded := helperConcatBytes(table.packetType, table.length, table.data)
+			assert.Equal(t, encoded, expectedEncoded)
+			assert.Equal(t, err, table.err)
+		})
+	}
+}
