@@ -52,4 +52,7 @@ var (
 	ErrNoServersAvailableOfType       = errors.New("no servers available of this type")
 	ErrNoServerWithID                 = errors.New("can't find any server with the provided ID")
 	ErrMessageWithNotEnoughLength     = errors.New("buffer has less bytes than head length requires")
+	ErrNoNatsConnectionString         = errors.New("you have to provide a nats url")
+	ErrNatsMessagesBufferSizeZero     = errors.New("pitaya.buffer.cluster.rpc.server.messages cant be zero")
+	ErrNatsPushBufferSizeZero         = errors.New("pitaya.buffer.cluster.rpc.server.push cant be zero")
 )

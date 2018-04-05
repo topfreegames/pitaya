@@ -252,6 +252,19 @@
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
 
 [[projects]]
+  name = "github.com/nats-io/gnatsd"
+  packages = [
+    "conf",
+    "logger",
+    "server",
+    "server/pse",
+    "test",
+    "util"
+  ]
+  revision = "add6d7930ae6d4bff8823b28999ea87bf1bfd23d"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/nats-io/go-nats"
   packages = [
     ".",
@@ -428,7 +441,12 @@
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
+    "windows/registry",
+    "windows/svc",
+    "windows/svc/debug",
+    "windows/svc/eventlog",
+    "windows/svc/mgr"
   ]
   revision = "7dca6fe1f43775aa6d1334576870ff63f978f539"
 
@@ -506,6 +524,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "84f58fad4795b1b6a8ec6a01d27027e9d4c55f161e1ee8353179661e0bc29b43"
+  inputs-digest = "d55007b8b7376b8cdd28986f712fc283dbe9b4717afff07a1c2ab26f4547b69d"
   solver-name = "gps-cdcl"
   solver-version = 1

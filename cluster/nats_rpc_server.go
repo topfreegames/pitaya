@@ -26,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/protos"
 )
 
@@ -45,25 +46,38 @@ type NatsRPCServer struct {
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(config *config.Config, server *Server) *NatsRPCServer {
+func NewNatsRPCServer(config *config.Config, server *Server) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
 		config:         config,
 		server:         server,
 		stopChan:       make(chan bool),
 		unhandledReqCh: make(chan *protos.Request),
 	}
-	ns.configure()
-	return ns
+	if err := ns.configure(); err != nil {
+		return nil, err
+	}
+
+	return ns, nil
 }
 
-func (ns *NatsRPCServer) configure() {
+func (ns *NatsRPCServer) configure() error {
 	ns.connString = ns.config.GetString("pitaya.cluster.rpc.server.nats.connect")
+	if ns.connString == "" {
+		return constants.ErrNoNatsConnectionString
+	}
 	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
-	ns.pushBufferSize = ns.config.GetInt("pitays.buffer.cluster.rpc.server.push")
+	if ns.messagesBufferSize == 0 {
+		return constants.ErrNatsMessagesBufferSizeZero
+	}
+	ns.pushBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.push")
+	if ns.pushBufferSize == 0 {
+		return constants.ErrNatsPushBufferSizeZero
+	}
 	ns.subChan = make(chan *nats.Msg, ns.messagesBufferSize)
 	// the reason this channel is buffered is that we can achieve more performance by not
 	// blocking producers on a massive push
 	ns.userPushCh = make(chan *protos.Push, ns.pushBufferSize)
+	return nil
 }
 
 // GetUserMessagesTopic get the topic for user
@@ -142,7 +156,7 @@ func (ns *NatsRPCServer) BeforeShutdown() {}
 
 // Shutdown stops nats rpc server
 func (ns *NatsRPCServer) Shutdown() error {
-	ns.stopChan <- true
+	close(ns.stopChan)
 	return nil
 }
 

@@ -210,13 +210,14 @@ func startDefaultSD() {
 func startDefaultRPCServer() {
 	// initialize default rpc server
 	var err error
-	SetRPCServer(cluster.NewNatsRPCServer(
+	rpcServer, err := cluster.NewNatsRPCServer(
 		app.config,
 		app.server,
-	))
+	)
 	if err != nil {
 		log.Fatalf("error starting cluster rpc server component: %s", err.Error())
 	}
+	SetRPCServer(rpcServer)
 }
 
 func startDefaultRPCClient() {

@@ -4,11 +4,40 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/nats-io/gnatsd/server"
+	gnatsd "github.com/nats-io/gnatsd/test"
 )
+
+// GetFreePort returns a free port
+func GetFreePort(t *testing.T) int {
+	t.Helper()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+// GetTestNatsServer gets a test nats server
+func GetTestNatsServer(t *testing.T) *server.Server {
+	opts := gnatsd.DefaultTestOptions
+	port := GetFreePort(t)
+	opts.Port = port
+	s := gnatsd.RunServer(&opts)
+	return s
+}
 
 // WriteFile test helper
 func WriteFile(t *testing.T, filepath string, bytes []byte) {
