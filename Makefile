@@ -38,7 +38,7 @@ rm-test-temp-files:
 	@rm -f cluster/localhost*
 
 test:
-	@go test ./...
+	@go test `go list ./... | grep -v examples | grep -v constants`
 	@make rm-test-temp-files
 
 test-coverage:
@@ -58,5 +58,3 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34mFunctions NOT COVERED by Tests\033[0m"
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
-
-
