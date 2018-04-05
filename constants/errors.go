@@ -49,4 +49,6 @@ var (
 	ErrChangeDictionaryWhileRunning   = errors.New("you shouldn't change the dictionary while the app is already running")
 	ErrChangeRouteWhileRunning        = errors.New("you shouldn't change routes while app is already running")
 	ErrRouterNotInitialized           = errors.New("router is not initialized")
+	ErrNoServersAvailableOfType       = errors.New("no servers available of this type")
+	ErrNoServerWithID                 = errors.New("can't find any server with the provided ID")
 )

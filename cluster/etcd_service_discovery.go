@@ -31,6 +31,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/util"
 )
 
@@ -49,6 +50,8 @@ type etcdServiceDiscovery struct {
 	running             bool
 	server              *Server
 	stopChan            chan bool
+	lastHeartbeatTime   time.Time
+	lastSyncTime        time.Time
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -93,14 +96,19 @@ func (sd *etcdServiceDiscovery) bootstrapLease() error {
 	return nil
 }
 
-func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
-	// put key
+func (sd *etcdServiceDiscovery) addServerIntoEtcd(server *Server) error {
 	_, err := sd.cli.Put(
 		context.TODO(),
 		getKey(server.ID, server.Type),
 		server.AsJSONString(),
 		clientv3.WithLease(sd.leaseID),
 	)
+	return err
+}
+
+func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
+	// put key
+	err := sd.addServerIntoEtcd(server)
 	if err != nil {
 		return err
 	}
@@ -164,7 +172,7 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 			return sm, nil
 		}
 	}
-	return nil, fmt.Errorf("couldn't find servers with type: %s", serverType)
+	return nil, constants.ErrNoServersAvailableOfType
 }
 
 // GetServer returns a server given it's id
@@ -172,7 +180,7 @@ func (sd *etcdServiceDiscovery) GetServer(id string) (*Server, error) {
 	if sv, ok := sd.serverMapByID.Load(id); ok {
 		return sv.(*Server), nil
 	}
-	return nil, fmt.Errorf("coudn't find server with id: %s", id)
+	return nil, constants.ErrNoServerWithID
 }
 
 // Init starts the service discovery client
@@ -249,6 +257,7 @@ func (sd *etcdServiceDiscovery) Heartbeat() error {
 	if err != nil {
 		return err
 	}
+	sd.lastHeartbeatTime = time.Now()
 	return nil
 }
 
@@ -315,25 +324,20 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	sd.deleteLocalInvalidServers(allIds)
 
 	sd.printServers()
+	sd.lastSyncTime = time.Now()
 	return nil
 }
 
 // Shutdown executes on shutdown and will clean etcd
 func (sd *etcdServiceDiscovery) Shutdown() error {
 	sd.running = false
-	sd.stopChan <- true
+	close(sd.stopChan)
 
 	_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// Stop stops the service discovery client
-func (sd *etcdServiceDiscovery) Stop() {
-	defer sd.cli.Close()
-	log.Warn("stopping etcd service discovery client")
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
