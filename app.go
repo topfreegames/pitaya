@@ -209,7 +209,6 @@ func startDefaultSD() {
 
 func startDefaultRPCServer() {
 	// initialize default rpc server
-	var err error
 	rpcServer, err := cluster.NewNatsRPCServer(
 		app.config,
 		app.server,
@@ -222,15 +221,11 @@ func startDefaultRPCServer() {
 
 func startDefaultRPCClient() {
 	// initialize default rpc client
-	var err error
-	app.rpcClient = cluster.NewNatsRPCClient(
-		app.config.GetString("pitaya.cluster.rpc.client.nats.connect"),
-		app.server,
-		app.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout"),
-	)
+	rpcClient, err := cluster.NewNatsRPCClient(app.config, app.server)
 	if err != nil {
 		log.Fatalf("error starting cluster rpc client component: %s", err.Error())
 	}
+	SetRPCClient(rpcClient)
 }
 
 func initSysRemotes() {

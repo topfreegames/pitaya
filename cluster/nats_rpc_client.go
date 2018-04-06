@@ -27,6 +27,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
+	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -35,37 +37,53 @@ import (
 
 // NatsRPCClient struct
 type NatsRPCClient struct {
-	connString string
-	server     *Server
+	config     *config.Config
 	conn       *nats.Conn
+	connString string
 	reqTimeout time.Duration
 	running    bool
+	server     *Server
 }
 
 // NewNatsRPCClient ctor
-func NewNatsRPCClient(connectString string, server *Server, reqTimeout time.Duration) *NatsRPCClient {
+func NewNatsRPCClient(config *config.Config, server *Server) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		connString: connectString,
-		reqTimeout: reqTimeout,
-		server:     server,
-		running:    false,
+		config:  config,
+		server:  server,
+		running: false,
 	}
-	return ns
+	if err := ns.configure(); err != nil {
+		return nil, err
+	}
+	return ns, nil
+}
+
+func (ns *NatsRPCClient) configure() error {
+	ns.connString = ns.config.GetString("pitaya.cluster.rpc.client.nats.connect")
+	if ns.connString == "" {
+		return constants.ErrNoNatsConnectionString
+	}
+	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
+	if ns.reqTimeout == 0 {
+		return constants.ErrNatsNoRequestTimeout
+	}
+	return nil
 }
 
 // Send publishes a message in a given topic
 func (ns *NatsRPCClient) Send(topic string, data []byte) error {
+	if !ns.running {
+		return constants.ErrRPCClientNotInitialized
+	}
 	return ns.conn.Publish(topic, data)
 }
 
-// Call calls a method remotally
-func (ns *NatsRPCClient) Call(
+func (ns *NatsRPCClient) buildRequest(
 	rpcType protos.RPCType,
 	route *route.Route,
 	session *session.Session,
 	msg *message.Message,
-	server *Server,
-) (*protos.Response, error) {
+) protos.Request {
 	req := protos.Request{
 		Type: rpcType,
 		Msg: &protos.Msg{
@@ -97,13 +115,25 @@ func (ns *NatsRPCClient) Call(
 		}
 	}
 
-	var marshalledData []byte
-	var err error
-	marshalledData, err = proto.Marshal(&req)
+	return req
+}
+
+// Call calls a method remotally
+func (ns *NatsRPCClient) Call(
+	rpcType protos.RPCType,
+	route *route.Route,
+	session *session.Session,
+	msg *message.Message,
+	server *Server,
+) (*protos.Response, error) {
+	if !ns.running {
+		return nil, constants.ErrRPCClientNotInitialized
+	}
+	req := ns.buildRequest(rpcType, route, session, msg)
+	marshalledData, err := proto.Marshal(&req)
 	if err != nil {
 		return nil, err
 	}
-
 	m, err := ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
 	if err != nil {
 		return nil, err

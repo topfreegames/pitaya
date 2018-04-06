@@ -33,14 +33,6 @@ import (
 	"github.com/topfreegames/pitaya/protos"
 )
 
-func getServer() *Server {
-	return &Server{
-		ID:       "id1",
-		Type:     "type1",
-		Frontend: true,
-	}
-}
-
 func TestNewNatsRPCServer(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
@@ -86,12 +78,6 @@ func TestNatsRPCServerGetUserMessagesTopic(t *testing.T) {
 	assert.Equal(t, "pitaya/user/1/push", GetUserMessagesTopic("1"))
 }
 
-func TestNatsRPCServerGetChannel(t *testing.T) {
-	t.Parallel()
-	assert.Equal(t, "pitaya/servers/type1/sv1", getChannel("type1", "sv1"))
-	assert.Equal(t, "pitaya/servers/2type1/2sv1", getChannel("2type1", "2sv1"))
-}
-
 func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
@@ -108,28 +94,6 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 	n, _ := NewNatsRPCServer(cfg, sv)
 	assert.NotNil(t, n.GetUserPushChannel())
 	assert.IsType(t, make(chan *protos.Push), n.GetUserPushChannel())
-}
-
-func TestNatsRPCServerSetupNatsConn(t *testing.T) {
-	t.Parallel()
-	cfg := getConfig()
-	sv := getServer()
-	_, _ = NewNatsRPCServer(cfg, sv)
-	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-}
-
-func TestNatsRPCServerSetupNatsConnShouldError(t *testing.T) {
-	t.Parallel()
-	cfg := getConfig()
-	sv := getServer()
-	_, _ = NewNatsRPCServer(cfg, sv)
-	conn, err := setupNatsConn("nats://localhost:1234")
-	assert.Error(t, err)
-	assert.Nil(t, conn)
 }
 
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {

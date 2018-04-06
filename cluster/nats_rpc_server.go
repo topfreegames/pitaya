@@ -166,25 +166,3 @@ func (ns *NatsRPCServer) subscribe(topic string) (*nats.Subscription, error) {
 
 func (ns *NatsRPCServer) stop() {
 }
-
-func getChannel(serverType, serverID string) string {
-	return fmt.Sprintf("pitaya/servers/%s/%s", serverType, serverID)
-}
-
-func setupNatsConn(connectString string) (*nats.Conn, error) {
-	nc, err := nats.Connect(connectString,
-		nats.DisconnectHandler(func(_ *nats.Conn) {
-			log.Warn("disconnected from nats!")
-		}),
-		nats.ReconnectHandler(func(nc *nats.Conn) {
-			log.Warnf("reconnected to nats %s!", nc.ConnectedUrl)
-		}),
-		nats.ClosedHandler(func(nc *nats.Conn) {
-			log.Warnf("nats connection closed. reason: %q", nc.LastError())
-		}),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return nc, nil
-}
