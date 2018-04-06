@@ -21,15 +21,12 @@
 package protobuf
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/topfreegames/pitaya/constants"
 )
-
-// ErrWrongValueType is the error used for marshal the value with protobuf encoding.
-var ErrWrongValueType = errors.New("protobuf: convert on wrong type value")
 
 // Serializer implements the serialize.Serializer interface
 type Serializer struct {
@@ -68,7 +65,7 @@ func NewSerializer(protos io.Reader, protosMapping io.Reader) (*Serializer, erro
 func (s *Serializer) Marshal(v interface{}) ([]byte, error) {
 	pb, ok := v.(proto.Message)
 	if !ok {
-		return nil, ErrWrongValueType
+		return nil, constants.ErrWrongValueType
 	}
 	return proto.Marshal(pb)
 }
@@ -78,7 +75,7 @@ func (s *Serializer) Marshal(v interface{}) ([]byte, error) {
 func (s *Serializer) Unmarshal(data []byte, v interface{}) error {
 	pb, ok := v.(proto.Message)
 	if !ok {
-		return ErrWrongValueType
+		return constants.ErrWrongValueType
 	}
 	return proto.Unmarshal(data, pb)
 }
