@@ -74,7 +74,7 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 			cfg.Set("pitaya.buffer.cluster.rpc.server.push", table.pushBufferSize)
 			conf := getConfig(cfg)
 			_, err := NewNatsRPCServer(conf, getServer())
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, table.err, err)
 		})
 	}
 }
@@ -154,7 +154,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 		t.Run(table.uid, func(t *testing.T) {
 			subs, err := rpcServer.SubscribeToUserMessages(table.uid)
 			assert.NoError(t, err)
-			assert.Equal(t, subs.IsValid(), true)
+			assert.Equal(t, true, subs.IsValid())
 			conn.Publish(GetUserMessagesTopic(table.uid), table.msg)
 			helpers.ShouldEventuallyReceive(t, rpcServer.userPushCh)
 		})
@@ -183,7 +183,7 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 		t.Run(table.topic, func(t *testing.T) {
 			subs, err := rpcServer.subscribe(table.topic)
 			assert.NoError(t, err)
-			assert.Equal(t, subs.IsValid(), true)
+			assert.Equal(t, true, subs.IsValid())
 			conn.Publish(table.topic, table.msg)
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.subChan).(*nats.Msg)
 			assert.Equal(t, table.msg, r.Data)
@@ -212,7 +212,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 		t.Run(table.topic, func(t *testing.T) {
 			subs, err := rpcServer.subscribe(table.topic)
 			assert.NoError(t, err)
-			assert.Equal(t, subs.IsValid(), true)
+			assert.Equal(t, true, subs.IsValid())
 			b, err := proto.Marshal(table.req)
 			assert.NoError(t, err)
 			conn.Publish(table.topic, b)
@@ -263,7 +263,7 @@ func TestNatsRPCServerInit(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			subs, err := rpcServer.subscribe(table.topic)
 			assert.NoError(t, err)
-			assert.Equal(t, subs.IsValid(), true)
+			assert.Equal(t, true, subs.IsValid())
 			b, err := proto.Marshal(table.req)
 			assert.NoError(t, err)
 			rpcServer.conn.Publish(table.topic, b)

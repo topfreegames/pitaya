@@ -68,7 +68,7 @@ func TestForward(t *testing.T) {
 			ppd.buf.Write(table.buf)
 			err := ppd.forward()
 
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, table.err, err)
 		})
 	}
 }
@@ -83,7 +83,7 @@ func TestDecode(t *testing.T) {
 			for _, table := range tables {
 				packet, err := ppd.Decode(table.data)
 
-				assert.Equal(t, err, table.err)
+				assert.Equal(t, table.err, err)
 				assert.ElementsMatch(t, packet, table.packet)
 			}
 		})

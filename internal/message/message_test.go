@@ -66,12 +66,12 @@ func TestEncode(t *testing.T) {
 			expected := helpers.ReadFile(t, gp)
 
 			if err == nil {
-				assert.Equal(t, result, expected)
+				assert.Equal(t, expected, result)
 			} else {
 				assert.Nil(t, result)
 			}
 
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, table.err, err)
 
 			resetDicts(t)
 		})
@@ -101,8 +101,8 @@ func TestSetDictionaty(t *testing.T) {
 				SetDictionary(dict)
 			}
 
-			assert.Equal(t, routes, table.routes)
-			assert.Equal(t, codes, table.codes)
+			assert.Equal(t, table.routes, routes)
+			assert.Equal(t, table.codes, codes)
 
 			resetDicts(t)
 		})
@@ -164,8 +164,8 @@ func TestDecode(t *testing.T) {
 
 			message, err := Decode(encoded)
 
-			assert.Equal(t, message, table.decodedMessage)
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, table.decodedMessage, message)
+			assert.Equal(t, table.err, err)
 
 			resetDicts(t)
 		})

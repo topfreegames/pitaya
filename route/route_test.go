@@ -43,9 +43,9 @@ func TestNewRoute(t *testing.T) {
 		t.Run(table.outStr, func(t *testing.T) {
 			r := NewRoute(table.server, table.service, table.method)
 			assert.NotNil(t, r)
-			assert.Equal(t, r.SvType, table.server)
-			assert.Equal(t, r.Service, table.service)
-			assert.Equal(t, r.Method, table.method)
+			assert.Equal(t, table.server, r.SvType)
+			assert.Equal(t, table.service, r.Service)
+			assert.Equal(t, table.method, r.Method)
 		})
 	}
 }
@@ -55,7 +55,7 @@ func TestString(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.outStr, func(t *testing.T) {
 			r := NewRoute(table.server, table.service, table.method)
-			assert.Equal(t, r.String(), table.outStr)
+			assert.Equal(t, table.outStr, r.String())
 		})
 	}
 }
@@ -65,7 +65,7 @@ func TestShort(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.outStr, func(t *testing.T) {
 			r := NewRoute(table.server, table.service, table.method)
-			assert.Equal(t, r.Short(), table.shortStr)
+			assert.Equal(t, table.shortStr, r.Short())
 		})
 	}
 }
@@ -89,9 +89,9 @@ func TestDecode(t *testing.T) {
 		t.Run(table.route, func(t *testing.T) {
 			r, err := Decode(table.route)
 			if table.invalid == nil {
-				assert.Equal(t, r.SvType, table.server)
-				assert.Equal(t, r.Service, table.service)
-				assert.Equal(t, r.Method, table.method)
+				assert.Equal(t, table.server, r.SvType)
+				assert.Equal(t, table.service, r.Service)
+				assert.Equal(t, table.method, r.Method)
 			} else {
 				assert.EqualError(t, err, table.invalid.Error())
 			}

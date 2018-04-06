@@ -123,8 +123,8 @@ func TestEtcdSDBootstrapServer(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, table.server, generatedSv)
 			val := v.Kvs[0]
-			assert.Equal(t, string(val.Key), getKey(table.server.ID, table.server.Type))
-			assert.Equal(t, string(val.Value), table.server.AsJSONString())
+			assert.Equal(t, getKey(table.server.ID, table.server.Type), string(val.Key))
+			assert.Equal(t, table.server.AsJSONString(), string(val.Value))
 		})
 	}
 }

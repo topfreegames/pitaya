@@ -53,7 +53,7 @@ func TestGetAddr(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			a := NewTCPAcceptor(table.addr)
 			// returns nothing because not listening yet
-			assert.Equal(t, a.GetAddr(), "")
+			assert.Equal(t, "", a.GetAddr())
 		})
 	}
 

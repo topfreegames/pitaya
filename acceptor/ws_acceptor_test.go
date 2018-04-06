@@ -36,7 +36,7 @@ func TestWSAcceptorGetAddr(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			w := NewWSAcceptor(table.addr)
 			// will return empty string because acceptor is not listening
-			assert.Equal(t, w.GetAddr(), "")
+			assert.Equal(t, "", w.GetAddr())
 		})
 	}
 }

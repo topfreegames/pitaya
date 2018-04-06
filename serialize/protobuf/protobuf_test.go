@@ -59,7 +59,7 @@ func TestNewSerializer(t *testing.T) {
 				assert.NotEmpty(t, serializer.Protos)
 				assert.NotEmpty(t, serializer.ProtosMapping)
 			}
-			assert.IsType(t, err, table.errType)
+			assert.IsType(t, table.errType, err)
 		})
 	}
 }

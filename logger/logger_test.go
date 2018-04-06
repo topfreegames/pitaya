@@ -35,5 +35,5 @@ func TestInitLogger(t *testing.T) {
 func TestSetLogger(t *testing.T) {
 	l := logrus.New()
 	SetLogger(l)
-	assert.Equal(t, Log, l)
+	assert.Equal(t, l, Log)
 }

@@ -131,7 +131,7 @@ func TestSliceContainsString(t *testing.T) {
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("slice:%s str:%s", table.slice, table.str), func(t *testing.T) {
 			res := SliceContainsString(table.slice, table.str)
-			assert.Equal(t, res, table.ret)
+			assert.Equal(t, table.ret, res)
 		})
 	}
 }
@@ -208,7 +208,7 @@ func TestGobDecode(t *testing.T) {
 			var reply []interface{}
 			err := GobDecode(&reply, data)
 			require.NoError(t, err)
-			assert.Equal(t, reply, in.out)
+			assert.Equal(t, in.out, reply)
 		})
 	}
 }
@@ -229,7 +229,7 @@ func TestFileExists(t *testing.T) {
 		t.Run(in.name, func(t *testing.T) {
 			gp := filepath.Join("fixtures", in.name+".golden")
 			out := FileExists(gp)
-			assert.Equal(t, out, in.out)
+			assert.Equal(t, in.out, out)
 		})
 	}
 
@@ -273,7 +273,7 @@ func TestConvertProtoToMessageType(t *testing.T) {
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			out := ConvertProtoToMessageType(table.in)
-			assert.Equal(t, out, table.out)
+			assert.Equal(t, table.out, out)
 		})
 	}
 }

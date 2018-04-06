@@ -79,7 +79,7 @@ func TestNewConfig(t *testing.T) {
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("arguments:%d", len(table.in)), func(t *testing.T) {
 			c := NewConfig(table.in...)
-			assert.Equal(t, c.Get(table.key), table.val)
+			assert.Equal(t, table.val, c.Get(table.key))
 		})
 	}
 }
@@ -99,7 +99,7 @@ func TestGetDuration(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%d", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetDuration(table.key), table.val)
+			assert.Equal(t, table.val, c.GetDuration(table.key))
 		})
 	}
 }
@@ -118,7 +118,7 @@ func TestGetString(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%s", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetString(table.key), table.val)
+			assert.Equal(t, table.val, c.GetString(table.key))
 		})
 	}
 }
@@ -137,7 +137,7 @@ func TestGetInt(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%d", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetInt(table.key), table.val)
+			assert.Equal(t, table.val, c.GetInt(table.key))
 		})
 	}
 }
@@ -156,7 +156,7 @@ func TestGetStringSlice(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%s", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.GetStringSlice(table.key), table.val)
+			assert.Equal(t, table.val, c.GetStringSlice(table.key))
 		})
 	}
 }
@@ -175,7 +175,7 @@ func TestGet(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%v", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, c.Get(table.key), table.val)
+			assert.Equal(t, table.val, c.Get(table.key))
 		})
 	}
 }

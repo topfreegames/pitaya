@@ -39,8 +39,8 @@ func TestEncode(t *testing.T) {
 			encoded, err := ppe.Encode(table.packetType, table.data)
 
 			expectedEncoded := helperConcatBytes(table.packetType, table.length, table.data)
-			assert.Equal(t, encoded, expectedEncoded)
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, expectedEncoded, encoded)
+			assert.Equal(t, table.err, err)
 		})
 	}
 }

@@ -62,7 +62,7 @@ func TestDefaultRoute(t *testing.T) {
 	router := New()
 
 	retServer := router.defaultRoute(servers)
-	assert.Equal(t, retServer, server)
+	assert.Equal(t, server, retServer)
 }
 
 func TestRoute(t *testing.T) {
@@ -86,8 +86,8 @@ func TestRoute(t *testing.T) {
 			router.SetServiceDiscovery(mockServiceDiscovery)
 
 			retServer, err := router.Route(table.rpcType, table.serverType, session, route)
-			assert.Equal(t, retServer, table.server)
-			assert.Equal(t, err, table.err)
+			assert.Equal(t, table.server, retServer)
+			assert.Equal(t, table.err, err)
 		})
 	}
 }
