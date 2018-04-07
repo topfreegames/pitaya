@@ -154,7 +154,7 @@ func TestNatsRPCClientSend(t *testing.T) {
 			rpcClient.conn.ChanSubscribe(table.topic, subChan)
 
 			err := rpcClient.Send(table.topic, table.data)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			r := helpers.ShouldEventuallyReceive(t, subChan).(*nats.Msg)
 			assert.Equal(t, table.data, r.Data)

@@ -67,7 +67,7 @@ func TestMarshal(t *testing.T) {
 
 			assert.Equal(t, table.marshaled, result)
 			if table.errType == nil {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.IsType(t, table.errType, err)
 			}
@@ -105,7 +105,7 @@ func TestUnmarshal(t *testing.T) {
 			var result MyStruct
 			err := serializer.Unmarshal(table.data, &result)
 			if table.errType == nil {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, table.unmarshaled, &result)
 			} else {
 				assert.Empty(t, &result)

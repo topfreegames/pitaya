@@ -148,7 +148,7 @@ func TestDecode(t *testing.T) {
 				SetDictionary(map[string]uint16{"a": 1})
 
 				result, err := table.encodedMessage.Encode()
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 
 				gp := helpers.FixtureGoldenFileName(t, t.Name())
 

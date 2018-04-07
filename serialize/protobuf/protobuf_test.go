@@ -66,7 +66,7 @@ func TestNewSerializer(t *testing.T) {
 
 func TestMarshal(t *testing.T) {
 	protoReader, err := os.Open("./../../protos/pitaya.proto")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	protoMappingReader := strings.NewReader(`{"onNewUser":{"server": "Response"}}`)
 
 	var marshalTables = map[string]struct {
@@ -77,7 +77,7 @@ func TestMarshal(t *testing.T) {
 		"test_not_a_message": {"invalid", constants.ErrWrongValueType},
 	}
 	serializer, err := NewSerializer(protoReader, protoMappingReader)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	for name, table := range marshalTables {
 		t.Run(name, func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestMarshal(t *testing.T) {
 			gp := helpers.FixtureGoldenFileName(t, t.Name())
 
 			if table.err == nil {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				if *update {
 					t.Log("updating golden file")
 					helpers.WriteFile(t, gp, result)
@@ -102,7 +102,7 @@ func TestMarshal(t *testing.T) {
 
 func TestUnmarshal(t *testing.T) {
 	protoReader, err := os.Open("./../../protos/pitaya.proto")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	protoMappingReader := strings.NewReader(`{"onNewUser":{"server": "Response"}}`)
 
 	gp := helpers.FixtureGoldenFileName(t, "TestMarshal/test_ok")
@@ -119,7 +119,7 @@ func TestUnmarshal(t *testing.T) {
 		"test_invalid_dest": {&protos.Response{Data: []byte(nil), Error: ""}, data, "invalid", constants.ErrWrongValueType},
 	}
 	serializer, err := NewSerializer(protoReader, protoMappingReader)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	for name, table := range unmarshalTables {
 		t.Run(name, func(t *testing.T) {
