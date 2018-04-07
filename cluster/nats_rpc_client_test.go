@@ -21,9 +21,11 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -156,7 +158,6 @@ func TestNatsRPCClientSend(t *testing.T) {
 
 			r := helpers.ShouldEventuallyReceive(t, subChan).(*nats.Msg)
 			assert.Equal(t, table.data, r.Data)
-			assert.Equal(t, table.data, r.Data)
 		})
 	}
 }
@@ -255,6 +256,76 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 			rpcClient.server.Frontend = table.frontendServer
 			req := rpcClient.buildRequest(table.rpcType, table.route, table.session, table.msg)
 			assert.Equal(t, table.expected, req)
+		})
+	}
+}
+
+func TestNatsRPCClientCallShouldFailIfNotRunning(t *testing.T) {
+	config := getConfig()
+	sv := getServer()
+	rpcClient, _ := NewNatsRPCClient(config, sv)
+	res, err := rpcClient.Call(protos.RPCType_Sys, nil, nil, nil, nil)
+	assert.Equal(t, constants.ErrRPCClientNotInitialized, err)
+	assert.Nil(t, res)
+}
+
+func TestNatsRPCClientCall(t *testing.T) {
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+	rpcClient, _ := NewNatsRPCClient(config, sv)
+	rpcClient.Init()
+
+	rt := route.NewRoute("sv", "svc", "method")
+	ss := session.New(nil, true, "uid")
+
+	msg := &message.Message{
+		Type: message.Request,
+		ID:   uint(123),
+		Data: []byte("data"),
+	}
+
+	tables := []struct {
+		name     string
+		response interface{}
+		expected *protos.Response
+		err      error
+	}{
+		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
+		{"test_error", &protos.Response{Data: []byte("nok"), Error: "nok"}, nil, errors.New("nok")},
+		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
+		{"test_bad_proto", &protos.ErrorPayload{Code: 400, Reason: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
+		{"test_no_response", nil, nil, errors.New("nats: timeout")},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+			assert.NoError(t, err)
+
+			sv2 := getServer()
+			sv2.Type = "sv-type-2"
+			sv2.ID = "sv-id-2"
+			conn.Subscribe(getChannel(sv2.Type, sv2.ID), func(m *nats.Msg) {
+				if table.response != nil {
+					if val, ok := table.response.(*protos.Response); ok {
+						b, _ := proto.Marshal(val)
+						conn.Publish(m.Reply, b)
+					} else if val, ok := table.response.(*protos.ErrorPayload); ok {
+						b, _ := proto.Marshal(val)
+						conn.Publish(m.Reply, b)
+					} else {
+						conn.Publish(m.Reply, table.response.([]byte))
+					}
+				}
+			})
+
+			res, err := rpcClient.Call(protos.RPCType_Sys, rt, ss, msg, sv2)
+			assert.Equal(t, table.expected, res)
+			assert.Equal(t, table.err, err)
 		})
 	}
 }
