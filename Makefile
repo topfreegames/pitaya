@@ -38,11 +38,11 @@ rm-test-temp-files:
 	@rm -f cluster/localhost*
 
 test:
-	@go test `go list ./... | grep -v examples | grep -v constants`
+	@go test `go list ./... | grep -v examples | grep -v constants | grep -v mocks`
 	@make rm-test-temp-files
 
 test-coverage:
-	@go test `go list ./... | grep -v examples | grep -v constants` -coverprofile coverprofile.out
+	@go test `go list ./... | grep -v examples | grep -v constants | grep -v mocks` -coverprofile coverprofile.out
 	@make rm-test-temp-files
 
 test-coverage-html: test-coverage
