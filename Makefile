@@ -1,3 +1,5 @@
+TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks`
+
 setup:
 	@dep ensure
 
@@ -38,11 +40,11 @@ rm-test-temp-files:
 	@rm -f cluster/localhost*
 
 test:
-	@go test `go list ./... | grep -v examples | grep -v constants | grep -v mocks`
+	@go test $(TESTABLE_PACKAGES)
 	@make rm-test-temp-files
 
 test-coverage:
-	@go test `go list ./... | grep -v examples | grep -v constants | grep -v mocks` -coverprofile coverprofile.out
+	@go test $(TESTABLE_PACKAGES) -coverprofile coverprofile.out
 	@make rm-test-temp-files
 
 test-coverage-html: test-coverage
