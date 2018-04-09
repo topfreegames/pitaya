@@ -33,7 +33,6 @@ var (
 	ErrClosedGroup                    = errors.New("group closed")
 	ErrFrontSessionCantPushToFront    = errors.New("frontend session can't push to front")
 	ErrMemberNotFound                 = errors.New("member not found in the group")
-	ErrMessageWithNotEnoughLength     = errors.New("buffer has less bytes than head length requires")
 	ErrNatsMessagesBufferSizeZero     = errors.New("pitaya.buffer.cluster.rpc.server.messages cant be zero")
 	ErrNatsPushBufferSizeZero         = errors.New("pitaya.buffer.cluster.rpc.server.push cant be zero")
 	ErrNatsNoRequestTimeout           = errors.New("pitaya.cluster.rpc.client.nats.requesttimeout cant be empty")

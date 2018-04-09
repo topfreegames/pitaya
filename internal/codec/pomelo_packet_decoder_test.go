@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/packet"
 )
 
@@ -37,7 +36,7 @@ var decodeTables = map[string][]struct {
 	packet []*packet.Packet
 	err    error
 }{
-	"test_not_enough_bytes":       {{[]byte{0x01}, nil, constants.ErrMessageWithNotEnoughLength}},
+	"test_not_enough_bytes":       {{[]byte{0x01}, nil, nil}},
 	"test_first_forward":          {{handshakeHeader, nil, nil}},
 	"test_error_on_first_forward": {{invalidHeader, nil, packet.ErrWrongPomeloPacketType}},
 	"test_second_forward": {
