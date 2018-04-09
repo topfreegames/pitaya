@@ -24,8 +24,10 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/uuid"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -94,12 +96,12 @@ func TestNatsRPCClientStop(t *testing.T) {
 
 func TestNatsRPCClientInitShouldFailIfConnFails(t *testing.T) {
 	t.Parallel()
+	sv := getServer()
 	cfg := viper.New()
 	cfg.Set("pitaya.cluster.rpc.client.nats.connect", "nats://localhost:1")
 	config := getConfig(cfg)
-	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(config, sv)
-	err := rpcServer.Init()
+	rpcClient, _ := NewNatsRPCClient(config, sv)
+	err := rpcClient.Init()
 	assert.Error(t, err)
 }
 
@@ -151,13 +153,17 @@ func TestNatsRPCClientSend(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			subChan := make(chan *nats.Msg)
-			rpcClient.conn.ChanSubscribe(table.topic, subChan)
+			subs, err := rpcClient.conn.ChanSubscribe(table.topic, subChan)
+			assert.NoError(t, err)
+			// TODO this is ugly, can lead to flaky tests and we could probably do it better
+			time.Sleep(50 * time.Millisecond)
 
-			err := rpcClient.Send(table.topic, table.data)
+			err = rpcClient.Send(table.topic, table.data)
 			assert.NoError(t, err)
 
 			r := helpers.ShouldEventuallyReceive(t, subChan).(*nats.Msg)
 			assert.Equal(t, table.data, r.Data)
+			subs.Unsubscribe()
 		})
 	}
 }
@@ -271,11 +277,12 @@ func TestNatsRPCClientCallShouldFailIfNotRunning(t *testing.T) {
 
 func TestNatsRPCClientCall(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
+	sv := getServer()
 	defer s.Shutdown()
 	cfg := viper.New()
 	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	cfg.Set("pitaya.cluster.rpc.client.nats.requesttimeout", "300ms")
 	config := getConfig(cfg)
-	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv)
 	rpcClient.Init()
 
@@ -294,8 +301,8 @@ func TestNatsRPCClientCall(t *testing.T) {
 		expected *protos.Response
 		err      error
 	}{
-		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_error", &protos.Response{Data: []byte("nok"), Error: "nok"}, nil, errors.New("nok")},
+		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
 		{"test_bad_proto", &protos.ErrorPayload{Code: 400, Reason: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
 		{"test_no_response", nil, nil, errors.New("nats: timeout")},
@@ -307,9 +314,9 @@ func TestNatsRPCClientCall(t *testing.T) {
 			assert.NoError(t, err)
 
 			sv2 := getServer()
-			sv2.Type = "sv-type-2"
-			sv2.ID = "sv-id-2"
-			conn.Subscribe(getChannel(sv2.Type, sv2.ID), func(m *nats.Msg) {
+			sv2.Type = uuid.New().String()
+			sv2.ID = uuid.New().String()
+			subs, err := conn.Subscribe(getChannel(sv2.Type, sv2.ID), func(m *nats.Msg) {
 				if table.response != nil {
 					if val, ok := table.response.(*protos.Response); ok {
 						b, _ := proto.Marshal(val)
@@ -322,10 +329,15 @@ func TestNatsRPCClientCall(t *testing.T) {
 					}
 				}
 			})
-
+			assert.NoError(t, err)
+			// TODO this is ugly, can lead to flaky tests and we could probably do it better
+			time.Sleep(50 * time.Millisecond)
 			res, err := rpcClient.Call(protos.RPCType_Sys, rt, ss, msg, sv2)
 			assert.Equal(t, table.expected, res)
 			assert.Equal(t, table.err, err)
+			err = subs.Unsubscribe()
+			assert.NoError(t, err)
+			conn.Close()
 		})
 	}
 }
