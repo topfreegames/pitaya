@@ -1,4 +1,4 @@
-// Copyright (c) nano Authors and TFG Co. All Rights Reserved.
+// Copyright (c) TFG Co. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,26 @@
 
 package component
 
-type (
-	options struct {
-		name     string              // component name
-		nameFunc func(string) string // rename handler name
-	}
+import (
+	"strings"
+	"testing"
 
-	// Option used to customize handler
-	Option func(options *options)
+	"github.com/stretchr/testify/assert"
 )
 
-// WithName used to rename component name
-func WithName(name string) Option {
-	return func(opt *options) {
-		opt.name = name
-	}
+func TestWithName(t *testing.T) {
+	name := "someName"
+	opt := &options{}
+	WithName(name)(opt)
+	assert.Equal(t, name, opt.name)
 }
 
-// WithNameFunc override handler name by specific function
-// such as: strings.ToUpper/strings.ToLower
-func WithNameFunc(fn func(string) string) Option {
-	return func(opt *options) {
-		opt.nameFunc = fn
+func TestWithNameFunc(t *testing.T) {
+	name := "somename"
+	opt := &options{}
+	nameFunc := func(s string) string {
+		return strings.ToUpper(s)
 	}
+	WithNameFunc(nameFunc)(opt)
+	assert.Equal(t, opt.nameFunc(name), strings.ToUpper(name))
 }

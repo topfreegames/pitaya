@@ -1,4 +1,4 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks`
+TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces`
 
 setup:
 	@dep ensure

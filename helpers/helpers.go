@@ -30,6 +30,22 @@ func GetFreePort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
+// GetMapKeys returns a string slice with the map keys
+func GetMapKeys(t *testing.T, m interface{}) []string {
+	if reflect.ValueOf(m).Kind() != reflect.Map {
+		t.Fatal(errors.New("GetMapKeys should receive a map"))
+	}
+	if reflect.TypeOf(m).Key() != reflect.TypeOf("bla") {
+		t.Fatal(errors.New("GetMapKeys should receive a map with string keys"))
+	}
+	t.Helper()
+	res := make([]string, 0)
+	for _, k := range reflect.ValueOf(m).MapKeys() {
+		res = append(res, k.String())
+	}
+	return res
+}
+
 // GetTestNatsServer gets a test nats server
 func GetTestNatsServer(t *testing.T) *server.Server {
 	opts := gnatsd.DefaultTestOptions
