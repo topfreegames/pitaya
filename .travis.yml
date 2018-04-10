@@ -6,4 +6,4 @@ services:
 - docker
 before_script: make setup-ci
 script: make test-coverage
-after_success: $HOME/gopath/bin/goveralls -coverprofile coverage-all.out -service=travis-ci
+after_success: $HOME/gopath/bin/goveralls -coverprofile coverprofile.out -service=travis-ci
