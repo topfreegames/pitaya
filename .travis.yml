@@ -5,5 +5,5 @@ sudo: false
 services:
 - docker
 before_script: make setup-ci
-script: make test
+script: make test-coverage
 after_success: $HOME/gopath/bin/goveralls -coverprofile coverage-all.out -service=travis-ci
