@@ -23,7 +23,6 @@ package session
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -47,9 +46,7 @@ type NetworkEntity interface {
 
 var (
 	log = logger.Log
-	//ErrIllegalUID represents a invalid uid
-	ErrIllegalUID = errors.New("illegal uid")
-	// OnSessionBind represents the function called after the session in bound
+	// OnSessionBind represents the function called after the session is bound
 	OnSessionBind func(s *Session) error
 	sessionsByUID sync.Map
 	sessionsByID  sync.Map
@@ -208,7 +205,7 @@ func (s *Session) SetFrontendData(frontendID string, frontendSessionID int64) {
 // Bind bind UID to current session
 func (s *Session) Bind(uid string) error {
 	if uid == "" {
-		return ErrIllegalUID
+		return constants.ErrIllegalUID
 	}
 
 	if s.UID() != "" {
