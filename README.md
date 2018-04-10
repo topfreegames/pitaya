@@ -3,7 +3,7 @@
 Pitaya is currently under development and is not yet ready for production use.
 We're working on tests and better documentation and we'll update the project as soon as possible.
 
-# pitaya [![Build Status][7]][8] [![GoDoc][1]][2] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
+# pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
 [1]: https://godoc.org/github.com/topfreegames/pitaya?status.svg
 [2]: https://godoc.org/github.com/topfreegames/pitaya
@@ -13,6 +13,8 @@ We're working on tests and better documentation and we'll update the project as 
 [6]: LICENSE
 [7]: https://travis-ci.org/topfreegames/pitaya.svg?branch=master
 [8]: https://travis-ci.org/topfreegames/pitaya
+[9]: https://coveralls.io/repos/github/topfreegames/pitaya/badge.svg?branch=master
+[10]: https://coveralls.io/github/topfreegames/pitaya?branch=master
 
 Pitaya is an easy to use, fast and lightweight game server framework inspired by [starx](https://github.com/lonnng/starx) and [pomelo](https://github.com/NetEase/pomelo) and built on top of [nano](https://github.com/lonnng/nano)'s networking library.
 
@@ -37,7 +39,7 @@ The easiest way of running `pitaya` is by starting a standalone application. The
 In order to run several `pitaya` applications in a cluster it is necessary to configure RPC and Service Discovery services. Currently we are using [NATS](https://nats.io/) for RPC and [ETCD](https://github.com/coreos/etcd) for service discovery. Other options may be implemented in the future.
 
 
-There's an working example of `pitaya` running in cluster mode [here](./examples/demo/cluster). 
+There's an working example of `pitaya` running in cluster mode [here](./examples/demo/cluster).
 
 To run this example you need to have both nats and etcd running. To start them you can use the following commands:
 
@@ -48,7 +50,7 @@ docker run -d -p 2379:2379 -p 2380:2380 appcelerator/etcd
 
 You can start the backend and frontend servers with the following commands:
 
-```make 
+```make
 make run-cluster-example-frontend
 make run-cluster-example-backend
 ```
