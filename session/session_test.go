@@ -21,8 +21,12 @@
 package session
 
 import (
+	"bytes"
 	"encoding/gob"
+	"errors"
 	"flag"
+	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,9 +34,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	nats "github.com/nats-io/go-nats"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/session/mocks"
+	"github.com/topfreegames/pitaya/util"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -40,6 +47,19 @@ var update = flag.Bool("update", false, "update .golden files")
 type someStruct struct {
 	A int
 	B string
+}
+
+type unregisteredStruct struct{}
+
+type mockAddr struct{}
+
+func (ma *mockAddr) Network() string { return "tcp" }
+func (ma *mockAddr) String() string  { return "192.0.2.1:25" }
+
+func getEncodedEmptyMap() []byte {
+	buf := bytes.NewBuffer([]byte(nil))
+	gob.NewEncoder(buf).Encode(map[string]interface{}{})
+	return buf.Bytes()
 }
 
 func TestMain(m *testing.M) {
@@ -51,6 +71,7 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	gob.Register(someStruct{})
+	gob.Register(Data{})
 }
 
 func shutdown() {}
@@ -72,8 +93,6 @@ func TestSessionIDServiceSessionID(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	t.Parallel()
-
 	tables := []struct {
 		name     string
 		frontend bool
@@ -133,8 +152,6 @@ func TestGetSessionByIDDoenstExist(t *testing.T) {
 }
 
 func TestGetSessionByUIDExists(t *testing.T) {
-	t.Parallel()
-
 	uid := uuid.New().String()
 	expectedSS := New(nil, true, uid)
 	sessionsByUID.Store(uid, expectedSS)
@@ -150,16 +167,16 @@ func TestGetSessionByUIDDoenstExist(t *testing.T) {
 	assert.Nil(t, ss)
 }
 
-func TestUpdateEncondedData(t *testing.T) {
+func TestSessionUpdateEncodedData(t *testing.T) {
 	tables := []struct {
 		name string
 		data map[string]interface{}
 	}{
-		{"testUpdateEncondedData_1", map[string]interface{}{"byte": []byte{1}}},
-		{"testUpdateEncondedData_2", map[string]interface{}{"int": 1}},
-		{"testUpdateEncondedData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
-		{"testUpdateEncondedData_4", map[string]interface{}{"string": "aaa"}},
-		{"testUpdateEncondedData_5", map[string]interface{}{}},
+		{"testUpdateEncodedData_1", map[string]interface{}{"byte": []byte{1}}},
+		{"testUpdateEncodedData_2", map[string]interface{}{"int": 1}},
+		{"testUpdateEncodedData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
+		{"testUpdateEncodedData_4", map[string]interface{}{"string": "aaa"}},
+		{"testUpdateEncodedData_5", map[string]interface{}{}},
 	}
 
 	for _, table := range tables {
@@ -181,4 +198,1072 @@ func TestUpdateEncondedData(t *testing.T) {
 			assert.Equal(t, data, ss.encodedData)
 		})
 	}
+}
+
+func TestSessionPush(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	ss := New(mockEntity, false)
+	route := uuid.New().String()
+	v := someStruct{A: 1, B: "aaa"}
+
+	mockEntity.EXPECT().Push(route, v)
+	err := ss.Push(route, v)
+	assert.NoError(t, err)
+}
+
+func TestSessionResponseMID(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	ss := New(mockEntity, false)
+	mid := uint(rand.Int())
+	v := someStruct{A: 1, B: "aaa"}
+
+	mockEntity.EXPECT().ResponseMID(mid, v)
+	err := ss.ResponseMID(mid, v)
+	assert.NoError(t, err)
+}
+
+func TestSessionID(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, false)
+	ss.id = int64(rand.Uint64())
+
+	id := ss.ID()
+	assert.Equal(t, ss.id, id)
+}
+
+func TestSessionUID(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, false)
+	ss.uid = uuid.New().String()
+
+	uid := ss.UID()
+	assert.Equal(t, ss.uid, uid)
+}
+
+func TestSessionGetData(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		data map[string]interface{}
+	}{
+		{"test_1", map[string]interface{}{"byte": []byte{1}, "string": "test", "int": 1}},
+		{"test_2", map[string]interface{}{"byte": []byte{1}, "struct": someStruct{A: 1, B: "aaa"}, "int": 34}},
+		{"test_3", map[string]interface{}{"string": "aaa"}},
+		{"test_4", map[string]interface{}{}},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+			ss.data = table.data
+
+			data := ss.GetData()
+			assert.Equal(t, ss.data, data)
+		})
+	}
+}
+
+func TestSessionSetData(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		data map[string]interface{}
+	}{
+		{"testSessionSetData_1", map[string]interface{}{"byte": []byte{1}}},
+		{"testSessionSetData_2", map[string]interface{}{"int": 1}},
+		{"testSessionSetData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
+		{"testSessionSetData_4", map[string]interface{}{"string": "aaa"}},
+		{"testSessionSetData_5", map[string]interface{}{}},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+			err := ss.SetData(table.data)
+			assert.NoError(t, err)
+			assert.Equal(t, table.data, ss.data)
+
+			gp := filepath.Join("fixtures", table.name+".golden")
+			if *update {
+				t.Log("updating golden file")
+				helpers.WriteFile(t, gp, ss.encodedData)
+			}
+			encodedData := helpers.ReadFile(t, gp)
+			assert.Equal(t, encodedData, ss.encodedData)
+		})
+	}
+}
+
+func TestSessionGetEncodedData(t *testing.T) {
+	t.Parallel()
+	tables := []struct {
+		name string
+	}{
+		{"testUpdateEncodedData_1"},
+		{"testUpdateEncodedData_2"},
+		{"testUpdateEncodedData_3"},
+		{"testUpdateEncodedData_4"},
+		{"testUpdateEncodedData_5"},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+			assert.NotNil(t, ss)
+
+			gp := filepath.Join("fixtures", table.name+".golden")
+			encodedData := helpers.ReadFile(t, gp)
+
+			ss.encodedData = encodedData
+			data := ss.GetDataEncoded()
+			assert.Equal(t, ss.encodedData, data)
+		})
+	}
+}
+
+func TestSessionSetEncodedData(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		data map[string]interface{}
+	}{
+		{"testUpdateEncodedData_1", map[string]interface{}{"byte": []byte{1}}},
+		{"testUpdateEncodedData_2", map[string]interface{}{"int": 1}},
+		{"testUpdateEncodedData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
+		{"testUpdateEncodedData_4", map[string]interface{}{"string": "aaa"}},
+		{"testUpdateEncodedData_5", map[string]interface{}{}},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+			assert.NotNil(t, ss)
+
+			gp := filepath.Join("fixtures", table.name+".golden")
+			encodedData := helpers.ReadFile(t, gp)
+
+			err := ss.SetDataEncoded(encodedData)
+			assert.NoError(t, err)
+			assert.Equal(t, encodedData, ss.encodedData)
+			assert.Equal(t, table.data, ss.data)
+		})
+	}
+}
+
+func TestSessionSetFrontendData(t *testing.T) {
+	t.Parallel()
+
+	frontendID := uuid.New().String()
+	frontendSessionID := int64(rand.Uint64())
+
+	ss := New(nil, false)
+	assert.NotNil(t, ss)
+	ss.SetFrontendData(frontendID, frontendSessionID)
+
+	assert.Equal(t, frontendID, ss.frontendID)
+	assert.Equal(t, frontendSessionID, ss.frontendSessionID)
+}
+
+func TestSessionBindFailsWithoutUID(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, false)
+	assert.NotNil(t, ss)
+
+	err := ss.Bind("")
+	assert.Equal(t, constants.ErrIllegalUID, err)
+}
+
+func TestSessionBindFailsIfAlreadyBound(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, false)
+	ss.uid = uuid.New().String()
+	assert.NotNil(t, ss)
+
+	err := ss.Bind(uuid.New().String())
+	assert.Equal(t, constants.ErrSessionAlreadyBound, err)
+}
+
+func TestSessionBindRunsOnSessionBind(t *testing.T) {
+	affectedVar := ""
+	err := errors.New("some error occured")
+	tables := []struct {
+		name          string
+		onSessionBind func(s *Session) error
+		err           error
+	}{
+		{"successful_on_session_bind", func(s *Session) error {
+			affectedVar = s.uid
+			return nil
+		}, nil},
+		{"failed_on_session_bind", func(s *Session) error { return err }, err},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			affectedVar = ""
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			OnSessionBind = table.onSessionBind
+			defer func() { OnSessionBind = nil }()
+
+			uid := uuid.New().String()
+			err := ss.Bind(uid)
+
+			if table.err != nil {
+				assert.Equal(t, table.err, err)
+				assert.Empty(t, affectedVar)
+				assert.Empty(t, ss.uid)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, uid, affectedVar)
+				assert.Equal(t, uid, ss.uid)
+			}
+		})
+	}
+}
+
+func TestSessionBindFrontend(t *testing.T) {
+	ss := New(nil, true)
+	assert.NotNil(t, ss)
+
+	uid := uuid.New().String()
+	err := ss.Bind(uid)
+	assert.NoError(t, err)
+	assert.Equal(t, uid, ss.uid)
+
+	val, ok := sessionsByUID.Load(uid)
+	assert.True(t, ok)
+	assert.Equal(t, val, ss)
+}
+
+func TestSessionBindBackend(t *testing.T) {
+	tables := []struct {
+		name string
+		err  error
+	}{
+		{"successful_bind_in_front", nil},
+		{"failed_bind_in_front", errors.New("failed bind in front")},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			mockEntity := mocks.NewMockNetworkEntity(ctrl)
+			ss := New(mockEntity, false)
+			assert.NotNil(t, ss)
+
+			uid := uuid.New().String()
+			expectedSessionData := &Data{
+				ID:  ss.frontendSessionID,
+				UID: uid,
+			}
+			expectedRequestData, err := util.GobEncode(expectedSessionData)
+			assert.NoError(t, err)
+			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(nil, table.err)
+
+			err = ss.Bind(uid)
+			assert.Equal(t, table.err, err)
+
+			if table.err == nil {
+				assert.Equal(t, uid, ss.uid)
+			} else {
+				assert.Empty(t, ss.uid)
+			}
+
+			_, ok := sessionsByUID.Load(uid)
+			assert.False(t, ok)
+		})
+	}
+}
+
+func TestSessionOnCloseFailsIfBackend(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, false)
+	assert.NotNil(t, ss)
+
+	err := ss.OnClose(nil)
+	assert.Equal(t, constants.ErrOnCloseBackend, err)
+}
+
+func TestSessionOnClose(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, true)
+	assert.NotNil(t, ss)
+
+	expected := false
+	f := func() { expected = true }
+	err := ss.OnClose(f)
+	assert.NoError(t, err)
+	assert.Len(t, ss.OnCloseCallbacks, 1)
+
+	ss.OnCloseCallbacks[0]()
+	assert.True(t, expected)
+}
+
+func TestSessionClose(t *testing.T) {
+	tables := []struct {
+		name string
+		uid  string
+	}{
+		{"close", ""},
+		{"close_bound", uuid.New().String()},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			mockEntity := mocks.NewMockNetworkEntity(ctrl)
+			ss := New(mockEntity, true)
+			assert.NotNil(t, ss)
+
+			if table.uid != "" {
+				sessionsByUID.Store(table.uid, ss)
+				ss.uid = table.uid
+			}
+
+			mockEntity.EXPECT().Close()
+			ss.Close()
+
+			_, ok := sessionsByID.Load(ss.id)
+			assert.False(t, ok)
+
+			if table.uid != "" {
+				_, ok = sessionsByUID.Load(table.uid)
+				assert.False(t, ok)
+			}
+		})
+	}
+}
+
+func TestSessionCloseFrontendWithSubscription(t *testing.T) {
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	conn, err := nats.Connect(fmt.Sprintf("nats://%s", s.Addr()))
+	assert.NoError(t, err)
+	defer conn.Close()
+
+	subs, err := conn.Subscribe(uuid.New().String(), func(msg *nats.Msg) {})
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, uint32(1))
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	ss := New(mockEntity, true)
+	assert.NotNil(t, ss)
+	ss.Subscription = subs
+
+	mockEntity.EXPECT().Close()
+	ss.Close()
+
+	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, uint32(0))
+}
+
+func TestSessionRemoteAddr(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	ss := New(mockEntity, true)
+	assert.NotNil(t, ss)
+
+	expectedAddr := &mockAddr{}
+	mockEntity.EXPECT().RemoteAddr().Return(expectedAddr)
+	addr := ss.RemoteAddr()
+	assert.Equal(t, expectedAddr, addr)
+}
+
+func TestSessionSet(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name   string
+		val    interface{}
+		errStr string
+	}{
+		{"ok", "val", ""},
+		{"failed", &unregisteredStruct{}, "gob: type not registered for interface: session.unregisteredStruct"},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+			err := ss.Set("key", table.val)
+			if table.errStr == "" {
+				assert.NoError(t, err)
+				val, ok := ss.data["key"]
+				assert.True(t, ok)
+				assert.Equal(t, table.val, val)
+				assert.NotEmpty(t, ss.encodedData)
+			} else {
+				assert.Equal(t, table.errStr, err.Error())
+			}
+		})
+	}
+}
+
+func TestSessionRemove(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		val  interface{}
+	}{
+		{"existent", "val"},
+		{"unexistent", nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+				assert.NotEmpty(t, ss.encodedData)
+			}
+
+			err := ss.Remove("key")
+			assert.NoError(t, err)
+			assert.Empty(t, ss.data)
+
+			expectedEncoded := getEncodedEmptyMap()
+			assert.Equal(t, expectedEncoded, ss.encodedData)
+		})
+	}
+}
+
+func TestSetOnSessionBind(t *testing.T) {
+	expected := false
+	f := func(*Session) error {
+		expected = true
+		return nil
+	}
+	SetOnSessionBind(f)
+	defer func() { OnSessionBind = nil }()
+	assert.NotNil(t, OnSessionBind)
+
+	OnSessionBind(nil)
+	assert.True(t, expected)
+}
+
+func TestSessionHasKey(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		val  interface{}
+	}{
+		{"existent", "val"},
+		{"unexistent", nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			exists := ss.HasKey("key")
+			assert.Equal(t, table.val != nil, exists)
+		})
+	}
+}
+
+func TestSessionGet(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		val  interface{}
+	}{
+		{"existent", "val"},
+		{"unexistent", nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Get("key")
+			assert.Equal(t, table.val, val)
+		})
+	}
+}
+
+func TestSessionInt(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", 1, true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Int("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, 0, val)
+			}
+		})
+	}
+}
+
+func TestSessionInt8(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", int8(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Int8("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, int8(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionInt16(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", int16(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Int16("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, int16(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionInt32(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", int32(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Int32("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, int32(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionInt64(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", int64(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Int64("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, int64(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionUint(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", uint(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Uint("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, uint(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionUint8(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", uint8(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Uint8("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, uint8(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionUint16(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", uint16(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Uint16("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, uint16(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionUint32(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", uint32(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Uint32("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, uint32(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionUint64(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", uint64(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Uint64("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, uint64(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionFloat32(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", float32(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Float32("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, float32(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionFloat64(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", float64(1), true},
+		{"existent_wrong_type", "val", false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Float64("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, float64(0), val)
+			}
+		})
+	}
+}
+
+func TestSessionString(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name         string
+		val          interface{}
+		shouldReturn bool
+	}{
+		{"existent", "val", true},
+		{"existent_wrong_type", 1, false},
+		{"unexistent", nil, false},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.String("key")
+			if table.shouldReturn {
+				assert.Equal(t, table.val, val)
+			} else {
+				assert.Equal(t, "", val)
+			}
+		})
+	}
+}
+
+func TestSessionValue(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		val  interface{}
+	}{
+		{"existent", "val"},
+		{"unexistent", nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+			}
+
+			val := ss.Value("key")
+			assert.Equal(t, table.val, val)
+		})
+	}
+}
+
+func TestSessionPushToFrontFailsIfFrontend(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, true)
+	assert.NotNil(t, ss)
+
+	err := ss.PushToFront()
+	assert.Equal(t, constants.ErrFrontSessionCantPushToFront, err)
+}
+
+func TestSessionPushToFront(t *testing.T) {
+	t.Parallel()
+	tables := []struct {
+		name string
+		err  error
+	}{
+		{"successful_request", nil},
+		{"failed_request", errors.New("failed bind in front")},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			mockEntity := mocks.NewMockNetworkEntity(ctrl)
+			ss := New(mockEntity, false)
+			assert.NotNil(t, ss)
+			ss.Set("key", "val")
+			uid := uuid.New().String()
+			ss.uid = uid
+
+			expectedSessionData := &Data{
+				ID:   ss.frontendSessionID,
+				UID:  uid,
+				Data: ss.data,
+			}
+			expectedRequestData, err := util.GobEncode(expectedSessionData)
+			assert.NoError(t, err)
+			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionPushRoute, expectedRequestData).Return(nil, table.err)
+
+			err = ss.PushToFront()
+			assert.Equal(t, table.err, err)
+		})
+	}
+}
+
+func TestSessionClear(t *testing.T) {
+	t.Parallel()
+
+	ss := New(nil, true)
+	assert.NotNil(t, ss)
+
+	ss.uid = uuid.New().String()
+	err := ss.Set("key", "val")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, ss.data)
+	assert.NotEmpty(t, ss.encodedData)
+
+	ss.Clear()
+	assert.Empty(t, ss.data)
+
+	expectedEncoded := getEncodedEmptyMap()
+	assert.Equal(t, expectedEncoded, ss.encodedData)
 }

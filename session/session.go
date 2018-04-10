@@ -130,6 +130,11 @@ func GetSessionByID(id int64) *Session {
 	return nil
 }
 
+// SetOnSessionBind sets the method to be called when a session is bound
+func SetOnSessionBind(f func(s *Session) error) {
+	OnSessionBind = f
+}
+
 func (s *Session) updateEncodedData() error {
 	buf := bytes.NewBuffer([]byte(nil))
 	err := gob.NewEncoder(buf).Encode(s.data)
@@ -285,11 +290,6 @@ func (s *Session) Set(key string, value interface{}) error {
 
 	s.data[key] = value
 	return s.updateEncodedData()
-}
-
-// SetOnSessionBind sets the method to be called when a session is bound
-func SetOnSessionBind(f func(s *Session) error) {
-	OnSessionBind = f
 }
 
 // HasKey decides whether a key has associated value
