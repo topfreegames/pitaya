@@ -23,7 +23,6 @@ package session
 import (
 	"encoding/gob"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -156,10 +155,11 @@ func TestUpdateEncondedData(t *testing.T) {
 		name string
 		data map[string]interface{}
 	}{
-		{"testUpdateEncondedData_1", map[string]interface{}{"byte": []byte{1}, "string": "test", "int": 1}},
-		{"testUpdateEncondedData_2", map[string]interface{}{"byte": []byte{1}, "struct": someStruct{A: 1, B: "aaa"}, "int": 34}},
-		{"testUpdateEncondedData_3", map[string]interface{}{"string": "aaa"}},
-		{"testUpdateEncondedData_4", map[string]interface{}{}},
+		{"testUpdateEncondedData_1", map[string]interface{}{"byte": []byte{1}}},
+		{"testUpdateEncondedData_2", map[string]interface{}{"int": 1}},
+		{"testUpdateEncondedData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
+		{"testUpdateEncondedData_4", map[string]interface{}{"string": "aaa"}},
+		{"testUpdateEncondedData_5", map[string]interface{}{}},
 	}
 
 	for _, table := range tables {
@@ -172,7 +172,6 @@ func TestUpdateEncondedData(t *testing.T) {
 			assert.NoError(t, err)
 
 			gp := filepath.Join("fixtures", table.name+".golden")
-			fmt.Println(gp)
 			if *update {
 				t.Log("updating golden file")
 				helpers.WriteFile(t, gp, ss.encodedData)
