@@ -61,12 +61,10 @@ func (c *Group) Member(uid string) (*session.Session, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	for _, s := range c.sessions {
-		if s.UID() == uid {
-			return s, nil
-		}
+	s, ok := c.sessions[uid]
+	if ok {
+		return s, nil
 	}
-
 	return nil, constants.ErrMemberNotFound
 }
 

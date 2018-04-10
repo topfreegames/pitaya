@@ -36,8 +36,8 @@ protos-compile:
 	@cd protos && protoc --gogofaster_out=. pitaya.proto
 
 rm-test-temp-files:
-	@rm -f cluster/127.0.0.1*
-	@rm -f cluster/localhost*
+	@rm -f cluster/127.0.0.1* 127.0.0.1*
+	@rm -f cluster/localhost* localhost*
 
 test:
 	@go test $(TESTABLE_PACKAGES)

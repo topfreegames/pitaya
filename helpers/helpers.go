@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/integration"
 	"github.com/nats-io/gnatsd/server"
 	gnatsd "github.com/nats-io/gnatsd/test"
 )
@@ -53,6 +55,14 @@ func GetTestNatsServer(t *testing.T) *server.Server {
 	opts.Port = port
 	s := gnatsd.RunServer(&opts)
 	return s
+}
+
+// GetTestEtcd gets a test in memory etcd server
+func GetTestEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
+	t.Helper()
+	c := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
+	cli := c.RandClient()
+	return c, cli
 }
 
 // WriteFile test helper

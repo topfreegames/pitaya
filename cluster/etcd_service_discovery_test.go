@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/integration"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/config"
@@ -48,13 +47,6 @@ func getConfig(conf ...*viper.Viper) *config.Config {
 	return config
 }
 
-func getEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
-	t.Helper()
-	c := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
-	cli := c.RandClient()
-	return c, cli
-}
-
 func getEtcdSD(t *testing.T, config *config.Config, server *Server, cli *clientv3.Client) *etcdServiceDiscovery {
 	t.Helper()
 	e, err := NewEtcdServiceDiscovery(config, server, cli)
@@ -67,7 +59,7 @@ func TestNewEtcdServiceDiscovery(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			assert.NotNil(t, e)
@@ -80,7 +72,7 @@ func TestEtcdSDBootstrapLease(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			err := e.bootstrapLease()
@@ -95,7 +87,7 @@ func TestEtcdSDBootstrapLeaseError(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			err := e.bootstrapLease()
@@ -109,7 +101,7 @@ func TestEtcdSDBootstrapServer(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.bootstrapLease()
@@ -134,7 +126,7 @@ func TestEtcdSDDeleteServer(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.bootstrapLease()
@@ -174,7 +166,7 @@ func TestEtcdSDDeleteLocalInvalidServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			_, cli := getEtcd(t)
+			_, cli := helpers.GetTestEtcd(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			invalidServer := &Server{
 				ID:   "invalid",
@@ -194,7 +186,7 @@ func TestEtcdSDGetServer(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.bootstrapLease()
@@ -214,7 +206,7 @@ func TestEtcdSDInit(t *testing.T) {
 			conf.Set("pitaya.cluster.sd.etcd.heartbeat.interval", "30ms")
 			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "30ms")
 			config := getConfig(conf)
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.Init()
@@ -244,7 +236,7 @@ func TestEtcdShutdown(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.Init()
@@ -264,7 +256,7 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 			conf := viper.New()
 			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "10ms")
 			config := getConfig(conf)
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.running = true
@@ -298,7 +290,7 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 			conf := viper.New()
 			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "10ms")
 			config := getConfig(conf)
-			c, cli := getEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			e.running = true

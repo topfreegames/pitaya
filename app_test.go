@@ -21,6 +21,10 @@
 package pitaya
 
 import (
+	"fmt"
+	"net"
+	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -30,23 +34,50 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/timer"
 )
 
-var tables = []struct {
-	isFrontend     bool
-	serverType     string
-	serverMode     ServerMode
-	serverMetadata map[string]string
-	cfg            *viper.Viper
-}{
-	{true, "sv1", Cluster, map[string]string{"name": "bla"}, viper.New()},
-	{false, "sv2", Standalone, map[string]string{}, viper.New()},
+var (
+	tables = []struct {
+		isFrontend     bool
+		serverType     string
+		serverMode     ServerMode
+		serverMetadata map[string]string
+		cfg            *viper.Viper
+	}{
+		{true, "sv1", Cluster, map[string]string{"name": "bla"}, viper.New()},
+		{false, "sv2", Standalone, map[string]string{}, viper.New()},
+	}
+	typeOfetcdSD        reflect.Type
+	typeOfNatsRPCServer reflect.Type
+	typeOfNatsRPCClient reflect.Type
+)
+
+func TestMain(m *testing.M) {
+	setup()
+	exit := m.Run()
+	os.Exit(exit)
+}
+
+func setup() {
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
+
+	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	typeOfetcdSD = reflect.TypeOf(etcdSD)
+
+	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server)
+	typeOfNatsRPCServer = reflect.TypeOf(natsRPCServer)
+
+	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server)
+	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
 }
 
 func initApp() {
@@ -215,4 +246,96 @@ func TestShutdown(t *testing.T) {
 		Shutdown()
 	}()
 	<-app.dieChan
+}
+
+func TestStartDefaultSD(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
+	startDefaultSD()
+	assert.NotNil(t, app.serviceDiscovery)
+	assert.Equal(t, typeOfetcdSD, reflect.TypeOf(app.serviceDiscovery))
+}
+
+func TestStartDefaultRPCServer(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
+	startDefaultRPCServer()
+	assert.NotNil(t, app.rpcServer)
+	assert.Equal(t, typeOfNatsRPCServer, reflect.TypeOf(app.rpcServer))
+}
+
+func TestStartDefaultRPCClient(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
+	startDefaultRPCClient()
+	assert.NotNil(t, app.rpcClient)
+	assert.Equal(t, typeOfNatsRPCClient, reflect.TypeOf(app.rpcClient))
+}
+
+func TestStartAndListenStandalone(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
+
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
+	AddAcceptor(acc)
+
+	go func() {
+		Start()
+	}()
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return app.running
+	}, true)
+
+	assert.NotNil(t, handlerService)
+	assert.NotNil(t, timer.GlobalTicker)
+	// should be listening
+	assert.NotEmpty(t, acc.GetAddr())
+	helpers.ShouldEventuallyReturn(t, func() error {
+		n, err := net.Dial("tcp", acc.GetAddr())
+		defer n.Close()
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+}
+
+func ConfigureClusterApp() {
+
+}
+
+func TestStartAndListenCluster(t *testing.T) {
+	es, cli := helpers.GetTestEtcd(t)
+	defer es.Terminate(t)
+
+	ns := helpers.GetTestNatsServer(t)
+	nsAddr := ns.Addr().String()
+
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", nsAddr))
+	cfg.Set("pitaya.cluster.rpc.server.nats.connect", fmt.Sprintf("nats://%s", nsAddr))
+
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, cfg)
+
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, cli)
+	assert.NoError(t, err)
+	SetServiceDiscoveryClient(etcdSD)
+
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
+	AddAcceptor(acc)
+
+	go func() {
+		Start()
+	}()
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return app.running
+	}, true)
+
+	assert.NotNil(t, handlerService)
+	assert.NotNil(t, timer.GlobalTicker)
+	// should be listening
+	assert.NotEmpty(t, acc.GetAddr())
+	helpers.ShouldEventuallyReturn(t, func() error {
+		n, err := net.Dial("tcp", acc.GetAddr())
+		defer n.Close()
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
 }

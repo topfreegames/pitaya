@@ -24,6 +24,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -67,14 +68,14 @@ func NewAfterTimer(duration time.Duration, fn timer.Func) *timer.Timer {
 // when condition satisfied that specified by the condition argument.
 // The duration d must be greater than zero; if not, NewCondTimer will panic.
 // Stop the timer to release associated resources.
-func NewCondTimer(condition timer.Condition, fn timer.Func) *timer.Timer {
+func NewCondTimer(condition timer.Condition, fn timer.Func) (*timer.Timer, error) {
 	if condition == nil {
-		panic("pitaya/timer: nil condition")
+		return nil, constants.ErrNilCondition
 	}
 
 	t := NewCountTimer(time.Duration(math.MaxInt64), timer.LoopForever, fn)
 	t.SetCondition(condition)
-	return t
+	return t, nil
 }
 
 // SetTimerPrecision set the ticker precision, and time precision can not less
