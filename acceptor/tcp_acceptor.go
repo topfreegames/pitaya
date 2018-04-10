@@ -21,6 +21,7 @@
 package acceptor
 
 import (
+	"crypto/tls"
 	"net"
 
 	"github.com/topfreegames/pitaya/logger"
@@ -72,13 +73,33 @@ func (a *TCPAcceptor) ListenAndServe() {
 	}
 	a.listener = listener
 	a.running = true
+	a.serve()
+}
+
+// ListenAndServeTLS listens using tls
+func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
+	crt, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
+
+	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
+	a.listener = listener
+	a.running = true
+	a.serve()
+}
+
+func (a *TCPAcceptor) serve() {
 	defer a.Stop()
 	for a.running {
-		conn, err := listener.Accept()
+		conn, err := a.listener.Accept()
 		if err != nil {
 			log.Error(err.Error())
 			continue
 		}
 		a.connChan <- conn
 	}
+
 }

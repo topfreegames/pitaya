@@ -1,6 +1,7 @@
 package acceptor
 
 import (
+	"crypto/tls"
 	"fmt"
 	"testing"
 	"time"
@@ -51,10 +52,13 @@ func TestWSAcceptorGetConn(t *testing.T) {
 	}
 }
 
-func mustConnectToWS(t *testing.T, write []byte, w *WSAcceptor) {
+func mustConnectToWS(t *testing.T, write []byte, w *WSAcceptor, protocol string) {
+	t.Helper()
 	helpers.ShouldEventuallyReturn(t, func() error {
-		addr := fmt.Sprintf("ws://%s", w.GetAddr())
-		conn, _, err := websocket.DefaultDialer.Dial(addr, nil)
+		addr := fmt.Sprintf("%s://%s", protocol, w.GetAddr())
+		dialer := websocket.DefaultDialer
+		conn, _, err := dialer.Dial(addr, nil)
+		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		conn.WriteMessage(websocket.BinaryMessage, write)
 		defer conn.Close()
 		return err
@@ -68,7 +72,22 @@ func TestWSAcceptorListenAndServe(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			defer conn.Close()
+			assert.NotNil(t, conn)
+		})
+	}
+}
+
+func TestWSAcceptorListenAndServeTLS(t *testing.T) {
+	for _, table := range wsAcceptorTables {
+		t.Run(table.name, func(t *testing.T) {
+			w := NewWSAcceptor(table.addr)
+			c := w.GetConnChan()
+			defer w.Stop()
+			go w.ListenAndServeTLS("./fixtures/server.crt", "./fixtures/server.key")
+			mustConnectToWS(t, table.write, w, "wss")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			assert.NotNil(t, conn)
@@ -81,7 +100,7 @@ func TestWSAcceptorStop(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			w := NewWSAcceptor(table.addr)
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			addr := fmt.Sprintf("ws://%s", w.GetAddr())
 			w.Stop()
 			_, _, err := websocket.DefaultDialer.Dial(addr, nil)
@@ -97,7 +116,7 @@ func TestWSConnRead(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			b := make([]byte, len(table.write))
@@ -116,7 +135,7 @@ func TestWSConnWrite(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			b := make([]byte, len(table.write))
@@ -134,7 +153,7 @@ func TestWSConnLocalAddr(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			a := conn.LocalAddr().String()
@@ -150,7 +169,7 @@ func TestWSConnRemoteAddr(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			a := conn.RemoteAddr().String()
@@ -166,7 +185,7 @@ func TestWSConnSetDeadline(t *testing.T) {
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
-			mustConnectToWS(t, table.write, w)
+			mustConnectToWS(t, table.write, w, "ws")
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
 			defer conn.Close()
 			conn.SetDeadline(time.Now().Add(5 * time.Millisecond))

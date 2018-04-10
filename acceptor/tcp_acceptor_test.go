@@ -69,13 +69,33 @@ func TestGetConnChan(t *testing.T) {
 	}
 }
 
-func TestListenAndServer(t *testing.T) {
+func TestListenAndServe(t *testing.T) {
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			a := NewTCPAcceptor(table.addr)
 			defer a.Stop()
 			c := a.GetConnChan()
 			go a.ListenAndServe()
+			// should be able to connect within 100 milliseconds
+			helpers.ShouldEventuallyReturn(t, func() error {
+				n, err := net.Dial("tcp", a.GetAddr())
+				defer n.Close()
+				return err
+			}, nil, 10*time.Millisecond, 100*time.Millisecond)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond)
+			assert.NotNil(t, conn)
+		})
+	}
+}
+
+func TestListenAndServeTLS(t *testing.T) {
+	for _, table := range tcpAcceptorTables {
+		t.Run(table.name, func(t *testing.T) {
+			a := NewTCPAcceptor(table.addr)
+			defer a.Stop()
+			c := a.GetConnChan()
+
+			go a.ListenAndServeTLS("./fixtures/server.crt", "./fixtures/server.key")
 			// should be able to connect within 100 milliseconds
 			helpers.ShouldEventuallyReturn(t, func() error {
 				n, err := net.Dial("tcp", a.GetAddr())

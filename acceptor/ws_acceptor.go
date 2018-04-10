@@ -21,6 +21,7 @@
 package acceptor
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -92,13 +93,37 @@ func (w *WSAcceptor) ListenAndServe() {
 	}
 	w.listener = listener
 
+	w.serve(&upgrader)
+}
+
+// ListenAndServeTLS listens and serve in the specified addr using tls
+func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	crt, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
+	listener, err := tls.Listen("tcp", w.addr, tlsCfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.listener = listener
+	w.serve(&upgrader)
+}
+
+func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 	defer w.Stop()
 
-	http.Serve(listener, &connHandler{
-		upgrader: &upgrader,
+	http.Serve(w.listener, &connHandler{
+		upgrader: upgrader,
 		connChan: w.connChan,
 	})
-
 }
 
 // Stop stops the acceptor
