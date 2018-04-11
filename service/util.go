@@ -37,6 +37,8 @@ import (
 	"github.com/topfreegames/pitaya/util"
 )
 
+var errInvalidMsg = errors.New("invalid message type provided")
+
 func getHandler(rt *route.Route) (*component.Handler, error) {
 	handler, ok := handlers[rt.Short()]
 	if !ok {
@@ -57,8 +59,7 @@ func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serial
 		arg = reflect.New(handler.Type.Elem()).Interface()
 		err := serializer.Unmarshal(payload, arg)
 		if err != nil {
-			e := fmt.Errorf("deserialize error: %s", err.Error())
-			return nil, e
+			return nil, err
 		}
 	}
 	return arg, nil
@@ -80,15 +81,17 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	} else if val, ok := msgTypeIface.(protos.MsgType); ok {
 		msgType = util.ConvertProtoToMessageType(val)
 	} else {
-		return msgType, errors.New("invalid message type provided")
+		return msgType, errInvalidMsg
 	}
 	return msgType, nil
 }
 
-func executeBeforePipeline(h *component.Handler, s *session.Session, data []byte) ([]byte, error) {
+func executeBeforePipeline(s *session.Session, data []byte) ([]byte, error) {
+	var err error
+	res := data
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
 		for _, h := range pipeline.BeforeHandler.Handlers {
-			res, err := h(s, data)
+			res, err = h(s, res)
 			if err != nil {
 				// TODO: not sure if this should be logged
 				// one may want to have a before filter that prevents handler execution
@@ -96,16 +99,17 @@ func executeBeforePipeline(h *component.Handler, s *session.Session, data []byte
 				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
 				return res, err
 			}
-			return res, nil
 		}
 	}
-	return data, nil
+	return res, nil
 }
 
-func executeAfterPipeline(h *component.Handler, s *session.Session, ser serialize.Serializer, res []byte) []byte {
+func executeAfterPipeline(s *session.Session, ser serialize.Serializer, res []byte) []byte {
+	var err error
+	ret := res
 	if len(pipeline.AfterHandler.Handlers) > 0 {
 		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err := h(s, res)
+			ret, err = h(s, ret)
 			if err != nil {
 				log.Debugf("broken pipeline, error: %s", err.Error())
 				// err can be ignored since serializer was already tested previously
@@ -114,7 +118,7 @@ func executeAfterPipeline(h *component.Handler, s *session.Session, ser serializ
 			}
 		}
 	}
-	return nil
+	return ret
 }
 
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
@@ -156,7 +160,7 @@ func processHandlerMessage(
 		log.Warn(err.Error())
 	}
 
-	if data, err = executeBeforePipeline(h, session, data); err != nil {
+	if data, err = executeBeforePipeline(session, data); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +190,7 @@ func processHandlerMessage(
 
 	ret, err := serializeReturn(serializer, resp)
 	if err == nil {
-		if r := executeAfterPipeline(h, session, serializer, ret); r != nil {
+		if r := executeAfterPipeline(session, serializer, ret); r != nil {
 			return r, nil
 		}
 	}
