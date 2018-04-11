@@ -28,27 +28,27 @@ type Response struct {
 	Msg  string
 }
 
-func reply(code int32, msg string) *Response {
+func reply(code int32, msg string) (*Response, error) {
 	res := &Response{
 		Code: code,
 		Msg:  msg,
 	}
-	return res
+	return res, nil
 }
 
 // GetSessionData gets the session data
-func (c *Connector) GetSessionData(s *session.Session) *SessionData {
+func (c *Connector) GetSessionData(s *session.Session) (*SessionData, error) {
 	res := &SessionData{
 		Data: s.GetData(),
 	}
-	return res
+	return res, nil
 }
 
 // SetSessionData sets the session data
-func (c *Connector) SetSessionData(s *session.Session, data *SessionData) *Response {
+func (c *Connector) SetSessionData(s *session.Session, data *SessionData) (*Response, error) {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return reply(500, err.Error())
+		return nil, err
 	}
 	return reply(200, "success")
 }

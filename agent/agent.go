@@ -385,3 +385,16 @@ func (a *Agent) write() {
 func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Response, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+// AnswerWithError answers with an error
+func (a *Agent) AnswerWithError(mid uint, err error) {
+	p, e := util.GetErrorPayload(a.serializer, err)
+	if e != nil {
+		log.Error("error answering the player with an error: ", e.Error())
+		return
+	}
+	e = a.Session.ResponseMID(mid, p)
+	if e != nil {
+		log.Error("error answering the player with an error: ", e.Error())
+	}
+}

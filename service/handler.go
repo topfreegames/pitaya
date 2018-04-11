@@ -262,6 +262,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 	ret, err := processHandlerMessage(route, h.serializer, a.Srv, a.Session, msg.Data, msg.Type, false)
 	if err != nil {
 		log.Error(err)
+		a.AnswerWithError(mid, err)
 	} else {
 		a.Session.ResponseMID(mid, ret)
 	}

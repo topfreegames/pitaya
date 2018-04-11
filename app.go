@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -387,4 +388,9 @@ func AddRoute(
 // Shutdown send a signal to let 'pitaya' shutdown itself.
 func Shutdown() {
 	close(app.dieChan)
+}
+
+// Error creates a new error with a code, message and metadata
+func Error(err error, code string, metadata ...map[string]string) *errors.Error {
+	return errors.NewError(err, code, metadata...)
 }

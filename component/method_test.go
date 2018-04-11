@@ -37,11 +37,11 @@ type TestType struct {
 func (t *TestType) ExportedNoHandlerNorRemote()                                               {}
 func (t *TestType) ExportedHandlerWithOnlySession(*session.Session)                           {}
 func (t *TestType) ExportedHandlerWithSessionAndRawWithNoOuts(s *session.Session, msg []byte) {}
-func (t *TestType) ExportedHandlerWithSessionAndPointerWithRawOut(s *session.Session, tt *TestType) []byte {
-	return nil
+func (t *TestType) ExportedHandlerWithSessionAndPointerWithRawOut(s *session.Session, tt *TestType) ([]byte, error) {
+	return nil, nil
 }
-func (t *TestType) ExportedHandlerWithSessionAndPointerWithPointerOut(s *session.Session, tt *TestType) *TestType {
-	return nil
+func (t *TestType) ExportedHandlerWithSessionAndPointerWithPointerOut(s *session.Session, tt *TestType) (*TestType, error) {
+	return nil, nil
 }
 func (t *TestType) ExportedRemoteRawOut() ([]byte, error) {
 	return nil, nil

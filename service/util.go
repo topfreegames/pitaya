@@ -126,7 +126,6 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 			log.Error("cannot serialize message and respond to the client ", err.Error())
 			return nil, err
 		}
-		return res, err
 	}
 	return res, nil
 }

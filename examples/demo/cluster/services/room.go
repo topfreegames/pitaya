@@ -100,43 +100,40 @@ func (r *Room) AfterInit() {
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session, msg []byte) *JoinResponse {
+func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
-		return &JoinResponse{Result: err.Error()}
+		return nil, err
 	}
-	return &JoinResponse{Result: "ok"}
+	return &JoinResponse{Result: "ok"}, nil
 }
 
 // GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session) *SessionData {
+func (r *Room) GetSessionData(s *session.Session) (*SessionData, error) {
 	return &SessionData{
 		Data: s.GetData(),
-	}
+	}, nil
 }
 
 // SetSessionData sets the session data
-func (r *Room) SetSessionData(s *session.Session, data *SessionData) []byte {
+func (r *Room) SetSessionData(s *session.Session, data *SessionData) ([]byte, error) {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return []byte(err.Error())
+		return nil, err
 	}
 	err = s.PushToFront()
 	if err != nil {
-		return []byte(err.Error())
+		return nil, err
 	}
-	return []byte("success")
+	return []byte("success"), nil
 }
 
 // Join room
-func (r *Room) Join(s *session.Session) *JoinResponse {
+func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
 	err := r.group.Add(s)
 	if err != nil {
-		return &JoinResponse{
-			Code:   500,
-			Result: err.Error(),
-		}
+		return nil, err
 	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
@@ -144,12 +141,9 @@ func (r *Room) Join(s *session.Session) *JoinResponse {
 		r.group.Leave(s)
 	})
 	if err != nil {
-		return &JoinResponse{
-			Code:   500,
-			Result: err.Error(),
-		}
+		return nil, err
 	}
-	return &JoinResponse{Result: "success"}
+	return &JoinResponse{Result: "success"}, nil
 }
 
 // Message sync last message to all members

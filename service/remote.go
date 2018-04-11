@@ -81,13 +81,14 @@ func (r *RemoteService) remoteProcess(server *cluster.Server, a *agent.Agent, ro
 	var err error
 	if res, err = r.remoteCall(server, protos.RPCType_Sys, route, a.Session, msg); err != nil {
 		log.Errorf(err.Error())
+		a.AnswerWithError(msg.ID, err)
 		return
 	}
-	if msg.Type == message.Request && res.Error == "" {
-		// TODO I guess we need to send the reply to the caller if this fails
+	if msg.Type == message.Request {
 		err := a.Session.ResponseMID(msg.ID, res.Data)
 		if err != nil {
 			log.Error(err)
+			a.AnswerWithError(msg.ID, err)
 		}
 	} else {
 		log.Error(res.Error)
@@ -102,7 +103,7 @@ func (r *RemoteService) RPC(serverID string, route *route.Route, reply interface
 	}
 	msg := &message.Message{
 		Type:  message.Request,
-		Route: fmt.Sprintf("%s.%s", route.Service, route.Method),
+		Route: route.Short(),
 		Data:  data,
 	}
 

@@ -74,24 +74,24 @@ func reply(code int32, msg string) *protos.Response {
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session) *protos.Response {
+func (r *Room) Entry(s *session.Session) (*protos.Response, error) {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	err := s.Bind(fakeUID)         // binding session uid
 	if err != nil {
-		return reply(500, err.Error())
+		return nil, pitaya.Error(err, "ENT-000")
 	}
-	return reply(200, "ok")
+	return reply(200, "ok"), nil
 }
 
 // Join room
-func (r *Room) Join(s *session.Session) *protos.Response {
+func (r *Room) Join(s *session.Session) (*protos.Response, error) {
 	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	r.group.Add(s)
 	s.OnClose(func() {
 		r.group.Leave(s)
 	})
-	return &protos.Response{Msg: "success"}
+	return &protos.Response{Msg: "success"}, nil
 }
 
 // Message sync last message to all members
@@ -103,11 +103,11 @@ func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg []byte) *protos.Response {
+func (r *Room) SendRPC(s *session.Session, msg []byte) (*protos.Response, error) {
 	ret := protos.Response{}
 	err := pitaya.RPC("connector.connectorremote.remotefunc", &ret, msg)
 	if err != nil {
-		return reply(500, err.Error())
+		return nil, pitaya.Error(err, "RPC-000")
 	}
-	return reply(200, ret.Msg)
+	return reply(200, ret.Msg), nil
 }

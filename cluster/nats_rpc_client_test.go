@@ -304,7 +304,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 		{"test_error", &protos.Response{Data: []byte("nok"), Error: "nok"}, nil, errors.New("nok")},
 		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
-		{"test_bad_proto", &protos.ErrorPayload{Code: 400, Reason: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
+		{"test_bad_proto", &protos.Session{ID: 1, Uid: "snap"}, nil, errors.New("proto: bad wiretype for field protos.Response.Data: got wiretype 0, want 2")},
 		{"test_no_response", nil, nil, errors.New("nats: timeout")},
 	}
 
@@ -321,7 +321,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 					if val, ok := table.response.(*protos.Response); ok {
 						b, _ := proto.Marshal(val)
 						conn.Publish(m.Reply, b)
-					} else if val, ok := table.response.(*protos.ErrorPayload); ok {
+					} else if val, ok := table.response.(*protos.Session); ok {
 						b, _ := proto.Marshal(val)
 						conn.Publish(m.Reply, b)
 					} else {

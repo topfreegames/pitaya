@@ -14,11 +14,6 @@ enum MsgType {
   MsgPush = 3;
 }
 
-message ErrorPayload {
-  int32 Code = 1;
-  string Reason = 2;
-}
-
 message Push {
   string Route = 1;
   string Uid = 2;
@@ -49,4 +44,10 @@ message Request {
 message Response {
   bytes Data = 1;
   string Error = 2;
+}
+
+message Error {
+  string Code = 1;
+  string Msg = 2;
+  map<string, string> Metadata = 3;
 }

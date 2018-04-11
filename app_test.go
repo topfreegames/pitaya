@@ -21,6 +21,7 @@
 package pitaya
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -34,6 +35,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/constants"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -338,4 +340,34 @@ func TestStartAndListenCluster(t *testing.T) {
 		defer n.Close()
 		return err
 	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+}
+
+func TestError(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name     string
+		err      error
+		code     string
+		metadata map[string]string
+	}{
+		{"nil_metadata", errors.New(uuid.New().String()), uuid.New().String(), nil},
+		{"empty_metadata", errors.New(uuid.New().String()), uuid.New().String(), map[string]string{}},
+		{"non_empty_metadata", errors.New(uuid.New().String()), uuid.New().String(), map[string]string{"key": uuid.New().String()}},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			var err *e.Error
+			if table.metadata != nil {
+				err = Error(table.err, table.code, table.metadata)
+			} else {
+				err = Error(table.err, table.code)
+			}
+			assert.NotNil(t, err)
+			assert.Equal(t, table.code, err.Code)
+			assert.Equal(t, table.err.Error(), err.Message)
+			assert.Equal(t, table.metadata, err.Metadata)
+		})
+	}
 }

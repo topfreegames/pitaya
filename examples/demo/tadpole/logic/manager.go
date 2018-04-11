@@ -20,7 +20,7 @@ func NewManager() *Manager {
 }
 
 // Login handler was used to guest login
-func (m *Manager) Login(s *session.Session, msg *protocol.JoyLoginRequest) protocol.LoginResponse {
+func (m *Manager) Login(s *session.Session, msg *protocol.JoyLoginRequest) (protocol.LoginResponse, error) {
 	log.Println(msg)
 	id := s.ID()
 	s.Bind(strconv.Itoa(int(id)))
@@ -28,5 +28,5 @@ func (m *Manager) Login(s *session.Session, msg *protocol.JoyLoginRequest) proto
 		Status: protocol.LoginStatusSucc,
 		ID:     id,
 	}
-	return resp
+	return resp, nil
 }

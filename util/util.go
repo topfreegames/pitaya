@@ -27,6 +27,7 @@ import (
 	"os"
 	"reflect"
 
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
@@ -50,10 +51,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 
 	r := method.Func.Call(args)
 	// r can have 0 length in case of notify handlers
-	// otherwise it will have 1 (an interface) or 2 outputs: an interface and an error
-	if len(r) == 1 {
-		rets = r[0].Interface()
-	}
+	// otherwise it will have 2 outputs: an interface and an error
 	if len(r) == 2 {
 		if v := r[1].Interface(); v != nil {
 			err = v.(error)
@@ -111,9 +109,19 @@ func FileExists(filename string) bool {
 
 // GetErrorPayload creates and serializes an error payload
 func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
-	errPayload := &protos.ErrorPayload{
-		Code:   500,
-		Reason: err.Error(),
+	code := e.ErrUnknowCode
+	msg := err.Error()
+	metadata := map[string]string{}
+	if val, ok := err.(*e.Error); ok {
+		code = val.Code
+		metadata = val.Metadata
+	}
+	errPayload := &protos.Error{
+		Code: code,
+		Msg:  msg,
+	}
+	if len(metadata) > 0 {
+		errPayload.Metadata = metadata
 	}
 	return SerializeOrRaw(serializer, errPayload)
 }

@@ -64,14 +64,13 @@ func (r *Room) AfterInit() {
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) *protos.JoinResponse {
+func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error) {
 	res := &protos.JoinResponse{}
-	fakeUID := s.ID()                         //just use s.ID as uid !!!
+	fakeUID := s.ID()                         // just use s.ID as uid !!!
 	err := s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
 
 	if err != nil {
-		res.Result = err.Error()
-		return res
+		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
 	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
@@ -86,7 +85,7 @@ func (r *Room) Join(s *session.Session, msg []byte) *protos.JoinResponse {
 	})
 
 	res.Result = "success"
-	return res
+	return res, nil
 }
 
 // Message sync last message to all members

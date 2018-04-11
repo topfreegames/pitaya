@@ -46,11 +46,7 @@ type someStruct struct {
 	B string
 }
 
-func (s *someStruct) TestFunc(arg1 int, arg2 string) *someStruct {
-	return &someStruct{A: arg1, B: arg2}
-}
-
-func (s *someStruct) TestFunc2RetNoErr(arg1 int, arg2 string) (*someStruct, error) {
+func (s *someStruct) TestFunc(arg1 int, arg2 string) (*someStruct, error) {
 	return &someStruct{
 		A: arg1,
 		B: arg2,
@@ -93,7 +89,6 @@ func TestPcall(t *testing.T) {
 		{"test_pcall_3", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(11), reflect.ValueOf("blb")}, &someStruct{A: 11, B: "blb"}},
 		{"test_pcall_4", s, "TestFuncErr", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf("blberror")}, nil},
 		{"test_pcall_5", s, "TestFuncThrow", []reflect.Value{reflect.ValueOf(s)}, nil},
-		{"test_pcall_6", s, "TestFunc2RetNoErr", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(11), reflect.ValueOf("blb")}, &someStruct{A: 11, B: "blb"}},
 	}
 
 	for _, table := range tables {
