@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	errorMask            = 0x10
+	errorMask            = 0x20
 	msgRouteCompressMask = 0x01
 	msgTypeMask          = 0x07
 	msgRouteLengthMask   = 0xFF
