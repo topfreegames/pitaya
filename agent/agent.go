@@ -76,6 +76,7 @@ type (
 		route   string       // message route (push)
 		mid     uint         // response message id (response)
 		payload interface{}  // payload
+		err     bool         // if its an error message
 	}
 )
 
@@ -153,7 +154,11 @@ func (a *Agent) Push(route string, v interface{}) error {
 
 // ResponseMID implementation for session.NetworkEntity interface
 // Response message to session
-func (a *Agent) ResponseMID(mid uint, v interface{}) error {
+func (a *Agent) ResponseMID(mid uint, v interface{}, isError ...bool) error {
+	err := false
+	if len(isError) > 0 {
+		err = isError[0]
+	}
 	if a.GetStatus() == constants.StatusClosed {
 		return constants.ErrBrokenPipe
 	}
@@ -176,7 +181,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}) error {
 			a.Session.ID(), a.Session.UID(), mid, v)
 	}
 
-	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v})
+	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v, err: err})
 }
 
 // Close closes the agent, cleans inner state and closes low-level connection.
@@ -360,6 +365,7 @@ func (a *Agent) write() {
 				Data:  payload,
 				Route: data.route,
 				ID:    data.mid,
+				Err:   data.err,
 			}
 			em, err := m.Encode()
 			if err != nil {
@@ -393,7 +399,7 @@ func (a *Agent) AnswerWithError(mid uint, err error) {
 		log.Error("error answering the player with an error: ", e.Error())
 		return
 	}
-	e = a.Session.ResponseMID(mid, p)
+	e = a.Session.ResponseMID(mid, p, true)
 	if e != nil {
 		log.Error("error answering the player with an error: ", e.Error())
 	}

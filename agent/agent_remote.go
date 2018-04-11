@@ -106,7 +106,12 @@ func (a *Remote) Push(route string, v interface{}) error {
 }
 
 // ResponseMID reponds the message with mid to the player
-func (a *Remote) ResponseMID(mid uint, v interface{}) error {
+func (a *Remote) ResponseMID(mid uint, v interface{}, isError ...bool) error {
+	err := false
+	if len(isError) > 0 {
+		err = isError[0]
+	}
+
 	if mid <= 0 {
 		return constants.ErrSessionOnNotify
 	}
@@ -120,7 +125,7 @@ func (a *Remote) ResponseMID(mid uint, v interface{}) error {
 			a.Session.ID(), mid, v)
 	}
 
-	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v}, a.reply)
+	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v, err: err}, a.reply)
 }
 
 // Close closes the remote
@@ -141,6 +146,7 @@ func (a *Remote) serialize(m pendingMessage) ([]byte, error) {
 		Data:  payload,
 		Route: m.route,
 		ID:    m.mid,
+		Err:   m.err,
 	}
 	em, err := msg.Encode()
 	if err != nil {

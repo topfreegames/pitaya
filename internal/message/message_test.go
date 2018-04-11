@@ -50,7 +50,7 @@ var encodeTables = map[string]struct {
 	"test_reponse_type_with_data": {&Message{Type: Response, Data: []byte{0x01}}, nil, false, nil},
 	"test_reponse_type_with_id":   {&Message{Type: Response, ID: 129, Data: []byte{}}, nil, false, nil},
 
-	"test_reponse_type_with_error": {&Message{Type: Response, Data: []byte{0x01}, err: true}, nil, true, nil},
+	"test_reponse_type_with_error": {&Message{Type: Response, Data: []byte{0x01}, Err: true}, nil, true, nil},
 }
 
 func TestEncode(t *testing.T) {

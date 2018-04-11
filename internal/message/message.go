@@ -75,14 +75,14 @@ type Message struct {
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
-	err        bool   // is an error message
+	Err        bool   // is an error message
 }
 
 // New returns a new message instance
 func New(err ...bool) *Message {
 	m := &Message{}
 	if len(err) > 0 {
-		m.err = err[0]
+		m.Err = err[0]
 	}
 	return m
 }
@@ -94,7 +94,7 @@ func (m *Message) String() string {
 		m.ID,
 		m.Route,
 		m.compressed,
-		m.err,
+		m.Err,
 		len(m.Data))
 }
 
@@ -138,7 +138,7 @@ func Encode(m *Message) ([]byte, error) {
 		flag |= msgRouteCompressMask
 	}
 
-	if m.err {
+	if m.Err {
 		flag |= errorMask
 	}
 
@@ -204,7 +204,7 @@ func Decode(data []byte) (*Message, error) {
 		m.ID = id
 	}
 
-	m.err = flag&errorMask == errorMask
+	m.Err = flag&errorMask == errorMask
 
 	if routable(m.Type) {
 		if flag&msgRouteCompressMask == 1 {
