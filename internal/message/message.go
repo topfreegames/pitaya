@@ -41,6 +41,7 @@ const (
 )
 
 const (
+	errorMask            = 0x10
 	msgRouteCompressMask = 0x01
 	msgTypeMask          = 0x07
 	msgRouteLengthMask   = 0xFF
@@ -74,20 +75,26 @@ type Message struct {
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
+	err        bool   // is an error message
 }
 
 // New returns a new message instance
-func New() *Message {
-	return &Message{}
+func New(err ...bool) *Message {
+	m := &Message{}
+	if len(err) > 0 {
+		m.err = err[0]
+	}
+	return m
 }
 
 // String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, BodyLength: %d",
+	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, Error: %t ,BodyLength: %d",
 		types[m.Type],
 		m.ID,
 		m.Route,
 		m.compressed,
+		m.err,
 		len(m.Data))
 }
 
@@ -130,6 +137,11 @@ func Encode(m *Message) ([]byte, error) {
 	if compressed {
 		flag |= msgRouteCompressMask
 	}
+
+	if m.err {
+		flag |= errorMask
+	}
+
 	buf = append(buf, flag)
 
 	if m.Type == Request || m.Type == Response {
@@ -191,6 +203,8 @@ func Decode(data []byte) (*Message, error) {
 		}
 		m.ID = id
 	}
+
+	m.err = flag&errorMask == errorMask
 
 	if routable(m.Type) {
 		if flag&msgRouteCompressMask == 1 {
