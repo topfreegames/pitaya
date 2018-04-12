@@ -21,6 +21,8 @@
 package message
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -42,6 +44,7 @@ const (
 
 const (
 	errorMask            = 0x20
+	gzipMask             = 0x10
 	msgRouteCompressMask = 0x01
 	msgTypeMask          = 0x07
 	msgRouteLengthMask   = 0xFF
@@ -112,6 +115,17 @@ func invalidType(t Type) bool {
 
 }
 
+func deflateData(data []byte) ([]byte, error) {
+	var bb bytes.Buffer
+	gz := gzip.NewWriter(&bb)
+	_, err := gz.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	gz.Close()
+	return bb.Bytes(), nil
+}
+
 // Encode marshals message to binary format. Different message types is corresponding to
 // different message header, message types is identified by 2-4 bit of flag field. The
 // relationship between message types and message header is presented as follows:
@@ -167,6 +181,17 @@ func Encode(m *Message) ([]byte, error) {
 			buf = append(buf, byte(len(m.Route)))
 			buf = append(buf, []byte(m.Route)...)
 		}
+	}
+
+	// TODO create a switch for not compressing automatically
+	d, err := deflateData(m.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(d) < len(m.Data) {
+		m.Data = d
+		buf[0] |= gzipMask
 	}
 
 	buf = append(buf, m.Data...)
