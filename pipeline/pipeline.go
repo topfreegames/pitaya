@@ -51,3 +51,8 @@ func (p *pipelineChannel) PushFront(h Handler) {
 func (p *pipelineChannel) PushBack(h Handler) {
 	p.Handlers = append(p.Handlers, h)
 }
+
+// Clear should not be used after pitaya running
+func (p *pipelineChannel) Clear() {
+	p.Handlers = make([]Handler, 0)
+}

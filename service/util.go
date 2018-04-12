@@ -134,7 +134,6 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 	return res, nil
 }
 
-// TODO: should this be here in utils?
 func processHandlerMessage(
 	rt *route.Route,
 	serializer serialize.Serializer,
@@ -174,6 +173,7 @@ func processHandlerMessage(
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))
 	}
+
 	resp, err := util.Pcall(h.Method, args)
 	if err != nil {
 		return nil, err

@@ -41,6 +41,8 @@ var (
 func TestPushFront(t *testing.T) {
 	p.PushFront(handler1)
 	p.PushFront(handler2)
+	defer p.Clear()
+
 	_, err := p.Handlers[0](nil, nil)
 	assert.Nil(t, nil, err)
 }
@@ -48,6 +50,16 @@ func TestPushFront(t *testing.T) {
 func TestPushBack(t *testing.T) {
 	p.PushFront(handler1)
 	p.PushBack(handler2)
+	defer p.Clear()
+
 	_, err := p.Handlers[0](nil, nil)
 	assert.EqualError(t, errors.New("ohno"), err.Error())
+}
+
+func TestClear(t *testing.T) {
+	p.PushFront(handler1)
+	p.PushBack(handler2)
+	assert.Len(t, p.Handlers, 2)
+	p.Clear()
+	assert.Len(t, p.Handlers, 0)
 }
