@@ -227,6 +227,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	r, err := route.Decode(msg.Route)
 	if err != nil {
 		log.Error(err.Error())
+		a.AnswerWithError(msg.ID, err)
 		return
 	}
 
