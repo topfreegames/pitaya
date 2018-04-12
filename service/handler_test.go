@@ -45,12 +45,12 @@ func (m *MyComp) Handler2(ss *session.Session, b []byte) ([]byte, error) {
 	return nil, nil
 }
 
-type NoHandlerComp struct {
+type NoHandlerRemoteComp struct {
 	component.Base
 }
 
-func (m *NoHandlerComp) Init()     {}
-func (m *NoHandlerComp) Shutdown() {}
+func (m *NoHandlerRemoteComp) Init()     {}
+func (m *NoHandlerRemoteComp) Shutdown() {}
 
 func TestNewHandlerService(t *testing.T) {
 	dieChan := make(chan bool)
@@ -61,10 +61,6 @@ func TestNewHandlerService(t *testing.T) {
 	mockSerializer := mocks.NewMockSerializer(ctrl)
 	heartbeatTimeout := 1 * time.Second
 	sv := &cluster.Server{}
-	// 	ID:       "id1",
-	// 	Type:     "type1",
-	// 	Frontend: true,
-	// }
 	remoteSvc := &RemoteService{}
 	svc := NewHandlerService(
 		dieChan,
@@ -84,7 +80,6 @@ func TestNewHandlerService(t *testing.T) {
 	assert.Equal(t, mockSerializer, svc.serializer)
 	assert.Equal(t, heartbeatTimeout, svc.heartbeatTimeout)
 	assert.Equal(t, 10, svc.messagesBufferSize)
-	assert.Equal(t, mockSerializer, svc.serializer)
 	assert.Equal(t, sv, svc.server)
 	assert.Equal(t, remoteSvc, svc.remoteService)
 	assert.NotNil(t, svc.chLocalProcess)
@@ -119,8 +114,8 @@ func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 
 func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
 	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil)
-	err := svc.Register(&NoHandlerComp{}, []component.Option{})
-	assert.Equal(t, errors.New("type NoHandlerComp has no exported methods of suitable type"), err)
+	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
+	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of suitable type"), err)
 }
 
 func TestHandlerServiceProcessMessage(t *testing.T) {
