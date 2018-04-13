@@ -90,7 +90,6 @@ func New(debug bool) *Client {
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet),
 		IncomingMsgChan: make(chan *message.Message),
-		closeChan:       make(chan struct{}),
 		debug:           debug,
 	}
 }
@@ -240,6 +239,7 @@ func (c *Client) ConnectTo(addr string) error {
 		return err
 	}
 
+	c.closeChan = make(chan struct{})
 	c.Connected = true
 
 	return nil
