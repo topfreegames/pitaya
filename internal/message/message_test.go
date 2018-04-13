@@ -30,27 +30,30 @@ var encodeTables = map[string]struct {
 	message *Message
 	routes  map[string]uint16
 	msgErr  bool
+	gzip    uint8
 	err     error
 }{
-	"test_wrong_type": {&Message{Type: 0xff, Data: []byte{}}, nil, false, ErrWrongMessageType},
+	"test_wrong_type": {&Message{Type: 0xff, Data: []byte{}}, nil, false, 0x0, ErrWrongMessageType},
 
-	"test_request_type": {&Message{Type: Request, Route: "a", Data: []uint8{}}, nil, false, nil},
+	"test_request_type": {&Message{Type: Request, Route: "a", Data: []uint8{}}, nil, false, 0x0, nil},
 	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, compressed: true},
-		map[string]uint16{"a": 1}, false, nil},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
 
-	"test_notify_type": {&Message{Type: Notify, Route: "a", Data: []byte{}}, nil, false, nil},
+	"test_notify_type": {&Message{Type: Notify, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
 	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, compressed: true},
-		map[string]uint16{"a": 1}, false, nil},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
 
-	"test_push_type": {&Message{Type: Push, Route: "a", Data: []byte{}}, nil, false, nil},
+	"test_push_type": {&Message{Type: Push, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
 	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, compressed: true},
-		map[string]uint16{"a": 1}, false, nil},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
 
-	"test_reponse_type":           {&Message{Type: Response, Data: []byte{}}, nil, false, nil},
-	"test_reponse_type_with_data": {&Message{Type: Response, Data: []byte{0x01}}, nil, false, nil},
-	"test_reponse_type_with_id":   {&Message{Type: Response, ID: 129, Data: []byte{}}, nil, false, nil},
+	"test_reponse_type":           {&Message{Type: Response, Data: []byte{}}, nil, false, 0x0, nil},
+	"test_reponse_type_with_data": {&Message{Type: Response, Data: []byte{0x01}}, nil, false, 0x0, nil},
+	"test_reponse_type_with_id":   {&Message{Type: Response, ID: 129, Data: []byte{}}, nil, false, 0x0, nil},
 
-	"test_reponse_type_with_error": {&Message{Type: Response, Data: []byte{0x01}, Err: true}, nil, true, nil},
+	"test_reponse_type_with_error": {&Message{Type: Response, Data: []byte{0x01}, Err: true}, nil, true, 0x0, nil},
+	"test_must_gzip": {&Message{Type: Response,
+		Data: []byte("blablablablablablablablablablablablabla"), Err: true}, nil, true, 0x10, nil},
 }
 
 func TestEncode(t *testing.T) {
@@ -70,6 +73,7 @@ func TestEncode(t *testing.T) {
 			expected := helpers.ReadFile(t, gp)
 
 			if err == nil {
+				assert.Equal(t, table.gzip, expected[0]&gzipMask)
 				assert.Equal(t, expected, result)
 			} else {
 				assert.Nil(t, result)
@@ -82,8 +86,38 @@ func TestEncode(t *testing.T) {
 	}
 }
 
+var decodeTables = map[string]struct {
+	message *Message
+	routes  map[string]uint16
+	msgErr  bool
+	gzip    uint8
+	err     error
+}{
+	"test_wrong_type": {&Message{Type: 0xff, Data: []byte{}}, nil, false, 0x0, ErrWrongMessageType},
+
+	"test_request_type": {&Message{Type: Request, Route: "a", Data: []uint8{}}, nil, false, 0x0, nil},
+	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, compressed: true},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
+
+	"test_notify_type": {&Message{Type: Notify, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
+	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, compressed: true},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
+
+	"test_push_type": {&Message{Type: Push, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
+	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, compressed: true},
+		map[string]uint16{"a": 1}, false, 0x0, nil},
+
+	"test_reponse_type":           {&Message{Type: Response, Data: []byte{}}, nil, false, 0x0, nil},
+	"test_reponse_type_with_data": {&Message{Type: Response, Data: []byte{0x01}}, nil, false, 0x0, nil},
+	"test_reponse_type_with_id":   {&Message{Type: Response, ID: 129, Data: []byte{}}, nil, false, 0x0, nil},
+
+	"test_reponse_type_with_error": {&Message{Type: Response, Data: []byte{0x01}, Err: true}, nil, true, 0x0, nil},
+	"test_must_gzip": {&Message{Type: Response,
+		Data: []byte("blablablablablablablablablablablablabla"), Err: true}, nil, true, 0x10, nil},
+}
+
 func TestDecode(t *testing.T) {
-	for name, table := range encodeTables {
+	for name, table := range decodeTables {
 		t.Run(name, func(t *testing.T) {
 			SetDictionary(table.routes)
 

@@ -26,6 +26,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/topfreegames/pitaya/logger"
@@ -92,12 +94,13 @@ func New(err ...bool) *Message {
 
 // String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, Error: %t ,BodyLength: %d",
+	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, Error: %t, Data: %v, BodyLength: %d",
 		types[m.Type],
 		m.ID,
 		m.Route,
 		m.compressed,
 		m.Err,
+		m.Data,
 		len(m.Data))
 }
 
@@ -124,6 +127,29 @@ func deflateData(data []byte) ([]byte, error) {
 	}
 	gz.Close()
 	return bb.Bytes(), nil
+}
+
+// Write gunzipped data to a Writer
+func gunzipWrite(w io.Writer, data []byte) error {
+	// Write gzipped data to the client
+	gr, err := gzip.NewReader(bytes.NewBuffer(data))
+	defer gr.Close()
+	data, err = ioutil.ReadAll(gr)
+	if err != nil {
+		return err
+	}
+	w.Write(data)
+	return nil
+}
+
+func inflateData(data []byte) ([]byte, error) {
+	gr, err := gzip.NewReader(bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	defer gr.Close()
+
+	return ioutil.ReadAll(gr)
 }
 
 // Encode marshals message to binary format. Different message types is corresponding to
@@ -184,6 +210,7 @@ func Encode(m *Message) ([]byte, error) {
 	}
 
 	// TODO create a switch for not compressing automatically
+	// maybe use the length of m.Data to decide wether to compress or not
 	d, err := deflateData(m.Data)
 	if err != nil {
 		return nil, err
@@ -251,6 +278,13 @@ func Decode(data []byte) (*Message, error) {
 	}
 
 	m.Data = data[offset:]
+	var err error
+	if flag&gzipMask == gzipMask {
+		m.Data, err = inflateData(m.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return m, nil
 }
 
