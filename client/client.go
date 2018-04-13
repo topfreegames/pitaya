@@ -124,10 +124,7 @@ func (c *Client) handleHandshakeResponse() error {
 	log.Debug("got handshake from sv, data: %v", handshake)
 
 	if handshake.Sys.Dict != nil {
-		err := message.SetDictionary(handshake.Sys.Dict)
-		if err != nil {
-			return err
-		}
+		message.SetDictionary(handshake.Sys.Dict)
 	}
 	p, err := c.packetEncoder.Encode(packet.HandshakeAck, []byte{})
 	if err != nil {
@@ -218,7 +215,6 @@ func (c *Client) sendHeartbeats(interval int) {
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
 	if c.Connected {
-		message.SetDictionary(map[string]uint16{})
 		c.Connected = false
 		close(c.closeChan)
 		c.conn.Close()
