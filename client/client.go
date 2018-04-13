@@ -245,8 +245,18 @@ func (c *Client) ConnectTo(addr string) error {
 	return nil
 }
 
-// Send sends the message to the server
-func (c *Client) Send(msgType message.Type, route string, data []byte) error {
+// SendRequest sends a request to the server
+func (c *Client) SendRequest(route string, data []byte) error {
+	return c.sendMsg(message.Request, route, data)
+}
+
+// SendNotify sends a notify to the server
+func (c *Client) SendNotify(route string, data []byte) error {
+	return c.sendMsg(message.Notify, route, data)
+}
+
+// sendMsg sends the request to the server
+func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error {
 	atomic.AddUint32(&c.nextID, 1)
 	// TODO mount msg and encode
 	m := message.Message{
