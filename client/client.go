@@ -182,10 +182,12 @@ func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
 
 func (c *Client) handleServerMessages() {
 	buf := make([]byte, 2048)
+	defer c.Disconnect()
 	for c.Connected {
 		packets, err := c.readPackets(buf)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			break
 		}
 
 		for _, p := range packets {
@@ -215,9 +217,12 @@ func (c *Client) sendHeartbeats(interval int) {
 
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
-	c.Connected = false
-	close(c.closeChan)
-	c.conn.Close()
+	if c.Connected {
+		message.SetDictionary(map[string]uint16{})
+		c.Connected = false
+		close(c.closeChan)
+		c.conn.Close()
+	}
 }
 
 // ConnectTo connects to the server at addr, for now the only supported protocol is tcp
