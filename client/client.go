@@ -156,7 +156,7 @@ func (c *Client) handlePackets() {
 				c.IncomingMsgChan <- m
 			}
 		case <-c.closeChan:
-			break
+			return
 		}
 	}
 }
@@ -194,6 +194,7 @@ func (c *Client) handleServerMessages() {
 
 func (c *Client) sendHeartbeats(interval int) {
 	t := time.NewTicker(time.Duration(interval) * time.Second)
+	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
@@ -206,7 +207,7 @@ func (c *Client) sendHeartbeats(interval int) {
 				log.Errorf("error sending heartbeat to sv: %s", err.Error())
 			}
 		case <-c.closeChan:
-			break
+			return
 		}
 	}
 }
