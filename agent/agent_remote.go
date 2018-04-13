@@ -196,6 +196,10 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 
 // SendRequest sends a request to a server
 func (a *Remote) SendRequest(serverID, reqRoute string, v interface{}) (*protos.Response, error) {
+	r, err := route.Decode(reqRoute)
+	if err != nil {
+		return nil, err
+	}
 	payload, err := util.SerializeOrRaw(a.serializer, v)
 	if err != nil {
 		return nil, err
@@ -205,10 +209,6 @@ func (a *Remote) SendRequest(serverID, reqRoute string, v interface{}) (*protos.
 		Data:  payload,
 	}
 	server, err := a.serviceDiscovery.GetServer(serverID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := route.Decode(reqRoute)
 	if err != nil {
 		return nil, err
 	}
