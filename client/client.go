@@ -1,4 +1,4 @@
-// Copyright (c) nano Author and TFG Co. All Rights Reserved.
+// Copyright (c) TFG Co. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,10 +64,12 @@ type HandshakeData struct {
 // Client struct
 type Client struct {
 	conn            net.Conn
+	Connected       bool
 	packetEncoder   codec.PacketEncoder
 	packetDecoder   codec.PacketDecoder
 	packetChan      chan *packet.Packet
 	IncomingMsgChan chan *message.Message
+	closeChan       chan struct{}
 	nextID          uint32
 	debug           bool
 }
@@ -83,10 +85,12 @@ func New(debug bool) *Client {
 		log.(*logrus.Logger).SetLevel(logrus.DebugLevel)
 	}
 	return &Client{
+		Connected:       false,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet),
 		IncomingMsgChan: make(chan *message.Message),
+		closeChan:       make(chan struct{}),
 		debug:           debug,
 	}
 }
@@ -142,16 +146,21 @@ func (c *Client) handleHandshakeResponse() error {
 }
 
 func (c *Client) handlePackets() {
-	for p := range c.packetChan {
-		switch p.Type {
-		case packet.Data:
-			//handle data
-			log.Debug("got data: %s", string(p.Data))
-			m, err := message.Decode(p.Data)
-			if err != nil {
-				log.Errorf("error decoding msg from sv: %s", string(m.Data))
+	for {
+		select {
+		case p := <-c.packetChan:
+			switch p.Type {
+			case packet.Data:
+				//handle data
+				log.Debug("got data: %s", string(p.Data))
+				m, err := message.Decode(p.Data)
+				if err != nil {
+					log.Errorf("error decoding msg from sv: %s", string(m.Data))
+				}
+				c.IncomingMsgChan <- m
 			}
-			c.IncomingMsgChan <- m
+		case <-c.closeChan:
+			break
 		}
 	}
 }
@@ -173,7 +182,7 @@ func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
 
 func (c *Client) handleServerMessages() {
 	buf := make([]byte, 2048)
-	for {
+	for c.Connected {
 		packets, err := c.readPackets(buf)
 		if err != nil {
 			log.Fatal(err)
@@ -187,16 +196,28 @@ func (c *Client) handleServerMessages() {
 
 func (c *Client) sendHeartbeats(interval int) {
 	t := time.NewTicker(time.Duration(interval) * time.Second)
-	for range t.C {
-		p, err := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
-		if err != nil {
-			log.Errorf("error encoding heartbeat package: %s", err.Error())
-		}
-		_, err = c.conn.Write(p)
-		if err != nil {
-			log.Errorf("error sending heartbeat to sv: %s", err.Error())
+	for {
+		select {
+		case <-t.C:
+			p, err := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
+			if err != nil {
+				log.Errorf("error encoding heartbeat package: %s", err.Error())
+			}
+			_, err = c.conn.Write(p)
+			if err != nil {
+				log.Errorf("error sending heartbeat to sv: %s", err.Error())
+			}
+		case <-c.closeChan:
+			break
 		}
 	}
+}
+
+// Disconnect disconnects the client
+func (c *Client) Disconnect() {
+	c.Connected = false
+	close(c.closeChan)
+	c.conn.Close()
 }
 
 // ConnectTo connects to the server at addr, for now the only supported protocol is tcp
@@ -217,6 +238,8 @@ func (c *Client) ConnectTo(addr string) error {
 	if err != nil {
 		return err
 	}
+
+	c.Connected = true
 
 	return nil
 }
