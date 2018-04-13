@@ -36,7 +36,6 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
@@ -236,23 +235,12 @@ func (a *Agent) SetStatus(state int32) {
 }
 
 func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, serializer serialize.Serializer) {
-	var protos, protosMapping string
-	if s, ok := serializer.(*protobuf.Serializer); ok {
-		protos = s.Protos
-		protosMapping = s.ProtosMapping
-	}
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat": heartbeatTimeout.Seconds(),
 			"dict":      message.GetDictionary(),
 		},
-	}
-	if protos != "" {
-		hData["sys"].(map[string]interface{})["protos"] = map[string]interface{}{
-			"messages": protos,
-			"mappings": protosMapping,
-		}
 	}
 	data, err := json.Marshal(hData)
 	if err != nil {

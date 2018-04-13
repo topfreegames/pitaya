@@ -21,44 +21,16 @@
 package protobuf
 
 import (
-	"io"
-	"io/ioutil"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/constants"
 )
 
 // Serializer implements the serialize.Serializer interface
-type Serializer struct {
-	Protos        string
-	ProtosMapping string
-}
+type Serializer struct{}
 
 // NewSerializer returns a new Serializer.
-// ProtosMapping is a mapping between route and proto to be used for in and out
-// e.g:
-//	{
-//		connector.getsessiondata: {
-//			server: SessionData
-//		},
-//		connector.setsessiondata: {
-//			client: SessionData,
-//			server: SetSessionDataAnswer
-//		}
-//	}
-func NewSerializer(protos io.Reader, protosMapping io.Reader) (*Serializer, error) {
-	b, err := ioutil.ReadAll(protos)
-	if err != nil {
-		return nil, err
-	}
-	bm, err := ioutil.ReadAll(protosMapping)
-	if err != nil {
-		return nil, err
-	}
-	return &Serializer{
-		Protos:        string(b),
-		ProtosMapping: string(bm),
-	}, nil
+func NewSerializer() *Serializer {
+	return &Serializer{}
 }
 
 // Marshal returns the protobuf encoding of v.

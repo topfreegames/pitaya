@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
 	"strings"
 
@@ -73,19 +72,7 @@ func main() {
 
 	defer pitaya.Shutdown()
 
-	protos, err := os.Open("./protos/cluster.proto")
-	if err != nil {
-		panic(err)
-	}
-	protosMapping, err := os.Open("./protos/protos_mapping.json")
-	if err != nil {
-		panic(err)
-	}
-
-	ser, err := protobuf.NewSerializer(protos, protosMapping)
-	if err != nil {
-		panic(err)
-	}
+	ser := protobuf.NewSerializer()
 
 	pitaya.SetSerializer(ser)
 

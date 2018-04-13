@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -99,21 +98,7 @@ func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
 func main() {
 	defer pitaya.Shutdown()
 
-	protos, err := os.Open("./protos/chat.proto")
-	if err != nil {
-		panic(err)
-	}
-
-	protosMapping, err := os.Open("./protos/mapping.json")
-	if err != nil {
-		panic(err)
-	}
-
-	s, err := protobuf.NewSerializer(protos, protosMapping)
-
-	if err != nil {
-		panic(err)
-	}
+	s := protobuf.NewSerializer()
 
 	pitaya.SetSerializer(s)
 

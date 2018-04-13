@@ -22,9 +22,6 @@ package protobuf
 
 import (
 	"flag"
-	"io"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,37 +35,11 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestNewSerializer(t *testing.T) {
 	t.Parallel()
-
-	var marshalTables = map[string]struct {
-		protos        io.Reader
-		protosMapping io.Reader
-		errType       interface{}
-	}{
-		"test_ok": {
-			strings.NewReader("protos"),
-			strings.NewReader("protosMapping"),
-			nil,
-		},
-	}
-
-	for name, table := range marshalTables {
-		t.Run(name, func(t *testing.T) {
-			serializer, err := NewSerializer(table.protos, table.protosMapping)
-			if table.errType == nil {
-				assert.NotNil(t, serializer)
-				assert.NotEmpty(t, serializer.Protos)
-				assert.NotEmpty(t, serializer.ProtosMapping)
-			}
-			assert.IsType(t, table.errType, err)
-		})
-	}
+	serializer := NewSerializer()
+	assert.NotNil(t, serializer)
 }
 
 func TestMarshal(t *testing.T) {
-	protoReader, err := os.Open("./../../protos/pitaya.proto")
-	assert.NoError(t, err)
-	protoMappingReader := strings.NewReader(`{"onNewUser":{"server": "Response"}}`)
-
 	var marshalTables = map[string]struct {
 		raw interface{}
 		err error
@@ -76,8 +47,7 @@ func TestMarshal(t *testing.T) {
 		"test_ok":            {&protos.Response{Data: []byte("data"), Error: "error"}, nil},
 		"test_not_a_message": {"invalid", constants.ErrWrongValueType},
 	}
-	serializer, err := NewSerializer(protoReader, protoMappingReader)
-	assert.NoError(t, err)
+	serializer := NewSerializer()
 
 	for name, table := range marshalTables {
 		t.Run(name, func(t *testing.T) {
@@ -101,10 +71,6 @@ func TestMarshal(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-	protoReader, err := os.Open("./../../protos/pitaya.proto")
-	assert.NoError(t, err)
-	protoMappingReader := strings.NewReader(`{"onNewUser":{"server": "Response"}}`)
-
 	gp := helpers.FixtureGoldenFileName(t, "TestMarshal/test_ok")
 	data := helpers.ReadFile(t, gp)
 
@@ -118,8 +84,7 @@ func TestUnmarshal(t *testing.T) {
 		"test_ok":           {&protos.Response{Data: []byte("data"), Error: "error"}, data, &dest, nil},
 		"test_invalid_dest": {&protos.Response{Data: []byte(nil), Error: ""}, data, "invalid", constants.ErrWrongValueType},
 	}
-	serializer, err := NewSerializer(protoReader, protoMappingReader)
-	assert.NoError(t, err)
+	serializer := NewSerializer()
 
 	for name, table := range unmarshalTables {
 		t.Run(name, func(t *testing.T) {
