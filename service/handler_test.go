@@ -25,12 +25,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/internal/codec"
-	"github.com/topfreegames/pitaya/serialize/mocks"
+	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
 )
 
@@ -56,9 +55,7 @@ func TestNewHandlerService(t *testing.T) {
 	dieChan := make(chan bool)
 	packetDecoder := codec.NewPomeloPacketDecoder()
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockSerializer := mocks.NewMockSerializer(ctrl)
+	serializer := json.NewSerializer()
 	heartbeatTimeout := 1 * time.Second
 	sv := &cluster.Server{}
 	remoteSvc := &RemoteService{}
@@ -66,7 +63,7 @@ func TestNewHandlerService(t *testing.T) {
 		dieChan,
 		packetDecoder,
 		packetEncoder,
-		mockSerializer,
+		serializer,
 		heartbeatTimeout,
 		10, 9, 8,
 		sv,
@@ -77,7 +74,7 @@ func TestNewHandlerService(t *testing.T) {
 	assert.Equal(t, dieChan, svc.appDieChan)
 	assert.Equal(t, packetDecoder, svc.decoder)
 	assert.Equal(t, packetEncoder, svc.encoder)
-	assert.Equal(t, mockSerializer, svc.serializer)
+	assert.Equal(t, serializer, svc.serializer)
 	assert.Equal(t, heartbeatTimeout, svc.heartbeatTimeout)
 	assert.Equal(t, 10, svc.messagesBufferSize)
 	assert.Equal(t, sv, svc.server)

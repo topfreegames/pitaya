@@ -161,11 +161,10 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 		{"success", sv, &protos.Response{Data: []byte("ok")}, nil},
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, nil)
 			assert.NotNil(t, svc)

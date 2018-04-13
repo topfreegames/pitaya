@@ -133,10 +133,6 @@ func TestSliceContainsString(t *testing.T) {
 
 func TestSerializeOrRaw(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSerializer := mocks.NewMockSerializer(ctrl)
 	tables := []struct {
 		in  interface{}
 		out interface{}
@@ -147,11 +143,15 @@ func TestSerializeOrRaw(t *testing.T) {
 		{"ble", []byte{1}},
 	}
 
-	mockSerializer.EXPECT().Marshal("bla").Return([]byte{1}, nil)
-	mockSerializer.EXPECT().Marshal("ble").Return([]byte{1}, nil)
-
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockSerializer := mocks.NewMockSerializer(ctrl)
+
+			if reflect.TypeOf(table.in) != reflect.TypeOf(([]byte)(nil)) {
+				mockSerializer.EXPECT().Marshal(table.in).Return(table.out, nil)
+			}
 			res, err := SerializeOrRaw(mockSerializer, table.in)
 			assert.NoError(t, err)
 			assert.Equal(t, table.out, res)
@@ -232,10 +232,6 @@ func TestFileExists(t *testing.T) {
 
 func TestGetErrorPayload(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSerializer := mocks.NewMockSerializer(ctrl)
 	tables := []struct {
 		in  error
 		out []byte
@@ -247,7 +243,11 @@ func TestGetErrorPayload(t *testing.T) {
 	}
 	for i, table := range tables {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockSerializer := mocks.NewMockSerializer(ctrl)
 			mockSerializer.EXPECT().Marshal(gomock.Any()).Return(table.out, nil)
+
 			b, err := GetErrorPayload(mockSerializer, table.in)
 			assert.NoError(t, err)
 			assert.Equal(t, table.out, b)

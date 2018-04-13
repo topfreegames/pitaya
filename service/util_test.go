@@ -103,9 +103,6 @@ func TestGetHandlerDoesntExist(t *testing.T) {
 
 func TestUnmarshalHandlerArg(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	tables := []struct {
 		name        string
 		handlerName string
@@ -122,6 +119,8 @@ func TestUnmarshalHandlerArg(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockSerializer := mocks.NewMockSerializer(ctrl)
 
 			tObj := &TestType{}
@@ -309,9 +308,6 @@ func TestExecuteAfterPipelineError(t *testing.T) {
 }
 
 func TestSerializeReturn(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	tables := []struct {
 		name               string
 		isRawArg           bool
@@ -328,7 +324,8 @@ func TestSerializeReturn(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockSerializer := mocks.NewMockSerializer(ctrl)
 			if !table.isRawArg {
 				mockSerializer.EXPECT().Marshal(gomock.Any()).Return(table.out, table.errSerialize)
@@ -365,9 +362,6 @@ func TestProcessHandlerMessage(t *testing.T) {
 	handlers[rtSt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 	defer func() { handlers = make(map[string]*component.Handler, 0) }()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	ss := session.New(nil, false)
 	cs := reflect.ValueOf(ss)
 
@@ -397,6 +391,8 @@ func TestProcessHandlerMessage(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			handlers[rt.Short()].MessageType = table.handlerType
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockSerializer := mocks.NewMockSerializer(ctrl)
 			if table.outSerialize != nil {
 				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(table.errSerialize).Do(

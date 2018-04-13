@@ -104,11 +104,10 @@ func TestNew(t *testing.T) {
 		{"test_backend_with_uid", false, uuid.New().String()},
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			entity := mocks.NewMockNetworkEntity(ctrl)
 			var ss *Session
 			if table.uid != "" {
@@ -461,11 +460,10 @@ func TestSessionBindBackend(t *testing.T) {
 		{"failed_bind_in_front", errors.New("failed bind in front")},
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockEntity := mocks.NewMockNetworkEntity(ctrl)
 			ss := New(mockEntity, false)
 			assert.NotNil(t, ss)
@@ -529,11 +527,10 @@ func TestSessionClose(t *testing.T) {
 		{"close_bound", uuid.New().String()},
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockEntity := mocks.NewMockNetworkEntity(ctrl)
 			ss := New(mockEntity, true)
 			assert.NotNil(t, ss)

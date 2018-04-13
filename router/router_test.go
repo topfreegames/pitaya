@@ -71,12 +71,11 @@ func TestRoute(t *testing.T) {
 	session := &session.Session{}
 	route := route.NewRoute(serverType, "service", "method")
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockServiceDiscovery := mocks.NewMockServiceDiscovery(ctrl)
-
 	for name, table := range routerTables {
 		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockServiceDiscovery := mocks.NewMockServiceDiscovery(ctrl)
 			mockServiceDiscovery.EXPECT().
 				GetServersByType(table.serverType).
 				Return(servers, table.err)
