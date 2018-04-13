@@ -91,7 +91,7 @@ func NewAgent(
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, serializer)
+		hbdEncode(heartbeatTime, packetEncoder)
 	})
 
 	a := &Agent{
@@ -234,7 +234,7 @@ func (a *Agent) SetStatus(state int32) {
 	atomic.StoreInt32(&a.state, state)
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, serializer serialize.Serializer) {
+func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
