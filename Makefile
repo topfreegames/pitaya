@@ -1,4 +1,4 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos`
+TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e`
 
 setup:
 	@dep ensure
@@ -39,12 +39,29 @@ rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*
 	@rm -f cluster/localhost* localhost*
 
-test:
-	@go test $(TESTABLE_PACKAGES)
-	@make rm-test-temp-files
+ensure-e2e-bin:
+	@[ -f ./e2e/server/server ] || go build -o ./e2e/server/server ./e2e/server/main.go
 
-test-coverage:
+ensure-e2e-deps:
+	@cd ./e2e/server && docker-compose up -d
+
+kill-e2e-deps:
+	@cd ./e2e/server && docker-compose down; true
+
+e2e-test: ensure-e2e-deps ensure-e2e-bin
+	@echo "===============RUNNING E2E TESTS==============="
+	@go test ./e2e/e2e_test.go
+
+unit-test-coverage: kill-e2e-deps
+	@echo "===============RUNNING UNIT TESTS==============="
 	@go test $(TESTABLE_PACKAGES) -coverprofile coverprofile.out
+
+test: kill-e2e-deps test-coverage
+	@make rm-test-temp-files
+	@make ensure-e2e-deps
+	@make e2e-test
+
+test-coverage: unit-test-coverage
 	@make rm-test-temp-files
 
 test-coverage-html: test-coverage
