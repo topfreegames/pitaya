@@ -662,7 +662,9 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	mockConn := mocks.NewMockConn(ctrl)
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
+		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
 		chWrite:          make(chan []byte, 1),
 		encoder:          mockEncoder,
@@ -691,6 +693,8 @@ func TestAgentWriteChSend(t *testing.T) {
 	expectedPacket := []byte("final")
 	mockEncoder.EXPECT().Encode(gomock.Any(), em).Return(expectedPacket, nil)
 
+	// it is possible thay chWrite messages are processed before the test ends
+	mockConn.EXPECT().Write(gomock.Any()).MaxTimes(1)
 	go ag.write()
 	ag.chSend <- expected
 	recvMsg := helpers.ShouldEventuallyReceive(t, ag.chWrite).([]byte)

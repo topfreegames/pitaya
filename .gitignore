@@ -22,3 +22,5 @@ debug
 # vim temp files
 *.swp
 *.swo
+
+e2e/server/server
