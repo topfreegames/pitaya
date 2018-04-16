@@ -742,6 +742,8 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	expectedPacket := []byte("final")
 	mockEncoder.EXPECT().Encode(gomock.Any(), em).Return(expectedPacket, nil)
 
+	// it is possible thay chWrite messages are processed before the test ends
+	mockConn.EXPECT().Write(gomock.Any()).MaxTimes(1)
 	go ag.write()
 	ag.chSend <- expected
 	recvMsg := helpers.ShouldEventuallyReceive(t, ag.chWrite).([]byte)
