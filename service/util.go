@@ -28,6 +28,7 @@ import (
 	"reflect"
 
 	"github.com/topfreegames/pitaya/component"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
@@ -150,11 +151,11 @@ func processHandlerMessage(
 
 	msgType, err := getMsgType(msgTypeIface)
 	if err != nil {
-		return nil, err
+		return nil, e.NewError(err, e.ErrInternalCode)
 	}
 	exit, err := h.ValidateMessageType(msgType)
 	if err != nil && exit {
-		return nil, err
+		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
 		log.Warn(err.Error())
 	}
@@ -165,7 +166,7 @@ func processHandlerMessage(
 
 	arg, err := unmarshalHandlerArg(h, serializer, data)
 	if err != nil {
-		return nil, err
+		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
 	log.Debugf("SID=%d, Data=%s", session.ID(), data)

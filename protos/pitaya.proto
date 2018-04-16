@@ -43,7 +43,7 @@ message Request {
 
 message Response {
   bytes Data = 1;
-  string Error = 2;
+  Error Error = 2;
 }
 
 message Error {

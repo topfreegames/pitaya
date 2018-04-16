@@ -140,7 +140,7 @@ func TestRemoteServiceSendReply(t *testing.T) {
 	assert.NotNil(t, svc)
 
 	reply := uuid.New().String()
-	resp := &protos.Response{Data: []byte(uuid.New().String()), Error: uuid.New().String()}
+	resp := &protos.Response{Data: []byte(uuid.New().String()), Error: &protos.Error{Msg: uuid.New().String()}}
 	p, _ := proto.Marshal(resp)
 	mockRPCClient.EXPECT().Send(reply, p)
 	svc.sendReply(reply, resp)

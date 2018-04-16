@@ -109,7 +109,7 @@ func FileExists(filename string) bool {
 
 // GetErrorPayload creates and serializes an error payload
 func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
-	code := e.ErrUnknowCode
+	code := e.ErrUnknownCode
 	msg := err.Error()
 	metadata := map[string]string{}
 	if val, ok := err.(*e.Error); ok {

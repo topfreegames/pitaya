@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 
+	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/session"
 )
@@ -48,7 +49,7 @@ func (c *Connector) GetSessionData(s *session.Session) (*SessionData, error) {
 func (c *Connector) SetSessionData(s *session.Session, data *SessionData) (*Response, error) {
 	err := s.SetData(data.Data)
 	if err != nil {
-		return nil, err
+		return nil, pitaya.Error(err, "CN-000", map[string]string{"failed": "set data"})
 	}
 	return reply(200, "success")
 }

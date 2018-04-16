@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/pipeline"
@@ -378,9 +380,9 @@ func TestProcessHandlerMessage(t *testing.T) {
 		err          error
 	}{
 		{"invalid_route", route.NewRoute("", "no", "no"), nil, nil, nil, message.Request, nil, false, nil, errors.New("pitaya/handler: no.no not found")},
-		{"invalid_msg_type", rt, nil, nil, nil, message.Request, nil, false, nil, errors.New("invalid message type provided")},
-		{"request_on_notify", rt, nil, nil, nil, message.Notify, message.Request, false, nil, errors.New("tried to request a notify route")},
-		{"failed_handle_args_unmarshal", rt, nil, errors.New("some error"), &SomeStruct{}, message.Request, message.Request, false, nil, errors.New("some error")},
+		{"invalid_msg_type", rt, nil, nil, nil, message.Request, nil, false, nil, e.NewError(errInvalidMsg, e.ErrInternalCode)},
+		{"request_on_notify", rt, nil, nil, nil, message.Notify, message.Request, false, nil, e.NewError(constants.ErrRequestOnNotify, e.ErrBadRequestCode)},
+		{"failed_handle_args_unmarshal", rt, nil, errors.New("some error"), &SomeStruct{}, message.Request, message.Request, false, nil, e.NewError(errors.New("some error"), e.ErrBadRequestCode)},
 		{"failed_pcall", rtErr, nil, nil, &SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, nil, errors.New("HandlerPointerErr")},
 		{"failed_serialize_return", rtSt, errors.New("ser ret error"), nil, &SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, []byte("failed"), nil},
 		{"ok", rt, nil, nil, &SomeStruct{}, message.Request, message.Request, false, []byte("ok"), nil},

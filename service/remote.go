@@ -23,7 +23,6 @@ package service
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
@@ -117,8 +117,12 @@ func (r *RemoteService) RPC(serverID string, route *route.Route, reply interface
 		return err
 	}
 
-	if res.Error != "" {
-		return errors.New(res.Error)
+	if res.Error != nil {
+		return &e.Error{
+			Code:     res.Error.Code,
+			Message:  res.Error.Msg,
+			Metadata: res.Error.Metadata,
+		}
 	}
 
 	err = util.GobDecode(reply, res.GetData())
@@ -168,7 +172,13 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 		rt, err := route.Decode(req.GetMsg().GetRoute())
 		if err != nil {
 			response := &protos.Response{
-				Error: fmt.Sprintf("pitaya: cannot decode route %s", req.GetMsg().GetRoute()),
+				Error: &protos.Error{
+					Code: e.ErrBadRequestCode,
+					Msg:  "cannot decode route",
+					Metadata: map[string]string{
+						"route": req.GetMsg().GetRoute(),
+					},
+				},
 			}
 			r.sendReply(req.GetMsg().GetReply(), response)
 			continue
@@ -189,16 +199,28 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 
 	remote, ok := remotes[rt.Short()]
 	if !ok {
-		errMsg := fmt.Sprintf("pitaya/remote: %s not found", rt.Short())
-		log.Warnf(errMsg)
-		response.Error = errMsg
+		log.Warnf("pitaya/remote: %s not found", rt.Short())
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrNotFoundCode,
+				Msg:  "route not found",
+				Metadata: map[string]string{
+					"route": rt.Short(),
+				},
+			},
+		}
 		r.sendReply(reply, response)
 		return
 	}
 
 	args, err := unmarshalRemoteArg(req.GetMsg().GetData())
 	if err != nil {
-		response.Error = err.Error()
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrBadRequestCode,
+				Msg:  err.Error(),
+			},
+		}
 		r.sendReply(reply, response)
 		return
 	}
@@ -210,14 +232,30 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 
 	ret, err := util.Pcall(remote.Method, params)
 	if err != nil {
-		response.Error = err.Error()
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrUnknownCode,
+				Msg:  err.Error(),
+			},
+		}
+		if val, ok := err.(*e.Error); ok {
+			response.Error.Code = val.Code
+			if val.Metadata != nil {
+				response.Error.Metadata = val.Metadata
+			}
+		}
 		r.sendReply(reply, response)
 		return
 	}
 
 	buf := bytes.NewBuffer([]byte(nil))
 	if err := gob.NewEncoder(buf).Encode(ret); err != nil {
-		response.Error = err.Error()
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrUnknownCode,
+				Msg:  err.Error(),
+			},
+		}
 		r.sendReply(reply, response)
 		return
 	}
@@ -242,7 +280,12 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 	)
 	if err != nil {
 		log.Warn("pitaya/handler: cannot instantiate remote agent")
-		response.Error = err.Error()
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrInternalCode,
+				Msg:  err.Error(),
+			},
+		}
 		r.sendReply(reply, response)
 		return
 	}
@@ -251,12 +294,19 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 	if err != nil {
 		log.Warnf(err.Error())
 		response = &protos.Response{
-			Error: err.Error(),
+			Error: &protos.Error{
+				Code: e.ErrUnknownCode,
+				Msg:  err.Error(),
+			},
+		}
+		if val, ok := err.(*e.Error); ok {
+			response.Error.Code = val.Code
+			if val.Metadata != nil {
+				response.Error.Metadata = val.Metadata
+			}
 		}
 	} else {
-		response = &protos.Response{
-			Data: ret,
-		}
+		response = &protos.Response{Data: ret}
 	}
 	r.sendReply(reply, response)
 }
@@ -264,8 +314,12 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 func (r *RemoteService) sendReply(reply string, response *protos.Response) {
 	p, err := proto.Marshal(response)
 	if err != nil {
-		res := &protos.Response{}
-		res.Error = err.Error()
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrUnknownCode,
+				Msg:  err.Error(),
+			},
+		}
 		p, _ = proto.Marshal(response)
 	}
 	r.rpcClient.Send(reply, p)

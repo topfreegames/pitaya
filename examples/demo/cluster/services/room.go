@@ -3,9 +3,9 @@ package services
 import (
 	"encoding/gob"
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/session"
@@ -101,10 +101,9 @@ func (r *Room) AfterInit() {
 
 // Entry is the entrypoint
 func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
-	fakeUID := uuid.New().String() // just use s.ID as uid !!!
-	err := s.Bind(fakeUID)         // binding session uid
+	err := s.Bind(strconv.Itoa(int(s.ID())))
 	if err != nil {
-		return nil, err
+		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 	return &JoinResponse{Result: "ok"}, nil
 }
@@ -155,15 +154,13 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) *RPCResponse {
-	ret := &RPCResponse{}
+func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error) {
+	ret := &RPCResponse{Msg: "ok"}
 	err := pitaya.RPCTo(msg.ServerID, msg.Route, ret, msg.Msg)
 	if err != nil {
-		ret.Msg = err.Error()
-		return ret
+		return nil, pitaya.Error(err, "RPC-000")
 	}
-	fmt.Printf("rpc ret: %s\n", ret)
-	return ret
+	return ret, nil
 }
 
 // MessageRemote just echoes the given message

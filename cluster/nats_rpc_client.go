@@ -21,7 +21,6 @@
 package cluster
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -146,8 +146,16 @@ func (ns *NatsRPCClient) Call(
 		return nil, err
 	}
 
-	if res.Error != "" {
-		return nil, errors.New(res.Error)
+	if res.Error != nil {
+		if res.Error.Code == "" {
+			res.Error.Code = errors.ErrUnknownCode
+		}
+		err := &errors.Error{
+			Code:     res.Error.Code,
+			Message:  res.Error.Msg,
+			Metadata: res.Error.Metadata,
+		}
+		return nil, err
 	}
 	return res, nil
 }
