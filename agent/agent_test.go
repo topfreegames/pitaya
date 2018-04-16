@@ -705,9 +705,11 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockConn := mocks.NewMockConn(ctrl)
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
+		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
 		chWrite:          make(chan []byte, 1),
 		encoder:          mockEncoder,
