@@ -22,6 +22,7 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -234,30 +235,6 @@ func (a *Agent) SetStatus(state int32) {
 	atomic.StoreInt32(&a.state, state)
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
-	hData := map[string]interface{}{
-		"code": 200,
-		"sys": map[string]interface{}{
-			"heartbeat": heartbeatTimeout.Seconds(),
-			"dict":      message.GetDictionary(),
-		},
-	}
-	data, err := json.Marshal(hData)
-	if err != nil {
-		panic(err)
-	}
-
-	hrd, err = packetEncoder.Encode(packet.Handshake, data)
-	if err != nil {
-		panic(err)
-	}
-
-	hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
 // Handle handles the messages from and to a client
 func (a *Agent) Handle() {
 	defer func() {
@@ -377,7 +354,7 @@ func (a *Agent) write() {
 
 // SendRequest sends a request to a server
 func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Response, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 // AnswerWithError answers with an error
@@ -390,5 +367,29 @@ func (a *Agent) AnswerWithError(mid uint, err error) {
 	e = a.Session.ResponseMID(mid, p, true)
 	if e != nil {
 		log.Error("error answering the player with an error: ", e.Error())
+	}
+}
+
+func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
+	hData := map[string]interface{}{
+		"code": 200,
+		"sys": map[string]interface{}{
+			"heartbeat": heartbeatTimeout.Seconds(),
+			"dict":      message.GetDictionary(),
+		},
+	}
+	data, err := json.Marshal(hData)
+	if err != nil {
+		panic(err)
+	}
+
+	hrd, err = packetEncoder.Encode(packet.Handshake, data)
+	if err != nil {
+		panic(err)
+	}
+
+	hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
+	if err != nil {
+		panic(err)
 	}
 }
