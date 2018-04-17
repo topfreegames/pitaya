@@ -120,7 +120,7 @@ func (t *TestSvc) TestRequestReceiveReturnsRaw(s *session.Session, in []byte) ([
 
 // TestRequestReturnsError handler for e2e tests
 func (t *TestSvc) TestRequestReturnsError(s *session.Session, in []byte) ([]byte, error) {
-	return nil, pitaya.Error(errors.New("somerror"), "PIT-500")
+	return nil, pitaya.Error(errors.New("somerror"), "PIT-555")
 }
 
 // TestBind handler for e2e tests
@@ -128,11 +128,11 @@ func (t *TestSvc) TestBind(s *session.Session) ([]byte, error) {
 	uid := uuid.New().String()
 	err := s.Bind(uid)
 	if err != nil {
-		return nil, pitaya.Error(err, "PIT-400")
+		return nil, pitaya.Error(err, "PIT-444")
 	}
 	err = t.group.Add(s)
 	if err != nil {
-		return nil, pitaya.Error(err, "PIT-400")
+		return nil, pitaya.Error(err, "PIT-441")
 	}
 	return []byte("ack"), nil
 }

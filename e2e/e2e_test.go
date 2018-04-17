@@ -111,8 +111,8 @@ func TestHandlerCallToFront(t *testing.T) {
 		{"connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), []byte(`{"code":200,"msg":"good"}`)},
 		{"connector.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), []byte(`good`)},
 		{"connector.testsvc.testrequestreceivereturnsraw", []byte(`woow`), []byte(`woow`)},
-		{"connector.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"Code":"PIT-000","Msg":"pitaya/handler: connector.testsvc.nonexistenthandler not found"}`)},
-		{"connector.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"Code":"PIT-500","Msg":"somerror"}`)},
+		{"connector.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"Code":"PIT-404","Msg":"pitaya/handler: connector.testsvc.nonexistenthandler not found"}`)},
+		{"connector.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"Code":"PIT-555","Msg":"somerror"}`)},
 	}
 	port := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
@@ -199,8 +199,8 @@ func TestForwardToBackend(t *testing.T) {
 		{"game.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), []byte(`{"code":200,"msg":"good"}`)},
 		{"game.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), []byte(`good`)},
 		{"game.testsvc.testrequestreceivereturnsraw", []byte(`woow`), []byte(`woow`)},
-		{"game.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"Code":"PIT-000","Msg":"pitaya/handler: game.testsvc.nonexistenthandler not found"}`)},
-		{"game.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"Code":"PIT-500","Msg":"somerror"}`)},
+		{"game.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"Code":"PIT-404","Msg":"pitaya/handler: game.testsvc.nonexistenthandler not found"}`)},
+		{"game.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"Code":"PIT-555","Msg":"somerror"}`)},
 	}
 
 	c := client.New(false)

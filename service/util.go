@@ -146,7 +146,7 @@ func processHandlerMessage(
 ) ([]byte, error) {
 	h, err := getHandler(rt)
 	if err != nil {
-		return nil, err
+		return nil, e.NewError(err, e.ErrNotFoundCode)
 	}
 
 	msgType, err := getMsgType(msgTypeIface)

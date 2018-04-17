@@ -52,6 +52,10 @@ e2e-test: ensure-e2e-deps ensure-e2e-bin
 	@echo "===============RUNNING E2E TESTS==============="
 	@go test ./e2e/e2e_test.go
 
+e2e-test-update: ensure-e2e-deps ensure-e2e-bin
+	@echo "===============RUNNING E2E TESTS==============="
+	@go test ./e2e/e2e_test.go -update
+
 unit-test-coverage: kill-e2e-deps
 	@echo "===============RUNNING UNIT TESTS==============="
 	@go test $(TESTABLE_PACKAGES) -coverprofile coverprofile.out

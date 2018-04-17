@@ -379,7 +379,7 @@ func TestProcessHandlerMessage(t *testing.T) {
 		out          []byte
 		err          error
 	}{
-		{"invalid_route", route.NewRoute("", "no", "no"), nil, nil, nil, message.Request, nil, false, nil, errors.New("pitaya/handler: no.no not found")},
+		{"invalid_route", route.NewRoute("", "no", "no"), nil, nil, nil, message.Request, nil, false, nil, e.NewError(errors.New("pitaya/handler: no.no not found"), e.ErrNotFoundCode)},
 		{"invalid_msg_type", rt, nil, nil, nil, message.Request, nil, false, nil, e.NewError(errInvalidMsg, e.ErrInternalCode)},
 		{"request_on_notify", rt, nil, nil, nil, message.Notify, message.Request, false, nil, e.NewError(constants.ErrRequestOnNotify, e.ErrBadRequestCode)},
 		{"failed_handle_args_unmarshal", rt, nil, errors.New("some error"), &SomeStruct{}, message.Request, message.Request, false, nil, e.NewError(errors.New("some error"), e.ErrBadRequestCode)},

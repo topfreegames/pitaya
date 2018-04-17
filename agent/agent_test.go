@@ -764,32 +764,24 @@ func TestAgentHandle(t *testing.T) {
 	assert.NotNil(t, ag)
 
 	go ag.Handle()
+
 	expected := []byte("hello")
 	ag.chWrite <- expected
 
 	// Sends two heartbeats and then times out
 	mockConn.EXPECT().Write(hbd).Return(0, nil).Times(2)
-	die := false
-	go func() {
-		for {
-			select {
-			case <-ag.chDie:
-				die = true
-			}
-		}
-	}()
 
-	received := false
+	received := make(chan bool)
 	mockConn.EXPECT().Write(expected).Return(0, nil).Do(func(d []byte) {
-		received = true
+		received <- true
 	})
 
 	// ag.Close on method exit
 	mockConn.EXPECT().RemoteAddr()
-	mockConn.EXPECT().Close()
+	mockConn.EXPECT().Close().MaxTimes(1)
 
-	// heartbeat
-	helpers.ShouldEventuallyReturn(t, func() bool { return die }, true, 500*time.Millisecond, 5*time.Second)
 	// chWrite
-	helpers.ShouldEventuallyReturn(t, func() bool { return received }, true)
+	<-received
+	// heartbeat
+	<-ag.chDie
 }
