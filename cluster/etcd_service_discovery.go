@@ -32,6 +32,7 @@ import (
 	"github.com/coreos/etcd/clientv3/namespace"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/util"
 )
 
@@ -141,7 +142,7 @@ func (sd *etcdServiceDiscovery) deleteLocalInvalidServers(actualServers []string
 	sd.serverMapByID.Range(func(key interface{}, value interface{}) bool {
 		k := key.(string)
 		if !util.SliceContainsString(actualServers, k) {
-			log.Warnf("deleting invalid local server %s", k)
+			logger.Log.Warnf("deleting invalid local server %s", k)
 			sd.deleteServer(k)
 		}
 		return true
@@ -222,7 +223,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 			case <-heartbeatTicker.C:
 				err := sd.Heartbeat()
 				if err != nil {
-					log.Errorf("error sending heartbeat to etcd: %s", err.Error())
+					logger.Log.Errorf("error sending heartbeat to etcd: %s", err.Error())
 				}
 			case <-sd.stopChan:
 				break
@@ -238,7 +239,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 			case <-syncServersTicker.C:
 				err := sd.SyncServers()
 				if err != nil {
-					log.Errorf("error resyncing servers: %s", err.Error())
+					logger.Log.Errorf("error resyncing servers: %s", err.Error())
 				}
 			case <-sd.stopChan:
 				break
@@ -252,7 +253,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 
 // Heartbeat sends a heartbeat to etcd
 func (sd *etcdServiceDiscovery) Heartbeat() error {
-	log.Debugf("renewing heartbeat with lease %s", sd.leaseID)
+	logger.Log.Debugf("renewing heartbeat with lease %s", sd.leaseID)
 	_, err := sd.cli.KeepAliveOnce(context.TODO(), sd.leaseID)
 	if err != nil {
 		return err
@@ -275,14 +276,14 @@ func parseServer(value []byte) (*Server, error) {
 	var sv *Server
 	err := json.Unmarshal(value, &sv)
 	if err != nil {
-		log.Warnf("failed to load server %s, error: %s", sv, err.Error())
+		logger.Log.Warnf("failed to load server %s, error: %s", sv, err.Error())
 	}
 	return sv, nil
 }
 
 func (sd *etcdServiceDiscovery) printServers() {
 	sd.serverMapByType.Range(func(k, v interface{}) bool {
-		log.Debugf("type: %s, servers: %s", k, v)
+		logger.Log.Debugf("type: %s, servers: %s", k, v)
 		return true
 	})
 
@@ -307,15 +308,15 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	for _, kv := range keys.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
-			log.Warnf("failed to parse etcd key %s, error: %s", kv.Key, err.Error())
+			logger.Log.Warnf("failed to parse etcd key %s, error: %s", kv.Key, err.Error())
 		}
 		allIds = append(allIds, svID)
 		// TODO is this slow? if so we can paralellize
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
-			log.Debugf("loading info from missing server: %s/%s", svType, svID)
+			logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
 			sv, err := sd.getServerFromEtcd(svType, svID)
 			if err != nil {
-				log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
+				logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
 				continue
 			}
 			sd.addServer(sv)
@@ -364,20 +365,20 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 						var sv *Server
 						var err error
 						if sv, err = parseServer(ev.Kv.Value); err != nil {
-							log.Error(err)
+							logger.Log.Error(err)
 							continue
 						}
 						sd.addServer(sv)
-						log.Debugf("server %s added", ev.Kv.Key)
+						logger.Log.Debugf("server %s added", ev.Kv.Key)
 						sd.printServers()
 					case clientv3.EventTypeDelete:
 						_, svID, err := parseEtcdKey(string(ev.Kv.Key))
 						if err != nil {
-							log.Warn("failed to parse key from etcd: %s", ev.Kv.Key)
+							logger.Log.Warn("failed to parse key from etcd: %s", ev.Kv.Key)
 							continue
 						}
 						sd.deleteServer(svID)
-						log.Debugf("server %s deleted", svID)
+						logger.Log.Debugf("server %s deleted", svID)
 						sd.printServers()
 					}
 				}

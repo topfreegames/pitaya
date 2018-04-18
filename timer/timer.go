@@ -36,8 +36,6 @@ const (
 )
 
 var (
-	log = logger.Log
-
 	// Manager manager for all Timers
 	Manager = &struct {
 		incrementID    int64      // auto increment id
@@ -136,7 +134,7 @@ func (t *Timer) Stop() {
 func pexec(id int64, fn Func) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Call timer function error, TimerID=%d, Error=%v", id, err)
+			logger.Log.Errorf("Call timer function error, TimerID=%d, Error=%v", id, err)
 		}
 	}()
 

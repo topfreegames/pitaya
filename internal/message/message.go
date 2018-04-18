@@ -29,8 +29,6 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
-
-	"github.com/topfreegames/pitaya/logger"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -63,7 +61,6 @@ var types = map[Type]string{
 var (
 	routes = make(map[string]uint16) // route map to code
 	codes  = make(map[uint16]string) // code map to route
-	log    = logger.Log
 )
 
 // Errors that could be occurred in message codec

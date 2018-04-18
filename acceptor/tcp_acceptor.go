@@ -27,8 +27,6 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 )
 
-var log = logger.Log
-
 // TCPAcceptor struct
 type TCPAcceptor struct {
 	addr     string
@@ -69,7 +67,7 @@ func (a *TCPAcceptor) Stop() {
 func (a *TCPAcceptor) ListenAndServe() {
 	listener, err := net.Listen("tcp", a.addr)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 	a.listener = listener
 	a.running = true
@@ -80,7 +78,7 @@ func (a *TCPAcceptor) ListenAndServe() {
 func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 	crt, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
@@ -96,7 +94,7 @@ func (a *TCPAcceptor) serve() {
 	for a.running {
 		conn, err := a.listener.Accept()
 		if err != nil {
-			log.Error(err.Error())
+			logger.Log.Error(err.Error())
 			continue
 		}
 		a.connChan <- conn

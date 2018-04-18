@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
@@ -92,7 +93,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 		return err
 	}
 
-	log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
+	logger.Log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -102,7 +103,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 			continue
 		}
 		if err = s.Push(route, data); err != nil {
-			log.Error(err.Error())
+			logger.Log.Error(err.Error())
 		}
 	}
 
@@ -120,14 +121,14 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 		return err
 	}
 
-	log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
+	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
 		if err = s.Push(route, data); err != nil {
-			log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error())
+			logger.Log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error())
 		}
 	}
 
@@ -149,7 +150,7 @@ func (c *Group) Add(session *session.Session) error {
 		return constants.ErrClosedGroup
 	}
 
-	log.Debugf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID())
+	logger.Log.Debugf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID())
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -170,7 +171,7 @@ func (c *Group) Leave(s *session.Session) error {
 		return constants.ErrClosedGroup
 	}
 
-	log.Debugf("Remove session from group %s, UID=%d", c.name, s.UID())
+	logger.Log.Debugf("Remove session from group %s, UID=%d", c.name, s.UID())
 
 	c.mu.Lock()
 	defer c.mu.Unlock()

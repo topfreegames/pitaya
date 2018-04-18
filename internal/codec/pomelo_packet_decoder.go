@@ -27,66 +27,59 @@ import (
 )
 
 // PomeloPacketDecoder reads and decodes network data slice following pomelo's protocol
-type PomeloPacketDecoder struct {
-	buf  *bytes.Buffer
-	size int  // last packet length
-	typ  byte // last packet type
-}
+type PomeloPacketDecoder struct{}
 
 // NewPomeloPacketDecoder returns a new decoder that used for decode network bytes slice.
 func NewPomeloPacketDecoder() *PomeloPacketDecoder {
-	return &PomeloPacketDecoder{
-		buf:  bytes.NewBuffer(nil),
-		size: -1,
-	}
+	return &PomeloPacketDecoder{}
 }
 
-func (c *PomeloPacketDecoder) forward() error {
-	header := c.buf.Next(HeadLength)
-	c.typ = header[0]
-	if c.typ < packet.Handshake || c.typ > packet.Kick {
-		return packet.ErrWrongPomeloPacketType
+func (c *PomeloPacketDecoder) forward(buf *bytes.Buffer) (int, packet.Type, error) {
+	header := buf.Next(HeadLength)
+	typ := header[0]
+	if typ < packet.Handshake || typ > packet.Kick {
+		return 0, 0x00, packet.ErrWrongPomeloPacketType
 	}
-	c.size = bytesToInt(header[1:])
+	size := bytesToInt(header[1:])
 
 	// packet length limitation
-	if c.size > MaxPacketSize {
-		return ErrPacketSizeExcced
+	if size > MaxPacketSize {
+		return 0, 0x00, ErrPacketSizeExcced
 	}
-	return nil
+	return size, packet.Type(typ), nil
 }
 
 // Decode decode the network bytes slice to packet.Packet(s)
 func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
-	c.buf.Write(data)
+	buf := bytes.NewBuffer(nil)
+	buf.Write(data)
 
 	var (
 		packets []*packet.Packet
 		err     error
 	)
 	// check length
-	if c.buf.Len() < HeadLength {
+	if buf.Len() < HeadLength {
 		return nil, nil
 	}
 
 	// first time
-	if c.size < 0 {
-		if err = c.forward(); err != nil {
-			return nil, err
-		}
+	size, typ, err := c.forward(buf)
+	if err != nil {
+		return nil, err
 	}
 
-	for c.size <= c.buf.Len() {
-		p := &packet.Packet{Type: packet.Type(c.typ), Length: c.size, Data: c.buf.Next(c.size)}
+	for size <= buf.Len() {
+		p := &packet.Packet{Type: typ, Length: size, Data: buf.Next(size)}
 		packets = append(packets, p)
 
 		// more packet
-		if c.buf.Len() < HeadLength {
-			c.size = -1
+		if buf.Len() < HeadLength {
 			break
 		}
 
-		if err = c.forward(); err != nil {
+		size, typ, err = c.forward(buf)
+		if err != nil {
 			return nil, err
 		}
 	}

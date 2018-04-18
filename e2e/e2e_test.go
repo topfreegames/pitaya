@@ -21,15 +21,11 @@
 package e2e
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -53,54 +49,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exit)
 }
 
-func startProcess(t *testing.T, program string, args ...string) *exec.Cmd {
-	t.Helper()
-	return exec.Command(program, args...)
-}
-
-func waitForServerToBeReady(t *testing.T, out *bufio.Reader) {
-	helpers.ShouldEventuallyReturn(t, func() bool {
-		line, _, err := out.ReadLine()
-		if err != nil {
-			t.Fatal(err)
-		}
-		return strings.Contains(string(line), "serviceDiscovery successfully loaded")
-	}, true, 100*time.Millisecond, 30*time.Second)
-}
-
-func startServer(t *testing.T, frontend bool, svType string, port int, sdPrefix string) func() {
-	cmd := startProcess(
-		t,
-		"./server/server",
-		"-type",
-		svType,
-		"-port",
-		strconv.Itoa(port),
-		fmt.Sprintf("-frontend=%s", strconv.FormatBool(frontend)),
-		"-sdprefix",
-		sdPrefix,
-	)
-
-	outPipe, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	waitForServerToBeReady(t, bufio.NewReader(outPipe))
-
-	return func() {
-		err := cmd.Process.Kill()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 func TestHandlerCallToFront(t *testing.T) {
 	tables := []struct {
 		req  string
@@ -117,7 +65,7 @@ func TestHandlerCallToFront(t *testing.T) {
 	port := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
-	defer startServer(t, true, "connector", port, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix)()
 	c := client.New(false)
 
 	err := c.ConnectTo(fmt.Sprintf("localhost:%d", port))
@@ -140,7 +88,7 @@ func TestGroupFront(t *testing.T) {
 	port := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer startServer(t, true, "connector", port, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix)()
 	c1 := client.New(false)
 	c2 := client.New(false)
 
@@ -187,8 +135,8 @@ func TestGroupFront(t *testing.T) {
 func TestForwardToBackend(t *testing.T) {
 	portFront := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer startServer(t, false, "game", 0, sdPrefix)()
-	defer startServer(t, true, "connector", portFront, sdPrefix)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", portFront, sdPrefix)()
 
 	tables := []struct {
 		req  string
@@ -226,9 +174,9 @@ func TestGroupBack(t *testing.T) {
 	portFront2 := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
-	defer startServer(t, false, "game", 0, sdPrefix)()
-	defer startServer(t, true, "connector", portFront1, sdPrefix)()
-	defer startServer(t, true, "connector", portFront2, sdPrefix)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", portFront2, sdPrefix)()
 	c1 := client.New(false)
 	c2 := client.New(false)
 
@@ -276,8 +224,8 @@ func TestUserRPC(t *testing.T) {
 	portFront1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer startServer(t, false, "game", 0, sdPrefix)()
-	defer startServer(t, true, "connector", portFront1, sdPrefix)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
 	c1 := client.New(false)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", portFront1))

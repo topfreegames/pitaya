@@ -52,7 +52,7 @@ var Log = initLogger()
 
 func initLogger() Logger {
 	plog := logrus.New()
-	plog.Formatter = new(logrus.JSONFormatter)
+	plog.Formatter = new(logrus.TextFormatter)
 	plog.Level = logrus.DebugLevel
 
 	log := plog.WithFields(logrus.Fields{

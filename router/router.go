@@ -32,8 +32,6 @@ import (
 	"github.com/topfreegames/pitaya/session"
 )
 
-var log = logger.Log
-
 // Router struct
 type Router struct {
 	serviceDiscovery cluster.ServiceDiscovery
@@ -93,7 +91,7 @@ func (r *Router) Route(
 	}
 	routeFunc, ok := r.routesMap[svType]
 	if !ok {
-		log.Debugf("no specific route for svType: %s, using default route", svType)
+		logger.Log.Debugf("no specific route for svType: %s, using default route", svType)
 		server := r.defaultRoute(serversOfType)
 		return server, nil
 	}
@@ -110,7 +108,7 @@ func (r *Router) AddRoute(
 	) (*cluster.Server, error),
 ) {
 	if _, ok := r.routesMap[serverType]; ok {
-		log.Warnf("overriding the route to svType %s", serverType)
+		logger.Log.Warnf("overriding the route to svType %s", serverType)
 	}
 	r.routesMap[serverType] = routingFunction
 }

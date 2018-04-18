@@ -35,6 +35,7 @@ import (
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
@@ -80,18 +81,18 @@ func (r *RemoteService) remoteProcess(server *cluster.Server, a *agent.Agent, ro
 	var res *protos.Response
 	var err error
 	if res, err = r.remoteCall(server, protos.RPCType_Sys, route, a.Session, msg); err != nil {
-		log.Errorf(err.Error())
+		logger.Log.Errorf(err.Error())
 		a.AnswerWithError(msg.ID, err)
 		return
 	}
 	if msg.Type == message.Request {
 		err := a.Session.ResponseMID(msg.ID, res.Data)
 		if err != nil {
-			log.Error(err)
+			logger.Log.Error(err)
 			a.AnswerWithError(msg.ID, err)
 		}
-	} else {
-		log.Error(res.Error)
+	} else if res.Error != nil {
+		logger.Log.Errorf("error while sending a notify: %s", res.Error.GetMsg())
 	}
 }
 
@@ -156,7 +157,7 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 // ProcessUserPush receives and processes push to users
 func (r *RemoteService) ProcessUserPush() {
 	for push := range r.rpcServer.GetUserPushChannel() {
-		log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+		logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
 		s := session.GetSessionByUID(push.GetUid())
 		if s != nil {
 			s.Push(push.Route, push.Data)
@@ -168,7 +169,7 @@ func (r *RemoteService) ProcessUserPush() {
 func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 	// TODO need to monitor stuff here to guarantee messages are not being dropped
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
-		log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
+		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
 		rt, err := route.Decode(req.GetMsg().GetRoute())
 		if err != nil {
 			response := &protos.Response{
@@ -199,7 +200,7 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 
 	remote, ok := remotes[rt.Short()]
 	if !ok {
-		log.Warnf("pitaya/remote: %s not found", rt.Short())
+		logger.Log.Warnf("pitaya/remote: %s not found", rt.Short())
 		response := &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrNotFoundCode,
@@ -279,7 +280,7 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 		req.FrontendID,
 	)
 	if err != nil {
-		log.Warn("pitaya/handler: cannot instantiate remote agent")
+		logger.Log.Warn("pitaya/handler: cannot instantiate remote agent")
 		response := &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrInternalCode,
@@ -292,7 +293,7 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 
 	ret, err := processHandlerMessage(rt, r.serializer, a.Srv, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
 	if err != nil {
-		log.Warnf(err.Error())
+		logger.Log.Warnf(err.Error())
 		response = &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrUnknownCode,
@@ -354,6 +355,6 @@ func (r *RemoteService) remoteCall(
 // DumpServices outputs all registered services
 func (r *RemoteService) DumpServices() {
 	for name := range remotes {
-		log.Infof("registered remote %s", name)
+		logger.Log.Infof("registered remote %s", name)
 	}
 }

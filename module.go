@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/topfreegames/pitaya/interfaces"
+	"github.com/topfreegames/pitaya/logger"
 )
 
 var modules = make(map[string]interfaces.Module)
@@ -47,17 +48,17 @@ func GetModule(name string) (interfaces.Module, error) {
 
 // StartModules starts all modules
 func startModules() {
-	log.Debug("initializing all modules")
+	logger.Log.Debug("initializing all modules")
 	for name, mod := range modules {
-		log.Debugf("initializing module: %s", name)
+		logger.Log.Debugf("initializing module: %s", name)
 		if err := mod.Init(); err != nil {
-			log.Fatalf("error starting module %s, error: %s", name, err.Error())
+			logger.Log.Fatalf("error starting module %s, error: %s", name, err.Error())
 		}
 	}
 
 	for name, mod := range modules {
 		mod.AfterInit()
-		log.Infof("module: %s successfully loaded", name)
+		logger.Log.Infof("module: %s successfully loaded", name)
 	}
 }
 
@@ -66,10 +67,10 @@ func shutdownModules() {
 		mod.BeforeShutdown()
 	}
 	for name, mod := range modules {
-		log.Debugf("stopping module: %s", name)
+		logger.Log.Debugf("stopping module: %s", name)
 		if err := mod.Shutdown(); err != nil {
-			log.Warnf("error stopping module: %s", name)
+			logger.Log.Warnf("error stopping module: %s", name)
 		}
-		log.Infof("module: %s stopped!", name)
+		logger.Log.Infof("module: %s stopped!", name)
 	}
 }
