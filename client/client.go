@@ -35,7 +35,6 @@ import (
 )
 
 var (
-	log             = logger.Log
 	handshakeBuffer = `
 {
     "sys": {
@@ -69,6 +68,7 @@ type Client struct {
 	packetDecoder   codec.PacketDecoder
 	packetChan      chan *packet.Packet
 	IncomingMsgChan chan *message.Message
+	pendingChan     chan bool
 	closeChan       chan struct{}
 	nextID          uint32
 	debug           bool
@@ -80,16 +80,18 @@ func New(debug bool) *Client {
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logrus.InfoLevel)
 
-	log = l
+	logger.Log = l
+
 	if debug {
-		log.(*logrus.Logger).SetLevel(logrus.DebugLevel)
+		logger.Log.(*logrus.Logger).SetLevel(logrus.DebugLevel)
 	}
 	return &Client{
 		Connected:       false,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
-		packetChan:      make(chan *packet.Packet),
-		IncomingMsgChan: make(chan *message.Message),
+		packetChan:      make(chan *packet.Packet, 10),
+		IncomingMsgChan: make(chan *message.Message, 10),
+		pendingChan:     make(chan bool, 30),
 		debug:           debug,
 	}
 }
@@ -120,7 +122,7 @@ func (c *Client) handleHandshakeResponse() error {
 	if err != nil {
 		return err
 	}
-	log.Debug("got handshake from sv, data: %v", handshake)
+	logger.Log.Debug("got handshake from sv, data: %v", handshake)
 
 	if handshake.Sys.Dict != nil {
 		message.SetDictionary(handshake.Sys.Dict)
@@ -148,12 +150,15 @@ func (c *Client) handlePackets() {
 			switch p.Type {
 			case packet.Data:
 				//handle data
-				log.Debug("got data: %s", string(p.Data))
+				logger.Log.Debug("got data: %s", string(p.Data))
 				m, err := message.Decode(p.Data)
 				if err != nil {
-					log.Errorf("error decoding msg from sv: %s", string(m.Data))
+					logger.Log.Errorf("error decoding msg from sv: %s", string(m.Data))
 				}
 				c.IncomingMsgChan <- m
+				if m.Type == message.Response {
+					<-c.pendingChan
+				}
 			}
 		case <-c.closeChan:
 			return
@@ -170,7 +175,7 @@ func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
 	data := buf[:n]
 	packets, err := c.packetDecoder.Decode(data)
 	if err != nil {
-		log.Errorf("error decoding packet from server: %s", err.Error())
+		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
 	}
 
 	return packets, nil
@@ -182,7 +187,7 @@ func (c *Client) handleServerMessages() {
 	for c.Connected {
 		packets, err := c.readPackets(buf)
 		if err != nil {
-			log.Error(err)
+			logger.Log.Error(err)
 			break
 		}
 
@@ -200,11 +205,11 @@ func (c *Client) sendHeartbeats(interval int) {
 		case <-t.C:
 			p, err := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
 			if err != nil {
-				log.Errorf("error encoding heartbeat package: %s", err.Error())
+				logger.Log.Errorf("error encoding heartbeat package: %s", err.Error())
 			}
 			_, err = c.conn.Write(p)
 			if err != nil {
-				log.Errorf("error sending heartbeat to sv: %s", err.Error())
+				logger.Log.Errorf("error sending heartbeat to sv: %s", err.Error())
 			}
 		case <-c.closeChan:
 			return
@@ -248,6 +253,7 @@ func (c *Client) ConnectTo(addr string) error {
 
 // SendRequest sends a request to the server
 func (c *Client) SendRequest(route string, data []byte) error {
+	c.pendingChan <- true
 	return c.sendMsg(message.Request, route, data)
 }
 

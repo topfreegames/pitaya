@@ -74,7 +74,7 @@ func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	c, err := newWSConn(conn)
 	if err != nil {
-		log.Error(err)
+		logger.Log.Error(err)
 		return
 	}
 	h.connChan <- c
@@ -89,7 +89,7 @@ func (w *WSAcceptor) ListenAndServe() {
 
 	listener, err := net.Listen("tcp", w.addr)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 	w.listener = listener
 
@@ -105,13 +105,13 @@ func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
 
 	crt, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
 	listener, err := tls.Listen("tcp", w.addr, tlsCfg)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 	w.listener = listener
 	w.serve(&upgrader)
@@ -130,7 +130,7 @@ func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 func (w *WSAcceptor) Stop() {
 	err := w.listener.Close()
 	if err != nil {
-		log.Error(err)
+		logger.Log.Error(err)
 	}
 }
 

@@ -33,8 +33,6 @@ var (
 	ErrRouteFieldCantEmpty = errors.New("route field can not empty")
 	// ErrInvalidRoute error
 	ErrInvalidRoute = errors.New("invalid route")
-
-	log = logger.Log
 )
 
 // Route struct
@@ -76,7 +74,7 @@ func Decode(route string) (*Route, error) {
 	case 2:
 		return NewRoute("", r[0], r[1]), nil
 	default:
-		log.Errorf("invalid route: " + route)
+		logger.Log.Errorf("invalid route: " + route)
 		return nil, ErrInvalidRoute
 	}
 }

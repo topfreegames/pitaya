@@ -66,7 +66,7 @@ func startupComponents() {
 	// register all remote components
 	for _, c := range remoteComp {
 		if remoteService == nil {
-			log.Warn("registered a remote component but remoteService is not running! skipping...")
+			logger.Log.Warn("registered a remote component but remoteService is not running! skipping...")
 		} else {
 			if err := remoteService.Register(c.comp, c.opts); err != nil {
 				logger.Log.Error(err.Error())

@@ -34,13 +34,11 @@ import (
 	"github.com/topfreegames/pitaya/serialize"
 )
 
-var log = logger.Log
-
 // Pcall calls a method that returns an interface and an error and recovers in case of panic
 func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Errorf("pitaya/dispatch: %v", rec)
+			logger.Log.Errorf("pitaya/dispatch: %v", rec)
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {
@@ -56,7 +54,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 		if v := r[1].Interface(); v != nil {
 			err = v.(error)
 			if err != nil {
-				log.Error(err.Error())
+				logger.Log.Error(err.Error())
 			}
 		} else {
 			rets = r[0].Interface()

@@ -22,11 +22,13 @@ package cluster
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 )
 
@@ -91,7 +93,7 @@ func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) (*nats.Subscription
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)
 		if err != nil {
-			log.Error("error unmarshalling push:", err.Error())
+			logger.Log.Error("error unmarshalling push:", err.Error())
 		}
 		ns.userPushCh <- push
 	})
@@ -106,14 +108,22 @@ func (ns *NatsRPCServer) handleMessages() {
 		close(ns.unhandledReqCh)
 		close(ns.subChan)
 	})()
+	maxPending := float64(0)
 	for {
 		select {
 		case msg := <-ns.subChan:
+			dropped, err := ns.sub.Dropped()
+			if err != nil {
+				logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
+			}
+			subsChanLen := float64(len(ns.subChan))
+			maxPending = math.Max(float64(maxPending), subsChanLen)
+			logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", subsChanLen, maxPending, dropped)
 			req := &protos.Request{}
-			err := proto.Unmarshal(msg.Data, req)
+			err = proto.Unmarshal(msg.Data, req)
 			if err != nil {
 				// should answer rpc with an error
-				log.Error("error unmarshalling rpc message:", err.Error())
+				logger.Log.Error("error unmarshalling rpc message:", err.Error())
 				continue
 			}
 			req.Msg.Reply = msg.Reply
@@ -136,6 +146,7 @@ func (ns *NatsRPCServer) GetUserPushChannel() chan *protos.Push {
 
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
+	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
 	conn, err := setupNatsConn(ns.connString)
 	if err != nil {

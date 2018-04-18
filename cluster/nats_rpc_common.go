@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	nats "github.com/nats-io/go-nats"
+	"github.com/topfreegames/pitaya/logger"
 )
 
 func getChannel(serverType, serverID string) string {
@@ -33,13 +34,13 @@ func getChannel(serverType, serverID string) string {
 func setupNatsConn(connectString string) (*nats.Conn, error) {
 	nc, err := nats.Connect(connectString,
 		nats.DisconnectHandler(func(_ *nats.Conn) {
-			log.Warn("disconnected from nats!")
+			logger.Log.Warn("disconnected from nats!")
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
-			log.Warnf("reconnected to nats %s!", nc.ConnectedUrl)
+			logger.Log.Warnf("reconnected to nats %s!", nc.ConnectedUrl)
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
-			log.Warnf("nats connection closed. reason: %q", nc.LastError())
+			logger.Log.Warnf("nats connection closed. reason: %q", nc.LastError())
 		}),
 	)
 	if err != nil {

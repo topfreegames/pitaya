@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/acceptor"
@@ -39,6 +40,7 @@ import (
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -139,6 +141,12 @@ func TestSetDebug(t *testing.T) {
 	assert.Equal(t, true, app.debug)
 	SetDebug(false)
 	assert.Equal(t, false, app.debug)
+}
+
+func TestSetLogger(t *testing.T) {
+	l := logrus.New()
+	SetLogger(l)
+	assert.Equal(t, l, logger.Log)
 }
 
 func TestSetPacketDecoder(t *testing.T) {

@@ -1,12 +1,16 @@
 package helpers
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,7 +21,7 @@ import (
 )
 
 // GetFreePort returns a free port
-func GetFreePort(t *testing.T) int {
+func GetFreePort(t testing.TB) int {
 	t.Helper()
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
@@ -83,6 +87,64 @@ func ReadFile(t *testing.T, filepath string) []byte {
 	return b
 }
 
+// StartProcess starts a process
+func StartProcess(t testing.TB, program string, args ...string) *exec.Cmd {
+	t.Helper()
+	return exec.Command(program, args...)
+}
+
+func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
+	t.Helper()
+	ShouldEventuallyReturn(t, func() bool {
+		line, _, err := out.ReadLine()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Contains(string(line), "serviceDiscovery successfully loaded")
+	}, true, 100*time.Millisecond, 30*time.Second)
+}
+
+// StartServer starts a server
+func StartServer(t testing.TB, frontend bool, debug bool, svType string, port int, sdPrefix string) func() {
+	t.Helper()
+	args := []string{
+		"-type",
+		svType,
+		"-port",
+		strconv.Itoa(port),
+		fmt.Sprintf("-frontend=%s", strconv.FormatBool(frontend)),
+		"-sdprefix",
+		sdPrefix,
+	}
+	if debug {
+		args = append(args, "-debug")
+	}
+	cmd := StartProcess(
+		t,
+		"./server/server",
+		args...,
+	)
+
+	outPipe, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	waitForServerToBeReady(t, bufio.NewReader(outPipe))
+
+	return func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // FixtureGoldenFileName returns the golden file name on fixtures path
 func FixtureGoldenFileName(t *testing.T, name string) string {
 	t.Helper()
@@ -120,7 +182,7 @@ func pollFuncReturn(f interface{}) (interface{}, error) {
 }
 
 // ShouldEventuallyReceive should asserts that eventually channel c receives a value
-func ShouldEventuallyReceive(t *testing.T, c interface{}, timeouts ...time.Duration) interface{} {
+func ShouldEventuallyReceive(t testing.TB, c interface{}, timeouts ...time.Duration) interface{} {
 	t.Helper()
 	if !isChan(c) {
 		t.Fatal("ShouldEventuallyReceive c argument should be a channel")
@@ -153,7 +215,7 @@ func ShouldEventuallyReceive(t *testing.T, c interface{}, timeouts ...time.Durat
 }
 
 // ShouldEventuallyReturn asserts that eventually the return of f should be v, timeouts: 0 - evaluation interval, 1 - timeout
-func ShouldEventuallyReturn(t *testing.T, f interface{}, v interface{}, timeouts ...time.Duration) {
+func ShouldEventuallyReturn(t testing.TB, f interface{}, v interface{}, timeouts ...time.Duration) {
 	t.Helper()
 	interval := 10 * time.Millisecond
 	timeout := time.After(50 * time.Millisecond)

@@ -42,7 +42,6 @@ import (
 )
 
 var (
-	log = logger.Log
 	// hbd contains the heartbeat packet data
 	hbd []byte
 	// hrd contains the handshake response data
@@ -60,7 +59,6 @@ type (
 		chSend             chan pendingMessage // push message queue
 		chStopHeartbeat    chan struct{}       // stop heartbeats
 		chStopWrite        chan struct{}       // stop writing messages
-		chWrite            chan []byte         // write message to the clients
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
 		encoder            codec.PacketEncoder // binary encoder
@@ -102,7 +100,6 @@ func NewAgent(
 		messagesBufferSize: messagesBufferSize,
 		chStopHeartbeat:    make(chan struct{}),
 		chStopWrite:        make(chan struct{}),
-		chWrite:            make(chan []byte, messagesBufferSize),
 		conn:               conn,
 		decoder:            packetDecoder,
 		encoder:            packetEncoder,
@@ -137,7 +134,8 @@ func (a *Agent) Push(route string, v interface{}) error {
 	}
 
 	if len(a.chSend) >= a.messagesBufferSize {
-		return constants.ErrBufferExceed
+		// TODO monitorar
+		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d", len(a.chSend))
 	}
 
 	switch d := v.(type) {
@@ -169,7 +167,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}, isError ...bool) error {
 
 	if len(a.chSend) >= a.messagesBufferSize {
 		// TODO monitorar
-		return constants.ErrBufferExceed
+		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d", len(a.chSend))
 	}
 
 	switch d := v.(type) {
@@ -192,7 +190,7 @@ func (a *Agent) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	log.Debugf("Session closed, ID=%d, UID=%d, IP=%s",
+	logger.Log.Debugf("Session closed, ID=%d, UID=%d, IP=%s",
 		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
@@ -239,7 +237,7 @@ func (a *Agent) SetStatus(state int32) {
 func (a *Agent) Handle() {
 	defer func() {
 		a.Close()
-		log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
 
 	go a.write()
@@ -261,7 +259,7 @@ func (a *Agent) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if a.lastAt < deadline {
-				log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline)
+				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline)
 				close(a.chDie)
 				return
 			}
@@ -301,25 +299,17 @@ func (a *Agent) write() {
 	// clean func
 	defer func() {
 		close(a.chSend)
-		close(a.chWrite)
 	}()
 
 	for {
 		select {
-		case data := <-a.chWrite:
-			// close agent if low-level Conn broken
-			if _, err := a.conn.Write(data); err != nil {
-				logger.Log.Error(err.Error())
-				return
-			}
-
 		case data := <-a.chSend:
 			payload, err := util.SerializeOrRaw(a.serializer, data.payload)
 			if err != nil {
-				log.Error(err.Error())
+				logger.Log.Error(err.Error())
 				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
-					log.Error("cannot serialize message and respond to the client ", err.Error())
+					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
 				}
 			}
@@ -344,7 +334,11 @@ func (a *Agent) write() {
 				logger.Log.Error(err)
 				break
 			}
-			a.chWrite <- p
+			// close agent if low-level Conn broken
+			if _, err := a.conn.Write(p); err != nil {
+				logger.Log.Error(err.Error())
+				return
+			}
 
 		case <-a.chStopWrite:
 			return
@@ -361,12 +355,12 @@ func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Resp
 func (a *Agent) AnswerWithError(mid uint, err error) {
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
-		log.Error("error answering the player with an error: ", e.Error())
+		logger.Log.Error("error answering the player with an error: ", e.Error())
 		return
 	}
 	e = a.Session.ResponseMID(mid, p, true)
 	if e != nil {
-		log.Error("error answering the player with an error: ", e.Error())
+		logger.Log.Error("error answering the player with an error: ", e.Error())
 	}
 }
 

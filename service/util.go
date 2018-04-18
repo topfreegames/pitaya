@@ -30,6 +30,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -97,7 +98,7 @@ func executeBeforePipeline(s *session.Session, data []byte) ([]byte, error) {
 				// TODO: not sure if this should be logged
 				// one may want to have a before filter that prevents handler execution
 				// example: auth
-				log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
+				logger.Log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
 				return res, err
 			}
 		}
@@ -112,7 +113,7 @@ func executeAfterPipeline(s *session.Session, ser serialize.Serializer, res []by
 		for _, h := range pipeline.AfterHandler.Handlers {
 			ret, err = h(s, ret)
 			if err != nil {
-				log.Debugf("broken pipeline, error: %s", err.Error())
+				logger.Log.Debugf("broken pipeline, error: %s", err.Error())
 				// err can be ignored since serializer was already tested previously
 				ret, _ = util.GetErrorPayload(ser, err)
 				return ret
@@ -125,10 +126,10 @@ func executeAfterPipeline(s *session.Session, ser serialize.Serializer, res []by
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
 	res, err := util.SerializeOrRaw(ser, ret)
 	if err != nil {
-		log.Error(err.Error())
+		logger.Log.Error(err.Error())
 		res, err = util.GetErrorPayload(ser, err)
 		if err != nil {
-			log.Error("cannot serialize message and respond to the client ", err.Error())
+			logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 			return nil, err
 		}
 	}
@@ -157,7 +158,7 @@ func processHandlerMessage(
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
-		log.Warn(err.Error())
+		logger.Log.Warn(err.Error())
 	}
 
 	if data, err = executeBeforePipeline(session, data); err != nil {
@@ -169,7 +170,7 @@ func processHandlerMessage(
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
-	log.Debugf("SID=%d, Data=%s", session.ID(), data)
+	logger.Log.Debugf("SID=%d, Data=%s", session.ID(), data)
 	args := []reflect.Value{h.Receiver, cachedSession}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))

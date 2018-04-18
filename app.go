@@ -104,7 +104,6 @@ var (
 		running:       false,
 		router:        router.New(),
 	}
-	log = logger.Log
 
 	remoteService  *service.RemoteService
 	handlerService *service.HandlerService
@@ -119,7 +118,7 @@ func Configure(
 	cfgs ...*viper.Viper,
 ) {
 	if app.configured {
-		log.Warn("pitaya configured twice!")
+		logger.Log.Warn("pitaya configured twice!")
 	}
 	app.config = config.NewConfig(cfgs...)
 	if app.heartbeat == time.Duration(0) {
@@ -135,7 +134,7 @@ func Configure(
 // AddAcceptor adds a new acceptor to app
 func AddAcceptor(ac acceptor.Acceptor) {
 	if !app.server.Frontend {
-		log.Error("tried to add an acceptor to a backend server, skipping")
+		logger.Log.Error("tried to add an acceptor to a backend server, skipping")
 		return
 	}
 	app.acceptors = append(app.acceptors, ac)
@@ -159,6 +158,11 @@ func SetPacketEncoder(e codec.PacketEncoder) {
 // SetHeartbeatTime sets the heartbeat time
 func SetHeartbeatTime(interval time.Duration) {
 	app.heartbeat = interval
+}
+
+// SetLogger logger setter
+func SetLogger(l logger.Logger) {
+	logger.Log = l
 }
 
 // SetRPCServer to be used
@@ -204,7 +208,7 @@ func startDefaultSD() {
 		app.server,
 	)
 	if err != nil {
-		log.Fatalf("error starting cluster service discovery component: %s", err.Error())
+		logger.Log.Fatalf("error starting cluster service discovery component: %s", err.Error())
 	}
 }
 
@@ -215,7 +219,7 @@ func startDefaultRPCServer() {
 		app.server,
 	)
 	if err != nil {
-		log.Fatalf("error starting cluster rpc server component: %s", err.Error())
+		logger.Log.Fatalf("error starting cluster rpc server component: %s", err.Error())
 	}
 	SetRPCServer(rpcServer)
 }
@@ -224,7 +228,7 @@ func startDefaultRPCClient() {
 	// initialize default rpc client
 	rpcClient, err := cluster.NewNatsRPCClient(app.config, app.server)
 	if err != nil {
-		log.Fatalf("error starting cluster rpc client component: %s", err.Error())
+		logger.Log.Fatalf("error starting cluster rpc client component: %s", err.Error())
 	}
 	SetRPCClient(rpcClient)
 }
@@ -241,26 +245,26 @@ func initSysRemotes() {
 // Start starts the app
 func Start() {
 	if !app.configured {
-		log.Fatal("starting app without configuring it first! call pitaya.Configure()")
+		logger.Log.Fatal("starting app without configuring it first! call pitaya.Configure()")
 	}
 
 	if !app.server.Frontend && len(app.acceptors) > 0 {
-		log.Fatal("acceptors are not allowed on backend servers")
+		logger.Log.Fatal("acceptors are not allowed on backend servers")
 	}
 
 	if app.serverMode == Cluster {
 		if app.serviceDiscovery == nil {
-			log.Warn("creating default service discovery because cluster mode is enabled, " +
+			logger.Log.Warn("creating default service discovery because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
 			startDefaultSD()
 		}
 		if app.rpcServer == nil {
-			log.Warn("creating default rpc server because cluster mode is enabled, " +
+			logger.Log.Warn("creating default rpc server because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetRPCServer")
 			startDefaultRPCServer()
 		}
 		if app.rpcClient == nil {
-			log.Warn("creating default rpc client because cluster mode is enabled, " +
+			logger.Log.Warn("creating default rpc client because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetRPCClient")
 			startDefaultRPCClient()
 			RegisterModule(app.serviceDiscovery, "serviceDiscovery")
@@ -307,12 +311,12 @@ func Start() {
 	// stop server
 	select {
 	case <-app.dieChan:
-		log.Warn("The app will shutdown in a few seconds")
+		logger.Log.Warn("The app will shutdown in a few seconds")
 	case s := <-sg:
-		log.Warn("got signal", s)
+		logger.Log.Warn("got signal", s)
 	}
 
-	log.Warn("server is stopping...")
+	logger.Log.Warn("server is stopping...")
 
 	shutdownModules()
 	shutdownComponents()
@@ -324,7 +328,7 @@ func listen() {
 	// by SetTimerPrecision
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
-	log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
+	logger.Log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
 	for i := 0; i < app.config.GetInt("pitaya.concurrency.handler.dispatch"); i++ {
 		go handlerService.Dispatch(i)
 	}
@@ -340,7 +344,7 @@ func listen() {
 			a.ListenAndServe()
 		}()
 
-		log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
+		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 
 	startModules()

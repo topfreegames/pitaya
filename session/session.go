@@ -45,7 +45,6 @@ type NetworkEntity interface {
 }
 
 var (
-	log = logger.Log
 	// OnSessionBind represents the function called after the session is bound
 	OnSessionBind func(s *Session) error
 	sessionsByUID sync.Map
@@ -234,7 +233,7 @@ func (s *Session) Bind(uid string) error {
 		// is not the frontend server that received the user request
 		err := s.bindInFront()
 		if err != nil {
-			log.Error("error while trying to push session to front: ", err)
+			logger.Log.Error("error while trying to push session to front: ", err)
 			s.uid = ""
 			return err
 		}
@@ -261,9 +260,9 @@ func (s *Session) Close() {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()
 		if err != nil {
-			log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
+			logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
 		} else {
-			log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+			logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
 		}
 	}
 	s.entity.Close()
@@ -555,7 +554,7 @@ func (s *Session) bindInFront() error {
 	if err != nil {
 		return err
 	}
-	log.Debug("session/bindInFront Got response: ", res)
+	logger.Log.Debug("session/bindInFront Got response: ", res.Data)
 	return nil
 
 }
@@ -578,7 +577,7 @@ func (s *Session) PushToFront() error {
 	if err != nil {
 		return err
 	}
-	log.Debug("session/PushToFront Got response: ", res)
+	logger.Log.Debug("session/PushToFront Got response: ", res)
 	return nil
 }
 

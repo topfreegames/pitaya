@@ -41,7 +41,6 @@ import (
 
 var (
 	handlers = make(map[string]*component.Handler) // all handler method
-	log      = logger.Log
 )
 
 type (
@@ -153,12 +152,12 @@ func (h *HandlerService) Handle(conn net.Conn) {
 	// startup agent goroutine
 	go a.Handle()
 
-	log.Debugf("New session established: %s", a.String())
+	logger.Log.Debugf("New session established: %s", a.String())
 
 	// guarantee agent related resource be destroyed
 	defer func() {
 		a.Session.Close()
-		log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
 
 	// read loop
@@ -166,25 +165,26 @@ func (h *HandlerService) Handle(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			log.Debugf("Read message error: %s, session will be closed immediately", err.Error())
+			logger.Log.Debugf("Read message error: %s, session will be closed immediately", err.Error())
 			return
 		}
 
 		// (warning): decoder use slice for performance, packet data should be copy before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
 		if err != nil {
-			log.Error(err.Error())
+			logger.Log.Error(err.Error())
 			return
 		}
 
 		if len(packets) < 1 {
+			logger.Log.Warnf("Read no packets, data: %v", buf[:n])
 			continue
 		}
 
 		// process all packet
 		for i := range packets {
 			if err := h.processPacket(a, packets[i]); err != nil {
-				log.Error(err.Error())
+				logger.Log.Error(err.Error())
 				return
 			}
 		}
@@ -198,11 +198,11 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 			return err
 		}
 		a.SetStatus(constants.StatusHandshake)
-		log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+		logger.Log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
-		log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+		logger.Log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
 
 	case packet.Data:
 		if a.GetStatus() < constants.StatusWorking {
@@ -227,7 +227,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	r, err := route.Decode(msg.Route)
 	if err != nil {
-		log.Error(err.Error())
+		logger.Log.Error(err.Error())
 		a.AnswerWithError(msg.ID, e.NewError(err, e.ErrBadRequestCode))
 		return
 	}
@@ -247,7 +247,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		if h.remoteService != nil {
 			h.chRemoteProcess <- message
 		} else {
-			log.Warnf("request made to another server type but no remoteService running")
+			logger.Log.Warnf("request made to another server type but no remoteService running")
 		}
 	}
 }
@@ -263,7 +263,7 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 
 	ret, err := processHandlerMessage(route, h.serializer, a.Srv, a.Session, msg.Data, msg.Type, false)
 	if err != nil {
-		log.Error(err)
+		logger.Log.Error(err)
 		a.AnswerWithError(mid, err)
 	} else {
 		a.Session.ResponseMID(mid, ret)
@@ -273,6 +273,6 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
 	for name := range handlers {
-		log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
+		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}
 }
