@@ -726,7 +726,7 @@ func TestAgentHandle(t *testing.T) {
 	})
 
 	// ag.Close on method exit
-	mockConn.EXPECT().RemoteAddr()
+	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	ag.chSend <- expected
