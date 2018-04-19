@@ -71,6 +71,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.heartbeat.interval":     "20s",
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":          "60s",
 		"pitaya.cluster.sd.etcd.syncservers.interval":   "120s",
+		"pitaya.dataCompression":                        true,
 		"pitaya.heartbeat.interval":                     "30s",
 	}
 
@@ -94,6 +95,11 @@ func (c *Config) GetString(s string) string {
 // GetInt returns an int from the inner config
 func (c *Config) GetInt(s string) int {
 	return c.config.GetInt(s)
+}
+
+// GetBool returns an boolean from the inner config
+func (c *Config) GetBool(s string) bool {
+	return c.config.GetBool(s)
 }
 
 // GetStringSlice returns a string slice from the inner config
