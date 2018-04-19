@@ -41,7 +41,7 @@ import (
 // TestSvc service for e2e tests
 type TestSvc struct {
 	component.Base
-	groups map[string]*pitaya.Group
+	group *pitaya.Group
 }
 
 // TestRemoteSvc remote service for e2e tests
@@ -53,12 +53,6 @@ type TestRemoteSvc struct {
 type TestResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
-}
-
-// TestSpecificGroupMsg for e2e tests
-type TestSpecificGroupMsg struct {
-	Group string `json:"group"`
-	Msg   string `json:"msg"`
 }
 
 // TestRequest for e2e tests
@@ -96,11 +90,7 @@ func (tr *TestRemoteSvc) RPCTestReturnsError(data []byte) (*TestResponse, error)
 
 // Init inits testsvc
 func (t *TestSvc) Init() {
-	t.groups = make(map[string]*pitaya.Group)
-	t.groups["g1"] = pitaya.NewGroup("g1")
-	t.groups["group10Users"] = pitaya.NewGroup("group10Users")
-	t.groups["group50Users"] = pitaya.NewGroup("group50Users")
-	t.groups["group100Users"] = pitaya.NewGroup("group100Users")
+	t.group = pitaya.NewGroup("g1")
 }
 
 // TestRequestOnlySessionReturnsPtr handler for e2e tests
@@ -141,34 +131,21 @@ func (t *TestSvc) TestBind(s *session.Session) ([]byte, error) {
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	return []byte("ack"), nil
-}
-
-// TestJoinGroup handler for e2e tests
-func (t *TestSvc) TestJoinGroup(s *session.Session, groupName []byte) ([]byte, error) {
-	s.OnClose(func() {
-		t.groups[string(groupName)].Leave(s)
-	})
-	err := t.groups[string(groupName)].Add(s)
+	err = t.group.Add(s)
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
 	return []byte("ack"), nil
 }
 
-// TestSendSpecificGroupMsg handler for e2e tests
-func (t *TestSvc) TestSendSpecificGroupMsg(s *session.Session, msg *TestSpecificGroupMsg) {
-	t.groups[msg.Group].Broadcast("route.test", msg.Msg)
-}
-
 // TestSendGroupMsg handler for e2e tests
 func (t *TestSvc) TestSendGroupMsg(s *session.Session, msg []byte) {
-	t.groups["g1"].Broadcast("route.test", msg)
+	t.group.Broadcast("route.test", msg)
 }
 
 // TestSendGroupMsgPtr handler for e2e tests
 func (t *TestSvc) TestSendGroupMsgPtr(s *session.Session, msg *TestRequest) {
-	t.groups["g1"].Broadcast("route.testptr", msg)
+	t.group.Broadcast("route.testptr", msg)
 }
 
 // TestSendRPCPointer tests sending a RPC
@@ -200,7 +177,7 @@ func main() {
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 	serializer := flag.String("serializer", "json", "json or protobuf")
 	sdPrefix := flag.String("sdprefix", "pitaya/", "prefix to discover other servers")
-	debug := flag.Bool("debug", false, "should log debug level messages")
+	debug := flag.Bool("debug", false, "turn on debug logging")
 
 	flag.Parse()
 
@@ -210,7 +187,9 @@ func main() {
 	if *debug {
 		l.SetLevel(logrus.DebugLevel)
 	}
+
 	pitaya.SetLogger(l)
+
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
 	pitaya.Register(

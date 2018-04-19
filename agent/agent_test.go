@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -153,19 +154,6 @@ func TestAgentPushFailsIfClosedAgent(t *testing.T) {
 	assert.Equal(t, constants.ErrBrokenPipe, err)
 }
 
-func TestAgentPushFailsIfChannelFull(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	heartbeatAndHandshakeMocks(mockEncoder)
-
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil)
-	assert.NotNil(t, ag)
-	err := ag.Push("", nil)
-	assert.Equal(t, constants.ErrBufferExceed, err)
-}
-
 func TestAgentPush(t *testing.T) {
 	tables := []struct {
 		name string
@@ -225,19 +213,6 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	ag.state = constants.StatusClosed
 	err := ag.ResponseMID(1, nil)
 	assert.Equal(t, constants.ErrBrokenPipe, err)
-}
-
-func TestAgentResponseMIDFailsIfChannelFull(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	heartbeatAndHandshakeMocks(mockEncoder)
-
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil)
-	assert.NotNil(t, ag)
-	err := ag.ResponseMID(1, nil)
-	assert.Equal(t, constants.ErrBufferExceed, err)
 }
 
 func TestAgentResponseMID(t *testing.T) {
@@ -614,48 +589,6 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	ag.heartbeat()
 }
 
-func TestAgentWriteChWrite(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
-	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil)
-	assert.NotNil(t, ag)
-
-	expected := []byte("hello")
-	go ag.write()
-
-	received := false
-	mockConn.EXPECT().Write(expected).Return(0, nil).Do(func(d []byte) {
-		received = true
-	})
-	ag.chWrite <- expected
-	helpers.ShouldEventuallyReturn(t, func() bool { return received }, true)
-}
-
-func TestAgentWriteChWriteError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
-	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil)
-	assert.NotNil(t, ag)
-
-	expected := []byte("hello")
-	mockConn.EXPECT().Write(expected).Return(0, errors.New("conn error"))
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		ag.chWrite <- expected
-	}()
-	ag.write()
-}
-
 func TestAgentWriteChSend(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -666,7 +599,6 @@ func TestAgentWriteChSend(t *testing.T) {
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
-		chWrite:          make(chan []byte, 1),
 		encoder:          mockEncoder,
 		heartbeatTimeout: time.Second,
 		lastAt:           time.Now().Unix(),
@@ -692,13 +624,14 @@ func TestAgentWriteChSend(t *testing.T) {
 	assert.NoError(t, err)
 	expectedPacket := []byte("final")
 	mockEncoder.EXPECT().Encode(gomock.Any(), em).Return(expectedPacket, nil)
-
-	// it is possible thay chWrite messages are processed before the test ends
-	mockConn.EXPECT().Write(gomock.Any()).MaxTimes(1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
+		wg.Done()
+	})
 	go ag.write()
 	ag.chSend <- expected
-	recvMsg := helpers.ShouldEventuallyReceive(t, ag.chWrite).([]byte)
-	assert.Equal(t, expectedPacket, recvMsg)
+	wg.Wait()
 }
 
 func TestAgentWriteChSendSerializeErr(t *testing.T) {
@@ -711,7 +644,6 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
-		chWrite:          make(chan []byte, 1),
 		encoder:          mockEncoder,
 		heartbeatTimeout: time.Second,
 		lastAt:           time.Now().Unix(),
@@ -744,12 +676,15 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	expectedPacket := []byte("final")
 	mockEncoder.EXPECT().Encode(gomock.Any(), em).Return(expectedPacket, nil)
 
-	// it is possible thay chWrite messages are processed before the test ends
-	mockConn.EXPECT().Write(gomock.Any()).MaxTimes(1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
+		wg.Done()
+	})
 	go ag.write()
 	ag.chSend <- expected
-	recvMsg := helpers.ShouldEventuallyReceive(t, ag.chWrite).([]byte)
-	assert.Equal(t, expectedPacket, recvMsg)
+	wg.Wait()
+
 }
 
 func TestAgentHandle(t *testing.T) {
@@ -764,24 +699,38 @@ func TestAgentHandle(t *testing.T) {
 	assert.NotNil(t, ag)
 
 	go ag.Handle()
+	expected := pendingMessage{
+		typ:     message.Request,
+		route:   uuid.New().String(),
+		mid:     uint(rand.Int()),
+		payload: someStruct{A: "bla"},
+	}
 
-	expected := []byte("hello")
-	ag.chWrite <- expected
-
+	mockSerializer.EXPECT().Marshal(expected.payload).Return(nil, nil)
 	// Sends two heartbeats and then times out
 	mockConn.EXPECT().Write(hbd).Return(0, nil).Times(2)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	closed := false
+	go func() {
+		for {
+			select {
+			case <-ag.chDie:
+				closed = true
+			}
+		}
+	}()
 
-	received := make(chan bool)
-	mockConn.EXPECT().Write(expected).Return(0, nil).Do(func(d []byte) {
-		received <- true
+	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil).Do(func(d []byte) {
+		wg.Done()
 	})
 
 	// ag.Close on method exit
 	mockConn.EXPECT().RemoteAddr()
 	mockConn.EXPECT().Close().MaxTimes(1)
 
-	// chWrite
-	<-received
-	// heartbeat
-	<-ag.chDie
+	ag.chSend <- expected
+
+	wg.Wait()
+	helpers.ShouldEventuallyReturn(t, func() bool { return closed }, true, 50*time.Millisecond, 5*time.Second)
 }

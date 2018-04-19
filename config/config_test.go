@@ -62,11 +62,11 @@ func TestNewConfig(t *testing.T) {
 		key string
 		val interface{}
 	}{
-		{[]*viper.Viper{}, "pitaya.buffer.agent.messages", 16},
+		{[]*viper.Viper{}, "pitaya.buffer.agent.messages", 100},
 		{[]*viper.Viper{cfg}, "pitaya.buffer.agent.messages", 20},
 		{[]*viper.Viper{}, "pitaya.no.default", nil},
 		{[]*viper.Viper{cfg}, "pitaya.no.default", "custom"},
-		{[]*viper.Viper{}, "pitaya.concurrency.handler.dispatch", 10},
+		{[]*viper.Viper{}, "pitaya.concurrency.handler.dispatch", 25},
 		{[]*viper.Viper{cfg}, "pitaya.concurrency.handler.dispatch", 23},
 		{[]*viper.Viper{}, "pitaya.heartbeat.interval", "123s"},
 		{[]*viper.Viper{cfg}, "pitaya.heartbeat.interval", "123s"},
@@ -131,7 +131,7 @@ func TestGetInt(t *testing.T) {
 		key string
 		val int
 	}{
-		{"pitaya.buffer.agent.messages", 16},
+		{"pitaya.buffer.agent.messages", 100},
 		{"unexistent", 0},
 	}
 
@@ -169,7 +169,7 @@ func TestGet(t *testing.T) {
 		key string
 		val interface{}
 	}{
-		{"pitaya.buffer.agent.messages", 16},
+		{"pitaya.buffer.agent.messages", 100},
 		{"unexistent", nil},
 	}
 

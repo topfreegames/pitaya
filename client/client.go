@@ -71,20 +71,16 @@ type Client struct {
 	pendingChan     chan bool
 	closeChan       chan struct{}
 	nextID          uint32
-	debug           bool
 }
 
 // New returns a new client
-func New(debug bool) *Client {
+func New(logLevel logrus.Level) *Client {
 	l := logrus.New()
 	l.Formatter = &logrus.TextFormatter{}
-	l.SetLevel(logrus.InfoLevel)
+	l.SetLevel(logLevel)
 
 	logger.Log = l
 
-	if debug {
-		logger.Log.(*logrus.Logger).SetLevel(logrus.DebugLevel)
-	}
 	return &Client{
 		Connected:       false,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
@@ -92,7 +88,6 @@ func New(debug bool) *Client {
 		packetChan:      make(chan *packet.Packet, 10),
 		IncomingMsgChan: make(chan *message.Message, 10),
 		pendingChan:     make(chan bool, 30),
-		debug:           debug,
 	}
 }
 

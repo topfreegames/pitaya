@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,22 +32,14 @@ var (
 	invalidHeader   = []byte{0xff, 0x00, 0x00, 0x01}
 )
 
-var decodeTables = map[string][]struct {
+var decodeTables = map[string]struct {
 	data   []byte
 	packet []*packet.Packet
 	err    error
 }{
-	"test_not_enough_bytes":       {{[]byte{0x01}, nil, nil}},
-	"test_first_forward":          {{handshakeHeader, nil, nil}},
-	"test_error_on_first_forward": {{invalidHeader, nil, packet.ErrWrongPomeloPacketType}},
-	"test_second_forward": {
-		{handshakeHeader, nil, nil},
-		{handshakeHeader, []*packet.Packet{{packet.Handshake, 1, []byte{0x01}}}, nil},
-	},
-	"test_error_on_second_forward": {
-		{handshakeHeader, nil, nil},
-		{append([]byte{0x00}, invalidHeader...), nil, packet.ErrWrongPomeloPacketType},
-	},
+	"test_not_enough_bytes": {[]byte{0x01}, nil, nil},
+	"test_error_on_forward": {invalidHeader, nil, packet.ErrWrongPomeloPacketType},
+	"test_forward":          {append(handshakeHeader, 0x01), []*packet.Packet{{packet.Handshake, 1, []byte{0x01}}}, nil},
 }
 
 func TestNewPomeloPacketDecoder(t *testing.T) {
@@ -64,8 +57,11 @@ func TestForward(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ppd := NewPomeloPacketDecoder()
 
-			ppd.buf.Write(table.buf)
-			err := ppd.forward()
+			sz, typ, err := ppd.forward(bytes.NewBuffer(table.buf))
+			if table.err == nil {
+				assert.Equal(t, packet.Type(table.buf[0]), typ)
+				assert.Equal(t, 0, sz)
+			}
 
 			assert.Equal(t, table.err, err)
 		})
@@ -75,16 +71,14 @@ func TestForward(t *testing.T) {
 func TestDecode(t *testing.T) {
 	t.Parallel()
 
-	for name, tables := range decodeTables {
+	for name, table := range decodeTables {
 		t.Run(name, func(t *testing.T) {
 			ppd := NewPomeloPacketDecoder()
 
-			for _, table := range tables {
-				packet, err := ppd.Decode(table.data)
+			packet, err := ppd.Decode(table.data)
 
-				assert.Equal(t, table.err, err)
-				assert.ElementsMatch(t, packet, table.packet)
-			}
+			assert.Equal(t, table.err, err)
+			assert.ElementsMatch(t, table.packet, packet)
 		})
 	}
 }

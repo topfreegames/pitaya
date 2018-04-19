@@ -38,6 +38,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session/mocks"
 	"github.com/topfreegames/pitaya/util"
 )
@@ -475,7 +476,7 @@ func TestSessionBindBackend(t *testing.T) {
 			}
 			expectedRequestData, err := util.GobEncode(expectedSessionData)
 			assert.NoError(t, err)
-			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(nil, table.err)
+			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(&protos.Response{}, table.err)
 
 			err = ss.Bind(uid)
 			assert.Equal(t, table.err, err)

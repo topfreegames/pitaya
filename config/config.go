@@ -52,7 +52,7 @@ func (c *Config) fillDefaultValues() {
 	defaultsMap := map[string]interface{}{
 		"pitaya.buffer.agent.messages": 100,
 		// the max buffer size that nats will accept, if this buffer overflows, messages will begin to be dropped
-		"pitaya.buffer.cluster.rpc.server.messages": 50,
+		"pitaya.buffer.cluster.rpc.server.messages": 75,
 		"pitaya.buffer.cluster.rpc.server.push":     100,
 		"pitaya.buffer.handler.localprocess":        20,
 		"pitaya.buffer.handler.remoteprocess":       20,
@@ -60,7 +60,7 @@ func (c *Config) fillDefaultValues() {
 		// the sum of pitaya.buffer.cluster.rpc.server.messages, for covering the worst case scenario
 		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.messages bigger
 		// than the sum of the config pitaya.concurrency.handler.dispatch among all frontend servers
-		"pitaya.concurrency.handler.dispatch":           15,
+		"pitaya.concurrency.handler.dispatch":           25,
 		"pitaya.concurrency.remote.service":             30,
 		"pitaya.cluster.rpc.client.nats.connect":        "nats://localhost:4222",
 		"pitaya.cluster.rpc.client.nats.requesttimeout": "5s",

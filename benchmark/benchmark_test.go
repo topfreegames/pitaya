@@ -24,6 +24,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/client"
 )
 
@@ -33,7 +34,7 @@ var numClients = 50
 func getClients(n int) []*client.Client {
 	c := make([]*client.Client, numClients)
 	for i := 0; i < numClients; i++ {
-		c[i] = client.New(false)
+		c[i] = client.New(logrus.FatalLevel)
 		err := c[i].ConnectTo("localhost:32222")
 		if err != nil {
 			panic(err)
@@ -53,8 +54,9 @@ func BenchmarkCreateManyClients(b *testing.B) {
 	// TODO start server
 	// b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g := client.New(false)
+		g := client.New(logrus.FatalLevel)
 		err := g.ConnectTo("localhost:32222")
+		defer g.Disconnect()
 		if err != nil {
 			b.Logf("failed to connect")
 			b.FailNow()
@@ -102,7 +104,6 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrManyClientsParallel(b *test
 				b.FailNow()
 			}
 			<-clients[b.N%numClients].IncomingMsgChan
-			//helpers.ShouldEventuallyReceive(b, clients[0].IncomingMsgChan)
 		}
 	})
 }
@@ -118,7 +119,6 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrParallel(b *testing.B) {
 				b.FailNow()
 			}
 			<-clients[0].IncomingMsgChan
-			//helpers.ShouldEventuallyReceive(b, clients[0].IncomingMsgChan)
 		}
 	})
 }
@@ -195,68 +195,3 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallelMultipleClients(b *tes
 		}
 	})
 }
-
-//func BenchmarkGroupPushFront(b *testing.B) {
-//	// TODO start server
-//	// b.ResetTimer()
-//	tables := []struct {
-//		nUsers int
-//		group  string
-//	}{
-//		{1, "group10Users"},
-//		//{50, "group50Users"},
-//		//{100, "group100Users"},
-//	}
-//
-//	for _, table := range tables {
-//		b.Run(table.group, func(b *testing.B) {
-//			cls := getClients(table.nUsers)
-//			for _, client := range cls {
-//				err := client.SendRequest("connector.testsvc.testbind", []byte{})
-//				if err != nil {
-//					b.Fatal(err)
-//				}
-//				<-client.IncomingMsgChan
-//				err = client.SendRequest("connector.testsvc.testjoingroup", []byte(table.group))
-//				if err != nil {
-//					b.Fatal(err)
-//				}
-//				<-client.IncomingMsgChan
-//			}
-//			b.ResetTimer()
-//			for i := 0; i < b.N; i++ {
-//				err := cls[0].SendNotify("connector.testsvc.testsendspecificgroupmsg",
-//					[]byte(fmt.Sprintf(`{"msg":"hellow", "group":"%s"}`, table.group)))
-//				if err != nil {
-//					b.Logf("failed to send request to server: %s", err.Error())
-//					b.FailNow()
-//				}
-//				for _, c := range cls {
-//					<-c.IncomingMsgChan
-//				}
-//			}
-//		})
-//	}
-//}
-//
-//func BenchmarkGroupPushFrontParallel(b *testing.B) {
-//	// TODO start server
-//	// b.ResetTimer()
-//	err := clients[0].SendRequest("game.testsvc.testbind", []byte{})
-//	assert.NoError(b, err)
-//	err = clients[1].SendRequest("game.testsvc.testbind", []byte{})
-//	assert.NoError(b, err)
-//
-//	b.ResetTimer()
-//	b.RunParallel(func(pb *testing.PB) {
-//		for pb.Next() {
-//			err := clients[0].SendNotify("game.testsvc.testsendgroupmsg", []byte("testing group"))
-//			if err != nil {
-//				b.Logf("failed to send request to server")
-//				b.FailNow()
-//			}
-//			<-clients[0].IncomingMsgChan
-//			<-clients[1].IncomingMsgChan
-//		}
-//	})
-//}

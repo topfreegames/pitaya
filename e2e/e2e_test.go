@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/client"
 	"github.com/topfreegames/pitaya/helpers"
@@ -66,7 +67,7 @@ func TestHandlerCallToFront(t *testing.T) {
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
 	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix)()
-	c := client.New(false)
+	c := client.New(logrus.InfoLevel)
 
 	err := c.ConnectTo(fmt.Sprintf("localhost:%d", port))
 	assert.NoError(t, err)
@@ -89,8 +90,8 @@ func TestGroupFront(t *testing.T) {
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix)()
-	c1 := client.New(false)
-	c2 := client.New(false)
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port))
 	assert.NoError(t, err)
@@ -151,7 +152,7 @@ func TestForwardToBackend(t *testing.T) {
 		{"game.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"Code":"PIT-555","Msg":"somerror"}`)},
 	}
 
-	c := client.New(false)
+	c := client.New(logrus.InfoLevel)
 
 	err := c.ConnectTo(fmt.Sprintf("localhost:%d", portFront))
 	assert.NoError(t, err)
@@ -177,8 +178,8 @@ func TestGroupBack(t *testing.T) {
 	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
 	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
 	defer helpers.StartServer(t, true, true, "connector", portFront2, sdPrefix)()
-	c1 := client.New(false)
-	c2 := client.New(false)
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", portFront1))
 	assert.NoError(t, err)
@@ -226,7 +227,7 @@ func TestUserRPC(t *testing.T) {
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
 	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
-	c1 := client.New(false)
+	c1 := client.New(logrus.InfoLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", portFront1))
 	assert.NoError(t, err)
