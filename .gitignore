@@ -23,4 +23,4 @@ debug
 *.swp
 *.swo
 
-e2e/server/server
+examples/testing/server

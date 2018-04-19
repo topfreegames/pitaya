@@ -121,7 +121,7 @@ func StartServer(t testing.TB, frontend bool, debug bool, svType string, port in
 	}
 	cmd := StartProcess(
 		t,
-		"./server/server",
+		"../examples/testing/server",
 		args...,
 	)
 

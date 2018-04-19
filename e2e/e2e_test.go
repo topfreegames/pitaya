@@ -40,7 +40,7 @@ var update = flag.Bool("update", false, "update server binary")
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if *update {
-		cmd := exec.Command("go", "build", "-o", "./server/server", "./server/main.go")
+		cmd := exec.Command("go", "build", "-o", "../examples/testing/server", "../examples/testing/main.go")
 		err := cmd.Run()
 		if err != nil {
 			panic(err)

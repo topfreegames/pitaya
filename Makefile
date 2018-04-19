@@ -39,26 +39,30 @@ rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*
 	@rm -f cluster/localhost* localhost*
 
-ensure-e2e-bin:
-	@[ -f ./e2e/server/server ] || go build -o ./e2e/server/server ./e2e/server/main.go
+ensure-testing-bin:
+	@[ -f ./examples/testing/server ] || go build -o ./examples/testing/server ./examples/testing/main.go
 
-ensure-e2e-deps:
-	@cd ./e2e/server && docker-compose up -d
+ensure-testing-deps:
+	@cd ./examples/testing && docker-compose up -d
 
-kill-e2e-deps:
-	@cd ./e2e/server && docker-compose down; true
+kill-testing-deps:
+	@cd ./examples/testing && docker-compose down; true
 
-e2e-test: ensure-e2e-deps ensure-e2e-bin
+e2e-test: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING E2E TESTS==============="
 	@go test ./e2e/e2e_test.go -update
 
-unit-test-coverage: kill-e2e-deps
+benchmark-test: ensure-testing-deps ensure-testing-bin
+	@echo "===============RUNNING BENCHMARK TESTS==============="
+	@go test ./benchmark/benchmark_test.go -bench=.
+
+unit-test-coverage: kill-testing-deps
 	@echo "===============RUNNING UNIT TESTS==============="
 	@go test $(TESTABLE_PACKAGES) -coverprofile coverprofile.out
 
-test: kill-e2e-deps test-coverage
+test: kill-testing-deps test-coverage
 	@make rm-test-temp-files
-	@make ensure-e2e-deps
+	@make ensure-testing-deps
 	@make e2e-test
 
 test-coverage: unit-test-coverage

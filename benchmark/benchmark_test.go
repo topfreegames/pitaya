@@ -21,21 +21,23 @@
 package benchmark
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/client"
+	"github.com/topfreegames/pitaya/helpers"
 )
 
 var clients []*client.Client
-var numClients = 50
 
-func getClients(n int) []*client.Client {
-	c := make([]*client.Client, numClients)
-	for i := 0; i < numClients; i++ {
+func getClients(n, port int) []*client.Client {
+	c := make([]*client.Client, n)
+	for i := 0; i < n; i++ {
 		c[i] = client.New(logrus.FatalLevel)
-		err := c[i].ConnectTo("localhost:32222")
+		err := c[i].ConnectTo(fmt.Sprintf("%s:%d", "localhost", port))
 		if err != nil {
 			panic(err)
 		}
@@ -45,17 +47,19 @@ func getClients(n int) []*client.Client {
 }
 
 func TestMain(m *testing.M) {
-	clients = getClients(numClients)
 	exit := m.Run()
 	os.Exit(exit)
 }
 
 func BenchmarkCreateManyClients(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		g := client.New(logrus.FatalLevel)
-		err := g.ConnectTo("localhost:32222")
+		err := g.ConnectTo(fmt.Sprintf("%s:%d", "localhost", port))
 		defer g.Disconnect()
 		if err != nil {
 			b.Logf("failed to connect")
@@ -66,9 +70,12 @@ func BenchmarkCreateManyClients(b *testing.B) {
 }
 
 func BenchmarkFrontHandlerWithSessionAndRawReturnsRaw(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(1, port)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := clients[0].SendRequest("connector.testsvc.testrequestreceivereturnsraw", []byte("ola"))
 		if err != nil {
@@ -80,9 +87,12 @@ func BenchmarkFrontHandlerWithSessionAndRawReturnsRaw(b *testing.B) {
 }
 
 func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtr(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(1, port)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench single"}`))
 		if err != nil {
@@ -94,8 +104,13 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtr(b *testing.B) {
 }
 
 func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrManyClientsParallel(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	numClients := 1000
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(numClients, port)
+
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			err := clients[b.N%numClients].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench parall"}`))
@@ -109,8 +124,13 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrManyClientsParallel(b *test
 }
 
 func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrParallel(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(1, port)
+
+	b.ResetTimer()
+
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"b"}`))
@@ -124,9 +144,12 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrParallel(b *testing.B) {
 }
 
 func BenchmarkFrontHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(1, port)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
 		if err != nil {
@@ -138,8 +161,12 @@ func BenchmarkFrontHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
 }
 
 func BenchmarkFrontHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	clients := getClients(1, port)
+
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
@@ -153,9 +180,13 @@ func BenchmarkFrontHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
 }
 
 func BenchmarkBackHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	defer helpers.StartServer(b, false, false, "game", port, sdPrefix)()
+	clients := getClients(1, port)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
 		if err != nil {
@@ -167,8 +198,13 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
 }
 
 func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	defer helpers.StartServer(b, false, false, "game", port, sdPrefix)()
+	clients := getClients(1, port)
+
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
@@ -182,8 +218,15 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
 }
 
 func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallelMultipleClients(b *testing.B) {
-	// TODO start server
-	// b.ResetTimer()
+	numClients := 100
+	port := helpers.GetFreePort(b)
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(b, true, false, "connector", port, sdPrefix)()
+	defer helpers.StartServer(b, false, false, "game", port, sdPrefix)()
+	clients := getClients(numClients, port)
+
+	b.ResetTimer()
+
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			err := clients[b.N%numClients].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
