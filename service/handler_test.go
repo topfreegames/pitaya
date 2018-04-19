@@ -27,6 +27,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"math/rand"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -79,6 +80,7 @@ func TestNewHandlerService(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	serializer := json.NewSerializer()
 	heartbeatTimeout := 1 * time.Second
+	dataCompression := rand.Int() % 2 == 0
 	sv := &cluster.Server{}
 	remoteSvc := &RemoteService{}
 	svc := NewHandlerService(
@@ -90,6 +92,7 @@ func TestNewHandlerService(t *testing.T) {
 		10, 9, 8,
 		sv,
 		remoteSvc,
+		dataCompression,
 	)
 
 	assert.NotNil(t, svc)
@@ -106,7 +109,7 @@ func TestNewHandlerService(t *testing.T) {
 }
 
 func TestHandlerServiceRegister(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, false)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	defer func() { handlers = make(map[string]*component.Handler, 0) }()
@@ -127,7 +130,7 @@ func TestHandlerServiceRegister(t *testing.T) {
 }
 
 func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, false)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -135,7 +138,7 @@ func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 }
 
 func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, false)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of suitable type"), err)
 }

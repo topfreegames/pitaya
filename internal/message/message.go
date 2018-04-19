@@ -21,14 +21,11 @@
 package message
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"strings"
+	"github.com/topfreegames/pitaya/util/compression"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -102,8 +99,8 @@ func (m *Message) String() string {
 }
 
 // Encode marshals message to binary format.
-func (m *Message) Encode() ([]byte, error) {
-	return Encode(m)
+func (m *Message) Encode(dataCompression bool) ([]byte, error) {
+	return Encode(m, dataCompression)
 }
 
 func routable(t Type) bool {
@@ -113,40 +110,6 @@ func routable(t Type) bool {
 func invalidType(t Type) bool {
 	return t < Request || t > Push
 
-}
-
-func deflateData(data []byte) ([]byte, error) {
-	var bb bytes.Buffer
-	gz := gzip.NewWriter(&bb)
-	_, err := gz.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	gz.Close()
-	return bb.Bytes(), nil
-}
-
-// Write gunzipped data to a Writer
-func gunzipWrite(w io.Writer, data []byte) error {
-	// Write gzipped data to the client
-	gr, err := gzip.NewReader(bytes.NewBuffer(data))
-	defer gr.Close()
-	data, err = ioutil.ReadAll(gr)
-	if err != nil {
-		return err
-	}
-	w.Write(data)
-	return nil
-}
-
-func inflateData(data []byte) ([]byte, error) {
-	gr, err := gzip.NewReader(bytes.NewBuffer(data))
-	if err != nil {
-		return nil, err
-	}
-	defer gr.Close()
-
-	return ioutil.ReadAll(gr)
 }
 
 // Encode marshals message to binary format. Different message types is corresponding to
@@ -162,7 +125,7 @@ func inflateData(data []byte) ([]byte, error) {
 // ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
 // See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
-func Encode(m *Message) ([]byte, error) {
+func Encode(m *Message, dataCompression bool) ([]byte, error) {
 	if invalidType(m.Type) {
 		return nil, ErrWrongMessageType
 	}
@@ -206,16 +169,16 @@ func Encode(m *Message) ([]byte, error) {
 		}
 	}
 
-	// TODO create a switch for not compressing automatically
-	// maybe use the length of m.Data to decide wether to compress or not
-	d, err := deflateData(m.Data)
-	if err != nil {
-		return nil, err
-	}
+	if dataCompression {
+		d, err := compression.DeflateData(m.Data)
+		if err != nil {
+			   return nil, err
+		}
 
-	if len(d) < len(m.Data) {
-		m.Data = d
-		buf[0] |= gzipMask
+		if len(d) < len(m.Data) {
+			   m.Data = d
+			   buf[0] |= gzipMask
+		}
 	}
 
 	buf = append(buf, m.Data...)
@@ -277,7 +240,7 @@ func Decode(data []byte) (*Message, error) {
 	m.Data = data[offset:]
 	var err error
 	if flag&gzipMask == gzipMask {
-		m.Data, err = inflateData(m.Data)
+		m.Data, err = compression.InflateData(m.Data)
 		if err != nil {
 			return nil, err
 		}

@@ -57,12 +57,14 @@ var encodeTables = map[string]struct {
 }
 
 func TestEncode(t *testing.T) {
+	t.Helper()
+
 	for name, table := range encodeTables {
 		t.Run(name, func(t *testing.T) {
 			message := table.message
 			SetDictionary(table.routes)
 
-			result, err := message.Encode()
+			result, err := message.Encode(table.gzip == 0x10)
 			gp := filepath.Join("fixtures", name+".golden")
 
 			if *update {

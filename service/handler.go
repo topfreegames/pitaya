@@ -57,6 +57,7 @@ type (
 		serializer         serialize.Serializer          // message serializer
 		server             *cluster.Server               // server obj
 		services           map[string]*component.Service // all registered service
+		dataCompression    bool
 	}
 
 	unhandledMessage struct {
@@ -78,6 +79,7 @@ func NewHandlerService(
 	remoteProcessBufferSize int,
 	server *cluster.Server,
 	remoteService *RemoteService,
+	dataCompression bool,
 ) *HandlerService {
 	h := &HandlerService{
 		services:           make(map[string]*component.Service),
@@ -91,6 +93,7 @@ func NewHandlerService(
 		appDieChan:         dieChan,
 		server:             server,
 		remoteService:      remoteService,
+		dataCompression:    dataCompression,
 	}
 
 	return h
@@ -149,7 +152,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
 	// create a client agent and startup write goroutine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan)
+	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.dataCompression)
 
 	// startup agent goroutine
 	go a.Handle()

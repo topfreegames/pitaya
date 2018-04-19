@@ -71,6 +71,7 @@ type Client struct {
 	pendingChan     chan bool
 	closeChan       chan struct{}
 	nextID          uint32
+	dataCompression bool
 }
 
 // New returns a new client
@@ -90,6 +91,7 @@ func New(logLevel logrus.Level) *Client {
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan: make(chan bool, 30),
+		dataCompression: true,
 	}
 }
 
@@ -270,7 +272,7 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error 
 		Data:  data,
 		Err:   false,
 	}
-	encMsg, err := m.Encode()
+	encMsg, err := m.Encode(c.dataCompression)
 	if err != nil {
 		return err
 	}

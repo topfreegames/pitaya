@@ -39,6 +39,7 @@ import (
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
+	"github.com/topfreegames/pitaya/util/compression"
 )
 
 var (
@@ -67,6 +68,7 @@ type (
 		messagesBufferSize int                  // size of the pending messages buffer
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
+		dataCompression    bool
 	}
 
 	pendingMessage struct {
@@ -87,10 +89,11 @@ func NewAgent(
 	heartbeatTime time.Duration,
 	messagesBufferSize int,
 	dieChan chan bool,
+	dataCompression bool,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder)
+		hbdEncode(heartbeatTime, packetEncoder, dataCompression)
 	})
 
 	a := &Agent{
@@ -107,6 +110,7 @@ func NewAgent(
 		lastAt:             time.Now().Unix(),
 		serializer:         serializer,
 		state:              constants.StatusStart,
+		dataCompression:    dataCompression,
 	}
 
 	// bindng session
@@ -327,7 +331,7 @@ func (a *Agent) write() {
 				ID:    data.mid,
 				Err:   data.err,
 			}
-			em, err := m.Encode()
+			em, err := m.Encode(a.dataCompression)
 			if err != nil {
 				logger.Log.Error(err.Error())
 				break
@@ -369,7 +373,7 @@ func (a *Agent) AnswerWithError(mid uint, err error) {
 	}
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder) {
+func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool) {
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
@@ -380,6 +384,18 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 	data, err := json.Marshal(hData)
 	if err != nil {
 		panic(err)
+	}
+
+	if dataCompression {
+		compressedData, err := compression.DeflateData(data)
+		if err != nil {
+			panic(err)
+		}
+
+		if len(compressedData) < len(data) {
+			data = compressedData
+		}
+
 	}
 
 	hrd, err = packetEncoder.Encode(packet.Handshake, data)

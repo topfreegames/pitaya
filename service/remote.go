@@ -53,6 +53,7 @@ type RemoteService struct {
 	rpcClient        cluster.RPCClient
 	services         map[string]*component.Service // all registered service
 	router           *router.Router
+	dataCompression  bool
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -63,6 +64,7 @@ func NewRemoteService(
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	router *router.Router,
+	dataCompression bool,
 ) *RemoteService {
 	return &RemoteService{
 		services:         make(map[string]*component.Service),
@@ -72,6 +74,7 @@ func NewRemoteService(
 		serviceDiscovery: sd,
 		serializer:       serializer,
 		router:           router,
+		dataCompression:  dataCompression,
 	}
 }
 
@@ -280,6 +283,7 @@ func (r *RemoteService) handleRPCSys(req *protos.Request, rt *route.Route) {
 		r.serializer,
 		r.serviceDiscovery,
 		req.FrontendID,
+		r.dataCompression,
 	)
 	if err != nil {
 		logger.Log.Warn("pitaya/handler: cannot instantiate remote agent")
