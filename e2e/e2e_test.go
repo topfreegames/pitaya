@@ -57,6 +57,8 @@ func TestHandlerCallToFront(t *testing.T) {
 		resp []byte
 	}{
 		{"connector.testsvc.testrequestonlysessionreturnsptr", []byte(``), []byte(`{"code":200,"msg":"hello"}`)},
+		{"connector.testsvc.testrequestonlysessionreturnsptrnil", []byte(``), []byte(`{"Code":"PIT-000","Msg":"reply must not be null"}`)},
+		{"connector.testsvc.testrequestonlysessionreturnsrawnil", []byte(``), []byte(`{"Code":"PIT-000","Msg":"reply must not be null"}`)},
 		{"connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), []byte(`{"code":200,"msg":"good"}`)},
 		{"connector.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), []byte(`good`)},
 		{"connector.testsvc.testrequestreceivereturnsraw", []byte(`woow`), []byte(`woow`)},
@@ -245,6 +247,7 @@ func TestUserRPC(t *testing.T) {
 		{"back_to_front_error", "game.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestreturnserror","data":"thisthis"}`), []byte(`{"Code":"PIT-433","Msg":"test error","Metadata":{"some":"meta"}}`)},
 		{"same_server", "connector.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), []byte(`{"Code":"PIT-000","Msg":"you are making a rpc that may be processed locally, either specify a different server type or specify a server id"}`)},
 		{"front_to_back_ptr", "connector.testsvc.testsendrpcpointer", []byte(`{"route":"game.testremotesvc.rpctestptrreturnsptr","data":"thisthis"}`), []byte(`{"code":200,"msg":"got thisthis"}`)},
+		{"no_args", "connector.testsvc.testsendrpcnoargs", []byte(`{"route":"game.testremotesvc.rpctestnoargs"}`), []byte(`{"code":200,"msg":"got nothing"}`)},
 		{"not_found", "connector.testsvc.testsendrpcpointer", []byte(`{"route":"game.testremotesvc.rpctestnotfound","data":"thisthis"}`), []byte(`{"Code":"PIT-404","Msg":"route not found","Metadata":{"route":"testremotesvc.rpctestnotfound"}}`)},
 	}
 

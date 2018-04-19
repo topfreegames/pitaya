@@ -109,7 +109,10 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 			if nameFunc != nil {
 				mn = nameFunc(mn)
 			}
-			methods[mn] = &Remote{Method: method}
+			methods[mn] = &Remote{
+				Method:  method,
+				HasArgs: method.Type.NumIn() > 1,
+			}
 		}
 	}
 	return methods

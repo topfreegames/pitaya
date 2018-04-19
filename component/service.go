@@ -42,6 +42,7 @@ type (
 	Remote struct {
 		Receiver reflect.Value  // receiver of method
 		Method   reflect.Method // method stub
+		HasArgs  bool           // if remote has no args we won't try to serialize received data into arguments
 	}
 
 	// Service implements a specific service, some of it's methods will be

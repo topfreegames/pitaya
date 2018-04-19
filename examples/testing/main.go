@@ -88,6 +88,14 @@ func (tr *TestRemoteSvc) RPCTestReturnsError(data []byte) (*TestResponse, error)
 
 }
 
+// RPCTestNoArgs remote for e2e tests
+func (tr *TestRemoteSvc) RPCTestNoArgs() (*TestResponse, error) {
+	return &TestResponse{
+		Code: 200,
+		Msg:  "got nothing",
+	}, nil
+}
+
 // Init inits testsvc
 func (t *TestSvc) Init() {
 	t.group = pitaya.NewGroup("g1")
@@ -101,12 +109,22 @@ func (t *TestSvc) TestRequestOnlySessionReturnsPtr(s *session.Session) (*TestRes
 	}, nil
 }
 
+// TestRequestOnlySessionReturnsPtrNil handler for e2e tests
+func (t *TestSvc) TestRequestOnlySessionReturnsPtrNil(s *session.Session) (*TestResponse, error) {
+	return nil, nil
+}
+
 // TestRequestReturnsPtr handler for e2e tests
 func (t *TestSvc) TestRequestReturnsPtr(s *session.Session, in *TestRequest) (*TestResponse, error) {
 	return &TestResponse{
 		Code: 200,
 		Msg:  in.Msg,
 	}, nil
+}
+
+// TestRequestOnlySessionReturnsRawNil handler for e2e tests
+func (t *TestSvc) TestRequestOnlySessionReturnsRawNil(s *session.Session) ([]byte, error) {
+	return nil, nil
 }
 
 // TestRequestReturnsRaw handler for e2e tests
@@ -162,6 +180,16 @@ func (t *TestSvc) TestSendRPCPointer(s *session.Session, msg *TestRPCRequest) (*
 func (t *TestSvc) TestSendRPC(s *session.Session, msg *TestRPCRequest) (*TestResponse, error) {
 	rep := &TestResponse{}
 	err := pitaya.RPC(msg.Route, rep, []byte(msg.Data))
+	if err != nil {
+		return nil, err
+	}
+	return rep, nil
+}
+
+// TestSendRPCNoArgs tests sending a RPC
+func (t *TestSvc) TestSendRPCNoArgs(s *session.Session, msg *TestRPCRequest) (*TestResponse, error) {
+	rep := &TestResponse{}
+	err := pitaya.RPC(msg.Route, rep, []byte(nil))
 	if err != nil {
 		return nil, err
 	}

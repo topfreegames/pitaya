@@ -27,6 +27,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -56,8 +57,10 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 			if err != nil {
 				logger.Log.Error(err.Error())
 			}
-		} else {
+		} else if !r[0].IsNil() {
 			rets = r[0].Interface()
+		} else {
+			err = constants.ErrReplyShouldBeNotNull
 		}
 	}
 	return

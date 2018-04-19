@@ -1,5 +1,5 @@
-// Copyright (c) TFG Co. All Rights Reserved.
 //
+// Copyright (c) TFG Co. All Rights Reserved.
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -213,22 +213,22 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 		r.sendReply(reply, response)
 		return
 	}
-
-	args, err := unmarshalRemoteArg(req.GetMsg().GetData())
-	if err != nil {
-		response := &protos.Response{
-			Error: &protos.Error{
-				Code: e.ErrBadRequestCode,
-				Msg:  err.Error(),
-			},
-		}
-		r.sendReply(reply, response)
-		return
-	}
-
 	params := []reflect.Value{remote.Receiver}
-	for _, arg := range args {
-		params = append(params, reflect.ValueOf(arg))
+	if remote.HasArgs {
+		args, err := unmarshalRemoteArg(req.GetMsg().GetData())
+		if err != nil {
+			response := &protos.Response{
+				Error: &protos.Error{
+					Code: e.ErrBadRequestCode,
+					Msg:  err.Error(),
+				},
+			}
+			r.sendReply(reply, response)
+			return
+		}
+		for _, arg := range args {
+			params = append(params, reflect.ValueOf(arg))
+		}
 	}
 
 	ret, err := util.Pcall(remote.Method, params)
@@ -250,15 +250,17 @@ func (r *RemoteService) handleRPCUser(req *protos.Request, rt *route.Route) {
 	}
 
 	buf := bytes.NewBuffer([]byte(nil))
-	if err := gob.NewEncoder(buf).Encode(ret); err != nil {
-		response := &protos.Response{
-			Error: &protos.Error{
-				Code: e.ErrUnknownCode,
-				Msg:  err.Error(),
-			},
+	if ret != nil {
+		if err := gob.NewEncoder(buf).Encode(ret); err != nil {
+			response := &protos.Response{
+				Error: &protos.Error{
+					Code: e.ErrUnknownCode,
+					Msg:  err.Error(),
+				},
+			}
+			r.sendReply(reply, response)
+			return
 		}
-		r.sendReply(reply, response)
-		return
 	}
 
 	response.Data = buf.Bytes()

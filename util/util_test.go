@@ -33,6 +33,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/mocks"
@@ -61,6 +62,10 @@ func (s *someStruct) TestFuncThrow() (*someStruct, error) {
 	panic("ohnoes")
 }
 
+func (s *someStruct) TestFuncNil(arg string) (*someStruct, error) {
+	return nil, nil
+}
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -83,12 +88,14 @@ func TestPcall(t *testing.T) {
 		methodName string
 		args       []reflect.Value
 		out        interface{}
+		err        error
 	}{
-		{"test_pcall_1", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(10), reflect.ValueOf("bla")}, &someStruct{A: 10, B: "bla"}},
-		{"test_pcall_2", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(20), reflect.ValueOf("ble")}, &someStruct{A: 20, B: "ble"}},
-		{"test_pcall_3", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(11), reflect.ValueOf("blb")}, &someStruct{A: 11, B: "blb"}},
-		{"test_pcall_4", s, "TestFuncErr", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf("blberror")}, nil},
-		{"test_pcall_5", s, "TestFuncThrow", []reflect.Value{reflect.ValueOf(s)}, nil},
+		{"test_pcall_1", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(10), reflect.ValueOf("bla")}, &someStruct{A: 10, B: "bla"}, nil},
+		{"test_pcall_2", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(20), reflect.ValueOf("ble")}, &someStruct{A: 20, B: "ble"}, nil},
+		{"test_pcall_3", s, "TestFunc", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf(11), reflect.ValueOf("blb")}, &someStruct{A: 11, B: "blb"}, nil},
+		{"test_pcall_4", s, "TestFuncErr", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf("blberror")}, nil, errors.New("blberror")},
+		{"test_pcall_5", s, "TestFuncThrow", []reflect.Value{reflect.ValueOf(s)}, nil, errors.New("ohnoes")},
+		{"test_pcall_6", s, "TestFuncNil", []reflect.Value{reflect.ValueOf(s), reflect.ValueOf("kkk")}, nil, constants.ErrReplyShouldBeNotNull},
 	}
 
 	for _, table := range tables {
@@ -99,7 +106,7 @@ func TestPcall(t *testing.T) {
 			if table.methodName == "TestFunc" || table.methodName == "TestFunc2RetNoErr" {
 				assert.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				assert.Equal(t, table.err, err)
 			}
 			assert.IsType(t, table.out, r)
 			assert.Equal(t, table.out, r)
