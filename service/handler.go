@@ -98,14 +98,16 @@ func NewHandlerService(
 
 // Dispatch message to corresponding logic handler
 func (h *HandlerService) Dispatch(thread int) {
-	// close chLocalProcess & chCloseSession when application quit
+	// close chLocalProcess & chCloseSession when application quits
+	// TODO: This timer is being stopped multiple times, it probably doesn't need to be stopped here
 	defer timer.GlobalTicker.Stop()
 
-	// handle packet that sent to chLocalProcess
 	for {
+		// Calls to remote servers block calls to local server
 		select {
 		case lm := <-h.chLocalProcess:
 			h.localProcess(lm.agent, lm.route, lm.msg)
+
 		case rm := <-h.chRemoteProcess:
 			h.remoteService.remoteProcess(nil, rm.agent, rm.route, rm.msg)
 
@@ -146,7 +148,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
-	// create a client agent and startup write gorontine
+	// create a client agent and startup write goroutine
 	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan)
 
 	// startup agent goroutine
@@ -154,7 +156,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 
 	logger.Log.Debugf("New session established: %s", a.String())
 
-	// guarantee agent related resource be destroyed
+	// guarantee agent related resource is destroyed
 	defer func() {
 		a.Session.Close()
 		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
@@ -169,7 +171,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 			return
 		}
 
-		// (warning): decoder use slice for performance, packet data should be copy before next Decode
+		// (warning): decoder uses slice for performance, packet data should be copied before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
 		if err != nil {
 			logger.Log.Error(err.Error())
@@ -206,7 +208,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 
 	case packet.Data:
 		if a.GetStatus() < constants.StatusWorking {
-			return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
+			return fmt.Errorf("receive data on socket which is not yet ACK, session will be closed immediately, remote=%s",
 				a.RemoteAddr().String())
 		}
 

@@ -361,7 +361,7 @@ func listen() {
 	app.running = true
 }
 
-// SetDictionary set routes map
+// SetDictionary sets routes map
 func SetDictionary(dict map[string]uint16) error {
 	if app.running {
 		return constants.ErrChangeDictionaryWhileRunning

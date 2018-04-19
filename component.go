@@ -101,5 +101,4 @@ func shutdownComponents() {
 	for i := length - 1; i >= 0; i-- {
 		remoteComp[i].comp.Shutdown()
 	}
-
 }
