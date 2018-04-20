@@ -24,6 +24,7 @@ import (
 	"crypto/tls"
 	"net"
 
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 )
 
@@ -33,15 +34,28 @@ type TCPAcceptor struct {
 	connChan chan net.Conn
 	listener net.Listener
 	running  bool
+	certFile string
+	keyFile  string
 }
 
 // NewTCPAcceptor creates a new instance of tcp acceptor
-func NewTCPAcceptor(addr string) *TCPAcceptor {
+func NewTCPAcceptor(addr string, certs ...string) (*TCPAcceptor, error) {
+	keyFile := ""
+	certFile := ""
+	if len(certs) != 2 && len(certs) != 0 {
+		return nil, constants.ErrInvalidCertificates
+	} else if len(certs) == 2 {
+		certFile = certs[0]
+		keyFile = certs[1]
+	}
+
 	return &TCPAcceptor{
 		addr:     addr,
 		connChan: make(chan net.Conn),
 		running:  false,
-	}
+		certFile: certFile,
+		keyFile:  keyFile,
+	}, nil
 }
 
 // GetAddr returns the addr the acceptor will listen on
@@ -63,8 +77,17 @@ func (a *TCPAcceptor) Stop() {
 	a.listener.Close()
 }
 
+func (a *TCPAcceptor) hasTLSCertificates() bool {
+	return a.certFile != "" && a.keyFile != ""
+}
+
 // ListenAndServe using tcp acceptor
 func (a *TCPAcceptor) ListenAndServe() {
+	if a.hasTLSCertificates() {
+		a.ListenAndServeTLS(a.certFile, a.keyFile)
+		return
+	}
+
 	listener, err := net.Listen("tcp", a.addr)
 	if err != nil {
 		logger.Log.Fatal(err)

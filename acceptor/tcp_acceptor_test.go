@@ -26,23 +26,39 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 )
 
 var tcpAcceptorTables = []struct {
-	name string
-	addr string
+	name  string
+	addr  string
+	certs []string
+	err   error
 }{
-	{"test_1", "0.0.0.0:0"},
-	{"test_4", "127.0.0.1:0"},
+	{"test_1", "0.0.0.0:0", []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
+	{"test_2", "0.0.0.0:0", []string{}, nil},
+	{"test_3", "127.0.0.1:0", []string{"wqd"}, constants.ErrInvalidCertificates},
+	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 	t.Parallel()
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
-			assert.NotNil(t, a)
+			a, err := NewTCPAcceptor(table.addr, table.certs...)
+			assert.Equal(t, err, table.err)
+
+			if err == nil {
+				if len(table.certs) == 2 {
+					assert.Equal(t, table.certs[0], a.certFile)
+					assert.Equal(t, table.certs[1], a.keyFile)
+				} else {
+					assert.Equal(t, "", a.certFile)
+					assert.Equal(t, "", a.keyFile)
+				}
+				assert.NotNil(t, a)
+			}
 		})
 	}
 }
@@ -51,19 +67,18 @@ func TestGetAddr(t *testing.T) {
 	t.Parallel()
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
+			a, _ := NewTCPAcceptor(table.addr)
 			// returns nothing because not listening yet
 			assert.Equal(t, "", a.GetAddr())
 		})
 	}
-
 }
 
 func TestGetConnChan(t *testing.T) {
 	t.Parallel()
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
+			a, _ := NewTCPAcceptor(table.addr)
 			assert.NotNil(t, a.GetConnChan())
 		})
 	}
@@ -72,7 +87,7 @@ func TestGetConnChan(t *testing.T) {
 func TestListenAndServe(t *testing.T) {
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
+			a, _ := NewTCPAcceptor(table.addr)
 			defer a.Stop()
 			c := a.GetConnChan()
 			go a.ListenAndServe()
@@ -91,7 +106,7 @@ func TestListenAndServe(t *testing.T) {
 func TestListenAndServeTLS(t *testing.T) {
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
+			a, _ := NewTCPAcceptor(table.addr)
 			defer a.Stop()
 			c := a.GetConnChan()
 
@@ -111,7 +126,7 @@ func TestListenAndServeTLS(t *testing.T) {
 func TestStop(t *testing.T) {
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			a := NewTCPAcceptor(table.addr)
+			a, _ := NewTCPAcceptor(table.addr)
 			go a.ListenAndServe()
 			// should be able to connect within 100 milliseconds
 			helpers.ShouldEventuallyReturn(t, func() error {
