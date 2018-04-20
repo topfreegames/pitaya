@@ -87,7 +87,9 @@ func New(logLevel logrus.Level) *Client {
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
 		IncomingMsgChan: make(chan *message.Message, 10),
-		pendingChan:     make(chan bool, 30),
+		// 30 here is the limit of inflight messages
+		// TODO this should probably be configurable
+		pendingChan: make(chan bool, 30),
 	}
 }
 
