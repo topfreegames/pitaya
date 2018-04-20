@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: pitaya-example
+  name: backend
+  namespace: pitaya-example
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pitaya-example
+  template:
+    metadata:
+      labels:
+        app: pitaya-example
+        server: backend
+    spec:
+      containers:
+      - image: quay.io/felipejfc/pitaya-example-sv:v1
+        command:
+          - /server
+          - -type
+          - game
+          - -frontend=false
+        env:
+        - name: PITAYA_CLUSTER_RPC_CLIENT_NATS_CONNECT
+          value: nats://nats-cluster-1.nats-io.svc.cluster.local:4222
+        - name: PITAYA_CLUSTER_RPC_SERVER_NATS_CONNECT
+          value: nats://nats-cluster-1.nats-io.svc.cluster.local:4222
+        - name: PITAYA_CLUSTER_SD_ETCD_ENDPOINTS
+          value: etcd-cluster-1.etcd.svc.cluster.local:2379
+        - name: PITAYA_HEARTBEAT_INTERVAL
+          value: 10s
+        name: backend
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
