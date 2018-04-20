@@ -60,4 +60,5 @@ var (
 	ErrSessionNotFound                = errors.New("session not found")
 	ErrSessionOnNotify                = errors.New("current session working on notify mode")
 	ErrWrongValueType                 = errors.New("protobuf: convert on wrong type value")
+	ErrInvalidCertificates            = errors.New("certificates must be exactly two")
 )

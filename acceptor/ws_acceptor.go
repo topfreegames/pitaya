@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 )
 
@@ -36,15 +37,28 @@ type WSAcceptor struct {
 	addr     string
 	connChan chan net.Conn
 	listener net.Listener
+	certFile string
+	keyFile  string
 }
 
 // NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string) *WSAcceptor {
+func NewWSAcceptor(addr string, certs ...string) (*WSAcceptor, error) {
+	keyFile := ""
+	certFile := ""
+	if len(certs) != 2 && len(certs) != 0 {
+		return nil, constants.ErrInvalidCertificates
+	} else if len(certs) == 2 {
+		certFile = certs[0]
+		keyFile = certs[1]
+	}
+
 	w := &WSAcceptor{
 		addr:     addr,
 		connChan: make(chan net.Conn),
+		certFile: certFile,
+		keyFile:  keyFile,
 	}
-	return w
+	return w, nil
 }
 
 // GetAddr returns the addr the acceptor will listen on
@@ -80,8 +94,17 @@ func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.connChan <- c
 }
 
+func (w *WSAcceptor) hasTLSCertificates() bool {
+	return w.certFile != "" && w.keyFile != ""
+}
+
 // ListenAndServe listens and serve in the specified addr
 func (w *WSAcceptor) ListenAndServe() {
+	if w.hasTLSCertificates() {
+		w.ListenAndServeTLS(w.certFile, w.keyFile)
+		return
+	}
+
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
