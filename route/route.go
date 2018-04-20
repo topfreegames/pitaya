@@ -30,7 +30,7 @@ import (
 
 var (
 	// ErrRouteFieldCantEmpty error
-	ErrRouteFieldCantEmpty = errors.New("route field can not empty")
+	ErrRouteFieldCantEmpty = errors.New("route field can not be empty")
 	// ErrInvalidRoute error
 	ErrInvalidRoute = errors.New("invalid route")
 )
