@@ -47,7 +47,8 @@ func serve(ctx *cli.Context) error {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	addr := ctx.String("addr")
-	pitaya.AddAcceptor(acceptor.NewWSAcceptor(addr))
+	ws, _ := acceptor.NewWSAcceptor(addr)
+	pitaya.AddAcceptor(ws)
 	pitaya.Configure(true, "tadpole", pitaya.Standalone, map[string]string{})
 	pitaya.Start()
 
