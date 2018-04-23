@@ -163,13 +163,14 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			sv := &cluster.Server{}
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{})
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{}, nil)
 
 			if table.err != nil {
 				mockSerializer.EXPECT().Marshal(table.err).Return([]byte("err"), nil)
 			}
 
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil)
+			messageEncoder := message.NewEncoder(false)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
 			svc.processMessage(ag, table.msg)
 
 			if table.err == nil {
@@ -210,12 +211,13 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil)
+			messageEncoder := message.NewEncoder(false)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
 
 			if table.err != nil {
 				mockSerializer.EXPECT().Marshal(table.err)
 			}
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
 			svc.localProcess(ag, table.rt, table.msg)
 		})
 	}
@@ -228,13 +230,14 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil)
+	messageEncoder := message.NewEncoder(false)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
 	mockConn.EXPECT().Write(gomock.Any()).Do(func(d []byte) {
 		assert.Contains(t, string(d), "heartbeat")
 	})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.Handshake})
 	assert.NoError(t, err)
 	assert.Equal(t, constants.StatusHandshake, ag.GetStatus())
@@ -246,10 +249,11 @@ func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
 
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil)
+	messageEncoder := message.NewEncoder(false)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.HandshakeAck})
 	assert.NoError(t, err)
 	assert.Equal(t, constants.StatusWorking, ag.GetStatus())
@@ -261,10 +265,11 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil)
+	messageEncoder := message.NewEncoder(false)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder)
 	// wait to check if lastTime is updated. SORRY!
 	time.Sleep(1 * time.Second)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.Heartbeat})
@@ -274,7 +279,8 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 
 func TestHandlerServiceProcessPacketData(t *testing.T) {
 	msg := &message.Message{Type: message.Request, ID: 1, Data: []byte("ok")}
-	encodedMsg, err := msg.Encode()
+	messageEncoder := message.NewEncoder(false)
+	encodedMsg, err := messageEncoder.Encode(msg)
 	assert.NoError(t, err)
 	tables := []struct {
 		name         string
@@ -294,11 +300,12 @@ func TestHandlerServiceProcessPacketData(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil)
+			messageEncoder := message.NewEncoder(false)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
 			if table.socketStatus < constants.StatusWorking {
 				mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
 			}
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
 			ag.SetStatus(table.socketStatus)
 
 			if table.errStr == "" {
@@ -320,7 +327,8 @@ func TestHandlerServiceHandle(t *testing.T) {
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	packetDecoder := codec.NewPomeloPacketDecoder()
-	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil)
+	messageEncoder := message.NewEncoder(false)
+	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder)
 	var wg sync.WaitGroup
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
 		handshakeBuffer := `{
