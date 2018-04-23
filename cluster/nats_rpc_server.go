@@ -45,6 +45,7 @@ type NatsRPCServer struct {
 	unhandledReqCh     chan *protos.Request
 	userPushCh         chan *protos.Push
 	sub                *nats.Subscription
+	dropped            int
 }
 
 // NewNatsRPCServer ctor
@@ -54,6 +55,7 @@ func NewNatsRPCServer(config *config.Config, server *Server) (*NatsRPCServer, er
 		server:         server,
 		stopChan:       make(chan bool),
 		unhandledReqCh: make(chan *protos.Request),
+		dropped:        0,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -115,6 +117,10 @@ func (ns *NatsRPCServer) handleMessages() {
 			dropped, err := ns.sub.Dropped()
 			if err != nil {
 				logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
+			}
+			if dropped > ns.dropped {
+				logger.Log.Warnf("[rpc server] some messages were dropped! numDropped: %d", dropped)
+				ns.dropped = dropped
 			}
 			subsChanLen := float64(len(ns.subChan))
 			maxPending = math.Max(float64(maxPending), subsChanLen)
