@@ -57,7 +57,7 @@ type (
 		serializer         serialize.Serializer          // message serializer
 		server             *cluster.Server               // server obj
 		services           map[string]*component.Service // all registered service
-		dataCompression    bool
+		messageEncoder     message.MessageEncoder
 	}
 
 	unhandledMessage struct {
@@ -79,7 +79,7 @@ func NewHandlerService(
 	remoteProcessBufferSize int,
 	server *cluster.Server,
 	remoteService *RemoteService,
-	dataCompression bool,
+	messageEncoder message.MessageEncoder,
 ) *HandlerService {
 	h := &HandlerService{
 		services:           make(map[string]*component.Service),
@@ -93,7 +93,7 @@ func NewHandlerService(
 		appDieChan:         dieChan,
 		server:             server,
 		remoteService:      remoteService,
-		dataCompression:    dataCompression,
+		messageEncoder:     messageEncoder,
 	}
 
 	return h
@@ -152,7 +152,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
 	// create a client agent and startup write goroutine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.dataCompression)
+	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder)
 
 	// startup agent goroutine
 	go a.Handle()
@@ -281,3 +281,4 @@ func (h *HandlerService) DumpServices() {
 		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}
 }
+

@@ -68,7 +68,7 @@ type (
 		messagesBufferSize int                  // size of the pending messages buffer
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
-		dataCompression    bool
+		messageEncoder     message.MessageEncoder
 	}
 
 	pendingMessage struct {
@@ -89,11 +89,11 @@ func NewAgent(
 	heartbeatTime time.Duration,
 	messagesBufferSize int,
 	dieChan chan bool,
-	dataCompression bool,
+	messageEncoder message.MessageEncoder,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, dataCompression)
+		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.CompressEnabled())
 	})
 
 	a := &Agent{
@@ -110,7 +110,7 @@ func NewAgent(
 		lastAt:             time.Now().Unix(),
 		serializer:         serializer,
 		state:              constants.StatusStart,
-		dataCompression:    dataCompression,
+		messageEncoder:     messageEncoder,
 	}
 
 	// bindng session
@@ -331,7 +331,7 @@ func (a *Agent) write() {
 				ID:    data.mid,
 				Err:   data.err,
 			}
-			em, err := m.Encode(a.dataCompression)
+			em, err := a.messageEncoder.Encode(m)
 			if err != nil {
 				logger.Log.Error(err.Error())
 				break
