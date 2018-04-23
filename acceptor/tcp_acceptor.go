@@ -39,11 +39,11 @@ type TCPAcceptor struct {
 }
 
 // NewTCPAcceptor creates a new instance of tcp acceptor
-func NewTCPAcceptor(addr string, certs ...string) (*TCPAcceptor, error) {
+func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 	keyFile := ""
 	certFile := ""
 	if len(certs) != 2 && len(certs) != 0 {
-		return nil, constants.ErrInvalidCertificates
+		panic(constants.ErrInvalidCertificates)
 	} else if len(certs) == 2 {
 		certFile = certs[0]
 		keyFile = certs[1]
@@ -55,7 +55,7 @@ func NewTCPAcceptor(addr string, certs ...string) (*TCPAcceptor, error) {
 		running:  false,
 		certFile: certFile,
 		keyFile:  keyFile,
-	}, nil
+	}
 }
 
 // GetAddr returns the addr the acceptor will listen on

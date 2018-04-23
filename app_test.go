@@ -121,8 +121,7 @@ func TestConfigure(t *testing.T) {
 }
 
 func TestAddAcceptor(t *testing.T) {
-	acc, err := acceptor.NewTCPAcceptor("0.0.0.0:0")
-	assert.Nil(t, err)
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	for _, table := range tables {
 		t.Run(table.serverType, func(t *testing.T) {
 			initApp()
@@ -287,8 +286,7 @@ func TestStartAndListenStandalone(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
 
-	acc, err := acceptor.NewTCPAcceptor("0.0.0.0:0")
-	assert.Nil(t, err)
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	AddAcceptor(acc)
 
 	go func() {
@@ -331,7 +329,7 @@ func TestStartAndListenCluster(t *testing.T) {
 	assert.NoError(t, err)
 	SetServiceDiscoveryClient(etcdSD)
 
-	acc, err := acceptor.NewTCPAcceptor("0.0.0.0:0")
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	assert.Nil(t, err)
 	AddAcceptor(acc)
 
