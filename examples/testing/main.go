@@ -218,7 +218,7 @@ func main() {
 
 	pitaya.SetLogger(l)
 
-	tcp, _ := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
 	pitaya.Register(
 		&TestSvc{},

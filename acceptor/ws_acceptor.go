@@ -42,11 +42,11 @@ type WSAcceptor struct {
 }
 
 // NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string, certs ...string) (*WSAcceptor, error) {
+func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
 	keyFile := ""
 	certFile := ""
 	if len(certs) != 2 && len(certs) != 0 {
-		return nil, constants.ErrInvalidCertificates
+		panic(constants.ErrInvalidCertificates)
 	} else if len(certs) == 2 {
 		certFile = certs[0]
 		keyFile = certs[1]
@@ -58,7 +58,7 @@ func NewWSAcceptor(addr string, certs ...string) (*WSAcceptor, error) {
 		certFile: certFile,
 		keyFile:  keyFile,
 	}
-	return w, nil
+	return w
 }
 
 // GetAddr returns the addr the acceptor will listen on
