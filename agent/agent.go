@@ -267,6 +267,8 @@ func (a *Agent) heartbeat() {
 				close(a.chDie)
 				return
 			}
+		case <-a.chDie: // prevent closing closed channel
+			return
 		case <-a.chStopHeartbeat:
 			return
 		}
