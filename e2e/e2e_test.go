@@ -135,6 +135,60 @@ func TestGroupFront(t *testing.T) {
 	}
 }
 
+func TestPushToUsers(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	port2 := helpers.GetFreePort(t)
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port2))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	uid1 := uuid.New().String()
+	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+	uid2 := uuid.New().String()
+	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid2))
+	assert.NoError(t, err)
+
+	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
+	msg2 := helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
+
+	assert.Equal(t, []byte("ack"), msg1.Data)
+	assert.Equal(t, []byte("ack"), msg2.Data)
+
+	msg := fmt.Sprintf(`{"msg":"testing send to users","uids":["%s","%s"]}`, uid1, uid2)
+
+	tables := []struct {
+		route string
+	}{
+		{"connector.testsvc.testsendtousers"},
+		{"game.testsvc.testsendtousers"},
+	}
+
+	for _, table := range tables {
+		c1.SendNotify(table.route, []byte(msg))
+		msg1 = helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
+		msg2 = helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
+
+		assert.Equal(t, message.Push, msg1.Type)
+		assert.Equal(t, message.Push, msg2.Type)
+
+		assert.Equal(t, "testing send to users", string(msg1.Data))
+		assert.Equal(t, "testing send to users", string(msg2.Data))
+	}
+}
+
 func TestForwardToBackend(t *testing.T) {
 	portFront := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())

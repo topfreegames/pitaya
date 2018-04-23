@@ -66,6 +66,12 @@ type TestRPCRequest struct {
 	Data  string `json:"data"`
 }
 
+// TestSendToUsers for e2e tests
+type TestSendToUsers struct {
+	UIDs []string `json:"uids"`
+	Msg  string   `json:"msg"`
+}
+
 // RPCTestRawPtrReturnsPtr remote for e2e tests
 func (tr *TestRemoteSvc) RPCTestRawPtrReturnsPtr(data []byte) (*TestResponse, error) {
 	return &TestResponse{
@@ -156,6 +162,19 @@ func (t *TestSvc) TestBind(s *session.Session) ([]byte, error) {
 	return []byte("ack"), nil
 }
 
+// TestBindID handler for e2e tests
+func (t *TestSvc) TestBindID(s *session.Session, byteUID []byte) ([]byte, error) {
+	err := s.Bind(string(byteUID))
+	if err != nil {
+		return nil, pitaya.Error(err, "PIT-444")
+	}
+	err = t.group.Add(s)
+	if err != nil {
+		return nil, pitaya.Error(err, "PIT-441")
+	}
+	return []byte("ack"), nil
+}
+
 // TestSendGroupMsg handler for e2e tests
 func (t *TestSvc) TestSendGroupMsg(s *session.Session, msg []byte) {
 	t.group.Broadcast("route.test", msg)
@@ -164,6 +183,11 @@ func (t *TestSvc) TestSendGroupMsg(s *session.Session, msg []byte) {
 // TestSendGroupMsgPtr handler for e2e tests
 func (t *TestSvc) TestSendGroupMsgPtr(s *session.Session, msg *TestRequest) {
 	t.group.Broadcast("route.testptr", msg)
+}
+
+// TestSendToUsers handler for e2e tests
+func (t *TestSvc) TestSendToUsers(s *session.Session, msg *TestSendToUsers) {
+	pitaya.SendToUsers("route.sendtousers", []byte(msg.Msg), msg.UIDs)
 }
 
 // TestSendRPCPointer tests sending a RPC

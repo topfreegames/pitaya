@@ -172,7 +172,7 @@ func SetRPCServer(s cluster.RPCServer) {
 		// When using nats rpc server the server must start listening to messages
 		// destined to the userID that's binding
 		session.SetOnSessionBind(func(s *session.Session) error {
-			if app.server.Frontend {
+			if app.server.Frontend && app.rpcServer != nil {
 				subs, err := app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
 				if err != nil {
 					return err
