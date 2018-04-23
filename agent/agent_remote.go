@@ -43,7 +43,7 @@ type Remote struct {
 	Session          *session.Session         // session
 	Srv              reflect.Value            // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
 	chDie            chan struct{}            // wait for close
-	dataCompression  bool
+	messageEncoder   message.MessageEncoder
 	encoder          codec.PacketEncoder      // binary encoder
 	frontendID       string                   // the frontend that sent the request
 	reply            string                   // nats reply topic
@@ -61,7 +61,7 @@ func NewRemote(
 	serializer serialize.Serializer,
 	serviceDiscovery cluster.ServiceDiscovery,
 	frontendID string,
-	dataCompression bool,
+	messageEncoder message.MessageEncoder,
 ) (*Remote, error) {
 	a := &Remote{
 		chDie:            make(chan struct{}),
@@ -71,7 +71,7 @@ func NewRemote(
 		rpcClient:        rpcClient,
 		serviceDiscovery: serviceDiscovery,
 		frontendID:       frontendID,
-		dataCompression:  dataCompression,
+		messageEncoder:  messageEncoder,
 	}
 
 	// binding session
@@ -151,7 +151,8 @@ func (a *Remote) serialize(m pendingMessage) ([]byte, error) {
 		ID:    m.mid,
 		Err:   m.err,
 	}
-	em, err := msg.Encode(a.dataCompression)
+
+	em, err := a.messageEncoder.Encode(msg)
 	if err != nil {
 		return nil, err
 	}

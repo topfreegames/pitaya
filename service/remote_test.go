@@ -28,7 +28,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	"math/rand"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
@@ -44,6 +43,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	connmock "github.com/topfreegames/pitaya/mocks"
+	messagemocks "github.com/topfreegames/pitaya/internal/message/mocks"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
@@ -79,9 +79,9 @@ func TestNewRemoteService(t *testing.T) {
 	mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
 	mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 	mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
+	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
 	router := router.New()
-	dataCompression := rand.Int() % 2 == 0
-	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, dataCompression)
+	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder)
 
 	assert.NotNil(t, svc)
 	assert.Empty(t, svc.services)
@@ -94,7 +94,7 @@ func TestNewRemoteService(t *testing.T) {
 }
 
 func TestRemoteServiceRegister(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, false)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	defer func() { remotes = make(map[string]*component.Remote, 0) }()
@@ -118,7 +118,7 @@ func TestRemoteServiceRegister(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, false)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -126,7 +126,7 @@ func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, false)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of suitable type"), err)
 }
@@ -146,7 +146,7 @@ func TestRemoteServiceProcessUserPush(t *testing.T) {
 	err := ss.Bind(uid)
 	assert.NoError(t, err)
 
-	svc := NewRemoteService(nil, mockRPCServer, nil, nil, nil, nil, false)
+	svc := NewRemoteService(nil, mockRPCServer, nil, nil, nil, nil, nil)
 	assert.NotNil(t, svc)
 	mockRPCServer.EXPECT().GetUserPushChannel().Return(userPushCh)
 
@@ -164,7 +164,7 @@ func TestRemoteServiceSendReply(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-	svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, nil, false)
+	svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, nil, nil)
 	assert.NotNil(t, svc)
 
 	reply := uuid.New().String()

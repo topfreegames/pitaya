@@ -67,11 +67,11 @@ type App struct {
 	acceptors        []acceptor.Acceptor
 	config           *config.Config
 	configured       bool
-	dataCompression  bool
 	debug            bool
 	dieChan          chan bool
 	heartbeat        time.Duration
 	onSessionBind    func(*session.Session)
+	messageEncoder   message.MessageEncoder
 	packetDecoder    codec.PacketDecoder
 	packetEncoder    codec.PacketEncoder
 	router           *router.Router
@@ -130,7 +130,7 @@ func Configure(
 	app.serverMode = serverMode
 	app.configured = true
 	app.server.Metadata = serverMetadata
-	app.dataCompression = app.config.GetBool("pitaya.dataCompression")
+	app.messageEncoder = message.NewEncoder(app.config.GetBool("pitaya.dataCompression"))
 }
 
 // AddAcceptor adds a new acceptor to app
@@ -283,7 +283,7 @@ func Start() {
 			app.packetEncoder,
 			app.serializer,
 			app.router,
-			app.dataCompression,
+			app.messageEncoder,
 		)
 		initSysRemotes()
 	}
@@ -299,7 +299,7 @@ func Start() {
 		app.config.GetInt("pitaya.buffer.handler.remoteprocess"),
 		app.server,
 		remoteService,
-		app.dataCompression,
+		app.messageEncoder,
 	)
 
 	listen()
