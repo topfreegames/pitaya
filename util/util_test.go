@@ -167,7 +167,6 @@ func TestSerializeOrRaw(t *testing.T) {
 }
 
 func TestGobEncode(t *testing.T) {
-
 	ins := []struct {
 		name string
 		data []interface{}
