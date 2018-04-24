@@ -21,6 +21,7 @@
 package pitaya
 
 import (
+	"context"
 	"encoding/gob"
 	"os"
 	"os/signal"
@@ -31,15 +32,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/remote"
 	"github.com/topfreegames/pitaya/route"
@@ -242,6 +246,7 @@ func startDefaultRPCClient() {
 
 func initSysRemotes() {
 	gob.Register(&session.Data{})
+	gob.Register(map[string]interface{}{})
 	sys := &remote.Sys{}
 	RegisterRemote(sys,
 		component.WithName("sys"),
@@ -289,6 +294,7 @@ func Start() {
 			app.serializer,
 			app.router,
 			app.messageEncoder,
+			app.server,
 		)
 		initSysRemotes()
 	}
@@ -411,4 +417,25 @@ func Shutdown() {
 // Error creates a new error with a code, message and metadata
 func Error(err error, code string, metadata ...map[string]string) *errors.Error {
 	return errors.NewError(err, code, metadata...)
+}
+
+// GetSessionFromCtx retrieves a session from a given context
+func GetSessionFromCtx(ctx context.Context) *session.Session {
+	return ctx.Value(constants.SessionCtxKey).(*session.Session)
+}
+
+// AddToPropagateCtx adds a key and value that will be propagated through RPC calls
+func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context.Context {
+	return pcontext.AddToPropagateCtx(ctx, key, val)
+}
+
+// GetFromPropagateCtx adds a key and value that came through RPC calls
+func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
+	return pcontext.GetFromPropagateCtx(ctx, key)
+}
+
+// ExtractSpan retrieves an opentracing span context from the given context
+// The span context can be received directly or via an RPC call
+func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
+	return jaeger.ExtractSpan(ctx)
 }

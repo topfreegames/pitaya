@@ -20,7 +20,7 @@
 
 package pipeline
 
-import "github.com/topfreegames/pitaya/session"
+import "context"
 
 var (
 	// BeforeHandler contains the functions to be called before the handler method is executed
@@ -32,7 +32,7 @@ var (
 type (
 	// Handler is a function that has the same signature as a handler and will
 	// be called before or after handler methods
-	Handler func(s *session.Session, in []byte) (out []byte, err error)
+	Handler func(ctx context.Context, in []byte) (out []byte, err error)
 
 	pipelineChannel struct {
 		Handlers []Handler

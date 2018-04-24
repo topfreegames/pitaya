@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -95,7 +94,6 @@ func TestNewAgent(t *testing.T) {
 	assert.Equal(t, constants.StatusStart, ag.state)
 	assert.NotNil(t, ag.Session)
 	assert.True(t, ag.Session.IsFrontend)
-	assert.Equal(t, reflect.ValueOf(ag.Session), ag.Srv)
 
 	// second call should no call hdb encode
 	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder)
@@ -217,7 +215,7 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
-	err := ag.ResponseMID(1, nil)
+	err := ag.ResponseMID(nil, 1, nil)
 	assert.Equal(t, constants.ErrBrokenPipe, err)
 }
 
@@ -268,9 +266,9 @@ func TestAgentResponseMID(t *testing.T) {
 			}
 			var err error
 			if table.msgErr {
-				err = ag.ResponseMID(table.mid, table.data, table.msgErr)
+				err = ag.ResponseMID(nil, table.mid, table.data, table.msgErr)
 			} else {
-				err = ag.ResponseMID(table.mid, table.data)
+				err = ag.ResponseMID(nil, table.mid, table.data)
 			}
 			assert.Equal(t, table.err, err)
 
@@ -525,7 +523,7 @@ func TestAnswerWithError(t *testing.T) {
 			assert.NotNil(t, ag)
 
 			mockSerializer.EXPECT().Marshal(gomock.Any()).Return(nil, table.getPayloadErr)
-			ag.AnswerWithError(uint(rand.Int()), errors.New("something went wrong"))
+			ag.AnswerWithError(nil, uint(rand.Int()), errors.New("something went wrong"))
 			if table.err == nil {
 				helpers.ShouldEventuallyReceive(t, ag.chSend)
 			}

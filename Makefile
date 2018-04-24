@@ -63,6 +63,7 @@ unit-test-coverage: kill-testing-deps
 test: kill-testing-deps test-coverage
 	@make rm-test-temp-files
 	@make ensure-testing-deps
+	@sleep 10
 	@make e2e-test
 
 test-coverage: unit-test-coverage

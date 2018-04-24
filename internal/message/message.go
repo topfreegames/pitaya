@@ -135,3 +135,7 @@ func SetDictionary(dict map[string]uint16) error {
 func GetDictionary() map[string]uint16 {
 	return routes
 }
+
+func (t *Type) String() string {
+	return types[*t]
+}

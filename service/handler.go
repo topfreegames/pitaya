@@ -21,10 +21,13 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
@@ -33,6 +36,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
@@ -61,6 +65,7 @@ type (
 	}
 
 	unhandledMessage struct {
+		ctx   context.Context
 		agent *agent.Agent
 		route *route.Route
 		msg   *message.Message
@@ -109,10 +114,10 @@ func (h *HandlerService) Dispatch(thread int) {
 		// Calls to remote servers block calls to local server
 		select {
 		case lm := <-h.chLocalProcess:
-			h.localProcess(lm.agent, lm.route, lm.msg)
+			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
 
 		case rm := <-h.chRemoteProcess:
-			h.remoteService.remoteProcess(nil, rm.agent, rm.route, rm.msg)
+			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
 
 		case <-timer.GlobalTicker.C: // execute cron task
 			timer.Cron()
@@ -230,10 +235,17 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 }
 
 func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
+	tags := opentracing.Tags{
+		"local.id":  h.server.ID,
+		"span.kind": "server",
+		"msg.type":  strings.ToLower(msg.Type.String()),
+	}
+	ctx := jaeger.StartSpan(context.Background(), msg.Route, tags)
+
 	r, err := route.Decode(msg.Route)
 	if err != nil {
 		logger.Log.Error(err.Error())
-		a.AnswerWithError(msg.ID, e.NewError(err, e.ErrBadRequestCode))
+		a.AnswerWithError(ctx, msg.ID, e.NewError(err, e.ErrBadRequestCode))
 		return
 	}
 
@@ -242,6 +254,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	}
 
 	message := unhandledMessage{
+		ctx:   ctx,
 		agent: a,
 		route: r,
 		msg:   msg,
@@ -257,7 +270,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	}
 }
 
-func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *message.Message) {
+func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route *route.Route, msg *message.Message) {
 	var mid uint
 	switch msg.Type {
 	case message.Request:
@@ -266,12 +279,16 @@ func (h *HandlerService) localProcess(a *agent.Agent, route *route.Route, msg *m
 		mid = 0
 	}
 
-	ret, err := processHandlerMessage(route, h.serializer, a.Srv, a.Session, msg.Data, msg.Type, false)
-	if err != nil {
-		logger.Log.Error(err)
-		a.AnswerWithError(mid, err)
+	ret, err := processHandlerMessage(ctx, route, h.serializer, a.Session, msg.Data, msg.Type, false)
+	if msg.Type != message.Notify {
+		if err != nil {
+			logger.Log.Error(err)
+			a.AnswerWithError(ctx, mid, err)
+		} else {
+			a.Session.ResponseMID(ctx, mid, ret)
+		}
 	} else {
-		a.Session.ResponseMID(mid, ret)
+		jaeger.FinishSpan(ctx, err)
 	}
 }
 
@@ -281,4 +298,3 @@ func (h *HandlerService) DumpServices() {
 		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}
 }
-

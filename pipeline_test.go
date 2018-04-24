@@ -21,11 +21,11 @@
 package pitaya
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/pipeline"
-	"github.com/topfreegames/pitaya/session"
 )
 
 func resetPipelines() {
@@ -33,7 +33,7 @@ func resetPipelines() {
 	pipeline.AfterHandler.Handlers = make([]pipeline.Handler, 0)
 }
 
-var myHandler = func(s *session.Session, in []byte) ([]byte, error) {
+var myHandler = func(ctx context.Context, in []byte) ([]byte, error) {
 	return []byte("test"), nil
 }
 

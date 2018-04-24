@@ -22,6 +22,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"net"
 	"sync"
@@ -38,10 +39,10 @@ import (
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
-	ResponseMID(mid uint, v interface{}, isError ...bool) error
+	ResponseMID(ctx context.Context, mid uint, v interface{}, isError ...bool) error
 	Close() error
 	RemoteAddr() net.Addr
-	SendRequest(serverID, route string, v interface{}) (*protos.Response, error)
+	SendRequest(ctx context.Context, serverID, route string, v interface{}) (*protos.Response, error)
 }
 
 var (
@@ -151,8 +152,8 @@ func (s *Session) Push(route string, v interface{}) error {
 
 // ResponseMID responses message to client, mid is
 // request message ID
-func (s *Session) ResponseMID(mid uint, v interface{}, err ...bool) error {
-	return s.entity.ResponseMID(mid, v, err...)
+func (s *Session) ResponseMID(ctx context.Context, mid uint, v interface{}, err ...bool) error {
+	return s.entity.ResponseMID(ctx, mid, v, err...)
 }
 
 // ID returns the session id
@@ -207,7 +208,7 @@ func (s *Session) SetFrontendData(frontendID string, frontendSessionID int64) {
 }
 
 // Bind bind UID to current session
-func (s *Session) Bind(uid string) error {
+func (s *Session) Bind(ctx context.Context, uid string) error {
 	if uid == "" {
 		return constants.ErrIllegalUID
 	}
@@ -231,7 +232,7 @@ func (s *Session) Bind(uid string) error {
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
 		// is not the frontend server that received the user request
-		err := s.bindInFront()
+		err := s.bindInFront(ctx)
 		if err != nil {
 			logger.Log.Error("error while trying to push session to front: ", err)
 			s.uid = ""
@@ -541,44 +542,16 @@ func (s *Session) Value(key string) interface{} {
 	return s.data[key]
 }
 
-func (s *Session) bindInFront() error {
-	sessionData := &Data{
-		ID:  s.frontendSessionID,
-		UID: s.uid,
-	}
-	b, err := util.GobEncode(sessionData)
-	if err != nil {
-		return err
-	}
-	res, err := s.entity.SendRequest(s.frontendID, constants.SessionBindRoute, b)
-	if err != nil {
-		return err
-	}
-	logger.Log.Debug("session/bindInFront Got response: ", res.Data)
-	return nil
-
+func (s *Session) bindInFront(ctx context.Context) error {
+	return s.sendRequestToFront(ctx, constants.SessionBindRoute, false)
 }
 
 // PushToFront updates the session in the frontend
-func (s *Session) PushToFront() error {
+func (s *Session) PushToFront(ctx context.Context) error {
 	if s.IsFrontend {
 		return constants.ErrFrontSessionCantPushToFront
 	}
-	sessionData := &Data{
-		ID:   s.frontendSessionID,
-		UID:  s.uid,
-		Data: s.data,
-	}
-	b, err := util.GobEncode(sessionData)
-	if err != nil {
-		return err
-	}
-	res, err := s.entity.SendRequest(s.frontendID, constants.SessionPushRoute, b)
-	if err != nil {
-		return err
-	}
-	logger.Log.Debug("session/PushToFront Got response: ", res)
-	return nil
+	return s.sendRequestToFront(ctx, constants.SessionPushRoute, true)
 }
 
 // Clear releases all data related to current session
@@ -589,4 +562,24 @@ func (s *Session) Clear() {
 	s.uid = ""
 	s.data = map[string]interface{}{}
 	s.updateEncodedData()
+}
+
+func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
+	sessionData := &Data{
+		ID:  s.frontendSessionID,
+		UID: s.uid,
+	}
+	if includeData {
+		sessionData.Data = s.data
+	}
+	b, err := util.GobEncode(sessionData)
+	if err != nil {
+		return err
+	}
+	res, err := s.entity.SendRequest(ctx, s.frontendID, route, b)
+	if err != nil {
+		return err
+	}
+	logger.Log.Debugf("%s Got response: %+v", route, res)
+	return nil
 }

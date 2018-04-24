@@ -21,32 +21,31 @@
 package component
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/session"
 )
 
 type TestType struct {
 	Base
 }
 
-func (t *TestType) ExportedNoHandlerNorRemote()                                               {}
-func (t *TestType) ExportedHandlerWithOnlySession(*session.Session)                           {}
-func (t *TestType) ExportedHandlerWithSessionAndRawWithNoOuts(s *session.Session, msg []byte) {}
-func (t *TestType) ExportedHandlerWithSessionAndPointerWithRawOut(s *session.Session, tt *TestType) ([]byte, error) {
+func (t *TestType) ExportedNoHandlerNorRemote()                                                {}
+func (t *TestType) ExportedHandlerWithOnlySession(ctx context.Context)                         {}
+func (t *TestType) ExportedHandlerWithSessionAndRawWithNoOuts(ctx context.Context, msg []byte) {}
+func (t *TestType) ExportedHandlerWithSessionAndPointerWithRawOut(ctx context.Context, tt *TestType) ([]byte, error) {
 	return nil, nil
 }
-func (t *TestType) ExportedHandlerWithSessionAndPointerWithPointerOut(s *session.Session, tt *TestType) (*TestType, error) {
+func (t *TestType) ExportedHandlerWithSessionAndPointerWithPointerOut(ctx context.Context, tt *TestType) (*TestType, error) {
 	return nil, nil
 }
-func (t *TestType) ExportedRemoteRawOut() ([]byte, error) {
+func (t *TestType) ExportedRemoteRawOut(ctx context.Context) ([]byte, error) {
 	return nil, nil
 }
-func (t *TestType) ExportedRemotePointerOut() (*TestType, error) {
+func (t *TestType) ExportedRemotePointerOut(ctx context.Context) (*TestType, error) {
 	return nil, nil
 }
 
@@ -102,7 +101,6 @@ func TestIsHandleMethod(t *testing.T) {
 		{"ExportedHandlerWithSessionAndRawWithNoOuts", true},
 		{"ExportedHandlerWithSessionAndPointerWithRawOut", true},
 		{"ExportedHandlerWithSessionAndPointerWithPointerOut", true},
-		{"ExportedRemotePointerOut", false},
 	}
 	for _, table := range tables {
 		t.Run(table.methodName, func(t *testing.T) {
@@ -130,8 +128,11 @@ func TestSuitableRemoteMethods(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			out := suitableRemoteMethods(reflect.TypeOf(tObj), table.nameFunc)
-			keys := helpers.GetMapKeys(t, out)
-			assert.ElementsMatch(t, table.outKeys, keys)
+			for _, r := range table.outKeys {
+				val, ok := out[r]
+				assert.True(t, ok)
+				assert.NotNil(t, val)
+			}
 		})
 	}
 }
@@ -151,8 +152,12 @@ func TestSuitableHandlerMethods(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			out := suitableHandlerMethods(reflect.TypeOf(tObj), table.nameFunc)
-			keys := helpers.GetMapKeys(t, out)
-			assert.ElementsMatch(t, table.outKeys, keys)
+			for _, r := range table.outKeys {
+				val, ok := out[r]
+				assert.True(t, ok)
+				assert.NotNil(t, val)
+
+			}
 		})
 	}
 

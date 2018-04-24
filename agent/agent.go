@@ -21,11 +21,11 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,6 +34,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
@@ -54,7 +55,6 @@ type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
 		Session            *session.Session    // session
-		Srv                reflect.Value       // cached session reflect.Value, this avoids repeated calls to reflect.value(a.Session)
 		appDieChan         chan bool           // app die channel
 		chDie              chan struct{}       // wait for close
 		chSend             chan pendingMessage // push message queue
@@ -72,6 +72,7 @@ type (
 	}
 
 	pendingMessage struct {
+		ctx     context.Context
 		typ     message.Type // message type
 		route   string       // message route (push)
 		mid     uint         // response message id (response)
@@ -116,7 +117,6 @@ func NewAgent(
 	// bindng session
 	s := session.New(a, true)
 	a.Session = s
-	a.Srv = reflect.ValueOf(s)
 
 	return a
 }
@@ -150,23 +150,26 @@ func (a *Agent) Push(route string, v interface{}) error {
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
 			a.Session.ID(), a.Session.UID(), route, v)
 	}
-
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
 // ResponseMID implementation for session.NetworkEntity interface
 // Response message to session
-func (a *Agent) ResponseMID(mid uint, v interface{}, isError ...bool) error {
+func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isError ...bool) error {
 	err := false
 	if len(isError) > 0 {
 		err = isError[0]
 	}
 	if a.GetStatus() == constants.StatusClosed {
-		return constants.ErrBrokenPipe
+		err := constants.ErrBrokenPipe
+		jaeger.FinishSpan(ctx, err)
+		return err
 	}
 
 	if mid <= 0 {
-		return constants.ErrSessionOnNotify
+		err := constants.ErrSessionOnNotify
+		jaeger.FinishSpan(ctx, err)
+		return err
 	}
 
 	if len(a.chSend) >= a.messagesBufferSize {
@@ -183,7 +186,7 @@ func (a *Agent) ResponseMID(mid uint, v interface{}, isError ...bool) error {
 			a.Session.ID(), a.Session.UID(), mid, v)
 	}
 
-	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v, err: err})
+	return a.send(pendingMessage{ctx: ctx, typ: message.Response, mid: mid, payload: v, err: err})
 }
 
 // Close closes the agent, cleans inner state and closes low-level connection.
@@ -318,6 +321,7 @@ func (a *Agent) write() {
 				logger.Log.Error(err.Error())
 				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
+					jaeger.FinishSpan(data.ctx, err)
 					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
 				}
@@ -333,6 +337,7 @@ func (a *Agent) write() {
 			}
 			em, err := a.messageEncoder.Encode(m)
 			if err != nil {
+				jaeger.FinishSpan(data.ctx, err)
 				logger.Log.Error(err.Error())
 				break
 			}
@@ -340,15 +345,17 @@ func (a *Agent) write() {
 			// packet encode
 			p, err := a.encoder.Encode(packet.Data, em)
 			if err != nil {
+				jaeger.FinishSpan(data.ctx, err)
 				logger.Log.Error(err)
 				break
 			}
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(p); err != nil {
+				jaeger.FinishSpan(data.ctx, err)
 				logger.Log.Error(err.Error())
 				return
 			}
-
+			jaeger.FinishSpan(data.ctx, nil)
 		case <-a.chStopWrite:
 			return
 		}
@@ -356,18 +363,18 @@ func (a *Agent) write() {
 }
 
 // SendRequest sends a request to a server
-func (a *Agent) SendRequest(serverID, route string, v interface{}) (*protos.Response, error) {
+func (a *Agent) SendRequest(ctx context.Context, serverID, route string, v interface{}) (*protos.Response, error) {
 	return nil, errors.New("not implemented")
 }
 
 // AnswerWithError answers with an error
-func (a *Agent) AnswerWithError(mid uint, err error) {
+func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
 		logger.Log.Error("error answering the player with an error: ", e.Error())
 		return
 	}
-	e = a.Session.ResponseMID(mid, p, true)
+	e = a.Session.ResponseMID(ctx, mid, p, true)
 	if e != nil {
 		logger.Log.Error("error answering the player with an error: ", e.Error())
 	}

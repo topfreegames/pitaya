@@ -76,10 +76,10 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			uid2 := uuid.New().String()
 
 			s1 := session.New(mockNetworkEntity, true)
-			err := s1.Bind(uid1)
+			err := s1.Bind(nil, uid1)
 			assert.NoError(t, err)
 			s2 := session.New(mockNetworkEntity, true)
-			err = s2.Bind(uid2)
+			err = s2.Bind(nil, uid2)
 			assert.NoError(t, err)
 
 			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)

@@ -21,15 +21,20 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/jaeger"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
@@ -79,17 +84,28 @@ func (ns *NatsRPCClient) Send(topic string, data []byte) error {
 }
 
 func (ns *NatsRPCClient) buildRequest(
+	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
 	session *session.Session,
 	msg *message.Message,
-) protos.Request {
+) (protos.Request, error) {
 	req := protos.Request{
 		Type: rpcType,
 		Msg: &protos.Msg{
 			Route: route.String(),
 			Data:  msg.Data,
 		},
+	}
+	ctx, err := jaeger.InjectSpan(ctx)
+	if err != nil {
+		logger.Log.Errorf("failed to inject span: %s", err)
+	}
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerIdKey, ns.server.ID)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerServiceKey, ns.server.Type)
+	req.Metadata, err = pcontext.Encode(ctx)
+	if err != nil {
+		return req, err
 	}
 	if ns.server.Frontend {
 		req.FrontendID = ns.server.ID
@@ -115,21 +131,39 @@ func (ns *NatsRPCClient) buildRequest(
 		}
 	}
 
-	return req
+	return req, nil
 }
 
-// Call calls a method remotally
+// Call calls a method remotelly
 func (ns *NatsRPCClient) Call(
+	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
 	session *session.Session,
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
-	if !ns.running {
-		return nil, constants.ErrRPCClientNotInitialized
+	parent, err := jaeger.ExtractSpan(ctx)
+	if err != nil {
+		logger.Log.Errorf("failed to retrieve parent span: %s", err.Error())
 	}
-	req := ns.buildRequest(rpcType, route, session, msg)
+	tags := opentracing.Tags{
+		"span.kind":       "client",
+		"local.id":        ns.server.ID,
+		"peer.serverType": server.Type,
+		"peer.id":         server.ID,
+	}
+	ctx = jaeger.StartSpan(ctx, "RPC Call", tags, parent)
+	defer jaeger.FinishSpan(ctx, err)
+
+	if !ns.running {
+		err = constants.ErrRPCClientNotInitialized
+		return nil, err
+	}
+	req, err := ns.buildRequest(ctx, rpcType, route, session, msg)
+	if err != nil {
+		return nil, err
+	}
 	marshalledData, err := proto.Marshal(&req)
 	if err != nil {
 		return nil, err
@@ -141,7 +175,6 @@ func (ns *NatsRPCClient) Call(
 
 	res := &protos.Response{}
 	err = proto.Unmarshal(m.Data, res)
-
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +183,7 @@ func (ns *NatsRPCClient) Call(
 		if res.Error.Code == "" {
 			res.Error.Code = errors.ErrUnknownCode
 		}
-		err := &errors.Error{
+		err = &errors.Error{
 			Code:     res.Error.Code,
 			Message:  res.Error.Msg,
 			Metadata: res.Error.Metadata,

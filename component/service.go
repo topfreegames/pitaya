@@ -101,9 +101,9 @@ func (s *Service) ExtractHandler() error {
 		// To help the user, see if a pointer receiver would work.
 		method := suitableHandlerMethods(reflect.PtrTo(s.Type), s.Options.nameFunc)
 		if len(method) != 0 {
-			str = "type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
+			str = "type " + s.Name + " has no exported methods of handler type (hint: pass a pointer to value of that type)"
 		} else {
-			str = "type " + s.Name + " has no exported methods of suitable type"
+			str = "type " + s.Name + " has no exported methods of handler type"
 		}
 		return errors.New(str)
 	}
@@ -138,9 +138,9 @@ func (s *Service) ExtractRemote() error {
 		// To help the user, see if a pointer receiver would work.
 		method := suitableRemoteMethods(reflect.PtrTo(s.Type), s.Options.nameFunc)
 		if len(method) != 0 {
-			str = "type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
+			str = "type " + s.Name + " has no exported methods of remote type (hint: pass a pointer to value of that type)"
 		} else {
-			str = "type " + s.Name + " has no exported methods of suitable type"
+			str = "type " + s.Name + " has no exported methods of remote type"
 		}
 		return errors.New(str)
 	}
@@ -148,7 +148,6 @@ func (s *Service) ExtractRemote() error {
 	for i := range s.Remotes {
 		s.Remotes[i].Receiver = s.Receiver
 	}
-
 	return nil
 }
 

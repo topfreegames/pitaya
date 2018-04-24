@@ -39,6 +39,7 @@ message Request {
   Session Session = 2;
   Msg Msg = 3;
   string FrontendID = 4;
+  bytes Metadata = 5;
 }
 
 message Response {

@@ -21,18 +21,18 @@
 package component
 
 import (
+	"context"
 	"reflect"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/session"
 )
 
 var (
 	typeOfError   = reflect.TypeOf((*error)(nil)).Elem()
 	typeOfBytes   = reflect.TypeOf(([]byte)(nil))
-	typeOfSession = reflect.TypeOf(session.New(nil, true))
+	typeOfContext = reflect.TypeOf(new(context.Context)).Elem()
 )
 
 func isExported(name string) bool {
@@ -49,17 +49,21 @@ func isRemoteMethod(method reflect.Method) bool {
 		return false
 	}
 
+	// Method needs at least two ins: receiver and context.Context
+	if mt.NumIn() < 2 {
+		return false
+	}
+
+	if t1 := mt.In(1); !t1.Implements(typeOfContext) {
+		return false
+	}
+
 	// Method needs two outs: interface{}(or []byte), error
 	if mt.NumOut() != 2 {
 		return false
 	}
 
 	if (mt.Out(0).Kind() != reflect.Ptr && mt.Out(0) != typeOfBytes) || mt.Out(1) != typeOfError {
-		return false
-	}
-
-	// Validate it is not a handler method
-	if isHandlerMethod(method) {
 		return false
 	}
 
@@ -74,12 +78,12 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Method needs two or three ins: receiver, *Session and optional []byte or pointer.
+	// Method needs two or three ins: receiver, context.Context and optional []byte or pointer.
 	if mt.NumIn() != 2 && mt.NumIn() != 3 {
 		return false
 	}
 
-	if t1 := mt.In(1); t1.Kind() != reflect.Ptr || t1 != typeOfSession {
+	if t1 := mt.In(1); !t1.Implements(typeOfContext) {
 		return false
 	}
 
@@ -111,7 +115,7 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 			}
 			methods[mn] = &Remote{
 				Method:  method,
-				HasArgs: method.Type.NumIn() > 1,
+				HasArgs: method.Type.NumIn() > 2,
 			}
 		}
 	}

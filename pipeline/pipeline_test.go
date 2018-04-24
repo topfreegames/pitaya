@@ -21,18 +21,18 @@
 package pipeline
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/session"
 )
 
 var (
-	handler1 = func(s *session.Session, in []byte) ([]byte, error) {
+	handler1 = func(ctx context.Context, in []byte) ([]byte, error) {
 		return in, errors.New("ohno")
 	}
-	handler2 = func(s *session.Session, in []byte) ([]byte, error) {
+	handler2 = func(ctx context.Context, in []byte) ([]byte, error) {
 		return nil, nil
 	}
 	p = &pipelineChannel{}

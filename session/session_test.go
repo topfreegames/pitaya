@@ -22,6 +22,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"errors"
 	"flag"
@@ -73,6 +74,7 @@ func TestMain(m *testing.M) {
 func setup() {
 	gob.Register(someStruct{})
 	gob.Register(Data{})
+	gob.Register(map[string]interface{}{})
 }
 
 func shutdown() {}
@@ -224,9 +226,10 @@ func TestSessionResponseMID(t *testing.T) {
 	ss := New(mockEntity, false)
 	mid := uint(rand.Int())
 	v := someStruct{A: 1, B: "aaa"}
+	ctx := context.Background()
 
-	mockEntity.EXPECT().ResponseMID(mid, v)
-	err := ss.ResponseMID(mid, v)
+	mockEntity.EXPECT().ResponseMID(ctx, mid, v)
+	err := ss.ResponseMID(ctx, mid, v)
 	assert.NoError(t, err)
 }
 
@@ -383,7 +386,7 @@ func TestSessionBindFailsWithoutUID(t *testing.T) {
 	ss := New(nil, false)
 	assert.NotNil(t, ss)
 
-	err := ss.Bind("")
+	err := ss.Bind(nil, "")
 	assert.Equal(t, constants.ErrIllegalUID, err)
 }
 
@@ -394,7 +397,7 @@ func TestSessionBindFailsIfAlreadyBound(t *testing.T) {
 	ss.uid = uuid.New().String()
 	assert.NotNil(t, ss)
 
-	err := ss.Bind(uuid.New().String())
+	err := ss.Bind(nil, uuid.New().String())
 	assert.Equal(t, constants.ErrSessionAlreadyBound, err)
 }
 
@@ -423,7 +426,7 @@ func TestSessionBindRunsOnSessionBind(t *testing.T) {
 			defer func() { OnSessionBind = nil }()
 
 			uid := uuid.New().String()
-			err := ss.Bind(uid)
+			err := ss.Bind(nil, uid)
 
 			if table.err != nil {
 				assert.Equal(t, table.err, err)
@@ -443,7 +446,7 @@ func TestSessionBindFrontend(t *testing.T) {
 	assert.NotNil(t, ss)
 
 	uid := uuid.New().String()
-	err := ss.Bind(uid)
+	err := ss.Bind(nil, uid)
 	assert.NoError(t, err)
 	assert.Equal(t, uid, ss.uid)
 
@@ -474,11 +477,13 @@ func TestSessionBindBackend(t *testing.T) {
 				ID:  ss.frontendSessionID,
 				UID: uid,
 			}
+			ctx := context.Background()
 			expectedRequestData, err := util.GobEncode(expectedSessionData)
 			assert.NoError(t, err)
-			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(&protos.Response{}, table.err)
 
-			err = ss.Bind(uid)
+			mockEntity.EXPECT().SendRequest(ctx, ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(&protos.Response{}, table.err)
+
+			err = ss.Bind(ctx, uid)
 			assert.Equal(t, table.err, err)
 
 			if table.err == nil {
@@ -1206,7 +1211,7 @@ func TestSessionPushToFrontFailsIfFrontend(t *testing.T) {
 	ss := New(nil, true)
 	assert.NotNil(t, ss)
 
-	err := ss.PushToFront()
+	err := ss.PushToFront(nil)
 	assert.Equal(t, constants.ErrFrontSessionCantPushToFront, err)
 }
 
@@ -1239,9 +1244,10 @@ func TestSessionPushToFront(t *testing.T) {
 			}
 			expectedRequestData, err := util.GobEncode(expectedSessionData)
 			assert.NoError(t, err)
-			mockEntity.EXPECT().SendRequest(ss.frontendID, constants.SessionPushRoute, expectedRequestData).Return(nil, table.err)
+			ctx := context.Background()
+			mockEntity.EXPECT().SendRequest(ctx, ss.frontendID, constants.SessionPushRoute, expectedRequestData).Return(nil, table.err)
 
-			err = ss.PushToFront()
+			err = ss.PushToFront(ctx)
 			assert.Equal(t, table.err, err)
 		})
 	}

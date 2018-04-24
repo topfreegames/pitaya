@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/tadpole/logic/protocol"
-	"github.com/topfreegames/pitaya/session"
 )
 
 // World contains all tadpoles
@@ -30,7 +30,8 @@ func (w *World) Init() {
 }
 
 // Enter was called when new guest enter
-func (w *World) Enter(s *session.Session, msg []byte) (*protocol.EnterWorldResponse, error) {
+func (w *World) Enter(ctx context.Context, msg []byte) (*protocol.EnterWorldResponse, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
 	s.OnClose(func() {
 		w.Leave(s)
 		w.Broadcast("leave", &protocol.LeaveWorldResponse{ID: s.ID()})
@@ -43,7 +44,7 @@ func (w *World) Enter(s *session.Session, msg []byte) (*protocol.EnterWorldRespo
 }
 
 // Update refresh tadpole's position
-func (w *World) Update(s *session.Session, msg []byte) {
+func (w *World) Update(ctx context.Context, msg []byte) {
 	err := w.Broadcast("update", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -51,7 +52,8 @@ func (w *World) Update(s *session.Session, msg []byte) {
 }
 
 // Message handler was used to communicate with each other
-func (w *World) Message(s *session.Session, msg *protocol.WorldMessage) ([]byte, error) {
+func (w *World) Message(ctx context.Context, msg *protocol.WorldMessage) ([]byte, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
 	msg.ID = s.ID()
 	err := w.Broadcast("message", msg)
 	if err != nil {

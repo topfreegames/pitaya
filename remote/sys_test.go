@@ -41,7 +41,7 @@ func TestBindSession(t *testing.T) {
 			"hello": "test",
 		},
 	}
-	res, err := s.BindSession(data)
+	res, err := s.BindSession(nil, data)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("ack"), res)
 	assert.Equal(t, ss, session.GetSessionByUID(uid))
@@ -58,7 +58,7 @@ func TestBindSessionShouldErrorIfNotExists(t *testing.T) {
 			"hello": "test",
 		},
 	}
-	_, err := s.BindSession(data)
+	_, err := s.BindSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
 
@@ -74,11 +74,11 @@ func TestBindSessionShouldErrorIfAlreadyBound(t *testing.T) {
 			"hello": "test",
 		},
 	}
-	res, err := s.BindSession(data)
+	res, err := s.BindSession(nil, data)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("ack"), res)
 	assert.Equal(t, ss, session.GetSessionByUID(uid))
-	_, err = s.BindSession(data)
+	_, err = s.BindSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionAlreadyBound, err.Error())
 }
 
@@ -95,7 +95,7 @@ func TestPushSession(t *testing.T) {
 			"hello22": 2,
 		},
 	}
-	res, err := s.PushSession(data)
+	res, err := s.PushSession(nil, data)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("ack"), res)
 	assert.Equal(t, data.Data, ss.GetData())
@@ -113,6 +113,6 @@ func TestPushSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 			"hello22": 2,
 		},
 	}
-	_, err := s.PushSession(data)
+	_, err := s.PushSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }

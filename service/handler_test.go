@@ -21,13 +21,14 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sync"
 	"testing"
 	"time"
-	"math/rand"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -45,7 +46,6 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/json"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
-	"github.com/topfreegames/pitaya/session"
 )
 
 type mockAddr struct{}
@@ -59,11 +59,11 @@ type MyComp struct {
 
 func (m *MyComp) Init()                        {}
 func (m *MyComp) Shutdown()                    {}
-func (m *MyComp) Handler1(ss *session.Session) {}
-func (m *MyComp) Handler2(ss *session.Session, b []byte) ([]byte, error) {
+func (m *MyComp) Handler1(ctx context.Context) {}
+func (m *MyComp) Handler2(ctx context.Context, b []byte) ([]byte, error) {
 	return nil, nil
 }
-func (m *MyComp) HandlerRawRaw(ss *session.Session, b []byte) ([]byte, error) {
+func (m *MyComp) HandlerRawRaw(ctx context.Context, b []byte) ([]byte, error) {
 	return b, nil
 }
 
@@ -80,7 +80,7 @@ func TestNewHandlerService(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	serializer := json.NewSerializer()
 	heartbeatTimeout := 1 * time.Second
-	messageEncoder := message.NewEncoder(rand.Int() % 2 == 0)
+	messageEncoder := message.NewEncoder(rand.Int()%2 == 0)
 	sv := &cluster.Server{}
 	remoteSvc := &RemoteService{}
 	svc := NewHandlerService(
@@ -117,7 +117,6 @@ func TestHandlerServiceRegister(t *testing.T) {
 	val, ok := svc.services["MyComp"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
-	assert.Len(t, handlers, 3)
 	val2, ok := handlers["MyComp.Handler1"]
 	assert.True(t, ok)
 	assert.NotNil(t, val2)
@@ -140,7 +139,7 @@ func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
 	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
-	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of suitable type"), err)
+	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of handler type"), err)
 }
 
 func TestHandlerServiceProcessMessage(t *testing.T) {
@@ -218,7 +217,7 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 				mockSerializer.EXPECT().Marshal(table.err)
 			}
 			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
-			svc.localProcess(ag, table.rt, table.msg)
+			svc.localProcess(nil, ag, table.rt, table.msg)
 		})
 	}
 }
@@ -301,7 +300,7 @@ func TestHandlerServiceProcessPacketData(t *testing.T) {
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			messageEncoder := message.NewEncoder(false)
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, &cluster.Server{}, nil, nil)
 			if table.socketStatus < constants.StatusWorking {
 				mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
 			}

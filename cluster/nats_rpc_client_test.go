@@ -21,8 +21,11 @@
 package cluster
 
 import (
+	"context"
+	"encoding/gob"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -39,6 +42,19 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
 )
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
+}
+
+func setup() {
+	gob.Register(map[string]interface{}{})
+}
+
+func shutdown() {}
 
 func TestNewNatsRPCClient(t *testing.T) {
 	t.Parallel()
@@ -261,7 +277,10 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			rpcClient.server.Frontend = table.frontendServer
-			req := rpcClient.buildRequest(table.rpcType, table.route, table.session, table.msg)
+			req, err := rpcClient.buildRequest(context.Background(), table.rpcType, table.route, table.session, table.msg)
+			assert.NoError(t, err)
+			assert.NotNil(t, req.Metadata)
+			req.Metadata = nil
 			assert.Equal(t, table.expected, req)
 		})
 	}
@@ -271,7 +290,7 @@ func TestNatsRPCClientCallShouldFailIfNotRunning(t *testing.T) {
 	config := getConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv)
-	res, err := rpcClient.Call(protos.RPCType_Sys, nil, nil, nil, nil)
+	res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, nil, nil, nil, sv)
 	assert.Equal(t, constants.ErrRPCClientNotInitialized, err)
 	assert.Nil(t, res)
 }
@@ -333,7 +352,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			assert.NoError(t, err)
 			// TODO this is ugly, can lead to flaky tests and we could probably do it better
 			time.Sleep(50 * time.Millisecond)
-			res, err := rpcClient.Call(protos.RPCType_Sys, rt, ss, msg, sv2)
+			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
 			assert.Equal(t, table.expected, res)
 			assert.Equal(t, table.err, err)
 			err = subs.Unsubscribe()

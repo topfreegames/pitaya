@@ -73,7 +73,6 @@ func TestNewRemote(t *testing.T) {
 	assert.Equal(t, frontendID, remote.frontendID)
 	assert.NotNil(t, remote.Session)
 	assert.False(t, remote.Session.IsFrontend)
-	assert.Equal(t, reflect.ValueOf(remote.Session), remote.Srv)
 }
 
 func TestNewRemoteFailsIfFailedToSetEncodedData(t *testing.T) {
@@ -222,9 +221,9 @@ func TestAgentRemoteResponseMID(t *testing.T) {
 
 			}
 			if table.msgErr {
-				err = remote.ResponseMID(table.mid, table.data, table.msgErr)
+				err = remote.ResponseMID(nil, table.mid, table.data, table.msgErr)
 			} else {
-				err = remote.ResponseMID(table.mid, table.data)
+				err = remote.ResponseMID(nil, table.mid, table.data)
 			}
 			assert.Equal(t, table.err, err)
 		})
@@ -283,12 +282,12 @@ func TestAgentRemoteSendRequest(t *testing.T) {
 							Route: table.reqRoute,
 							Data:  serializeRet,
 						}
-						mockRPCClient.EXPECT().Call(protos.RPCType_User, r, nil, expectedMsg, expectedServer).Return(table.resp, table.err)
+						mockRPCClient.EXPECT().Call(nil, protos.RPCType_User, r, nil, expectedMsg, expectedServer).Return(table.resp, table.err)
 					}
 				}
 			}
 
-			resp, err := remote.SendRequest(table.serverID, table.reqRoute, table.data)
+			resp, err := remote.SendRequest(nil, table.serverID, table.reqRoute, table.data)
 			assert.Equal(t, table.err, err)
 			assert.Equal(t, table.resp, resp)
 		})

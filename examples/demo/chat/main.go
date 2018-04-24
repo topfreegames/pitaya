@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/chat/protos"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
-	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -35,12 +35,12 @@ type (
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, in []byte) ([]byte, error) {
+func (stats *stats) outbound(ctx context.Context, in []byte) ([]byte, error) {
 	stats.outboundBytes += len(in)
 	return in, nil
 }
 
-func (stats *stats) inbound(s *session.Session, in []byte) ([]byte, error) {
+func (stats *stats) inbound(ctx context.Context, in []byte) ([]byte, error) {
 	stats.inboundBytes += len(in)
 	return in, nil
 }
@@ -63,10 +63,11 @@ func (r *Room) AfterInit() {
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error) {
+func (r *Room) Join(ctx context.Context, msg []byte) (*protos.JoinResponse, error) {
 	res := &protos.JoinResponse{}
-	fakeUID := s.ID()                         // just use s.ID as uid !!!
-	err := s.Bind(strconv.Itoa(int(fakeUID))) // binding session uid
+	s := pitaya.GetSessionFromCtx(ctx)
+	fakeUID := s.ID()                              // just use s.ID as uid !!!
+	err := s.Bind(ctx, strconv.Itoa(int(fakeUID))) // binding session uid
 
 	if err != nil {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
@@ -88,7 +89,7 @@ func (r *Room) Join(s *session.Session, msg []byte) (*protos.JoinResponse, error
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *protos.UserMessage) {
+func (r *Room) Message(ctx context.Context, msg *protos.UserMessage) {
 	err := r.group.Broadcast("onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -118,6 +119,8 @@ func main() {
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	ws := acceptor.NewWSAcceptor(":3250")
+	tcp := acceptor.NewTCPAcceptor(":3251")
+	pitaya.AddAcceptor(tcp)
 	pitaya.AddAcceptor(ws)
 
 	config := viper.New()

@@ -22,12 +22,14 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -88,12 +90,12 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
-func executeBeforePipeline(s *session.Session, data []byte) ([]byte, error) {
+func executeBeforePipeline(ctx context.Context, data []byte) ([]byte, error) {
 	var err error
 	res := data
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
 		for _, h := range pipeline.BeforeHandler.Handlers {
-			res, err = h(s, res)
+			res, err = h(ctx, res)
 			if err != nil {
 				// TODO: not sure if this should be logged
 				// one may want to have a before filter that prevents handler execution
@@ -106,12 +108,12 @@ func executeBeforePipeline(s *session.Session, data []byte) ([]byte, error) {
 	return res, nil
 }
 
-func executeAfterPipeline(s *session.Session, ser serialize.Serializer, res []byte) []byte {
+func executeAfterPipeline(ctx context.Context, ser serialize.Serializer, res []byte) []byte {
 	var err error
 	ret := res
 	if len(pipeline.AfterHandler.Handlers) > 0 {
 		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err = h(s, ret)
+			ret, err = h(ctx, ret)
 			if err != nil {
 				logger.Log.Debugf("broken pipeline, error: %s", err.Error())
 				// err can be ignored since serializer was already tested previously
@@ -137,14 +139,15 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 }
 
 func processHandlerMessage(
+	ctx context.Context,
 	rt *route.Route,
 	serializer serialize.Serializer,
-	cachedSession reflect.Value,
 	session *session.Session,
 	data []byte,
 	msgTypeIface interface{},
 	remote bool,
 ) ([]byte, error) {
+	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
 	h, err := getHandler(rt)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrNotFoundCode)
@@ -161,7 +164,7 @@ func processHandlerMessage(
 		logger.Log.Warn(err.Error())
 	}
 
-	if data, err = executeBeforePipeline(session, data); err != nil {
+	if data, err = executeBeforePipeline(ctx, data); err != nil {
 		return nil, err
 	}
 
@@ -171,7 +174,7 @@ func processHandlerMessage(
 	}
 
 	logger.Log.Debugf("SID=%d, Data=%s", session.ID(), data)
-	args := []reflect.Value{h.Receiver, cachedSession}
+	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))
 	}
@@ -192,7 +195,7 @@ func processHandlerMessage(
 
 	ret, err := serializeReturn(serializer, resp)
 	if err == nil {
-		if r := executeAfterPipeline(session, serializer, ret); r != nil {
+		if r := executeAfterPipeline(ctx, serializer, ret); r != nil {
 			return r, nil
 		}
 	}

@@ -26,7 +26,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
 )
 
@@ -53,7 +52,7 @@ var tables = []struct {
 		[]string{"ExportedRemotePointerOut", "ExportedRemoteRawOut"},
 	},
 	{"invalid", &unexportedTestType{}, errors.New("type unexportedTestType is not exported"), nil, nil},
-	{"invalid", &ExportedTypeWithNoHandlerAndNoRemote{}, errors.New("type ExportedTypeWithNoHandlerAndNoRemote has no exported methods of suitable type"), nil, nil},
+	{"invalid", &ExportedTypeWithNoHandlerAndNoRemote{}, errors.New("type ExportedTypeWithNoHandlerAndNoRemote has no exported methods of handler type"), nil, nil},
 }
 
 func TestNewService(t *testing.T) {
@@ -81,13 +80,19 @@ func TestExtractHandler(t *testing.T) {
 				assert.EqualError(t, table.err, err.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.ElementsMatch(t, table.handlers, helpers.GetMapKeys(t, svc.Handlers))
+				for _, h := range table.handlers {
+					val, ok := svc.Handlers[h]
+					assert.True(t, ok)
+					assert.NotNil(t, val)
+
+				}
 			}
 		})
 	}
 }
 
 func TestExtractRemote(t *testing.T) {
+	tables[2].err = errors.New("type ExportedTypeWithNoHandlerAndNoRemote has no exported methods of remote type")
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			svc := NewService(table.comp, []Option{})
@@ -96,7 +101,12 @@ func TestExtractRemote(t *testing.T) {
 				assert.EqualError(t, table.err, err.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.ElementsMatch(t, table.remotes, helpers.GetMapKeys(t, svc.Remotes))
+				for _, r := range table.remotes {
+					val, ok := svc.Remotes[r]
+					assert.True(t, ok)
+					assert.NotNil(t, val)
+
+				}
 			}
 		})
 	}

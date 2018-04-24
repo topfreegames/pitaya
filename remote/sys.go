@@ -21,6 +21,8 @@
 package remote
 
 import (
+	"context"
+
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/session"
@@ -32,19 +34,19 @@ type Sys struct {
 }
 
 // BindSession binds the local session
-func (s *Sys) BindSession(sessionData *session.Data) ([]byte, error) {
+func (s *Sys) BindSession(ctx context.Context, sessionData *session.Data) ([]byte, error) {
 	sess := session.GetSessionByID(sessionData.ID)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound
 	}
-	if err := sess.Bind(sessionData.UID); err != nil {
+	if err := sess.Bind(ctx, sessionData.UID); err != nil {
 		return nil, err
 	}
 	return []byte("ack"), nil
 }
 
 // PushSession updates the local session
-func (s *Sys) PushSession(sessionData *session.Data) ([]byte, error) {
+func (s *Sys) PushSession(ctx context.Context, sessionData *session.Data) ([]byte, error) {
 	sess := session.GetSessionByID(sessionData.ID)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound

@@ -1,14 +1,15 @@
 package services
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"strconv"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -64,13 +65,13 @@ type (
 )
 
 // Outbound gets the outbound status
-func (Stats *Stats) Outbound(s *session.Session, in []byte) ([]byte, error) {
+func (Stats *Stats) Outbound(ctx context.Context, in []byte) ([]byte, error) {
 	Stats.outboundBytes += len(in)
 	return in, nil
 }
 
 // Inbound gets the inbound status
-func (Stats *Stats) Inbound(s *session.Session, in []byte) ([]byte, error) {
+func (Stats *Stats) Inbound(ctx context.Context, in []byte) ([]byte, error) {
 	Stats.inboundBytes += len(in)
 	return in, nil
 }
@@ -100,8 +101,34 @@ func (r *Room) AfterInit() {
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
-	err := s.Bind(strconv.Itoa(int(s.ID())))
+func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
+	parentSpanCtx, err := pitaya.ExtractSpan(ctx)
+	if err != nil {
+		return nil, pitaya.Error(err, "RH-001", map[string]string{"failed": "span from context"})
+	}
+	tags1 := opentracing.Tags{
+		"span.kind":    "client",
+		"db.type":      "sql",
+		"db.name":      "postgres",
+		"db.statement": "SELECT * FROM users;",
+	}
+	reference1 := opentracing.ChildOf(parentSpanCtx)
+	span1 := opentracing.StartSpan("SQL SELECT", reference1, tags1)
+	time.Sleep(20 * time.Millisecond)
+	span1.Finish()
+
+	tags2 := opentracing.Tags{
+		"span.kind":    "client",
+		"db.name":      "redis",
+		"db.statement": "KEYS *",
+	}
+	reference2 := opentracing.ChildOf(parentSpanCtx)
+	span2 := opentracing.StartSpan("REDIS KEYS", reference2, tags2)
+	time.Sleep(40 * time.Millisecond)
+	span2.Finish()
+
+	s := pitaya.GetSessionFromCtx(ctx)
+	err = s.Bind(ctx, strconv.Itoa(int(s.ID())))
 	if err != nil {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
@@ -109,19 +136,21 @@ func (r *Room) Entry(s *session.Session, msg []byte) (*JoinResponse, error) {
 }
 
 // GetSessionData gets the session data
-func (r *Room) GetSessionData(s *session.Session) (*SessionData, error) {
+func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
 	return &SessionData{
 		Data: s.GetData(),
 	}, nil
 }
 
 // SetSessionData sets the session data
-func (r *Room) SetSessionData(s *session.Session, data *SessionData) ([]byte, error) {
+func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		return nil, err
 	}
-	err = s.PushToFront()
+	err = s.PushToFront(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +158,8 @@ func (r *Room) SetSessionData(s *session.Session, data *SessionData) ([]byte, er
 }
 
 // Join room
-func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
+func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
 	err := r.group.Add(s)
 	if err != nil {
 		return nil, err
@@ -146,7 +176,7 @@ func (r *Room) Join(s *session.Session) (*JoinResponse, error) {
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) {
+func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 	err := r.group.Broadcast("onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -154,9 +184,9 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error) {
+func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*RPCResponse, error) {
 	ret := &RPCResponse{Msg: "ok"}
-	err := pitaya.RPCTo(msg.ServerID, msg.Route, ret, msg.Msg)
+	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, msg.Msg)
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
 	}
@@ -164,6 +194,6 @@ func (r *Room) SendRPC(s *session.Session, msg *SendRPCMsg) (*RPCResponse, error
 }
 
 // MessageRemote just echoes the given message
-func (r *Room) MessageRemote(msg *UserMessage, b bool, s string) (*UserMessage, error) {
+func (r *Room) MessageRemote(ctx context.Context, msg *UserMessage, b bool, s string) (*UserMessage, error) {
 	return msg, nil
 }
