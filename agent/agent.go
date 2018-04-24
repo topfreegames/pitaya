@@ -252,7 +252,11 @@ func (a *Agent) Handle() {
 
 func (a *Agent) heartbeat() {
 	ticker := time.NewTicker(a.heartbeatTimeout)
-	defer ticker.Stop()
+
+	defer func() {
+		ticker.Stop()
+		a.Close()
+	}()
 
 	for {
 		select {
@@ -260,14 +264,12 @@ func (a *Agent) heartbeat() {
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if a.lastAt < deadline {
 				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline)
-				close(a.chDie)
 				return
 			}
 			if _, err := a.conn.Write(hbd); err != nil {
-				close(a.chDie)
 				return
 			}
-		case <-a.chDie: // prevent closing closed channel
+		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
 			return
@@ -301,6 +303,7 @@ func (a *Agent) write() {
 	// clean func
 	defer func() {
 		close(a.chSend)
+		a.Close()
 	}()
 
 	for {

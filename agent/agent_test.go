@@ -528,6 +528,9 @@ func TestAgentHeartbeat(t *testing.T) {
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil)
 	assert.NotNil(t, ag)
 
+	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().Close().MaxTimes(1)
+
 	// Sends two heartbeats and then times out
 	mockConn.EXPECT().Write(hbd).Return(0, nil).Times(2)
 	die := false
@@ -555,6 +558,9 @@ func TestAgentHeartbeatExitsIfConnError(t *testing.T) {
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil)
 	assert.NotNil(t, ag)
 
+	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().Close().MaxTimes(1)
+
 	mockConn.EXPECT().Write(hbd).Return(0, errors.New("broken"))
 	die := false
 	go func() {
@@ -578,12 +584,16 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockConn(ctrl)
+
+	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().Close().MaxTimes(1)
+
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil)
 	assert.NotNil(t, ag)
 
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		close(ag.chStopHeartbeat)
+		ag.Close()
 	}()
 
 	ag.heartbeat()
