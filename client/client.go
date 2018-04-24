@@ -31,6 +31,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/util/compression"
 	"github.com/topfreegames/pitaya/logger"
 )
 
@@ -117,6 +118,13 @@ func (c *Client) handleHandshakeResponse() error {
 	}
 
 	handshake := &HandshakeData{}
+	if compression.IsCompressed(handshakePacket.Data) {
+		handshakePacket.Data, err = compression.InflateData(handshakePacket.Data)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = json.Unmarshal(handshakePacket.Data, handshake)
 	if err != nil {
 		return err

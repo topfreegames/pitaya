@@ -27,3 +27,15 @@ func InflateData(data []byte) ([]byte, error) {
 	return ioutil.ReadAll(zr)
 }
 
+func IsCompressed(data []byte) bool {
+	return len(data) > 2 &&
+	(
+		// zlib
+		(data[0] == 0x78 &&
+		(data[1] == 0x9C ||
+		data[1] == 0x01 ||
+		data[1] == 0xDA ||
+		data[1] == 0x5E)) ||
+		// gzip
+		(data[0] == 0x1F && data[1] == 0x8B))
+}
