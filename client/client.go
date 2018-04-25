@@ -268,17 +268,18 @@ func (c *Client) handleServerMessages() {
 
 func (c *Client) sendHeartbeats(interval int) {
 	t := time.NewTicker(time.Duration(interval) * time.Second)
-	defer t.Stop()
+	defer func() {
+		t.Stop()
+		c.Disconnect()
+	}()
 	for {
 		select {
 		case <-t.C:
-			p, err := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
-			if err != nil {
-				logger.Log.Errorf("error encoding heartbeat package: %s", err.Error())
-			}
-			_, err = c.conn.Write(p)
+			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
+			_, err := c.conn.Write(p)
 			if err != nil {
 				logger.Log.Errorf("error sending heartbeat to sv: %s", err.Error())
+				return
 			}
 		case <-c.closeChan:
 			return
@@ -291,6 +292,7 @@ func (c *Client) Disconnect() {
 	if c.Connected {
 		c.Connected = false
 		close(c.closeChan)
+		close(c.IncomingMsgChan)
 		c.conn.Close()
 	}
 }
@@ -303,6 +305,7 @@ func (c *Client) ConnectTo(addr string) error {
 		return err
 	}
 	c.conn = conn
+	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	err = c.sendHandshakeRequest()
 	if err != nil {
