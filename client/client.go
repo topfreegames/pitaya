@@ -22,17 +22,20 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
-	"github.com/topfreegames/pitaya/util/compression"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/util/compression"
 )
 
 var (
@@ -61,6 +64,11 @@ type HandshakeData struct {
 	Sys  HandshakeSys `json:"sys"`
 }
 
+type pendingRequest struct {
+	msg    *message.Message
+	sentAt time.Time
+}
+
 // Client struct
 type Client struct {
 	conn            net.Conn
@@ -70,18 +78,26 @@ type Client struct {
 	packetChan      chan *packet.Packet
 	IncomingMsgChan chan *message.Message
 	pendingChan     chan bool
+	pendingRequests map[uint]*pendingRequest
+	pendingReqMutex sync.Mutex
+	requestTimeout  time.Duration
 	closeChan       chan struct{}
 	nextID          uint32
 	messageEncoder  message.MessageEncoder
 }
 
 // New returns a new client
-func New(logLevel logrus.Level) *Client {
+func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l := logrus.New()
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logLevel)
 
 	logger.Log = l
+
+	reqTimeout := 5 * time.Second
+	if len(requestTimeout) > 0 {
+		reqTimeout = requestTimeout[0]
+	}
 
 	return &Client{
 		Connected:       false,
@@ -89,10 +105,12 @@ func New(logLevel logrus.Level) *Client {
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
 		IncomingMsgChan: make(chan *message.Message, 10),
+		pendingRequests: make(map[uint]*pendingRequest),
+		requestTimeout:  reqTimeout,
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
-		pendingChan: make(chan bool, 30),
-		messageEncoder:  message.NewEncoder(true),
+		pendingChan:    make(chan bool, 30),
+		messageEncoder: message.NewEncoder(true),
 	}
 }
 
@@ -146,8 +164,45 @@ func (c *Client) handleHandshakeResponse() error {
 	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
 	go c.handlePackets()
+	go c.pendingRequestsReaper()
 
 	return nil
+}
+
+// pendingRequestsReaper delete timedout requests
+func (c *Client) pendingRequestsReaper() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			toDelete := make([]*pendingRequest, 0)
+			c.pendingReqMutex.Lock()
+			for _, v := range c.pendingRequests {
+				if time.Now().Sub(v.sentAt) > c.requestTimeout {
+					toDelete = append(toDelete, v)
+				}
+			}
+			for _, pendingReq := range toDelete {
+				err := pitaya.Error(errors.New("request timeout"), "PIT-504")
+				errMarshalled, _ := json.Marshal(err)
+				// send a timeout to incoming msg chan
+				m := &message.Message{
+					Type:  message.Response,
+					ID:    pendingReq.msg.ID,
+					Route: pendingReq.msg.Route,
+					Data:  errMarshalled,
+					Err:   true,
+				}
+				delete(c.pendingRequests, pendingReq.msg.ID)
+				<-c.pendingChan
+				c.IncomingMsgChan <- m
+			}
+			c.pendingReqMutex.Unlock()
+		case <-c.closeChan:
+			return
+		}
+	}
 }
 
 func (c *Client) handlePackets() {
@@ -162,10 +217,17 @@ func (c *Client) handlePackets() {
 				if err != nil {
 					logger.Log.Errorf("error decoding msg from sv: %s", string(m.Data))
 				}
-				c.IncomingMsgChan <- m
 				if m.Type == message.Response {
-					<-c.pendingChan
+					c.pendingReqMutex.Lock()
+					if _, ok := c.pendingRequests[m.ID]; ok {
+						delete(c.pendingRequests, m.ID)
+						<-c.pendingChan
+					} else {
+						continue // do not process msg for already timedout request
+					}
+					c.pendingReqMutex.Unlock()
 				}
+				c.IncomingMsgChan <- m
 			}
 		case <-c.closeChan:
 			return
@@ -260,13 +322,25 @@ func (c *Client) ConnectTo(addr string) error {
 
 // SendRequest sends a request to the server
 func (c *Client) SendRequest(route string, data []byte) error {
-	c.pendingChan <- true
 	return c.sendMsg(message.Request, route, data)
 }
 
 // SendNotify sends a notify to the server
 func (c *Client) SendNotify(route string, data []byte) error {
 	return c.sendMsg(message.Notify, route, data)
+}
+
+func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
+	encMsg, err := c.messageEncoder.Encode(&msg)
+	if err != nil {
+		return nil, err
+	}
+	p, err := c.packetEncoder.Encode(packet.Data, encMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // sendMsg sends the request to the server
@@ -280,11 +354,19 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error 
 		Data:  data,
 		Err:   false,
 	}
-	encMsg, err := c.messageEncoder.Encode(&m)
-	if err != nil {
-		return err
+	p, err := c.buildPacket(m)
+	if msgType == message.Request {
+		c.pendingReqMutex.Lock()
+		if _, ok := c.pendingRequests[uint(c.nextID)]; !ok {
+			c.pendingRequests[uint(c.nextID)] = &pendingRequest{
+				msg:    &m,
+				sentAt: time.Now(),
+			}
+			c.pendingChan <- true
+		}
+		c.pendingReqMutex.Unlock()
 	}
-	p, err := c.packetEncoder.Encode(packet.Data, encMsg)
+
 	if err != nil {
 		return err
 	}
