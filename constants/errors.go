@@ -61,4 +61,5 @@ var (
 	ErrSessionOnNotify                = errors.New("current session working on notify mode")
 	ErrWrongValueType                 = errors.New("protobuf: convert on wrong type value")
 	ErrInvalidCertificates            = errors.New("certificates must be exactly two")
+	ErrTimeoutTerminatingBinaryModule = errors.New("timeout waiting to binary module to die")
 )
