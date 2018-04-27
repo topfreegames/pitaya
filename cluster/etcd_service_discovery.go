@@ -226,7 +226,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 					logger.Log.Errorf("error sending heartbeat to etcd: %s", err.Error())
 				}
 			case <-sd.stopChan:
-				break
+				return
 			}
 		}
 	}()
@@ -242,7 +242,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 					logger.Log.Errorf("error resyncing servers: %s", err.Error())
 				}
 			case <-sd.stopChan:
-				break
+				return
 			}
 		}
 	}()
@@ -383,7 +383,7 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					}
 				}
 			case <-sd.stopChan:
-				break
+				return
 			}
 		}
 	}(w)
