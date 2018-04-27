@@ -320,9 +320,10 @@ func Start() {
 	// stop server
 	select {
 	case <-app.dieChan:
-		logger.Log.Warn("The app will shutdown in a few seconds")
+		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
-		logger.Log.Warn("got signal", s)
+		logger.Log.Warn("got signal", s, "shutting down...")
+		close(app.dieChan)
 	}
 
 	logger.Log.Warn("server is stopping...")
@@ -400,7 +401,11 @@ func AddRoute(
 
 // Shutdown send a signal to let 'pitaya' shutdown itself.
 func Shutdown() {
-	close(app.dieChan)
+	select {
+	case <-app.dieChan: // prevent closing closed channel
+	default:
+		close(app.dieChan)
+	}
 }
 
 // Error creates a new error with a code, message and metadata
