@@ -161,6 +161,10 @@ func TestSetPacketEncoder(t *testing.T) {
 	assert.Equal(t, e, app.packetEncoder)
 }
 
+func TestGetDieChan(t *testing.T) {
+	assert.Equal(t, app.dieChan, GetDieChan())
+}
+
 func TestSetHeartbeatInterval(t *testing.T) {
 	inter := 35 * time.Millisecond
 	SetHeartbeatTime(inter)

@@ -142,6 +142,11 @@ func AddAcceptor(ac acceptor.Acceptor) {
 	app.acceptors = append(app.acceptors, ac)
 }
 
+// GetDieChan gets the channel that the app sinalizes when its going to die
+func GetDieChan() chan bool {
+	return app.dieChan
+}
+
 // SetDebug toggles debug on/off
 func SetDebug(debug bool) {
 	app.debug = debug
