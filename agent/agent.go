@@ -230,6 +230,17 @@ func (a *Agent) GetStatus() int32 {
 	return atomic.LoadInt32(&a.state)
 }
 
+// Kick sends a kick packet to a client
+func (a *Agent) Kick(ctx context.Context) error {
+	// packet encode
+	p, err := a.encoder.Encode(packet.Kick, nil)
+	if err != nil {
+		return err
+	}
+	_, err = a.conn.Write(p)
+	return err
+}
+
 // SetLastAt sets the last at to now
 func (a *Agent) SetLastAt() {
 	a.lastAt = time.Now().Unix()

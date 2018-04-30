@@ -228,6 +228,9 @@ func (c *Client) handlePackets() {
 					c.pendingReqMutex.Unlock()
 				}
 				c.IncomingMsgChan <- m
+			case packet.Kick:
+				logger.Log.Warn("got kick packet from the server! disconnecting...")
+				c.Disconnect()
 			}
 		case <-c.closeChan:
 			return

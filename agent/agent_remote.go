@@ -86,6 +86,19 @@ func NewRemote(
 	return a, nil
 }
 
+// Kick kicks the player
+func (a *Remote) Kick(ctx context.Context) error {
+	if a.Session.UID() == "" {
+		return constants.ErrNoUIDBind
+	}
+	b, err := util.GobEncode([]byte(a.Session.UID()))
+	if err != nil {
+		return err
+	}
+	_, err = a.SendRequest(ctx, a.frontendID, constants.KickRoute, b)
+	return err
+}
+
 // Push pushes the message to the player
 func (a *Remote) Push(route string, v interface{}) error {
 	if (reflect.TypeOf(a.rpcClient) == reflect.TypeOf(&cluster.NatsRPCClient{}) &&

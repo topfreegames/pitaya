@@ -41,6 +41,7 @@ type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	ResponseMID(ctx context.Context, mid uint, v interface{}, isError ...bool) error
 	Close() error
+	Kick(ctx context.Context) error
 	RemoteAddr() net.Addr
 	SendRequest(ctx context.Context, serverID, route string, v interface{}) (*protos.Response, error)
 }
@@ -240,6 +241,15 @@ func (s *Session) Bind(ctx context.Context, uid string) error {
 		}
 	}
 	return nil
+}
+
+// Kick kicks the user
+func (s *Session) Kick(ctx context.Context) error {
+	err := s.entity.Kick(ctx)
+	if err != nil {
+		return err
+	}
+	return s.entity.Close()
 }
 
 // OnClose adds the function it receives to the callbacks that will be called

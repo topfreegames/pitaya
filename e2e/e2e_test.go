@@ -135,6 +135,57 @@ func TestGroupFront(t *testing.T) {
 	}
 }
 
+func TestKick(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	uid1 := uuid.New().String()
+	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+	err = c2.SendRequest("connector.testsvc.testrequestkickuser", []byte(uid1))
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return c1.Connected
+	}, false)
+}
+
+func TestKickOnBack(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
+	c1 := client.New(logrus.DebugLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c1.SendRequest("game.testsvc.testbind", nil)
+	assert.NoError(t, err)
+	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
+	assert.Equal(t, []byte("ack"), msg1.Data)
+	err = c1.SendRequest("game.testsvc.testrequestkickme", nil)
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return c1.Connected
+	}, false)
+}
+
 func TestPushToUsers(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 

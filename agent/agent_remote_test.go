@@ -21,6 +21,7 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"reflect"
@@ -155,6 +156,27 @@ func TestAgentRemotePush(t *testing.T) {
 			assert.Equal(t, table.err, err)
 		})
 	}
+}
+
+func TestKickRemote(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rpcClient := clustermocks.NewMockRPCClient(ctrl)
+	ss := &protos.Session{Uid: uuid.New().String()}
+	mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	frontID := uuid.New().String()
+	remote, err := NewRemote(ss, "", rpcClient, nil, mockSerializer, mockSD, frontID, nil)
+	assert.NoError(t, err)
+
+	mockSD.EXPECT().GetServer(frontID)
+	c := context.Background()
+	r, _ := route.Decode("sys.kick")
+	rpcClient.EXPECT().Call(c, protos.RPCType_User, r, gomock.Nil(), gomock.Any(), gomock.Nil())
+	err = remote.Kick(c)
+
+	assert.NoError(t, err)
 }
 
 func TestAgentRemoteResponseMID(t *testing.T) {

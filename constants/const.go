@@ -38,6 +38,9 @@ const (
 
 	// SessionBindRoute is the route used for binding session
 	SessionBindRoute = "sys.bindsession"
+
+	// KickRoute is the route used for kicking an user
+	KickRoute = "sys.kick"
 )
 
 // SessionCtxKey is the context key where the session will be set

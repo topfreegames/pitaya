@@ -34,8 +34,10 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
+	"github.com/topfreegames/pitaya/session"
 )
 
 // TestSvc service for e2e tests
@@ -105,6 +107,38 @@ func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*TestResponse, erro
 // Init inits testsvc
 func (t *TestSvc) Init() {
 	t.group = pitaya.NewGroup("g1")
+}
+
+// TestRequestKickUser handler for e2e tests
+func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*TestResponse, error) {
+	s := session.GetSessionByUID(string(userID))
+	if s == nil {
+		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
+	}
+	err := s.Kick(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &TestResponse{
+		Code: 200,
+		Msg:  "ok",
+	}, nil
+}
+
+// TestRequestKickMe handler for e2e tests
+func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*TestResponse, error) {
+	s := pitaya.GetSessionFromCtx(ctx)
+	if s == nil {
+		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
+	}
+	err := s.Kick(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &TestResponse{
+		Code: 200,
+		Msg:  "ok",
+	}, nil
 }
 
 // TestRequestOnlySessionReturnsPtr handler for e2e tests

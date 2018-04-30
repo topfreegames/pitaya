@@ -42,7 +42,7 @@ var (
 	ErrNoServerTypeChosenForRPC       = errors.New("no server type chosen for sending RPC, send a full route in the format server.service.component")
 	ErrNoServerWithID                 = errors.New("can't find any server with the provided ID")
 	ErrNoServersAvailableOfType       = errors.New("no servers available of this type")
-	ErrNoUIDBind                      = errors.New("you have to bind an UID to the session to use groups")
+	ErrNoUIDBind                      = errors.New("you have to bind an UID to the session to do that")
 	ErrNonsenseRPC                    = errors.New("you are making a rpc that may be processed locally, either specify a different server type or specify a server id")
 	ErrNotifyOnRequest                = errors.New("tried to notify a request route")
 	ErrOnCloseBackend                 = errors.New("onclose callbacks are not allowed on backend servers")

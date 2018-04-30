@@ -207,7 +207,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 		}
 		parent, err := jaeger.ExtractSpan(ctx)
 		if err != nil {
-			logger.Log.Errorf("failed to retrieve parent span: %s", err.Error())
+			logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 		}
 
 		tags := opentracing.Tags{

@@ -21,6 +21,7 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -98,6 +99,30 @@ func TestNewAgent(t *testing.T) {
 	// second call should no call hdb encode
 	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder)
 	assert.NotNil(t, ag)
+}
+
+func TestKick(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
+	dieChan := make(chan bool)
+	hbTime := time.Second
+
+	mockConn := mocks.NewMockConn(ctrl)
+	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
+		func(typ packet.Type, d []byte) {
+			assert.EqualValues(t, packet.Kick, typ)
+		})
+	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
+	messageEncoder := message.NewEncoder(false)
+
+	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder)
+	c := context.Background()
+	err := ag.Kick(c)
+	assert.NoError(t, err)
 }
 
 func TestAgentSend(t *testing.T) {

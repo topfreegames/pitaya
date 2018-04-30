@@ -169,6 +169,18 @@ func TestGetSessionByUIDDoenstExist(t *testing.T) {
 	assert.Nil(t, ss)
 }
 
+func TestKick(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	entity := mocks.NewMockNetworkEntity(ctrl)
+	ss := New(entity, true)
+	c := context.Background()
+	entity.EXPECT().Kick(c)
+	entity.EXPECT().Close()
+	err := ss.Kick(c)
+	assert.NoError(t, err)
+}
+
 func TestSessionUpdateEncodedData(t *testing.T) {
 	tables := []struct {
 		name string
