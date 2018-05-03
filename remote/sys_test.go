@@ -23,10 +23,12 @@ package remote
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/session/mocks"
 )
 
 func TestBindSession(t *testing.T) {
@@ -114,5 +116,37 @@ func TestPushSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 		},
 	}
 	_, err := s.PushSession(nil, data)
+	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
+}
+
+func TestKick(t *testing.T) {
+	t.Parallel()
+	s := &Sys{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	ss := session.New(mockEntity, true)
+	uid := uuid.New().String()
+	data := &session.Data{
+		ID:  ss.ID(),
+		UID: uid,
+		Data: map[string]interface{}{
+			"hello": "test",
+		},
+	}
+	_, err := s.BindSession(nil, data)
+	assert.NoError(t, err)
+
+	mockEntity.EXPECT().Kick(nil)
+	mockEntity.EXPECT().Close()
+	res, err := s.Kick(nil, []byte(uid))
+	assert.NoError(t, err)
+	assert.True(t, res.Kicked)
+}
+
+func TestKickSessionShouldFailIfSessionDoesntExists(t *testing.T) {
+	t.Parallel()
+	s := &Sys{}
+	_, err := s.Kick(nil, []byte(uuid.New().String()))
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
