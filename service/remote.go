@@ -39,13 +39,13 @@ import (
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/tracing"
 	"github.com/topfreegames/pitaya/util"
 )
 
@@ -110,7 +110,7 @@ func (r *RemoteService) remoteProcess(
 		}
 
 	case message.Notify:
-		defer jaeger.FinishSpan(ctx, err)
+		defer tracing.FinishSpan(ctx, err)
 		if err == nil && res.Error != nil {
 			err = errors.New(res.Error.GetMsg())
 		}
@@ -205,7 +205,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			r.sendReply(ctx, req.GetMsg().GetReply(), response)
 			continue
 		}
-		parent, err := jaeger.ExtractSpan(ctx)
+		parent, err := tracing.ExtractSpan(ctx)
 		if err != nil {
 			logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 		}
@@ -216,7 +216,7 @@ func (r *RemoteService) ProcessRemoteMessages(threadID int) {
 			"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIdKey),
 			"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
 		}
-		ctx = jaeger.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
+		ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
 
 		rt, err := route.Decode(req.GetMsg().GetRoute())
 		if err != nil {
@@ -378,7 +378,7 @@ func (r *RemoteService) sendReply(ctx context.Context, reply string, response *p
 	if err == nil && response.Error != nil {
 		err = errors.New(response.Error.Msg)
 	}
-	defer jaeger.FinishSpan(ctx, err)
+	defer tracing.FinishSpan(ctx, err)
 	r.rpcClient.Send(reply, p)
 }
 

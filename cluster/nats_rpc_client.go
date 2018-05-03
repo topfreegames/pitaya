@@ -33,11 +33,11 @@ import (
 	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/tracing"
 )
 
 // NatsRPCClient struct
@@ -97,7 +97,7 @@ func (ns *NatsRPCClient) buildRequest(
 			Data:  msg.Data,
 		},
 	}
-	ctx, err := jaeger.InjectSpan(ctx)
+	ctx, err := tracing.InjectSpan(ctx)
 	if err != nil {
 		logger.Log.Errorf("failed to inject span: %s", err)
 	}
@@ -143,7 +143,7 @@ func (ns *NatsRPCClient) Call(
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
-	parent, err := jaeger.ExtractSpan(ctx)
+	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
@@ -153,8 +153,8 @@ func (ns *NatsRPCClient) Call(
 		"peer.serverType": server.Type,
 		"peer.id":         server.ID,
 	}
-	ctx = jaeger.StartSpan(ctx, "RPC Call", tags, parent)
-	defer jaeger.FinishSpan(ctx, err)
+	ctx = tracing.StartSpan(ctx, "RPC Call", tags, parent)
+	defer tracing.FinishSpan(ctx, err)
 
 	if !ns.running {
 		err = constants.ErrRPCClientNotInitialized

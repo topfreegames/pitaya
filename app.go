@@ -43,7 +43,6 @@ import (
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/remote"
 	"github.com/topfreegames/pitaya/route"
@@ -53,6 +52,7 @@ import (
 	"github.com/topfreegames/pitaya/service"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
+	"github.com/topfreegames/pitaya/tracing"
 )
 
 // ServerMode represents a server mode
@@ -437,5 +437,5 @@ func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 // ExtractSpan retrieves an opentracing span context from the given context
 // The span context can be received directly or via an RPC call
 func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
-	return jaeger.ExtractSpan(ctx)
+	return tracing.ExtractSpan(ctx)
 }

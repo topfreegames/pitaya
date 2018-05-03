@@ -34,11 +34,11 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/tracing"
 	"github.com/topfreegames/pitaya/util"
 	"github.com/topfreegames/pitaya/util/compression"
 )
@@ -162,13 +162,13 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 	}
 	if a.GetStatus() == constants.StatusClosed {
 		err := constants.ErrBrokenPipe
-		jaeger.FinishSpan(ctx, err)
+		tracing.FinishSpan(ctx, err)
 		return err
 	}
 
 	if mid <= 0 {
 		err := constants.ErrSessionOnNotify
-		jaeger.FinishSpan(ctx, err)
+		tracing.FinishSpan(ctx, err)
 		return err
 	}
 
@@ -332,7 +332,7 @@ func (a *Agent) write() {
 				logger.Log.Error(err.Error())
 				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
-					jaeger.FinishSpan(data.ctx, err)
+					tracing.FinishSpan(data.ctx, err)
 					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
 				}
@@ -348,7 +348,7 @@ func (a *Agent) write() {
 			}
 			em, err := a.messageEncoder.Encode(m)
 			if err != nil {
-				jaeger.FinishSpan(data.ctx, err)
+				tracing.FinishSpan(data.ctx, err)
 				logger.Log.Error(err.Error())
 				break
 			}
@@ -356,17 +356,17 @@ func (a *Agent) write() {
 			// packet encode
 			p, err := a.encoder.Encode(packet.Data, em)
 			if err != nil {
-				jaeger.FinishSpan(data.ctx, err)
+				tracing.FinishSpan(data.ctx, err)
 				logger.Log.Error(err)
 				break
 			}
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(p); err != nil {
-				jaeger.FinishSpan(data.ctx, err)
+				tracing.FinishSpan(data.ctx, err)
 				logger.Log.Error(err.Error())
 				return
 			}
-			jaeger.FinishSpan(data.ctx, nil)
+			tracing.FinishSpan(data.ctx, nil)
 		case <-a.chStopWrite:
 			return
 		}

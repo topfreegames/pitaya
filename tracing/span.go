@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package jaeger
+package tracing
 
 import (
 	"bytes"
@@ -52,7 +52,7 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	return spanCtx, nil
 }
 
-// InjectSpan retriecves an opentrancing span from the current context and creates a new context
+// InjectSpan retrieves an opentrancing span from the current context and creates a new context
 // with it encoded in binary format inside the propagatable context content
 func InjectSpan(ctx context.Context) (context.Context, error) {
 	span := opentracing.SpanFromContext(ctx)

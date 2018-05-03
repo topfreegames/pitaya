@@ -36,11 +36,11 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/timer"
+	"github.com/topfreegames/pitaya/tracing"
 )
 
 var (
@@ -240,7 +240,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		"span.kind": "server",
 		"msg.type":  strings.ToLower(msg.Type.String()),
 	}
-	ctx := jaeger.StartSpan(context.Background(), msg.Route, tags)
+	ctx := tracing.StartSpan(context.Background(), msg.Route, tags)
 
 	r, err := route.Decode(msg.Route)
 	if err != nil {
@@ -288,7 +288,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 			a.Session.ResponseMID(ctx, mid, ret)
 		}
 	} else {
-		jaeger.FinishSpan(ctx, err)
+		tracing.FinishSpan(ctx, err)
 	}
 }
 

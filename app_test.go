@@ -21,6 +21,7 @@
 package pitaya
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -30,6 +31,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -383,4 +385,31 @@ func TestError(t *testing.T) {
 			assert.Equal(t, table.metadata, err.Metadata)
 		})
 	}
+}
+
+func TestGetSessionFromCtx(t *testing.T) {
+	ss := &session.Session{}
+	ctx := context.WithValue(context.Background(), constants.SessionCtxKey, ss)
+	s := GetSessionFromCtx(ctx)
+	assert.Equal(t, ss, s)
+}
+
+func TestAddToPropagateCtx(t *testing.T) {
+	ctx := AddToPropagateCtx(context.Background(), "key", "val")
+	val := ctx.Value(constants.PropagateCtxKey)
+	assert.Equal(t, map[string]interface{}{"key": "val"}, val)
+}
+
+func TestGetFromPropagateCtx(t *testing.T) {
+	ctx := AddToPropagateCtx(context.Background(), "key", "val")
+	val := GetFromPropagateCtx(ctx, "key")
+	assert.Equal(t, "val", val)
+}
+
+func TestExtractSpan(t *testing.T) {
+	span := opentracing.StartSpan("op", opentracing.ChildOf(nil))
+	ctx := opentracing.ContextWithSpan(context.Background(), span)
+	spanCtx, err := ExtractSpan(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, span.Context(), spanCtx)
 }

@@ -8,7 +8,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/jaeger"
+	"github.com/topfreegames/pitaya/tracing/jaeger"
 )
 
 // ConnectorRemote is a remote that will receive rpc's

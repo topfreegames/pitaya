@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package jaeger
+package tracing
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
-// LogError logs an error to a Jaeger span
+// LogError logs an error to an opentracing span
 func LogError(span opentracing.Span, message string) {
 	span.SetTag("error", true)
 	span.LogFields(
@@ -38,7 +38,7 @@ func LogError(span opentracing.Span, message string) {
 	)
 }
 
-// LogPanic logs a panic to a Jaeger span
+// LogPanic logs a panic to a opentracing span
 func LogPanic(span opentracing.Span) {
 	if err := recover(); err != nil {
 		message := fmt.Sprint(err)

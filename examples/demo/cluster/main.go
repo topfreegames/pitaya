@@ -11,10 +11,10 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
-	"github.com/topfreegames/pitaya/jaeger"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/tracing/jaeger"
 )
 
 func configureJaeger(svc string) {
