@@ -394,17 +394,6 @@ func TestGetSessionFromCtx(t *testing.T) {
 	assert.Equal(t, ss, s)
 }
 
-func TestAddSessionToCtx(t *testing.T) {
-	s := &session.Session{}
-	ctx := context.Background()
-
-	ctxWithSession := AddSessionToCtx(ctx, s)
-
-	sessionFromCtx, ok := ctxWithSession.Value(constants.SessionCtxKey).(*session.Session)
-	assert.True(t, ok)
-	assert.Equal(t, s, sessionFromCtx)
-}
-
 func TestAddToPropagateCtx(t *testing.T) {
 	ctx := AddToPropagateCtx(context.Background(), "key", "val")
 	val := ctx.Value(constants.PropagateCtxKey)

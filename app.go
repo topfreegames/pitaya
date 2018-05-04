@@ -424,11 +424,6 @@ func GetSessionFromCtx(ctx context.Context) *session.Session {
 	return ctx.Value(constants.SessionCtxKey).(*session.Session)
 }
 
-// AddSessionToCtx receives a context and return it with a session as value
-func AddSessionToCtx(ctx context.Context, s *session.Session) context.Context {
-	return context.WithValue(ctx, constants.SessionCtxKey, s)
-}
-
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls
 func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context.Context {
 	return pcontext.AddToPropagateCtx(ctx, key, val)
