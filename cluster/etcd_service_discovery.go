@@ -42,6 +42,7 @@ type etcdServiceDiscovery struct {
 	heartbeatInterval   time.Duration
 	syncServersInterval time.Duration
 	heartbeatTTL        time.Duration
+	heartbeatLog        bool
 	leaseID             clientv3.LeaseID
 	serverMapByType     sync.Map
 	serverMapByID       sync.Map
@@ -84,6 +85,7 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
 	sd.heartbeatInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval")
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
+	sd.heartbeatLog = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
 	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
 }
 
@@ -253,7 +255,9 @@ func (sd *etcdServiceDiscovery) Init() error {
 
 // Heartbeat sends a heartbeat to etcd
 func (sd *etcdServiceDiscovery) Heartbeat() error {
-	logger.Log.Debugf("renewing heartbeat with lease %s", sd.leaseID)
+	if sd.heartbeatLog {
+		logger.Log.Debugf("renewing heartbeat with lease %s", sd.leaseID)
+	}
 	_, err := sd.cli.KeepAliveOnce(context.TODO(), sd.leaseID)
 	if err != nil {
 		return err
