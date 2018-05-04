@@ -44,6 +44,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
+	mods "github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/remote"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
@@ -132,9 +133,9 @@ func Configure(
 	app.server.Frontend = isFrontend
 	app.server.Type = serverType
 	app.serverMode = serverMode
-	app.configured = true
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewEncoder(app.config.GetBool("pitaya.dataCompression"))
+	app.configured = true
 }
 
 // AddAcceptor adds a new acceptor to app
@@ -182,9 +183,9 @@ func SetRPCServer(s cluster.RPCServer) {
 	if reflect.TypeOf(s) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
 		// When using nats rpc server the server must start listening to messages
 		// destined to the userID that's binding
-		session.SetOnSessionBind(func(s *session.Session) error {
+		session.OnSessionBind(func(ctx context.Context, s *session.Session) error {
 			if app.server.Frontend && app.rpcServer != nil {
-				subs, err := app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID())
+				subs, err := app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID(), app.server.Type)
 				if err != nil {
 					return err
 				}
@@ -362,8 +363,16 @@ func listen() {
 
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
+	if app.serverMode == Cluster && app.server.Frontend && reflect.TypeOf(app.rpcServer) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
+		if app.config.GetBool("pitaya.session.unique") {
+			unique := mods.NewUniqueSession(app.server, app.rpcServer.(*cluster.NatsRPCServer), app.rpcClient.(*cluster.NatsRPCClient))
+			RegisterModule(unique, "uniqueSession")
+		}
+	}
 
 	startModules()
+
+	logger.Log.Info("all modules started!")
 
 	// this handles remote messages
 	if app.rpcServer != nil {

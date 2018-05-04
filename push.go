@@ -23,23 +23,28 @@ package pitaya
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
 
-// SendToUsers sends a message to given list of users
-func SendToUsers(route string, v interface{}, uids []string) error {
+// SendPushToUsers sends a message to given list of users
+func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) error {
 	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
 		return err
 	}
 
-	logger.Log.Debugf("Type=PushToUsers Route=%s, Data=%+v, #Users=%d", route, v, len(uids))
+	if !app.server.Frontend && frontendType == "" {
+		return constants.ErrFrontendTypeNotSpecified
+	}
+
+	logger.Log.Debugf("Type=PushToUsers Route=%s, Data=%+v, SvType=%s, #Users=%d", route, v, frontendType, len(uids))
 
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil {
+		if s := session.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
 			if err := s.Push(route, data); err != nil {
 				logger.Log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s",
 					s.ID(), s.UID(), err.Error())
@@ -54,8 +59,8 @@ func SendToUsers(route string, v interface{}, uids []string) error {
 			if err != nil {
 				return err
 			}
-			if err := app.rpcClient.Send(cluster.GetUserMessagesTopic(uid), msg); err != nil {
-				logger.Log.Errorf("RPCClient send message error, UID=%d, Error=%s", uid, err.Error())
+			if err := app.rpcClient.Send(cluster.GetUserMessagesTopic(uid, frontendType), msg); err != nil {
+				logger.Log.Errorf("RPCClient send message error, UID=%d, SvType=%s, Error=%s", uid, frontendType, err.Error())
 			}
 		}
 	}

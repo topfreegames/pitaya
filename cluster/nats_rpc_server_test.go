@@ -73,9 +73,9 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 
 func TestNatsRPCServerGetUserMessagesTopic(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "pitaya/user/bla/push", GetUserMessagesTopic("bla"))
-	assert.Equal(t, "pitaya/user/123bla/push", GetUserMessagesTopic("123bla"))
-	assert.Equal(t, "pitaya/user/1/push", GetUserMessagesTopic("1"))
+	assert.Equal(t, "pitaya/connector/user/bla/push", GetUserMessagesTopic("bla", "connector"))
+	assert.Equal(t, "pitaya/game/user/123bla/push", GetUserMessagesTopic("123bla", "game"))
+	assert.Equal(t, "pitaya/connector/user/1/push", GetUserMessagesTopic("1", "connector"))
 }
 
 func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
@@ -85,6 +85,32 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	n, _ := NewNatsRPCServer(cfg, sv)
 	assert.NotNil(t, n.GetUnhandledRequestsChannel())
 	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
+}
+
+func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
+	t.Parallel()
+	cfg := getConfig()
+	sv := getServer()
+	n, _ := NewNatsRPCServer(cfg, sv)
+	assert.Equal(t, n.bindingsChan, n.GetBindingsChannel())
+}
+
+func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
+	t.Parallel()
+	cfg := getConfig()
+	sv := getServer()
+	rpcServer, _ := NewNatsRPCServer(cfg, sv)
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	assert.NoError(t, err)
+	rpcServer.conn = conn
+	err = rpcServer.SubscribeToBindingsChannel()
+	assert.NoError(t, err)
+	dt := []byte("somedata")
+	conn.Publish(GetBindBroadcastTopic(sv.Type), dt)
+	msg := helpers.ShouldEventuallyReceive(t, rpcServer.GetBindingsChannel()).(*nats.Msg)
+	assert.Equal(t, msg.Data, dt)
 }
 
 func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
@@ -106,20 +132,21 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
-		uid string
-		msg []byte
+		uid    string
+		svType string
+		msg    []byte
 	}{
-		{"user1", []byte("msg1")},
-		{"user2", []byte("")},
-		{"u", []byte("000")},
+		{"user1", "conn", []byte("msg1")},
+		{"user2", "game", []byte("")},
+		{"u", "conn", []byte("000")},
 	}
 
 	for _, table := range tables {
 		t.Run(table.uid, func(t *testing.T) {
-			subs, err := rpcServer.SubscribeToUserMessages(table.uid)
+			subs, err := rpcServer.SubscribeToUserMessages(table.uid, table.svType)
 			assert.NoError(t, err)
 			assert.Equal(t, true, subs.IsValid())
-			conn.Publish(GetUserMessagesTopic(table.uid), table.msg)
+			conn.Publish(GetUserMessagesTopic(table.uid, table.svType), table.msg)
 			helpers.ShouldEventuallyReceive(t, rpcServer.userPushCh)
 		})
 	}

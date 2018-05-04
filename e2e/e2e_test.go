@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -154,12 +155,114 @@ func TestKick(t *testing.T) {
 	uid1 := uuid.New().String()
 	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
+
 	err = c2.SendRequest("connector.testsvc.testrequestkickuser", []byte(uid1))
 	assert.NoError(t, err)
 
+	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
+
 	helpers.ShouldEventuallyReturn(t, func() bool {
 		return c1.Connected
-	}, false)
+	}, false, 10*time.Millisecond, 1*time.Second)
+}
+
+func TestSameUIDUserShouldBeKicked(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	uid1 := uuid.New().String()
+	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
+
+	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
+
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return c1.Connected
+	}, false, 10*time.Millisecond, 1*time.Second)
+}
+
+func TestSameUIDUserShouldBeKickedInDifferentServersFromSameType(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+	port2 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port2))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	uid1 := uuid.New().String()
+	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan, 1*time.Second)
+
+	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan, 1*time.Second)
+
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return c1.Connected
+	}, false, 10*time.Millisecond, 1*time.Second)
+}
+
+func TestSameUIDUserShouldNotBeKickedInDifferentServersFromDiffType(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+	port2 := helpers.GetFreePort(t)
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector1", port1, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector2", port2, sdPrefix)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port2))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	uid1 := uuid.New().String()
+	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
+
+	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	assert.NoError(t, err)
+
+	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
+
+	helpers.ShouldAlwaysReturn(t, func() bool {
+		return c1.Connected
+	}, true, 10*time.Millisecond, 1*time.Second)
 }
 
 func TestKickOnBack(t *testing.T) {
@@ -212,8 +315,8 @@ func TestPushToUsers(t *testing.T) {
 	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid2))
 	assert.NoError(t, err)
 
-	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
-	msg2 := helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
+	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan, 1*time.Second).(*message.Message)
+	msg2 := helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan, 1*time.Second).(*message.Message)
 
 	assert.Equal(t, []byte("ack"), msg1.Data)
 	assert.Equal(t, []byte("ack"), msg2.Data)
@@ -221,22 +324,25 @@ func TestPushToUsers(t *testing.T) {
 	msg := fmt.Sprintf(`{"msg":"testing send to users","uids":["%s","%s"]}`, uid1, uid2)
 
 	tables := []struct {
+		name  string
 		route string
 	}{
-		{"connector.testsvc.testsendtousers"},
-		{"game.testsvc.testsendtousers"},
+		{"test1", "connector.testsvc.testsendtousers"},
+		{"test2", "game.testsvc.testsendtousers"},
 	}
 
 	for _, table := range tables {
-		c1.SendNotify(table.route, []byte(msg))
-		msg1 = helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
-		msg2 = helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
+		t.Run(table.name, func(t *testing.T) {
+			c1.SendNotify(table.route, []byte(msg))
+			msg1 = helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
+			msg2 = helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
 
-		assert.Equal(t, message.Push, msg1.Type)
-		assert.Equal(t, message.Push, msg2.Type)
+			assert.Equal(t, message.Push, msg1.Type)
+			assert.Equal(t, message.Push, msg2.Type)
 
-		assert.Equal(t, "testing send to users", string(msg1.Data))
-		assert.Equal(t, "testing send to users", string(msg2.Data))
+			assert.Equal(t, "testing send to users", string(msg1.Data))
+			assert.Equal(t, "testing send to users", string(msg2.Data))
+		})
 	}
 }
 

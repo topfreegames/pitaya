@@ -100,7 +100,7 @@ func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return strings.Contains(string(line), "serviceDiscovery successfully loaded")
+		return strings.Contains(string(line), "all modules started!")
 	}, true, 100*time.Millisecond, 30*time.Second)
 }
 
@@ -212,6 +212,43 @@ func ShouldEventuallyReceive(t testing.TB, c interface{}, timeouts ...time.Durat
 	}
 
 	return nil
+}
+
+// ShouldAlwaysReturn asserts that the return of f should always be v, timeouts: 0 - evaluation interval, 1 - timeout
+func ShouldAlwaysReturn(t testing.TB, f interface{}, v interface{}, timeouts ...time.Duration) {
+	t.Helper()
+	interval := 10 * time.Millisecond
+	timeout := time.After(50 * time.Millisecond)
+	switch len(timeouts) {
+	case 1:
+		interval = timeouts[0]
+		break
+	case 2:
+		interval = timeouts[0]
+		timeout = time.After(timeouts[1])
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	if isFunction(f) {
+		for {
+			select {
+			case <-timeout:
+				return
+			case <-ticker.C:
+				val, err := pollFuncReturn(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if v != val {
+					t.Fatalf("function f returned wrong value %s", v)
+				}
+			}
+		}
+	} else {
+		t.Fatal("ShouldAlwaysReturn should receive a function with no args and more than 0 outs")
+		return
+	}
 }
 
 // ShouldEventuallyReturn asserts that eventually the return of f should be v, timeouts: 0 - evaluation interval, 1 - timeout

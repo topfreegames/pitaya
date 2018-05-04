@@ -223,7 +223,7 @@ func (t *TestSvc) TestSendGroupMsgPtr(ctx context.Context, msg *TestRequest) {
 
 // TestSendToUsers handler for e2e tests
 func (t *TestSvc) TestSendToUsers(ctx context.Context, msg *TestSendToUsers) {
-	pitaya.SendToUsers("route.sendtousers", []byte(msg.Msg), msg.UIDs)
+	pitaya.SendPushToUsers("route.sendtousers", []byte(msg.Msg), msg.UIDs, "connector")
 }
 
 // TestSendRPCPointer tests sending a RPC

@@ -418,14 +418,14 @@ func TestSessionBindRunsOnSessionBind(t *testing.T) {
 	err := errors.New("some error occured")
 	tables := []struct {
 		name          string
-		onSessionBind func(s *Session) error
+		onSessionBind func(ctx context.Context, s *Session) error
 		err           error
 	}{
-		{"successful_on_session_bind", func(s *Session) error {
+		{"successful_on_session_bind", func(ctx context.Context, s *Session) error {
 			affectedVar = s.uid
 			return nil
 		}, nil},
-		{"failed_on_session_bind", func(s *Session) error { return err }, err},
+		{"failed_on_session_bind", func(ctx context.Context, s *Session) error { return err }, err},
 	}
 
 	for _, table := range tables {
@@ -434,8 +434,8 @@ func TestSessionBindRunsOnSessionBind(t *testing.T) {
 			ss := New(nil, true)
 			assert.NotNil(t, ss)
 
-			OnSessionBind = table.onSessionBind
-			defer func() { OnSessionBind = nil }()
+			OnSessionBind(table.onSessionBind)
+			defer func() { sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0) }()
 
 			uid := uuid.New().String()
 			err := ss.Bind(nil, uid)
@@ -677,17 +677,17 @@ func TestSessionRemove(t *testing.T) {
 	}
 }
 
-func TestSetOnSessionBind(t *testing.T) {
+func TestOnSessionBind(t *testing.T) {
 	expected := false
-	f := func(*Session) error {
+	f := func(context.Context, *Session) error {
 		expected = true
 		return nil
 	}
-	SetOnSessionBind(f)
-	defer func() { OnSessionBind = nil }()
+	OnSessionBind(f)
+	defer func() { sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0) }()
 	assert.NotNil(t, OnSessionBind)
 
-	OnSessionBind(nil)
+	sessionBindCallbacks[0](context.Background(), nil)
 	assert.True(t, expected)
 }
 

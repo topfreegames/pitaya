@@ -54,9 +54,6 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	if len(r) == 2 {
 		if v := r[1].Interface(); v != nil {
 			err = v.(error)
-			if err != nil {
-				logger.Log.Error(err.Error())
-			}
 		} else if !r[0].IsNil() {
 			rets = r[0].Interface()
 		} else {

@@ -73,6 +73,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.syncservers.interval":   "120s",
 		"pitaya.dataCompression":                        true,
 		"pitaya.heartbeat.interval":                     "30s",
+		"pitaya.session.unique":                         true,
 	}
 
 	for param := range defaultsMap {

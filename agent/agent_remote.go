@@ -114,9 +114,13 @@ func (a *Remote) Push(route string, v interface{}) error {
 			a.Session.ID(), a.Session.UID(), route, v)
 	}
 
+	sv, err := a.serviceDiscovery.GetServer(a.frontendID)
+	if err != nil {
+		return err
+	}
 	return a.sendPush(
 		pendingMessage{typ: message.Push, route: route, payload: v},
-		cluster.GetUserMessagesTopic(a.Session.UID()),
+		cluster.GetUserMessagesTopic(a.Session.UID(), sv.Type),
 	)
 }
 

@@ -42,9 +42,10 @@ type NatsRPCServer struct {
 	config             *config.Config
 	stopChan           chan bool
 	subChan            chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
+	bindingsChan       chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
 	unhandledReqCh     chan *protos.Request
 	userPushCh         chan *protos.Push
-	sub                *nats.Subscription
+	sub                *nats.Subscription // TODO monitor its size?
 	dropped            int
 }
 
@@ -78,20 +79,37 @@ func (ns *NatsRPCServer) configure() error {
 		return constants.ErrNatsPushBufferSizeZero
 	}
 	ns.subChan = make(chan *nats.Msg, ns.messagesBufferSize)
+	ns.bindingsChan = make(chan *nats.Msg, ns.messagesBufferSize)
 	// the reason this channel is buffered is that we can achieve more performance by not
 	// blocking producers on a massive push
 	ns.userPushCh = make(chan *protos.Push, ns.pushBufferSize)
 	return nil
 }
 
+// GetBindingsChannel gets the channel that will receive all bindings
+func (ns *NatsRPCServer) GetBindingsChannel() chan *nats.Msg {
+	return ns.bindingsChan
+}
+
 // GetUserMessagesTopic get the topic for user
-func GetUserMessagesTopic(uid string) string {
-	return fmt.Sprintf("pitaya/user/%s/push", uid)
+func GetUserMessagesTopic(uid string, svType string) string {
+	return fmt.Sprintf("pitaya/%s/user/%s/push", svType, uid)
+}
+
+// GetBindBroadcastTopic gets the topic on which bind events will be broadcasted
+func GetBindBroadcastTopic(svType string) string {
+	return fmt.Sprintf("pitaya/%s/bindings", svType)
+}
+
+// SubscribeToBindingsChannel subscribes to the channel that will receive binding notifications from other servers
+func (ns *NatsRPCServer) SubscribeToBindingsChannel() error {
+	_, err := ns.conn.ChanSubscribe(GetBindBroadcastTopic(ns.server.Type), ns.bindingsChan)
+	return err
 }
 
 // SubscribeToUserMessages subscribes to user msg channel
-func (ns *NatsRPCServer) SubscribeToUserMessages(uid string) (*nats.Subscription, error) {
-	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid), func(msg *nats.Msg) {
+func (ns *NatsRPCServer) SubscribeToUserMessages(uid string, svType string) (*nats.Subscription, error) {
+	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid, svType), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)
 		if err != nil {
@@ -109,6 +127,7 @@ func (ns *NatsRPCServer) handleMessages() {
 	defer (func() {
 		close(ns.unhandledReqCh)
 		close(ns.subChan)
+		close(ns.bindingsChan)
 	})()
 	maxPending := float64(0)
 	for {
@@ -162,7 +181,7 @@ func (ns *NatsRPCServer) Init() error {
 	if ns.sub, err = ns.subscribe(getChannel(ns.server.Type, ns.server.ID)); err != nil {
 		return err
 	}
-	return nil
+	return ns.SubscribeToBindingsChannel()
 }
 
 // AfterInit runs after initialization

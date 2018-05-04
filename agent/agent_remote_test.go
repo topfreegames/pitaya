@@ -125,15 +125,17 @@ func TestAgentRemotePush(t *testing.T) {
 			if table.rpcClient == nil {
 				table.rpcClient = clustermocks.NewMockRPCClient(ctrl)
 			}
+			fSvID := "123id"
 			ss := &protos.Session{Uid: table.uid}
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
-			remote, err := NewRemote(ss, "", table.rpcClient, nil, mockSerializer, nil, "", nil)
+			mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
+			remote, err := NewRemote(ss, "", table.rpcClient, nil, mockSerializer, mockSD, fSvID, nil)
 			assert.NoError(t, err)
 			assert.NotNil(t, remote)
 
 			if table.uid != "" {
 				expectedData := []byte("done")
-				topic := cluster.GetUserMessagesTopic(table.uid)
+				topic := cluster.GetUserMessagesTopic(table.uid, "connector")
 
 				if reflect.TypeOf(table.data) == reflect.TypeOf(([]byte)(nil)) {
 					expectedData = table.data.([]byte)
@@ -152,6 +154,9 @@ func TestAgentRemotePush(t *testing.T) {
 				}
 			}
 
+			if table.err != constants.ErrNoUIDBind {
+				mockSD.EXPECT().GetServer(fSvID).Return(cluster.NewServer(fSvID, "connector", true), nil)
+			}
 			err = remote.Push(route, table.data)
 			assert.Equal(t, table.err, err)
 		})

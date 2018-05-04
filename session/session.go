@@ -25,6 +25,7 @@ import (
 	"context"
 	"encoding/gob"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,11 +48,10 @@ type NetworkEntity interface {
 }
 
 var (
-	// OnSessionBind represents the function called after the session is bound
-	OnSessionBind func(s *Session) error
-	sessionsByUID sync.Map
-	sessionsByID  sync.Map
-	sessionIDSvc  = newSessionIDService()
+	sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0)
+	sessionsByUID        sync.Map
+	sessionsByID         sync.Map
+	sessionIDSvc         = newSessionIDService()
 )
 
 // Session represents a client session which could storage temp data during low-level
@@ -131,9 +131,18 @@ func GetSessionByID(id int64) *Session {
 	return nil
 }
 
-// SetOnSessionBind sets the method to be called when a session is bound
-func SetOnSessionBind(f func(s *Session) error) {
-	OnSessionBind = f
+// OnSessionBind adds a method to be called when a session is bound
+// same function cannot be added twice!
+func OnSessionBind(f func(ctx context.Context, s *Session) error) {
+	// Prevents the same function to be added twice in onSessionBind
+	sf1 := reflect.ValueOf(f)
+	for _, fun := range sessionBindCallbacks {
+		sf2 := reflect.ValueOf(fun)
+		if sf1.Pointer() == sf2.Pointer() {
+			return
+		}
+	}
+	sessionBindCallbacks = append(sessionBindCallbacks, f)
 }
 
 func (s *Session) updateEncodedData() error {
@@ -219,11 +228,13 @@ func (s *Session) Bind(ctx context.Context, uid string) error {
 	}
 
 	s.uid = uid
-	if OnSessionBind != nil {
-		err := OnSessionBind(s)
-		if err != nil {
-			s.uid = ""
-			return err
+	if len(sessionBindCallbacks) > 0 {
+		for _, cb := range sessionBindCallbacks {
+			err := cb(ctx, s)
+			if err != nil {
+				s.uid = ""
+				return err
+			}
 		}
 	}
 

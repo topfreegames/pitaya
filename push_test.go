@@ -40,7 +40,7 @@ type someStruct struct {
 	A int
 }
 
-func TestSendToUsersFailsIfErrSerializing(t *testing.T) {
+func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
@@ -52,7 +52,7 @@ func TestSendToUsersFailsIfErrSerializing(t *testing.T) {
 	expectedErr := errors.New("serialize error")
 	mockSerializer.EXPECT().Marshal(data).Return(nil, expectedErr)
 
-	err := SendToUsers(route, data, []string{uid})
+	err := SendPushToUsers(route, data, []string{uid}, "test")
 	assert.Equal(t, expectedErr, err)
 }
 
@@ -83,7 +83,7 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)
-			err = SendToUsers(route, data, []string{uid1, uid2})
+			err = SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
 			assert.NoError(t, err)
 		})
 	}
@@ -106,11 +106,12 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 
 			route := "some.route.bla"
 			data := []byte("hello")
+			svType := "connector"
 			uid1 := uuid.New().String()
 			uid2 := uuid.New().String()
 
-			topic1 := cluster.GetUserMessagesTopic(uid1)
-			topic2 := cluster.GetUserMessagesTopic(uid2)
+			topic1 := cluster.GetUserMessagesTopic(uid1, svType)
+			topic2 := cluster.GetUserMessagesTopic(uid2, svType)
 			expectedMsg1, _ := proto.Marshal(&protos.Push{
 				Route: route,
 				Uid:   uid1,
@@ -123,7 +124,7 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			})
 			mockRPCClient.EXPECT().Send(topic1, expectedMsg1).Return(table.err)
 			mockRPCClient.EXPECT().Send(topic2, expectedMsg2).Return(table.err)
-			err := SendToUsers(route, data, []string{uid1, uid2})
+			err := SendPushToUsers(route, data, []string{uid1, uid2}, svType)
 			assert.NoError(t, err)
 		})
 	}
