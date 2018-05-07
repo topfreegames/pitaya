@@ -70,6 +70,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.prefix":                 "pitaya/",
 		"pitaya.cluster.sd.etcd.heartbeat.interval":     "20s",
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":          "60s",
+		"pitaya.cluster.sd.etcd.heartbeat.log":          true,
 		"pitaya.cluster.sd.etcd.syncservers.interval":   "120s",
 		"pitaya.dataCompression":                        true,
 		"pitaya.heartbeat.interval":                     "30s",
