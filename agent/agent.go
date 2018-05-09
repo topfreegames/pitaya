@@ -35,6 +35,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/session"
@@ -50,6 +51,8 @@ var (
 	hrd  []byte
 	once sync.Once
 )
+
+const handlerType = "handler"
 
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
@@ -69,6 +72,7 @@ type (
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
 		messageEncoder     message.MessageEncoder
+		metricsReporter    metrics.Reporter
 	}
 
 	pendingMessage struct {
@@ -91,6 +95,7 @@ func NewAgent(
 	messagesBufferSize int,
 	dieChan chan bool,
 	messageEncoder message.MessageEncoder,
+	metricsReporter metrics.Reporter,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
@@ -112,6 +117,7 @@ func NewAgent(
 		serializer:         serializer,
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
+		metricsReporter:    metricsReporter,
 	}
 
 	// bindng session
@@ -163,12 +169,14 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 	if a.GetStatus() == constants.StatusClosed {
 		err := constants.ErrBrokenPipe
 		tracing.FinishSpan(ctx, err)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporter, handlerType, true)
 		return err
 	}
 
 	if mid <= 0 {
 		err := constants.ErrSessionOnNotify
 		tracing.FinishSpan(ctx, err)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporter, handlerType, true)
 		return err
 	}
 
@@ -333,6 +341,9 @@ func (a *Agent) write() {
 				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
 					tracing.FinishSpan(data.ctx, err)
+					if data.typ == message.Response {
+						metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+					}
 					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
 				}
@@ -349,6 +360,9 @@ func (a *Agent) write() {
 			em, err := a.messageEncoder.Encode(m)
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
+				if data.typ == message.Response {
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+				}
 				logger.Log.Error(err.Error())
 				break
 			}
@@ -357,16 +371,25 @@ func (a *Agent) write() {
 			p, err := a.encoder.Encode(packet.Data, em)
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
+				if data.typ == message.Response {
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+				}
 				logger.Log.Error(err)
 				break
 			}
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(p); err != nil {
 				tracing.FinishSpan(data.ctx, err)
+				if data.typ == message.Response {
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+				}
 				logger.Log.Error(err.Error())
 				return
 			}
 			tracing.FinishSpan(data.ctx, nil)
+			if data.typ == message.Response {
+				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, false)
+			}
 		case <-a.chStopWrite:
 			return
 		}

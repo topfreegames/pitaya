@@ -74,6 +74,10 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.dataCompression":                        true,
 		"pitaya.heartbeat.interval":                     "30s",
 		"pitaya.session.unique":                         true,
+		"pitaya.metrics.statsd.enabled":                 false,
+		"pitaya.metrics.statsd.host":                    "localhost:9125",
+		"pitaya.metrics.statsd.prefix":                  "pitaya.",
+		"pitaya.metrics.statsd.rate":                    1,
 	}
 
 	for param := range defaultsMap {

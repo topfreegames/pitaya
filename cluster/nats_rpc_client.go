@@ -34,6 +34,7 @@ import (
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
@@ -42,20 +43,22 @@ import (
 
 // NatsRPCClient struct
 type NatsRPCClient struct {
-	config     *config.Config
-	conn       *nats.Conn
-	connString string
-	reqTimeout time.Duration
-	running    bool
-	server     *Server
+	config          *config.Config
+	conn            *nats.Conn
+	connString      string
+	reqTimeout      time.Duration
+	running         bool
+	server          *Server
+	metricsReporter metrics.Reporter
 }
 
 // NewNatsRPCClient ctor
-func NewNatsRPCClient(config *config.Config, server *Server) (*NatsRPCClient, error) {
+func NewNatsRPCClient(config *config.Config, server *Server, metricsReporter metrics.Reporter) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		config:  config,
-		server:  server,
-		running: false,
+		config:          config,
+		server:          server,
+		running:         false,
+		metricsReporter: metricsReporter,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -167,6 +170,14 @@ func (ns *NatsRPCClient) Call(
 	marshalledData, err := proto.Marshal(&req)
 	if err != nil {
 		return nil, err
+	}
+
+	if ns.metricsReporter != nil {
+		startTime := time.Now()
+		defer func() {
+			elapsed := time.Since(startTime)
+			ns.metricsReporter.ReportLatency(elapsed, route.String(), "rpc", err != nil)
+		}()
 	}
 	m, err := ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
 	if err != nil {

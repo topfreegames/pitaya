@@ -61,3 +61,9 @@ var PeerIdKey = "peer.id"
 
 // PeerServiceKey is the key holding the peer service to be sent over the context
 var PeerServiceKey = "peer.service"
+
+// StartTimeKey is the key holding the request start time (in ns) to be sent over the context
+var StartTimeKey = "req-start-time"
+
+// RouteKey is the key holding the request route to be sent over the context
+var RouteKey = "req-route"

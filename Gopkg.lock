@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/DataDog/datadog-go"
+  packages = ["statsd"]
+  revision = "e67964b4021ad3a334e748e8811eb3cd6becbc6e"
+  version = "2.1.0"
+
+[[projects]]
   name = "github.com/apache/thrift"
   packages = ["lib/go/thrift"]
   revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
@@ -579,6 +585,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d64d89e36d601a1d22329de057752b3970d4de617f1f66135382c84010f8f87e"
+  inputs-digest = "c6d5edf57091a38067a5940b7eba2f70cd005a5d8a7670553662c49f3ddb45f3"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -32,11 +32,13 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/timer"
@@ -62,6 +64,7 @@ type (
 		server             *cluster.Server               // server obj
 		services           map[string]*component.Service // all registered service
 		messageEncoder     message.MessageEncoder
+		metricsReporter    metrics.Reporter
 	}
 
 	unhandledMessage struct {
@@ -85,6 +88,7 @@ func NewHandlerService(
 	server *cluster.Server,
 	remoteService *RemoteService,
 	messageEncoder message.MessageEncoder,
+	metricsReporter metrics.Reporter,
 ) *HandlerService {
 	h := &HandlerService{
 		services:           make(map[string]*component.Service),
@@ -99,6 +103,7 @@ func NewHandlerService(
 		server:             server,
 		remoteService:      remoteService,
 		messageEncoder:     messageEncoder,
+		metricsReporter:    metricsReporter,
 	}
 
 	return h
@@ -157,7 +162,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
 	// create a client agent and startup write goroutine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder)
+	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporter)
 
 	// startup agent goroutine
 	go a.Handle()
@@ -235,12 +240,14 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 }
 
 func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
+	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
 	tags := opentracing.Tags{
 		"local.id":  h.server.ID,
 		"span.kind": "server",
 		"msg.type":  strings.ToLower(msg.Type.String()),
 	}
-	ctx := tracing.StartSpan(context.Background(), msg.Route, tags)
+	ctx = tracing.StartSpan(ctx, msg.Route, tags)
 
 	r, err := route.Decode(msg.Route)
 	if err != nil {

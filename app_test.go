@@ -43,6 +43,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -82,7 +83,7 @@ func setup() {
 	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server)
 	typeOfNatsRPCServer = reflect.TypeOf(natsRPCServer)
 
-	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server)
+	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil)
 	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
 }
 
@@ -187,7 +188,7 @@ func TestSetRPCServer(t *testing.T) {
 func TestSetRPCClient(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := cluster.NewNatsRPCClient(app.config, app.server)
+	r, err := cluster.NewNatsRPCClient(app.config, app.server, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetRPCClient(r)
@@ -202,6 +203,16 @@ func TestSetServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
 	assert.Equal(t, r, app.serviceDiscovery)
+}
+
+func TestSetMetricsReporter(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
+	r, err := metrics.NewStatsdReporter(app.config, app.server.Type)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	SetMetricsReporter(r)
+	assert.Equal(t, r, app.metricsReporter)
 }
 
 func TestSetSerializer(t *testing.T) {
@@ -262,6 +273,25 @@ func TestShutdown(t *testing.T) {
 		Shutdown()
 	}()
 	<-app.dieChan
+}
+
+func TestConfigureDefaultMetricsReporter(t *testing.T) {
+	tables := []struct {
+		enabled bool
+	}{
+		{true},
+		{false},
+	}
+
+	for _, table := range tables {
+		t.Run(fmt.Sprintf("%t", table.enabled), func(t *testing.T) {
+			initApp()
+			cfg := viper.New()
+			cfg.Set("pitaya.metrics.statsd.enabled", table.enabled)
+			Configure(true, "testtype", Cluster, map[string]string{}, cfg)
+			assert.Equal(t, table.enabled, app.metricsReporter != nil)
+		})
+	}
 }
 
 func TestStartDefaultSD(t *testing.T) {

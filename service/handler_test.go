@@ -41,6 +41,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
+	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	connmock "github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -83,6 +84,9 @@ func TestNewHandlerService(t *testing.T) {
 	messageEncoder := message.NewEncoder(rand.Int()%2 == 0)
 	sv := &cluster.Server{}
 	remoteSvc := &RemoteService{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	svc := NewHandlerService(
 		dieChan,
 		packetDecoder,
@@ -93,6 +97,7 @@ func TestNewHandlerService(t *testing.T) {
 		sv,
 		remoteSvc,
 		messageEncoder,
+		mockMetricsReporter,
 	)
 
 	assert.NotNil(t, svc)
@@ -100,6 +105,7 @@ func TestNewHandlerService(t *testing.T) {
 	assert.Equal(t, packetDecoder, svc.decoder)
 	assert.Equal(t, packetEncoder, svc.encoder)
 	assert.Equal(t, serializer, svc.serializer)
+	assert.Equal(t, mockMetricsReporter, svc.metricsReporter)
 	assert.Equal(t, heartbeatTimeout, svc.heartbeatTimeout)
 	assert.Equal(t, 10, svc.messagesBufferSize)
 	assert.Equal(t, sv, svc.server)
@@ -109,7 +115,7 @@ func TestNewHandlerService(t *testing.T) {
 }
 
 func TestHandlerServiceRegister(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	defer func() { handlers = make(map[string]*component.Handler, 0) }()
@@ -129,7 +135,7 @@ func TestHandlerServiceRegister(t *testing.T) {
 }
 
 func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -137,7 +143,7 @@ func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 }
 
 func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
-	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 0, 0, 0, 0, nil, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of handler type"), err)
 }
@@ -162,14 +168,14 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			sv := &cluster.Server{}
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{}, nil)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{}, nil, nil)
 
 			if table.err != nil {
 				mockSerializer.EXPECT().Marshal(table.err).Return([]byte("err"), nil)
 			}
 
 			messageEncoder := message.NewEncoder(false)
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 			svc.processMessage(ag, table.msg)
 
 			if table.err == nil {
@@ -211,12 +217,12 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			messageEncoder := message.NewEncoder(false)
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 			if table.err != nil {
 				mockSerializer.EXPECT().Marshal(table.err)
 			}
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 			svc.localProcess(nil, ag, table.rt, table.msg)
 		})
 	}
@@ -230,13 +236,13 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	messageEncoder := message.NewEncoder(false)
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
 	mockConn.EXPECT().Write(gomock.Any()).Do(func(d []byte) {
 		assert.Contains(t, string(d), "heartbeat")
 	})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.Handshake})
 	assert.NoError(t, err)
 	assert.Equal(t, constants.StatusHandshake, ag.GetStatus())
@@ -249,10 +255,10 @@ func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	messageEncoder := message.NewEncoder(false)
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder, nil)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.HandshakeAck})
 	assert.NoError(t, err)
 	assert.Equal(t, constants.StatusWorking, ag.GetStatus())
@@ -265,10 +271,10 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	messageEncoder := message.NewEncoder(false)
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil)
+	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder)
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder, nil)
 	// wait to check if lastTime is updated. SORRY!
 	time.Sleep(1 * time.Second)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.Heartbeat})
@@ -300,11 +306,11 @@ func TestHandlerServiceProcessPacketData(t *testing.T) {
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			messageEncoder := message.NewEncoder(false)
-			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, &cluster.Server{}, nil, nil)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, &cluster.Server{}, nil, nil, nil)
 			if table.socketStatus < constants.StatusWorking {
 				mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
 			}
-			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder)
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 			ag.SetStatus(table.socketStatus)
 
 			if table.errStr == "" {
@@ -327,7 +333,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	packetDecoder := codec.NewPomeloPacketDecoder()
 	messageEncoder := message.NewEncoder(false)
-	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder)
+	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder, nil)
 	var wg sync.WaitGroup
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
 		handshakeBuffer := `{
