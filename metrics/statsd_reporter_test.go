@@ -67,7 +67,7 @@ func TestReportLatency(t *testing.T) {
 		assert.Contains(t, tags, fmt.Sprintf("type:%s", expectedType))
 		assert.Contains(t, tags, fmt.Sprintf("error:%t", expectedErrored))
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
-		assert.Contains(t, tags, fmt.Sprintf("host:%s", sr.hostname))
+		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
 	})
 
 	err = sr.ReportLatency(expectedDuration, expectedRoute, expectedType, expectedErrored)
@@ -110,7 +110,7 @@ func TestReportCount(t *testing.T) {
 			assert.Contains(t, tags, tag)
 		}
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
-		assert.Contains(t, tags, fmt.Sprintf("host:%s", sr.hostname))
+		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
 	})
 
 	err = sr.ReportCount(expectedCount, expectedMetric, customTags...)

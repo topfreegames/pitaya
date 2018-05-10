@@ -81,7 +81,7 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 		fmt.Sprintf("type:%s", typ),
 		fmt.Sprintf("error:%t", errored),
 		fmt.Sprintf("serverType:%s", s.serverType),
-		fmt.Sprintf("host:%s", s.hostname),
+		fmt.Sprintf("hostname:%s", s.hostname),
 	}
 
 	return s.client.Timing("response_time_ms", value, tags, s.rate)
@@ -90,7 +90,7 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) error {
 	fullTags := []string{
 		fmt.Sprintf("serverType:%s", s.serverType),
-		fmt.Sprintf("host:%s", s.hostname),
+		fmt.Sprintf("hostname:%s", s.hostname),
 	}
 	if len(tags) > 0 {
 		fullTags = append(fullTags, tags...)
