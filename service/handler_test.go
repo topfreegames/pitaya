@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -186,6 +187,8 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 					recvMsg = helpers.ShouldEventuallyReceive(t, svc.chRemoteProcess).(unhandledMessage)
 				}
 				assert.Equal(t, table.msg, recvMsg.msg)
+				assert.NotNil(t, pcontext.GetFromPropagateCtx(recvMsg.ctx, constants.StartTimeKey))
+				assert.Equal(t, table.msg.Route, pcontext.GetFromPropagateCtx(recvMsg.ctx, constants.RouteKey))
 			}
 		})
 	}

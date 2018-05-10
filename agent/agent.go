@@ -143,11 +143,7 @@ func (a *Agent) Push(route string, v interface{}) error {
 		return constants.ErrBrokenPipe
 	}
 
-	if len(a.chSend) >= a.messagesBufferSize {
-		// TODO monitorar
-		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d", len(a.chSend))
-	}
-
+	a.reportChannelSize()
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
@@ -180,11 +176,7 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 		return err
 	}
 
-	if len(a.chSend) >= a.messagesBufferSize {
-		// TODO monitorar
-		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d", len(a.chSend))
-	}
-
+	a.reportChannelSize()
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
@@ -388,7 +380,7 @@ func (a *Agent) write() {
 			}
 			tracing.FinishSpan(data.ctx, nil)
 			if data.typ == message.Response {
-				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, false)
+				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, m.Err)
 			}
 		case <-a.chStopWrite:
 			return
@@ -446,5 +438,22 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 	hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (a *Agent) reportChannelSize() {
+	if a.metricsReporter != nil {
+		if err := a.metricsReporter.ReportCount(len(a.chSend), "buffered_channel_size", "name:agentSend"); err != nil {
+			logger.Log.Warnf("failed to report channel size: %s", err.Error())
+		}
+	}
+	queueSize := len(a.chSend) - a.messagesBufferSize
+	if queueSize >= 0 {
+		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d, pending msgs: %d", len(a.chSend), queueSize)
+		if a.metricsReporter != nil {
+			if err := a.metricsReporter.ReportCount(queueSize, "channel_queue_size", "name:agentSend"); err != nil {
+				logger.Log.Warnf("failed to report channel queue size: %s", err.Error())
+			}
+		}
 	}
 }

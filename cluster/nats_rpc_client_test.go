@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/viper"
@@ -38,6 +39,7 @@ import (
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
+	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
@@ -58,13 +60,18 @@ func shutdown() {}
 
 func TestNewNatsRPCClient(t *testing.T) {
 	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+
 	cfg := getConfig()
 	sv := getServer()
-	n, err := NewNatsRPCClient(cfg, sv, nil)
+	n, err := NewNatsRPCClient(cfg, sv, mockMetricsReporter)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
 	assert.Equal(t, cfg, n.config)
+	assert.Equal(t, mockMetricsReporter, n.metricsReporter)
 	assert.False(t, n.running)
 }
 

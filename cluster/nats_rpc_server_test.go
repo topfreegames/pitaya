@@ -25,23 +25,30 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/mock/gomock"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
+	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/protos"
 )
 
 func TestNewNatsRPCServer(t *testing.T) {
 	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+
 	cfg := getConfig()
 	sv := getServer()
-	n, err := NewNatsRPCServer(cfg, sv)
+	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
 	assert.Equal(t, cfg, n.config)
+	assert.Equal(t, mockMetricsReporter, n.metricsReporter)
 }
 
 func TestNatsRPCServerConfigure(t *testing.T) {
@@ -65,7 +72,7 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 			cfg.Set("pitaya.buffer.cluster.rpc.server.messages", table.messagesBufferSize)
 			cfg.Set("pitaya.buffer.cluster.rpc.server.push", table.pushBufferSize)
 			conf := getConfig(cfg)
-			_, err := NewNatsRPCServer(conf, getServer())
+			_, err := NewNatsRPCServer(conf, getServer(), nil)
 			assert.Equal(t, table.err, err)
 		})
 	}
@@ -82,7 +89,7 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv)
+	n, _ := NewNatsRPCServer(cfg, sv, nil)
 	assert.NotNil(t, n.GetUnhandledRequestsChannel())
 	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
 }
@@ -91,7 +98,7 @@ func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv)
+	n, _ := NewNatsRPCServer(cfg, sv, nil)
 	assert.Equal(t, n.bindingsChan, n.GetBindingsChannel())
 }
 
@@ -99,7 +106,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
@@ -117,7 +124,7 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv)
+	n, _ := NewNatsRPCServer(cfg, sv, nil)
 	assert.NotNil(t, n.GetUserPushChannel())
 	assert.IsType(t, make(chan *protos.Push), n.GetUserPushChannel())
 }
@@ -125,7 +132,7 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
@@ -155,7 +162,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 func TestNatsRPCServerSubscribe(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
@@ -185,7 +192,11 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 func TestNatsRPCServerHandleMessages(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
@@ -206,6 +217,12 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			assert.Equal(t, true, subs.IsValid())
 			b, err := proto.Marshal(table.req)
 			assert.NoError(t, err)
+
+			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerBindings")
+			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerUserPush")
+			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerSub")
+			mockMetricsReporter.EXPECT().ReportCount(0, "rpc_server_dropped_messages")
+
 			conn.Publish(table.topic, b)
 			go rpcServer.handleMessages()
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
@@ -221,7 +238,7 @@ func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", "nats://localhost:1")
 	config := getConfig(cfg)
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(config, sv)
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil)
 	err := rpcServer.Init()
 	assert.Error(t, err)
 }
@@ -233,7 +250,7 @@ func TestNatsRPCServerInit(t *testing.T) {
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
 	config := getConfig(cfg)
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(config, sv)
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil)
 	err := rpcServer.Init()
 	assert.NoError(t, err)
 	// should setup conn
@@ -264,4 +281,30 @@ func TestNatsRPCServerInit(t *testing.T) {
 			assert.Equal(t, table.req.Msg.ID, r.Msg.ID)
 		})
 	}
+}
+
+func TestNatsRPCServerReportMetrics(t *testing.T) {
+	cfg := getConfig()
+	sv := getServer()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
+	rpcServer.dropped = 100
+	rpcServer.messagesBufferSize = 0
+	rpcServer.pushBufferSize = 0
+
+	rpcServer.subChan <- &nats.Msg{}
+	rpcServer.bindingsChan <- &nats.Msg{}
+	rpcServer.userPushCh <- &protos.Push{}
+
+	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerBindings")
+	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerUserPush")
+	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerSub")
+	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerBindings")
+	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerUserPush")
+	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerSub")
+	mockMetricsReporter.EXPECT().ReportCount(100, "rpc_server_dropped_messages")
+	rpcServer.reportMetrics()
 }

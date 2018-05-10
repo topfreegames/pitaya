@@ -33,6 +33,23 @@ func (m *MockReporter) EXPECT() *MockReporterMockRecorder {
 	return m.recorder
 }
 
+// ReportCount mocks base method
+func (m *MockReporter) ReportCount(value int, metric string, tags ...string) error {
+	varargs := []interface{}{value, metric}
+	for _, a := range tags {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ReportCount", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportCount indicates an expected call of ReportCount
+func (mr *MockReporterMockRecorder) ReportCount(value, metric interface{}, tags ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{value, metric}, tags...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportCount", reflect.TypeOf((*MockReporter)(nil).ReportCount), varargs...)
+}
+
 // ReportLatency mocks base method
 func (m *MockReporter) ReportLatency(value time.Duration, route, typ string, errored bool) error {
 	ret := m.ctrl.Call(m, "ReportLatency", value, route, typ, errored)

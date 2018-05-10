@@ -191,7 +191,6 @@ func (r *RemoteService) ProcessUserPush() {
 
 // ProcessRemoteMessages processes remote messages
 func (r *RemoteService) ProcessRemoteMessages(threadID int) {
-	// TODO need to monitor stuff here to guarantee messages are not being dropped
 	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
 		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
 		ctx, err := pcontext.Decode(req.GetMetadata())

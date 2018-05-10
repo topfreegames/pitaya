@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -31,33 +32,46 @@ import (
 
 // Client is the interface to required dogstatsd functions
 type Client interface {
+	Gauge(name string, value float64, tags []string, rate float64) error
 	Timing(name string, value time.Duration, tags []string, rate float64) error
 }
 
 type StatsdReporter struct {
-	config     *config.Config
 	client     Client
 	rate       float64
 	serverType string
+	hostname   string
 }
 
-func NewStatsdReporter(config *config.Config, serverType string) (*StatsdReporter, error) {
+func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...Client) (*StatsdReporter, error) {
 	host := config.GetString("pitaya.metrics.statsd.host")
 	prefix := config.GetString("pitaya.metrics.statsd.prefix")
 	rate, err := strconv.ParseFloat(config.GetString("pitaya.metrics.statsd.rate"), 64)
 	if err != nil {
 		return nil, err
 	}
-	c, err := statsd.New(host)
+	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
-	c.Namespace = prefix
-	return &StatsdReporter{
-		client:     c,
+
+	sr := &StatsdReporter{
 		rate:       rate,
 		serverType: serverType,
-	}, nil
+		hostname:   hostname,
+	}
+
+	if len(clientOrNil) > 0 {
+		sr.client = clientOrNil[0]
+	} else {
+		c, err := statsd.New(host)
+		if err != nil {
+			return nil, err
+		}
+		c.Namespace = prefix
+		sr.client = c
+	}
+	return sr, nil
 
 }
 
@@ -67,7 +81,19 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 		fmt.Sprintf("type:%s", typ),
 		fmt.Sprintf("error:%t", errored),
 		fmt.Sprintf("serverType:%s", s.serverType),
+		fmt.Sprintf("host:%s", s.hostname),
 	}
 
 	return s.client.Timing("response_time_ms", value, tags, s.rate)
+}
+
+func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) error {
+	fullTags := []string{
+		fmt.Sprintf("serverType:%s", s.serverType),
+		fmt.Sprintf("host:%s", s.hostname),
+	}
+	if len(tags) > 0 {
+		fullTags = append(fullTags, tags...)
+	}
+	return s.client.Gauge(metric, float64(value), fullTags, s.rate)
 }

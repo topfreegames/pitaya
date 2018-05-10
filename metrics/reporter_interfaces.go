@@ -23,5 +23,6 @@ package metrics
 import "time"
 
 type Reporter interface {
+	ReportCount(value int, metric string, tags ...string) error
 	ReportLatency(value time.Duration, route, typ string, errored bool) error
 }

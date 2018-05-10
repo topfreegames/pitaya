@@ -242,7 +242,7 @@ func startDefaultSD() {
 
 func startDefaultRPCServer() {
 	// initialize default rpc server
-	rpcServer, err := cluster.NewNatsRPCServer(app.config, app.server)
+	rpcServer, err := cluster.NewNatsRPCServer(app.config, app.server, app.metricsReporter)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster rpc server component: %s", err.Error())
 	}

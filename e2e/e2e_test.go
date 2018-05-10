@@ -225,7 +225,7 @@ func TestSameUIDUserShouldBeKickedInDifferentServersFromSameType(t *testing.T) {
 	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 
-	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan, 1*time.Second)
+	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan, 2*time.Second)
 
 	helpers.ShouldEventuallyReturn(t, func() bool {
 		return c1.Connected

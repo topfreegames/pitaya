@@ -29,6 +29,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 )
 
@@ -45,18 +46,20 @@ type NatsRPCServer struct {
 	bindingsChan       chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
 	unhandledReqCh     chan *protos.Request
 	userPushCh         chan *protos.Push
-	sub                *nats.Subscription // TODO monitor its size?
+	sub                *nats.Subscription
 	dropped            int
+	metricsReporter    metrics.Reporter
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(config *config.Config, server *Server) (*NatsRPCServer, error) {
+func NewNatsRPCServer(config *config.Config, server *Server, metricsReporter metrics.Reporter) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
-		config:         config,
-		server:         server,
-		stopChan:       make(chan bool),
-		unhandledReqCh: make(chan *protos.Request),
-		dropped:        0,
+		config:          config,
+		server:          server,
+		stopChan:        make(chan bool),
+		unhandledReqCh:  make(chan *protos.Request),
+		dropped:         0,
+		metricsReporter: metricsReporter,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -133,6 +136,7 @@ func (ns *NatsRPCServer) handleMessages() {
 	for {
 		select {
 		case msg := <-ns.subChan:
+			ns.reportMetrics()
 			dropped, err := ns.sub.Dropped()
 			if err != nil {
 				logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
@@ -201,4 +205,50 @@ func (ns *NatsRPCServer) subscribe(topic string) (*nats.Subscription, error) {
 }
 
 func (ns *NatsRPCServer) stop() {
+}
+
+func (ns *NatsRPCServer) reportMetrics() {
+	chSizeName := "buffered_channel_size"
+	chQueueName := "channel_queue_size"
+	if ns.metricsReporter != nil {
+		if err := ns.metricsReporter.ReportCount(ns.dropped, "rpc_server_dropped_messages"); err != nil {
+			logger.Log.Warnf("failed to report dropped message: %s", err.Error())
+		}
+
+		tag := "name:rpcServerSub"
+		if err := ns.metricsReporter.ReportCount(len(ns.subChan), chSizeName, tag); err != nil {
+			logger.Log.Warnf("failed to report subChan size: %s", err.Error())
+		}
+		queueSize := len(ns.subChan) - ns.messagesBufferSize
+		if queueSize >= 0 {
+			logger.Log.Warnf("subChan is at maximum capacity, waiting msgs: %d", queueSize)
+			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
+				logger.Log.Warnf("failed to report subChan queue size: %s", err.Error())
+			}
+		}
+
+		tag = "name:rpcServerBindings"
+		if err := ns.metricsReporter.ReportCount(len(ns.bindingsChan), chSizeName, tag); err != nil {
+			logger.Log.Warnf("failed to report bindingsChan size: %s", err.Error())
+		}
+		queueSize = len(ns.bindingsChan) - ns.messagesBufferSize
+		if queueSize >= 0 {
+			logger.Log.Warnf("bindingsChan is at maximum capacity, waiting msgs: %d", queueSize)
+			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
+				logger.Log.Warnf("failed to report bindingsChan queue size: %s", err.Error())
+			}
+		}
+
+		tag = "name:rpcServerUserPush"
+		if err := ns.metricsReporter.ReportCount(len(ns.userPushCh), chSizeName, tag); err != nil {
+			logger.Log.Warnf("failed to report userPushCh size: %s", err.Error())
+		}
+		queueSize = len(ns.userPushCh) - ns.pushBufferSize
+		if queueSize >= 0 {
+			logger.Log.Warnf("userPushCh is at maximum capacity, waiting msgs: %d", queueSize)
+			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
+				logger.Log.Warnf("failed to report userPushCh queue size: %s", err.Error())
+			}
+		}
+	}
 }
