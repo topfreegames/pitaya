@@ -48,7 +48,7 @@ message Response {
 }
 
 message Error {
-  string Code = 1;
-  string Msg = 2;
-  map<string, string> Metadata = 3;
+  string code = 1;
+  string msg = 2;
+  map<string, string> metadata = 3;
 }
