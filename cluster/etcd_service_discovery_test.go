@@ -203,7 +203,6 @@ func TestEtcdSDInit(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.heartbeat.interval", "30ms")
 			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "30ms")
 			config := getConfig(conf)
 			c, cli := helpers.GetTestEtcd(t)
@@ -221,9 +220,6 @@ func TestEtcdSDInit(t *testing.T) {
 			// should heartbeat and sync
 			time.Sleep(50 * time.Millisecond)
 			// TODO may be flaky
-			helpers.ShouldEventuallyReturn(t, func() bool {
-				return math.Abs(float64(time.Now().Unix()-e.lastHeartbeatTime.Unix())) < 5
-			}, true, 50*time.Millisecond, 2*time.Second)
 			helpers.ShouldEventuallyReturn(t, func() bool {
 				return math.Abs(float64(time.Now().Unix()-e.lastSyncTime.Unix())) < 5
 			}, true, 50*time.Millisecond, 2*time.Second)

@@ -39,10 +39,10 @@ import (
 type etcdServiceDiscovery struct {
 	cli                 *clientv3.Client
 	config              *config.Config
-	heartbeatInterval   time.Duration
 	syncServersInterval time.Duration
 	heartbeatTTL        time.Duration
-	heartbeatLog        bool
+	logHeartbeat        bool
+	lastHeartbeatTime   time.Time
 	leaseID             clientv3.LeaseID
 	serverMapByType     sync.Map
 	serverMapByID       sync.Map
@@ -52,7 +52,6 @@ type etcdServiceDiscovery struct {
 	running             bool
 	server              *Server
 	stopChan            chan bool
-	lastHeartbeatTime   time.Time
 	lastSyncTime        time.Time
 }
 
@@ -83,10 +82,36 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.etcdEndpoints = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints")
 	sd.etcdDialTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
 	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
-	sd.heartbeatInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.interval")
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
-	sd.heartbeatLog = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
+	sd.logHeartbeat = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
 	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
+}
+
+func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
+	for {
+		select {
+		case <-sd.stopChan:
+			return
+		case kaRes := <-c:
+			if kaRes == nil {
+				logger.Log.Warn("sd: error renewing etcd lease, rebootstrapping")
+				for {
+					err := sd.bootstrap()
+					if err != nil {
+						logger.Log.Warn("sd: error rebootstrapping lease, will retry in 5 seconds")
+						time.Sleep(5 * time.Second)
+						continue
+					} else {
+						return
+					}
+				}
+			} else {
+				if sd.logHeartbeat {
+					logger.Log.Debugf("sd: etcd lease %x renewed", kaRes.ID)
+				}
+			}
+		}
+	}
 }
 
 func (sd *etcdServiceDiscovery) bootstrapLease() error {
@@ -96,6 +121,16 @@ func (sd *etcdServiceDiscovery) bootstrapLease() error {
 		return err
 	}
 	sd.leaseID = l.ID
+	logger.Log.Debugf("sd: got leaseID: %x", l.ID)
+	// this will keep alive forever, when channel c is closed
+	// it means we probably have to rebootstrap the lease
+	c, err := sd.cli.KeepAlive(context.TODO(), sd.leaseID)
+	if err != nil {
+		return err
+	}
+	// need to receive here as per etcd docs
+	<-c
+	go sd.watchLeaseChan(c)
 	return nil
 }
 
@@ -178,6 +213,19 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 	return nil, constants.ErrNoServersAvailableOfType
 }
 
+func (sd *etcdServiceDiscovery) bootstrap() error {
+	err := sd.bootstrapLease()
+	if err != nil {
+		return err
+	}
+
+	err = sd.bootstrapServer(sd.server)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetServer returns a server given it's id
 func (sd *etcdServiceDiscovery) GetServer(id string) (*Server, error) {
 	if sv, ok := sd.serverMapByID.Load(id); ok {
@@ -207,31 +255,10 @@ func (sd *etcdServiceDiscovery) Init() error {
 	sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
 	sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
 
-	err = sd.bootstrapLease()
+	err = sd.bootstrap()
 	if err != nil {
 		return err
 	}
-
-	err = sd.bootstrapServer(sd.server)
-	if err != nil {
-		return err
-	}
-
-	// send heartbeats
-	heartbeatTicker := time.NewTicker(sd.heartbeatInterval)
-	go func() {
-		for sd.running {
-			select {
-			case <-heartbeatTicker.C:
-				err := sd.Heartbeat()
-				if err != nil {
-					logger.Log.Errorf("error sending heartbeat to etcd: %s", err.Error())
-				}
-			case <-sd.stopChan:
-				return
-			}
-		}
-	}()
 
 	// update servers
 	syncServersTicker := time.NewTicker(sd.syncServersInterval)
@@ -250,19 +277,6 @@ func (sd *etcdServiceDiscovery) Init() error {
 	}()
 
 	go sd.watchEtcdChanges()
-	return nil
-}
-
-// Heartbeat sends a heartbeat to etcd
-func (sd *etcdServiceDiscovery) Heartbeat() error {
-	if sd.heartbeatLog {
-		logger.Log.Debugf("renewing heartbeat with lease %s", sd.leaseID)
-	}
-	_, err := sd.cli.KeepAliveOnce(context.TODO(), sd.leaseID)
-	if err != nil {
-		return err
-	}
-	sd.lastHeartbeatTime = time.Now()
 	return nil
 }
 
