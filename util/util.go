@@ -26,6 +26,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
@@ -40,6 +41,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	defer func() {
 		if rec := recover(); rec != nil {
 			logger.Log.Errorf("pitaya/dispatch: %v", rec)
+			logger.Log.Debugf("%s", debug.Stack())
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {
