@@ -223,6 +223,7 @@ func (c *Client) handlePackets() {
 						delete(c.pendingRequests, m.ID)
 						<-c.pendingChan
 					} else {
+						c.pendingReqMutex.Unlock()
 						continue // do not process msg for already timedout request
 					}
 					c.pendingReqMutex.Unlock()
@@ -351,24 +352,23 @@ func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
 
 // sendMsg sends the request to the server
 func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error {
-	atomic.AddUint32(&c.nextID, 1)
 	// TODO mount msg and encode
 	m := message.Message{
 		Type:  msgType,
-		ID:    uint(c.nextID),
+		ID:    uint(atomic.AddUint32(&c.nextID, 1)),
 		Route: route,
 		Data:  data,
 		Err:   false,
 	}
 	p, err := c.buildPacket(m)
 	if msgType == message.Request {
+		c.pendingChan <- true
 		c.pendingReqMutex.Lock()
-		if _, ok := c.pendingRequests[uint(c.nextID)]; !ok {
-			c.pendingRequests[uint(c.nextID)] = &pendingRequest{
+		if _, ok := c.pendingRequests[m.ID]; !ok {
+			c.pendingRequests[m.ID] = &pendingRequest{
 				msg:    &m,
 				sentAt: time.Now(),
 			}
-			c.pendingChan <- true
 		}
 		c.pendingReqMutex.Unlock()
 	}

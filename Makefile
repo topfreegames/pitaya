@@ -54,7 +54,16 @@ e2e-test: ensure-testing-deps ensure-testing-bin
 
 benchmark-test: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING BENCHMARK TESTS==============="
+	@echo "--- starting testing servers"
+	@./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID
+	@./examples/testing/server -type connector -frontend=true > /dev/null 2>&1 & echo $$! > front.PID
+	@echo "--- sleeping for 5 seconds"
+	@sleep 5
 	@go test ./benchmark/benchmark_test.go -bench=.
+	@echo "--- killing testing servers"
+	@kill `cat back.PID` && rm back.PID
+	@kill `cat front.PID` && rm front.PID
+
 
 unit-test-coverage: kill-testing-deps
 	@echo "===============RUNNING UNIT TESTS==============="
