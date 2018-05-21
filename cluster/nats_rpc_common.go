@@ -41,6 +41,12 @@ func setupNatsConn(connectString string, options ...nats.Option) (*nats.Conn, er
 			logger.Log.Warnf("reconnected to nats %s!", nc.ConnectedUrl())
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
+			err := nc.LastError()
+			if err == nil {
+				logger.Log.Warn("nats connection closed with no error.")
+				return
+			}
+
 			logger.Log.Fatalf("nats connection closed. reason: %q", nc.LastError())
 		}),
 	)
