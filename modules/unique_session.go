@@ -54,9 +54,13 @@ func NewUniqueSession(server *cluster.Server, rpcServer *cluster.NatsRPCServer, 
 }
 
 func (u *UniqueSession) processBindings(bindingsChan chan *nats.Msg) {
+loop:
 	for {
 		select {
-		case s := <-bindingsChan:
+		case s, ok := <-bindingsChan:
+			if !ok {
+				break loop
+			}
 			msgData := s.Data
 			msg := &BindingMsg{}
 			err := json.Unmarshal(msgData, msg)
