@@ -36,6 +36,7 @@ import (
 // NatsRPCServer struct
 type NatsRPCServer struct {
 	connString         string
+	maxReconnects      int
 	server             *Server
 	conn               *nats.Conn
 	pushBufferSize     int
@@ -73,6 +74,7 @@ func (ns *NatsRPCServer) configure() error {
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
+	ns.maxReconnects = ns.config.GetInt("pitaya.cluster.rpc.server.nats.maxreconnects")
 	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
 	if ns.messagesBufferSize == 0 {
 		return constants.ErrNatsMessagesBufferSizeZero
@@ -178,7 +180,7 @@ func (ns *NatsRPCServer) GetUserPushChannel() chan *protos.Push {
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
-	conn, err := setupNatsConn(ns.connString)
+	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnects))
 	if err != nil {
 		return err
 	}
