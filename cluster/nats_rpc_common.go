@@ -31,8 +31,9 @@ func getChannel(serverType, serverID string) string {
 	return fmt.Sprintf("pitaya/servers/%s/%s", serverType, serverID)
 }
 
-func setupNatsConn(connectString string) (*nats.Conn, error) {
-	nc, err := nats.Connect(connectString,
+func setupNatsConn(connectString string, options ...nats.Option) (*nats.Conn, error) {
+	natsOptions := append(
+		options,
 		nats.DisconnectHandler(func(_ *nats.Conn) {
 			logger.Log.Warn("disconnected from nats!")
 		}),
@@ -40,9 +41,11 @@ func setupNatsConn(connectString string) (*nats.Conn, error) {
 			logger.Log.Warnf("reconnected to nats %s!", nc.ConnectedUrl())
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
-			logger.Log.Warnf("nats connection closed. reason: %q", nc.LastError())
+			logger.Log.Fatalf("nats connection closed. reason: %q", nc.LastError())
 		}),
 	)
+
+	nc, err := nats.Connect(connectString, natsOptions...)
 	if err != nil {
 		return nil, err
 	}

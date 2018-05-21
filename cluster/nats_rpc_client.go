@@ -46,6 +46,7 @@ type NatsRPCClient struct {
 	config          *config.Config
 	conn            *nats.Conn
 	connString      string
+	maxReconnects   int
 	reqTimeout      time.Duration
 	running         bool
 	server          *Server
@@ -71,6 +72,7 @@ func (ns *NatsRPCClient) configure() error {
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
+	ns.maxReconnects = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnects")
 	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
 	if ns.reqTimeout == 0 {
 		return constants.ErrNatsNoRequestTimeout
@@ -204,10 +206,10 @@ func (ns *NatsRPCClient) Call(
 	return res, nil
 }
 
-// Init inits nats rpc server
+// Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true
-	conn, err := setupNatsConn(ns.connString)
+	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnects))
 	if err != nil {
 		return err
 	}
