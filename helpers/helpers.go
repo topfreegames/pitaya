@@ -189,7 +189,7 @@ func ShouldEventuallyReceive(t testing.TB, c interface{}, timeouts ...time.Durat
 	}
 	v := reflect.ValueOf(c)
 
-	timeout := time.After(100 * time.Millisecond)
+	timeout := time.After(500 * time.Millisecond)
 
 	if len(timeouts) > 0 {
 		timeout = time.After(timeouts[0])
@@ -255,7 +255,7 @@ func ShouldAlwaysReturn(t testing.TB, f interface{}, v interface{}, timeouts ...
 func ShouldEventuallyReturn(t testing.TB, f interface{}, v interface{}, timeouts ...time.Duration) {
 	t.Helper()
 	interval := 10 * time.Millisecond
-	timeout := time.After(50 * time.Millisecond)
+	timeout := time.After(500 * time.Millisecond)
 	switch len(timeouts) {
 	case 1:
 		interval = timeouts[0]
