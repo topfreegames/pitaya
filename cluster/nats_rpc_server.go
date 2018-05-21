@@ -35,21 +35,21 @@ import (
 
 // NatsRPCServer struct
 type NatsRPCServer struct {
-	connString         string
-	maxReconnects      int
-	server             *Server
-	conn               *nats.Conn
-	pushBufferSize     int
-	messagesBufferSize int
-	config             *config.Config
-	stopChan           chan bool
-	subChan            chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
-	bindingsChan       chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
-	unhandledReqCh     chan *protos.Request
-	userPushCh         chan *protos.Push
-	sub                *nats.Subscription
-	dropped            int
-	metricsReporter    metrics.Reporter
+	connString             string
+	maxReconnectionRetries int
+	server                 *Server
+	conn                   *nats.Conn
+	pushBufferSize         int
+	messagesBufferSize     int
+	config                 *config.Config
+	stopChan               chan bool
+	subChan                chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
+	bindingsChan           chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
+	unhandledReqCh         chan *protos.Request
+	userPushCh             chan *protos.Push
+	sub                    *nats.Subscription
+	dropped                int
+	metricsReporter        metrics.Reporter
 }
 
 // NewNatsRPCServer ctor
@@ -74,7 +74,7 @@ func (ns *NatsRPCServer) configure() error {
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
-	ns.maxReconnects = ns.config.GetInt("pitaya.cluster.rpc.server.nats.maxreconnects")
+	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.server.nats.maxreconnectionretries")
 	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
 	if ns.messagesBufferSize == 0 {
 		return constants.ErrNatsMessagesBufferSizeZero
@@ -180,7 +180,7 @@ func (ns *NatsRPCServer) GetUserPushChannel() chan *protos.Push {
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
-	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnects))
+	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnectionRetries))
 	if err != nil {
 		return err
 	}

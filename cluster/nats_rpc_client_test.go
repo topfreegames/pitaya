@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -365,36 +364,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			assert.Equal(t, table.err, err)
 			err = subs.Unsubscribe()
 			assert.NoError(t, err)
-			// conn.Close()
+			conn.Close()
 		})
-	}
-}
-
-func TestCloseNatsClient(t *testing.T) {
-	// TODO: is this too hacky?
-	if os.Getenv("STOP_CONN") == "true" {
-		s := helpers.GetTestNatsServer(t)
-		conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
-		assert.NoError(t, err)
-		conn.Close()
-
-		helpers.ShouldEventuallyReturn(t, func() bool {
-			return conn.IsClosed()
-		}, true)
-
-		return
-	}
-
-	flag := "-test.run=" + t.Name()
-	cmd := exec.Command(os.Args[0], flag)
-	cmd.Env = append(os.Environ(), "STOP_CONN=true")
-
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-
-	err := cmd.Wait()
-	if e, ok := err.(*exec.ExitError); !ok || e.Success() {
-		t.Fatalf("Process ran with err %v, want exit status 1", err)
 	}
 }

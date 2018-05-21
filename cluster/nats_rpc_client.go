@@ -43,14 +43,14 @@ import (
 
 // NatsRPCClient struct
 type NatsRPCClient struct {
-	config          *config.Config
-	conn            *nats.Conn
-	connString      string
-	maxReconnects   int
-	reqTimeout      time.Duration
-	running         bool
-	server          *Server
-	metricsReporter metrics.Reporter
+	config                 *config.Config
+	conn                   *nats.Conn
+	connString             string
+	maxReconnectionRetries int
+	reqTimeout             time.Duration
+	running                bool
+	server                 *Server
+	metricsReporter        metrics.Reporter
 }
 
 // NewNatsRPCClient ctor
@@ -72,7 +72,7 @@ func (ns *NatsRPCClient) configure() error {
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
-	ns.maxReconnects = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnects")
+	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries")
 	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
 	if ns.reqTimeout == 0 {
 		return constants.ErrNatsNoRequestTimeout
@@ -209,7 +209,7 @@ func (ns *NatsRPCClient) Call(
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true
-	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnects))
+	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnectionRetries))
 	if err != nil {
 		return err
 	}
