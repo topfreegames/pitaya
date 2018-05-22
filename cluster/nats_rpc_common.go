@@ -22,6 +22,7 @@ package cluster
 
 import (
 	"fmt"
+	"syscall"
 
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/logger"
@@ -47,7 +48,8 @@ func setupNatsConn(connectString string, options ...nats.Option) (*nats.Conn, er
 				return
 			}
 
-			logger.Log.Fatalf("nats connection closed. reason: %q", nc.LastError())
+			syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+			logger.Log.Errorf("nats connection closed. reason: %q", nc.LastError())
 		}),
 	)
 
