@@ -87,6 +87,7 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 		fmt.Sprintf("hostname:%s", s.hostname),
 	}
 
+	logger.Log.Debug("sending statsd metric: reponse_time_ms")
 	err := s.client.Timing("response_time_ms", value, tags, s.rate)
 	if err != nil {
 		logger.Log.Errorf("failed to report latency: %q", err)
@@ -105,6 +106,7 @@ func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) e
 		fullTags = append(fullTags, tags...)
 	}
 
+	logger.Log.Debugf("sending statsd metric: %s", metric)
 	err := s.client.Gauge(metric, float64(value), fullTags, s.rate)
 	if err != nil {
 		logger.Log.Errorf("failed to report count: %q", err)
