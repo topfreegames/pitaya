@@ -36,6 +36,7 @@ type Client interface {
 	Timing(name string, value time.Duration, tags []string, rate float64) error
 }
 
+// StatsdReporter sends application metrics to statsd
 type StatsdReporter struct {
 	client     Client
 	rate       float64
@@ -43,6 +44,7 @@ type StatsdReporter struct {
 	hostname   string
 }
 
+// NewStatsdReporter returns an instance of statsd reportar and an error if something fails
 func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...Client) (*StatsdReporter, error) {
 	host := config.GetString("pitaya.metrics.statsd.host")
 	prefix := config.GetString("pitaya.metrics.statsd.prefix")
@@ -72,9 +74,9 @@ func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...
 		sr.client = c
 	}
 	return sr, nil
-
 }
 
+// ReportLatency sends latency reports to statsd
 func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, errored bool) error {
 	tags := []string{
 		fmt.Sprintf("route:%s", route),
@@ -87,6 +89,7 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 	return s.client.Timing("response_time_ms", value, tags, s.rate)
 }
 
+// ReportCount sends count reports to statsd
 func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) error {
 	fullTags := []string{
 		fmt.Sprintf("serverType:%s", s.serverType),

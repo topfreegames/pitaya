@@ -140,10 +140,14 @@ func Configure(
 	app.configured = true
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
+		logger.Log.Infof(
+			"statsd is enabled, configuring the metrics reporter with config: %+v",
+			app.config.Get("pitaya.metrics.statsd"))
 		metricsReporter, err := metrics.NewStatsdReporter(app.config, serverType)
 		if err != nil {
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {
+			logger.Log.Info("successfully configured statsd metrics reporter")
 			app.metricsReporter = metricsReporter
 		}
 	}
