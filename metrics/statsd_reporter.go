@@ -28,6 +28,7 @@ import (
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/logger"
 )
 
 // Client is the interface to required dogstatsd functions
@@ -86,7 +87,12 @@ func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, e
 		fmt.Sprintf("hostname:%s", s.hostname),
 	}
 
-	return s.client.Timing("response_time_ms", value, tags, s.rate)
+	err := s.client.Timing("response_time_ms", value, tags, s.rate)
+	if err != nil {
+		logger.Log.Errorf("failed to report latency: %q", err)
+	}
+
+	return err
 }
 
 // ReportCount sends count reports to statsd
@@ -98,5 +104,11 @@ func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) e
 	if len(tags) > 0 {
 		fullTags = append(fullTags, tags...)
 	}
-	return s.client.Gauge(metric, float64(value), fullTags, s.rate)
+
+	err := s.client.Gauge(metric, float64(value), fullTags, s.rate)
+	if err != nil {
+		logger.Log.Errorf("failed to report count: %q", err)
+	}
+
+	return err
 }
