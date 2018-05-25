@@ -89,6 +89,7 @@ func TestNewAgent(t *testing.T) {
 
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	assert.IsType(t, make(chan struct{}), ag.chDie)
@@ -109,6 +110,7 @@ func TestNewAgent(t *testing.T) {
 	assert.True(t, ag.Session.IsFrontend)
 
 	// second call should no call hdb encode
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 }
@@ -219,6 +221,7 @@ func TestAgentPush(t *testing.T) {
 			mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 			mockConn := mocks.NewMockConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -258,6 +261,7 @@ func TestAgentPushFullChannel(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
@@ -279,6 +283,7 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
@@ -320,6 +325,7 @@ func TestAgentResponseMID(t *testing.T) {
 
 			mockConn := mocks.NewMockConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -373,6 +379,7 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
@@ -899,6 +906,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockConn := mocks.NewMockConn(ctrl)
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 

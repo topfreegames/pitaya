@@ -52,6 +52,8 @@ var (
 	sessionsByUID        sync.Map
 	sessionsByID         sync.Map
 	sessionIDSvc         = newSessionIDService()
+	// SessionCount keeps the current number of sessions
+	SessionCount int64
 )
 
 // Session represents a client session which could storage temp data during low-level
@@ -108,6 +110,7 @@ func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 	}
 	if frontend {
 		sessionsByID.Store(s.id, s)
+		atomic.AddInt64(&SessionCount, 1)
 	}
 	if len(UID) > 0 {
 		s.uid = UID[0]
@@ -276,6 +279,7 @@ func (s *Session) OnClose(c func()) error {
 // Close terminate current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
+	atomic.AddInt64(&SessionCount, -1)
 	sessionsByID.Delete(s.ID())
 	sessionsByUID.Delete(s.UID())
 	if s.IsFrontend && s.Subscription != nil {

@@ -122,8 +122,8 @@ func NewAgent(
 
 	// bindng session
 	s := session.New(a, true)
+	metrics.ReportNumberOfConnectedClients(metricsReporters, session.SessionCount)
 	a.Session = s
-
 	return a
 }
 
@@ -209,6 +209,8 @@ func (a *Agent) Close() error {
 		close(a.chDie)
 		onSessionClosed(a.Session)
 	}
+
+	metrics.ReportNumberOfConnectedClients(a.metricsReporters, session.SessionCount)
 
 	return a.conn.Close()
 }

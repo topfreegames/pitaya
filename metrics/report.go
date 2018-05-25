@@ -48,3 +48,10 @@ func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, 
 		}
 	}
 }
+
+// ReportNumberOfConnectedClients reports the number of connected clients
+func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
+	for _, r := range reporters {
+		r.ReportGauge(ConnectedClients, map[string]string{}, float64(number))
+	}
+}
