@@ -50,16 +50,16 @@ type NatsRPCClient struct {
 	reqTimeout             time.Duration
 	running                bool
 	server                 *Server
-	metricsReporter        metrics.Reporter
+	metricsReporters       []metrics.Reporter
 }
 
 // NewNatsRPCClient ctor
-func NewNatsRPCClient(config *config.Config, server *Server, metricsReporter metrics.Reporter) (*NatsRPCClient, error) {
+func NewNatsRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		config:          config,
-		server:          server,
-		running:         false,
-		metricsReporter: metricsReporter,
+		config:           config,
+		server:           server,
+		running:          false,
+		metricsReporters: metricsReporters,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -174,14 +174,27 @@ func (ns *NatsRPCClient) Call(
 		return nil, err
 	}
 
-	if ns.metricsReporter != nil {
+	var m *nats.Msg
+
+	if ns.metricsReporters != nil {
 		startTime := time.Now()
 		defer func() {
+			status := "ok"
 			elapsed := time.Since(startTime)
-			ns.metricsReporter.ReportLatency(elapsed, route.String(), "rpc", err != nil)
+			if err != nil {
+				status = "failed"
+			}
+			tags := map[string]string{
+				"route":  route.String(),
+				"type":   "rpc",
+				"status": status,
+			}
+			for _, mr := range ns.metricsReporters {
+				mr.ReportSummary(metrics.ResponseTime, tags, float64(elapsed))
+			}
 		}()
 	}
-	m, err := ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
+	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
 	if err != nil {
 		return nil, err
 	}

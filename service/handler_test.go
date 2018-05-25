@@ -42,6 +42,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	connmock "github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
@@ -88,6 +89,7 @@ func TestNewHandlerService(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	svc := NewHandlerService(
 		dieChan,
 		packetDecoder,
@@ -98,7 +100,7 @@ func TestNewHandlerService(t *testing.T) {
 		sv,
 		remoteSvc,
 		messageEncoder,
-		mockMetricsReporter,
+		mockMetricsReporters,
 	)
 
 	assert.NotNil(t, svc)
@@ -106,7 +108,7 @@ func TestNewHandlerService(t *testing.T) {
 	assert.Equal(t, packetDecoder, svc.decoder)
 	assert.Equal(t, packetEncoder, svc.encoder)
 	assert.Equal(t, serializer, svc.serializer)
-	assert.Equal(t, mockMetricsReporter, svc.metricsReporter)
+	assert.Equal(t, mockMetricsReporters, svc.metricsReporters)
 	assert.Equal(t, heartbeatTimeout, svc.heartbeatTimeout)
 	assert.Equal(t, 10, svc.messagesBufferSize)
 	assert.Equal(t, sv, svc.server)

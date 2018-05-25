@@ -106,6 +106,7 @@ func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
 
 // StartServer starts a server
 func StartServer(t testing.TB, frontend bool, debug bool, svType string, port int, sdPrefix string) func() {
+	promPort := GetFreePort(t)
 	t.Helper()
 	args := []string{
 		"-type",
@@ -124,6 +125,8 @@ func StartServer(t testing.TB, frontend bool, debug bool, svType string, port in
 		"../examples/testing/server",
 		args...,
 	)
+	// always use a random port for prometheus, for avoiding e2e conflicts
+	cmd.Env = []string{fmt.Sprintf("PITAYA_METRICS_PROMETHEUS_PORT=%d", promPort)}
 
 	outPipe, err := cmd.StderrPipe()
 	if err != nil {
@@ -241,7 +244,7 @@ func ShouldAlwaysReturn(t testing.TB, f interface{}, v interface{}, timeouts ...
 					t.Fatal(err)
 				}
 				if v != val {
-					t.Fatalf("function f returned wrong value %s", v)
+					t.Fatalf("function f returned wrong value %s", val)
 				}
 			}
 		}

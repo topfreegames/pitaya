@@ -205,14 +205,14 @@ func TestSetServiceDiscovery(t *testing.T) {
 	assert.Equal(t, r, app.serviceDiscovery)
 }
 
-func TestSetMetricsReporter(t *testing.T) {
+func TestAddMetricsReporter(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 	r, err := metrics.NewStatsdReporter(app.config, app.server.Type)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
-	SetMetricsReporter(r)
-	assert.Equal(t, r, app.metricsReporter)
+	AddMetricsReporter(r)
+	assert.Contains(t, app.metricsReporters, r)
 }
 
 func TestSetSerializer(t *testing.T) {
@@ -289,7 +289,8 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 			cfg := viper.New()
 			cfg.Set("pitaya.metrics.statsd.enabled", table.enabled)
 			Configure(true, "testtype", Cluster, map[string]string{}, cfg)
-			assert.Equal(t, table.enabled, app.metricsReporter != nil)
+			// if statsd is enabled there are 2 metricsReporters, prometheus and statsd
+			assert.Equal(t, table.enabled, len(app.metricsReporters) == 2)
 		})
 	}
 }

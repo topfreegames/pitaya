@@ -60,17 +60,21 @@ func TestReportLatency(t *testing.T) {
 	assert.NoError(t, err)
 	expectedRoute := uuid.New().String()
 	expectedType := uuid.New().String()
-	expectedErrored := true
+	expectedErrored := "failed"
 
-	mockClient.EXPECT().Timing("response_time_ms", expectedDuration, gomock.Any(), sr.rate).Do(func(n string, d time.Duration, tags []string, r float64) {
+	mockClient.EXPECT().TimeInMilliseconds("response_time_ns", float64(expectedDuration.Nanoseconds()), gomock.Any(), sr.rate).Do(func(n string, d float64, tags []string, r float64) {
 		assert.Contains(t, tags, fmt.Sprintf("route:%s", expectedRoute))
 		assert.Contains(t, tags, fmt.Sprintf("type:%s", expectedType))
-		assert.Contains(t, tags, fmt.Sprintf("error:%t", expectedErrored))
+		assert.Contains(t, tags, fmt.Sprintf("status:%s", expectedErrored))
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
-		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
 	})
 
-	err = sr.ReportLatency(expectedDuration, expectedRoute, expectedType, expectedErrored)
+	err = sr.ReportSummary(ResponseTime, map[string]string{
+		"route":      expectedRoute,
+		"type":       expectedType,
+		"status":     expectedErrored,
+		"serverType": sr.serverType,
+	}, float64(expectedDuration.Nanoseconds()))
 	assert.NoError(t, err)
 }
 
@@ -84,9 +88,9 @@ func TestReportLatencyError(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
-	mockClient.EXPECT().Timing("response_time_ms", gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
+	mockClient.EXPECT().TimeInMilliseconds("response_time_ns", gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
 
-	err = sr.ReportLatency(123, "", "", false)
+	err = sr.ReportSummary(ResponseTime, map[string]string{}, float64(123))
 	assert.Equal(t, expectedError, err)
 }
 
@@ -101,19 +105,19 @@ func TestReportCount(t *testing.T) {
 
 	expectedCount := 123
 	expectedMetric := uuid.New().String()
-	customTags := []string{
-		fmt.Sprintf("tag1:%s", uuid.New().String()),
-		fmt.Sprintf("tag2:%s", uuid.New().String()),
+	customTags := map[string]string{
+		"tag1:": uuid.New().String(),
+		"tag2:": uuid.New().String(),
 	}
-	mockClient.EXPECT().Gauge(expectedMetric, float64(expectedCount), gomock.Any(), sr.rate).Do(func(n string, v float64, tags []string, r float64) {
-		for _, tag := range customTags {
-			assert.Contains(t, tags, tag)
+	mockClient.EXPECT().Count(expectedMetric, int64(expectedCount), gomock.Any(), sr.rate).Do(func(n string, v int64, tags []string, r float64) {
+		for k, v := range customTags {
+			assert.Contains(t, tags, fmt.Sprintf("%s:%s", k, v))
 		}
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
 		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
 	})
 
-	err = sr.ReportCount(expectedCount, expectedMetric, customTags...)
+	err = sr.ReportCount(expectedMetric, customTags, float64(expectedCount))
 	assert.NoError(t, err)
 }
 
@@ -127,8 +131,8 @@ func TestReportCountError(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
-	mockClient.EXPECT().Gauge(gomock.Any(), gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
+	mockClient.EXPECT().Count(gomock.Any(), gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
 
-	err = sr.ReportCount(123, "")
+	err = sr.ReportCount("123", map[string]string{}, float64(123))
 	assert.Equal(t, expectedError, err)
 }

@@ -39,6 +39,7 @@ import (
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -63,15 +64,16 @@ func TestNewNatsRPCClient(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
 	cfg := getConfig()
 	sv := getServer()
-	n, err := NewNatsRPCClient(cfg, sv, mockMetricsReporter)
+	n, err := NewNatsRPCClient(cfg, sv, mockMetricsReporters)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
 	assert.Equal(t, cfg, n.config)
-	assert.Equal(t, mockMetricsReporter, n.metricsReporter)
+	assert.Equal(t, mockMetricsReporters, n.metricsReporters)
 	assert.False(t, n.running)
 }
 

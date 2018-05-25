@@ -72,7 +72,7 @@ type (
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
 		messageEncoder     message.MessageEncoder
-		metricsReporter    metrics.Reporter
+		metricsReporters   []metrics.Reporter
 	}
 
 	pendingMessage struct {
@@ -95,7 +95,7 @@ func NewAgent(
 	messagesBufferSize int,
 	dieChan chan bool,
 	messageEncoder message.MessageEncoder,
-	metricsReporter metrics.Reporter,
+	metricsReporters []metrics.Reporter,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
@@ -117,7 +117,7 @@ func NewAgent(
 		serializer:         serializer,
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
-		metricsReporter:    metricsReporter,
+		metricsReporters:   metricsReporters,
 	}
 
 	// bindng session
@@ -133,6 +133,7 @@ func (a *Agent) send(m pendingMessage) (err error) {
 			err = constants.ErrBrokenPipe
 		}
 	}()
+	a.reportChannelSize()
 	a.chSend <- m
 	return
 }
@@ -143,7 +144,6 @@ func (a *Agent) Push(route string, v interface{}) error {
 		return constants.ErrBrokenPipe
 	}
 
-	a.reportChannelSize()
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
@@ -165,18 +165,17 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 	if a.GetStatus() == constants.StatusClosed {
 		err := constants.ErrBrokenPipe
 		tracing.FinishSpan(ctx, err)
-		metrics.ReportTimingFromCtx(ctx, a.metricsReporter, handlerType, true)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, true)
 		return err
 	}
 
 	if mid <= 0 {
 		err := constants.ErrSessionOnNotify
 		tracing.FinishSpan(ctx, err)
-		metrics.ReportTimingFromCtx(ctx, a.metricsReporter, handlerType, true)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, true)
 		return err
 	}
 
-	a.reportChannelSize()
 	switch d := v.(type) {
 	case []byte:
 		logger.Log.Debugf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
@@ -334,7 +333,7 @@ func (a *Agent) write() {
 				if err != nil {
 					tracing.FinishSpan(data.ctx, err)
 					if data.typ == message.Response {
-						metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+						metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
 					}
 					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
@@ -353,7 +352,7 @@ func (a *Agent) write() {
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
 				}
 				logger.Log.Error(err.Error())
 				break
@@ -364,7 +363,7 @@ func (a *Agent) write() {
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
 				}
 				logger.Log.Error(err)
 				break
@@ -373,14 +372,14 @@ func (a *Agent) write() {
 			if _, err := a.conn.Write(p); err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
 				}
 				logger.Log.Error(err.Error())
 				return
 			}
 			tracing.FinishSpan(data.ctx, nil)
 			if data.typ == message.Response {
-				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporter, handlerType, m.Err)
+				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, m.Err)
 			}
 		case <-a.chStopWrite:
 			return
@@ -442,18 +441,13 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 }
 
 func (a *Agent) reportChannelSize() {
-	if a.metricsReporter != nil {
-		if err := a.metricsReporter.ReportCount(len(a.chSend), "buffered_channel_size", "name:agentSend"); err != nil {
-			logger.Log.Warnf("failed to report channel size: %s", err.Error())
-		}
+	chSendCapacity := a.messagesBufferSize - len(a.chSend)
+	if chSendCapacity == 0 {
+		logger.Log.Warnf("chSend is at maximum capacity")
 	}
-	queueSize := len(a.chSend) - a.messagesBufferSize
-	if queueSize >= 0 {
-		logger.Log.Warnf("chSend is at maximum capacity, channel len: %d, pending msgs: %d", len(a.chSend), queueSize)
-		if a.metricsReporter != nil {
-			if err := a.metricsReporter.ReportCount(queueSize, "channel_queue_size", "name:agentSend"); err != nil {
-				logger.Log.Warnf("failed to report channel queue size: %s", err.Error())
-			}
+	for _, mr := range a.metricsReporters {
+		if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
+			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}
 }

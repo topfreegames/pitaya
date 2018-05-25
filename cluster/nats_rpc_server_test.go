@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
+	"github.com/topfreegames/pitaya/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/protos"
 )
@@ -40,15 +41,16 @@ func TestNewNatsRPCServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
 	cfg := getConfig()
 	sv := getServer()
-	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
+	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
 	assert.Equal(t, cfg, n.config)
-	assert.Equal(t, mockMetricsReporter, n.metricsReporter)
+	assert.Equal(t, mockMetricsReporters, n.metricsReporters)
 }
 
 func TestNatsRPCServerConfigure(t *testing.T) {
@@ -195,8 +197,9 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
@@ -210,6 +213,8 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 		{"user2/messages", &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{ID: 1}}},
 	}
 
+	go rpcServer.handleMessages()
+
 	for _, table := range tables {
 		t.Run(table.topic, func(t *testing.T) {
 			subs, err := rpcServer.subscribe(table.topic)
@@ -218,13 +223,10 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			b, err := proto.Marshal(table.req)
 			assert.NoError(t, err)
 
-			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerBindings")
-			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerUserPush")
-			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:rpcServerSub")
-			mockMetricsReporter.EXPECT().ReportCount(0, "rpc_server_dropped_messages")
+			mockMetricsReporter.EXPECT().ReportCount(metrics.DroppedMessages, gomock.Any(), float64(0))
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
 
 			conn.Publish(table.topic, b)
-			go rpcServer.handleMessages()
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
 			assert.Equal(t, table.req.FrontendID, r.FrontendID)
 			assert.Equal(t, table.req.Msg.ID, r.Msg.ID)
@@ -289,22 +291,18 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporter)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
 	rpcServer.dropped = 100
-	rpcServer.messagesBufferSize = 0
-	rpcServer.pushBufferSize = 0
+	rpcServer.messagesBufferSize = 100
+	rpcServer.pushBufferSize = 100
 
 	rpcServer.subChan <- &nats.Msg{}
 	rpcServer.bindingsChan <- &nats.Msg{}
 	rpcServer.userPushCh <- &protos.Push{}
 
-	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerBindings")
-	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerUserPush")
-	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:rpcServerSub")
-	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerBindings")
-	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerUserPush")
-	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:rpcServerSub")
-	mockMetricsReporter.EXPECT().ReportCount(100, "rpc_server_dropped_messages")
+	mockMetricsReporter.EXPECT().ReportCount(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
 	rpcServer.reportMetrics()
 }

@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/config"
@@ -33,8 +32,9 @@ import (
 
 // Client is the interface to required dogstatsd functions
 type Client interface {
+	Count(name string, value int64, tags []string, rate float64) error
 	Gauge(name string, value float64, tags []string, rate float64) error
-	Timing(name string, value time.Duration, tags []string, rate float64) error
+	TimeInMilliseconds(name string, value float64, tags []string, rate float64) error
 }
 
 // StatsdReporter sends application metrics to statsd
@@ -77,39 +77,58 @@ func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...
 	return sr, nil
 }
 
-// ReportLatency sends latency reports to statsd
-func (s *StatsdReporter) ReportLatency(value time.Duration, route, typ string, errored bool) error {
-	tags := []string{
-		fmt.Sprintf("route:%s", route),
-		fmt.Sprintf("type:%s", typ),
-		fmt.Sprintf("error:%t", errored),
+// ReportCount sends count reports to statsd
+func (s *StatsdReporter) ReportCount(metric string, tagsMap map[string]string, count float64) error {
+	fullTags := []string{
 		fmt.Sprintf("serverType:%s", s.serverType),
 		fmt.Sprintf("hostname:%s", s.hostname),
 	}
 
-	logger.Log.Debug("sending statsd metric: reponse_time_ms")
-	err := s.client.Timing("response_time_ms", value, tags, s.rate)
+	for k, v := range tagsMap {
+		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
+	}
+
+	err := s.client.Count(metric, int64(count), fullTags, s.rate)
 	if err != nil {
-		logger.Log.Errorf("failed to report latency: %q", err)
+		logger.Log.Errorf("failed to report count: %q", err)
 	}
 
 	return err
 }
 
-// ReportCount sends count reports to statsd
-func (s *StatsdReporter) ReportCount(value int, metric string, tags ...string) error {
+// ReportGauge sents the gauge value and reports to statsd
+func (s *StatsdReporter) ReportGauge(metric string, tagsMap map[string]string, value float64) error {
 	fullTags := []string{
 		fmt.Sprintf("serverType:%s", s.serverType),
 		fmt.Sprintf("hostname:%s", s.hostname),
 	}
-	if len(tags) > 0 {
-		fullTags = append(fullTags, tags...)
+
+	for k, v := range tagsMap {
+		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
 	}
 
-	logger.Log.Debugf("sending statsd metric: %s", metric)
-	err := s.client.Gauge(metric, float64(value), fullTags, s.rate)
+	err := s.client.Gauge(metric, value, fullTags, s.rate)
 	if err != nil {
-		logger.Log.Errorf("failed to report count: %q", err)
+		logger.Log.Errorf("failed to report gauge: %q", err)
+	}
+
+	return err
+}
+
+// ReportSummary observes the summary value and reports to statsd
+func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string, value float64) error {
+	fullTags := []string{
+		fmt.Sprintf("serverType:%s", s.serverType),
+		fmt.Sprintf("hostname:%s", s.hostname),
+	}
+
+	for k, v := range tagsMap {
+		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
+	}
+
+	err := s.client.TimeInMilliseconds(metric, float64(value), fullTags, s.rate)
+	if err != nil {
+		logger.Log.Errorf("failed to report summary: %q", err)
 	}
 
 	return err

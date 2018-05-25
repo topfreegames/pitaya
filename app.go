@@ -83,7 +83,7 @@ type App struct {
 	router           *router.Router
 	rpcClient        cluster.RPCClient
 	rpcServer        cluster.RPCServer
-	metricsReporter  metrics.Reporter
+	metricsReporters []metrics.Reporter
 	running          bool
 	serializer       serialize.Serializer
 	server           *cluster.Server
@@ -138,6 +138,8 @@ func Configure(
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewEncoder(app.config.GetBool("pitaya.dataCompression"))
 	app.configured = true
+	app.metricsReporters = make([]metrics.Reporter, 0)
+	AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port")))
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
 		logger.Log.Infof(
@@ -148,7 +150,7 @@ func Configure(
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {
 			logger.Log.Info("successfully configured statsd metrics reporter")
-			app.metricsReporter = metricsReporter
+			app.metricsReporters = append(app.metricsReporters, metricsReporter)
 		}
 	}
 }
@@ -227,9 +229,9 @@ func SetSerializer(seri serialize.Serializer) {
 	app.serializer = seri
 }
 
-// SetMetricsReporter to be used
-func SetMetricsReporter(mr metrics.Reporter) {
-	app.metricsReporter = mr
+// AddMetricsReporter to be used
+func AddMetricsReporter(mr metrics.Reporter) {
+	app.metricsReporters = append(app.metricsReporters, mr)
 }
 
 func startDefaultSD() {
@@ -246,7 +248,7 @@ func startDefaultSD() {
 
 func startDefaultRPCServer() {
 	// initialize default rpc server
-	rpcServer, err := cluster.NewNatsRPCServer(app.config, app.server, app.metricsReporter)
+	rpcServer, err := cluster.NewNatsRPCServer(app.config, app.server, app.metricsReporters)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster rpc server component: %s", err.Error())
 	}
@@ -255,7 +257,7 @@ func startDefaultRPCServer() {
 
 func startDefaultRPCClient() {
 	// initialize default rpc client
-	rpcClient, err := cluster.NewNatsRPCClient(app.config, app.server, app.metricsReporter)
+	rpcClient, err := cluster.NewNatsRPCClient(app.config, app.server, app.metricsReporters)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster rpc client component: %s", err.Error())
 	}
@@ -329,7 +331,7 @@ func Start() {
 		app.server,
 		remoteService,
 		app.messageEncoder,
-		app.metricsReporter,
+		app.metricsReporters,
 	)
 
 	listen()

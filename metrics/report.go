@@ -28,11 +28,23 @@ import (
 	pcontext "github.com/topfreegames/pitaya/context"
 )
 
-func ReportTimingFromCtx(ctx context.Context, reporter Reporter, typ string, errored bool) {
-	if reporter != nil {
+// ReportTimingFromCtx reports the latency from the context
+func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, errored bool) {
+	status := "ok"
+	if errored {
+		status = "failed"
+	}
+	if len(reporters) > 0 {
 		startTime := pcontext.GetFromPropagateCtx(ctx, constants.StartTimeKey)
 		route := pcontext.GetFromPropagateCtx(ctx, constants.RouteKey)
 		elapsed := time.Since(time.Unix(0, startTime.(int64)))
-		reporter.ReportLatency(elapsed, route.(string), typ, errored)
+		tags := map[string]string{
+			"route":  route.(string),
+			"status": status,
+			"type":   typ,
+		}
+		for _, r := range reporters {
+			r.ReportSummary(ResponseTime, tags, float64(elapsed.Nanoseconds()))
+		}
 	}
 }

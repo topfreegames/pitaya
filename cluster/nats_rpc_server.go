@@ -49,18 +49,18 @@ type NatsRPCServer struct {
 	userPushCh             chan *protos.Push
 	sub                    *nats.Subscription
 	dropped                int
-	metricsReporter        metrics.Reporter
+	metricsReporters       []metrics.Reporter
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(config *config.Config, server *Server, metricsReporter metrics.Reporter) (*NatsRPCServer, error) {
+func NewNatsRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
-		config:          config,
-		server:          server,
-		stopChan:        make(chan bool),
-		unhandledReqCh:  make(chan *protos.Request),
-		dropped:         0,
-		metricsReporter: metricsReporter,
+		config:           config,
+		server:           server,
+		stopChan:         make(chan bool),
+		unhandledReqCh:   make(chan *protos.Request),
+		dropped:          0,
+		metricsReporters: metricsReporters,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -211,46 +211,37 @@ func (ns *NatsRPCServer) stop() {
 }
 
 func (ns *NatsRPCServer) reportMetrics() {
-	chSizeName := "buffered_channel_size"
-	chQueueName := "channel_queue_size"
-	if ns.metricsReporter != nil {
-		if err := ns.metricsReporter.ReportCount(ns.dropped, "rpc_server_dropped_messages"); err != nil {
-			logger.Log.Warnf("failed to report dropped message: %s", err.Error())
-		}
-
-		tag := "name:rpcServerSub"
-		if err := ns.metricsReporter.ReportCount(len(ns.subChan), chSizeName, tag); err != nil {
-			logger.Log.Warnf("failed to report subChan size: %s", err.Error())
-		}
-		queueSize := len(ns.subChan) - ns.messagesBufferSize
-		if queueSize >= 0 {
-			logger.Log.Warnf("subChan is at maximum capacity, waiting msgs: %d", queueSize)
-			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
-				logger.Log.Warnf("failed to report subChan queue size: %s", err.Error())
+	if ns.metricsReporters != nil {
+		for _, mr := range ns.metricsReporters {
+			if err := mr.ReportCount(metrics.DroppedMessages, map[string]string{}, float64(ns.dropped)); err != nil {
+				logger.Log.Warnf("failed to report dropped message: %s", err.Error())
 			}
-		}
 
-		tag = "name:rpcServerBindings"
-		if err := ns.metricsReporter.ReportCount(len(ns.bindingsChan), chSizeName, tag); err != nil {
-			logger.Log.Warnf("failed to report bindingsChan size: %s", err.Error())
-		}
-		queueSize = len(ns.bindingsChan) - ns.messagesBufferSize
-		if queueSize >= 0 {
-			logger.Log.Warnf("bindingsChan is at maximum capacity, waiting msgs: %d", queueSize)
-			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
-				logger.Log.Warnf("failed to report bindingsChan queue size: %s", err.Error())
+			// subchan
+			subChanCapacity := ns.messagesBufferSize - len(ns.subChan)
+			if subChanCapacity == 0 {
+				logger.Log.Warn("subChan is at maximum capacity")
 			}
-		}
+			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
+				logger.Log.Warnf("failed to report subChan queue capacity: %s", err.Error())
+			}
 
-		tag = "name:rpcServerUserPush"
-		if err := ns.metricsReporter.ReportCount(len(ns.userPushCh), chSizeName, tag); err != nil {
-			logger.Log.Warnf("failed to report userPushCh size: %s", err.Error())
-		}
-		queueSize = len(ns.userPushCh) - ns.pushBufferSize
-		if queueSize >= 0 {
-			logger.Log.Warnf("userPushCh is at maximum capacity, waiting msgs: %d", queueSize)
-			if err := ns.metricsReporter.ReportCount(queueSize, chQueueName, tag); err != nil {
-				logger.Log.Warnf("failed to report userPushCh queue size: %s", err.Error())
+			// bindingschan
+			bindingsChanCapacity := ns.messagesBufferSize - len(ns.bindingsChan)
+			if bindingsChanCapacity == 0 {
+				logger.Log.Warn("bindingsChan is at maximum capacity")
+			}
+			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
+				logger.Log.Warnf("failed to report bindingsChan capacity: %s", err.Error())
+			}
+
+			// userpushch
+			userPushChanCapacity := ns.messagesBufferSize - len(ns.bindingsChan)
+			if userPushChanCapacity == 0 {
+				logger.Log.Warn("userPushChan is at maximum capacity")
+			}
+			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
+				logger.Log.Warnf("failed to report userPushCh capacity: %s", err.Error())
 			}
 		}
 	}

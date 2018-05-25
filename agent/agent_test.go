@@ -40,6 +40,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	messagemocks "github.com/topfreegames/pitaya/internal/message/mocks"
 	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
@@ -86,7 +87,9 @@ func TestNewAgent(t *testing.T) {
 		})
 	messageEncoder := message.NewEncoder(false)
 
-	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporter)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+
+	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	assert.IsType(t, make(chan struct{}), ag.chDie)
 	assert.IsType(t, make(chan pendingMessage), ag.chSend)
@@ -100,13 +103,13 @@ func TestNewAgent(t *testing.T) {
 	assert.Equal(t, hbTime, ag.heartbeatTimeout)
 	assert.InDelta(t, time.Now().Unix(), ag.lastAt, 1)
 	assert.Equal(t, mockSerializer, ag.serializer)
-	assert.Equal(t, mockMetricsReporter, ag.metricsReporter)
+	assert.Equal(t, mockMetricsReporters, ag.metricsReporters)
 	assert.Equal(t, constants.StatusStart, ag.state)
 	assert.NotNil(t, ag.Session)
 	assert.True(t, ag.Session.IsFrontend)
 
 	// second call should no call hdb encode
-	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder, mockMetricsReporter)
+	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 }
 
@@ -215,7 +218,8 @@ func TestAgentPush(t *testing.T) {
 			messageEncoder := message.NewEncoder(false)
 			mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 			mockConn := mocks.NewMockConn(ctrl)
-			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporter)
+			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
 			msg := pendingMessage{
@@ -228,7 +232,7 @@ func TestAgentPush(t *testing.T) {
 				close(ag.chSend)
 			}
 
-			mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:agentSend")
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(10))
 			err := ag.Push(msg.route, table.data)
 			assert.Equal(t, table.err, err)
 
@@ -253,11 +257,11 @@ func TestAgentPushFullChannel(t *testing.T) {
 	messageEncoder := message.NewEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
-	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporter)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
-	mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:agentSend")
-	mockMetricsReporter.EXPECT().ReportCount(0, "channel_queue_size", "name:agentSend")
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
 	go func() {
 		err := ag.Push("route", []byte("data"))
 		assert.NoError(t, err)
@@ -274,11 +278,12 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, mockMetricsReporter)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
 
-	mockMetricsReporter.EXPECT().ReportLatency(gomock.Any(), "route", "handler", true)
+	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 	ctx := getCtxWithRequestKeys()
 	err := ag.ResponseMID(ctx, 1, nil)
 	assert.Equal(t, constants.ErrBrokenPipe, err)
@@ -314,14 +319,15 @@ func TestAgentResponseMID(t *testing.T) {
 			messageEncoder := message.NewEncoder(false)
 
 			mockConn := mocks.NewMockConn(ctrl)
-			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporter)
+			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
 			ctx := getCtxWithRequestKeys()
 			if table.mid == 0 {
-				mockMetricsReporter.EXPECT().ReportLatency(gomock.Any(), "route", "handler", true)
+				mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 			} else {
-				mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:agentSend")
+				mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(10))
 			}
 			var msg pendingMessage
 			if table.mid != 0 {
@@ -366,11 +372,10 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	messageEncoder := message.NewEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
-	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporter)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
-
-	mockMetricsReporter.EXPECT().ReportCount(0, "buffered_channel_size", "name:agentSend")
-	mockMetricsReporter.EXPECT().ReportCount(0, "channel_queue_size", "name:agentSend")
+	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
 	go func() {
 		err := ag.ResponseMID(nil, 1, []byte("data"))
 		assert.NoError(t, err)
@@ -723,6 +728,7 @@ func TestAgentWriteChSend(t *testing.T) {
 	mockConn := mocks.NewMockConn(ctrl)
 	messageEncoder := message.NewEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
@@ -731,10 +737,10 @@ func TestAgentWriteChSend(t *testing.T) {
 		lastAt:           time.Now().Unix(),
 		serializer:       mockSerializer,
 		messageEncoder:   messageEncoder,
-		metricsReporter:  mockMetricsReporter,
+		metricsReporters: mockMetricsReporters,
 	}
 	ctx := getCtxWithRequestKeys()
-	mockMetricsReporter.EXPECT().ReportLatency(gomock.Any(), "route", "handler", false)
+	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 
 	expected := pendingMessage{
 		ctx:     ctx,
@@ -776,6 +782,7 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	messageEncoder := message.NewEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingMessage, 1),
@@ -784,12 +791,12 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 		lastAt:           time.Now().Unix(),
 		serializer:       mockSerializer,
 		messageEncoder:   messageEncoder,
-		metricsReporter:  mockMetricsReporter,
+		metricsReporters: mockMetricsReporters,
 		Session:          session.New(nil, true),
 	}
 
 	ctx := getCtxWithRequestKeys()
-	mockMetricsReporter.EXPECT().ReportLatency(gomock.Any(), "route", "handler", false)
+	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 
 	expected := pendingMessage{
 		ctx:     ctx,
@@ -890,15 +897,15 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	hbTime := time.Second
 	messageEncoder := message.NewEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockConn := mocks.NewMockConn(ctrl)
-	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporter)
+	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
 	ag.messagesBufferSize = 0
 
 	ag.chSend <- pendingMessage{}
 
-	mockMetricsReporter.EXPECT().ReportCount(1, "buffered_channel_size", "name:agentSend")
-	mockMetricsReporter.EXPECT().ReportCount(1, "channel_queue_size", "name:agentSend")
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(-1)) // because buffersize is 0 and chan sz is 1
 	ag.reportChannelSize()
 }

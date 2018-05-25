@@ -64,7 +64,7 @@ type (
 		server             *cluster.Server               // server obj
 		services           map[string]*component.Service // all registered service
 		messageEncoder     message.MessageEncoder
-		metricsReporter    metrics.Reporter
+		metricsReporters   []metrics.Reporter
 	}
 
 	unhandledMessage struct {
@@ -88,7 +88,7 @@ func NewHandlerService(
 	server *cluster.Server,
 	remoteService *RemoteService,
 	messageEncoder message.MessageEncoder,
-	metricsReporter metrics.Reporter,
+	metricsReporters []metrics.Reporter,
 ) *HandlerService {
 	h := &HandlerService{
 		services:           make(map[string]*component.Service),
@@ -103,7 +103,7 @@ func NewHandlerService(
 		server:             server,
 		remoteService:      remoteService,
 		messageEncoder:     messageEncoder,
-		metricsReporter:    metricsReporter,
+		metricsReporters:   metricsReporters,
 	}
 
 	return h
@@ -162,7 +162,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn net.Conn) {
 	// create a client agent and startup write goroutine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporter)
+	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporters)
 
 	// startup agent goroutine
 	go a.Handle()

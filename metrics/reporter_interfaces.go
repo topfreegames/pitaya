@@ -20,9 +20,9 @@
 
 package metrics
 
-import "time"
-
+// Reporter interface
 type Reporter interface {
-	ReportCount(value int, metric string, tags ...string) error
-	ReportLatency(value time.Duration, route, typ string, errored bool) error
+	ReportCount(metric string, tags map[string]string, count float64) error
+	ReportSummary(metric string, tags map[string]string, value float64) error
+	ReportGauge(metric string, tags map[string]string, value float64) error
 }

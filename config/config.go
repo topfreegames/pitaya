@@ -80,6 +80,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.host":                            "localhost:9125",
 		"pitaya.metrics.statsd.prefix":                          "pitaya.",
 		"pitaya.metrics.statsd.rate":                            1,
+		"pitaya.metrics.prometheus.port":                        9090,
 	}
 
 	for param := range defaultsMap {
