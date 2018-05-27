@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package protos;
 
+import "response.proto";
+
 enum RPCType {
   Sys = 0;
   User = 1;
@@ -53,4 +55,8 @@ message KickAnswer {
 message BindMsg {
   string uid = 1;
   string fid = 2;
+}
+
+service Pitaya {
+  rpc Call(Request) returns (Response) {}
 }
