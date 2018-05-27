@@ -213,7 +213,7 @@ func (ns *NatsRPCServer) stop() {
 func (ns *NatsRPCServer) reportMetrics() {
 	if ns.metricsReporters != nil {
 		for _, mr := range ns.metricsReporters {
-			if err := mr.ReportCount(metrics.DroppedMessages, map[string]string{}, float64(ns.dropped)); err != nil {
+			if err := mr.ReportGauge(metrics.DroppedMessages, map[string]string{}, float64(ns.dropped)); err != nil {
 				logger.Log.Warnf("failed to report dropped message: %s", err.Error())
 			}
 

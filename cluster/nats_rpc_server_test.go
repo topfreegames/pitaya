@@ -223,7 +223,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			b, err := proto.Marshal(table.req)
 			assert.NoError(t, err)
 
-			mockMetricsReporter.EXPECT().ReportCount(metrics.DroppedMessages, gomock.Any(), float64(0))
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(0))
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
 
 			conn.Publish(table.topic, b)
@@ -302,7 +302,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	rpcServer.bindingsChan <- &nats.Msg{}
 	rpcServer.userPushCh <- &protos.Push{}
 
-	mockMetricsReporter.EXPECT().ReportCount(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
 	rpcServer.reportMetrics()
 }
