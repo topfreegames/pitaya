@@ -39,9 +39,7 @@ var (
 	// ChannelCapacity represents the capacity of a channel (available slots)
 	ChannelCapacity = "channel_capacity"
 	// DroppedMessages reports the number of dropped messages in rpc server (messages that will not be handled)
-	DroppedMessages = "dropped_messages"
-	// QueueSize messages reports the number of messages queued for insertion
-	QueueSize          = "queue_size"
+	DroppedMessages    = "dropped_messages"
 	prometheusReporter *PrometheusReporter
 	once               sync.Once
 )
