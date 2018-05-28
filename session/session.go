@@ -48,9 +48,12 @@ type NetworkEntity interface {
 
 var (
 	sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0)
-	sessionsByUID        sync.Map
-	sessionsByID         sync.Map
-	sessionIDSvc         = newSessionIDService()
+	afterBindCallbacks   = make([]func(ctx context.Context, s *Session) error, 0)
+	// SessionCloseCallbacks contains global session close callbacks
+	SessionCloseCallbacks = make([]func(s *Session), 0)
+	sessionsByUID         sync.Map
+	sessionsByID          sync.Map
+	sessionIDSvc          = newSessionIDService()
 	// SessionCount keeps the current number of sessions
 	SessionCount int64
 )
@@ -140,6 +143,31 @@ func OnSessionBind(f func(ctx context.Context, s *Session) error) {
 	sessionBindCallbacks = append(sessionBindCallbacks, f)
 }
 
+// OnAfterSessionBind adds a method to be caalled when session is bound and after all sessionBind callbacks
+func OnAfterSessionBind(f func(ctx context.Context, s *Session) error) {
+	// Prevents the same function to be added twice in onSessionBind
+	sf1 := reflect.ValueOf(f)
+	for _, fun := range afterBindCallbacks {
+		sf2 := reflect.ValueOf(fun)
+		if sf1.Pointer() == sf2.Pointer() {
+			return
+		}
+	}
+	afterBindCallbacks = append(afterBindCallbacks, f)
+}
+
+// OnSessionClose adds a method that will be called when every session closes
+func OnSessionClose(f func(s *Session)) {
+	sf1 := reflect.ValueOf(f)
+	for _, fun := range SessionCloseCallbacks {
+		sf2 := reflect.ValueOf(fun)
+		if sf1.Pointer() == sf2.Pointer() {
+			return
+		}
+	}
+	SessionCloseCallbacks = append(SessionCloseCallbacks, f)
+}
+
 func (s *Session) updateEncodedData() error {
 	var b []byte
 	b, err := json.Marshal(s.data)
@@ -223,13 +251,19 @@ func (s *Session) Bind(ctx context.Context, uid string) error {
 	}
 
 	s.uid = uid
-	if len(sessionBindCallbacks) > 0 {
-		for _, cb := range sessionBindCallbacks {
-			err := cb(ctx, s)
-			if err != nil {
-				s.uid = ""
-				return err
-			}
+	for _, cb := range sessionBindCallbacks {
+		err := cb(ctx, s)
+		if err != nil {
+			s.uid = ""
+			return err
+		}
+	}
+
+	for _, cb := range afterBindCallbacks {
+		err := cb(ctx, s)
+		if err != nil {
+			s.uid = ""
+			return err
 		}
 	}
 
@@ -274,6 +308,7 @@ func (s *Session) Close() {
 	atomic.AddInt64(&SessionCount, -1)
 	sessionsByID.Delete(s.ID())
 	sessionsByUID.Delete(s.UID())
+	// TODO: this logic should be moved to nats rpc server
 	if s.IsFrontend && s.Subscription != nil {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		err := s.Subscription.Unsubscribe()

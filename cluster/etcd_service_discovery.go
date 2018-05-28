@@ -53,6 +53,7 @@ type etcdServiceDiscovery struct {
 	server              *Server
 	stopChan            chan bool
 	lastSyncTime        time.Time
+	listeners           []SDListener
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -66,11 +67,12 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:   config,
-		running:  false,
-		server:   server,
-		stopChan: make(chan bool),
-		cli:      client,
+		config:    config,
+		running:   false,
+		server:    server,
+		listeners: make([]SDListener, 0),
+		stopChan:  make(chan bool),
+		cli:       client,
 	}
 
 	sd.configure()
@@ -156,12 +158,27 @@ func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
 	return nil
 }
 
+// AddListener adds a listener to etcd service discovery
+func (sd *etcdServiceDiscovery) AddListener(listener SDListener) {
+	sd.listeners = append(sd.listeners, listener)
+}
+
 // AfterInit executes after Init
 func (sd *etcdServiceDiscovery) AfterInit() {
 }
 
 // BeforeShutdown executes before shutting down
 func (sd *etcdServiceDiscovery) BeforeShutdown() {
+}
+
+func (sd *etcdServiceDiscovery) notifyListeners(act Action, sv *Server) {
+	for _, l := range sd.listeners {
+		if act == DEL {
+			l.RemoveServer(sv)
+		} else if act == ADD {
+			l.AddServer(sv)
+		}
+	}
 }
 
 func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
@@ -172,6 +189,7 @@ func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
 			sm := svMap.(map[string]*Server)
 			delete(sm, sv.ID)
 		}
+		sd.notifyListeners(DEL, sv)
 	}
 }
 
@@ -356,7 +374,7 @@ func (sd *etcdServiceDiscovery) Shutdown() error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return sd.cli.Close()
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
@@ -367,6 +385,9 @@ func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 			sd.serverMapByType.Store(sv.Type, mapSvByType)
 		}
 		mapSvByType.(map[string]*Server)[sv.ID] = sv
+		if sv.ID != sd.server.ID {
+			sd.notifyListeners(ADD, sv)
+		}
 	}
 }
 

@@ -21,7 +21,6 @@
 package pitaya
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
@@ -55,11 +54,7 @@ func SendPushToUsers(route string, v interface{}, uids []string, frontendType st
 				Uid:   uid,
 				Data:  data,
 			}
-			msg, err := proto.Marshal(push)
-			if err != nil {
-				return err
-			}
-			if err := app.rpcClient.Send(cluster.GetUserMessagesTopic(uid, frontendType), msg); err != nil {
+			if err = app.rpcClient.SendPush(uid, &cluster.Server{Type: frontendType}, push); err != nil {
 				logger.Log.Errorf("RPCClient send message error, UID=%d, SvType=%s, Error=%s", uid, frontendType, err.Error())
 			}
 		}

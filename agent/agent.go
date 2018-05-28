@@ -303,12 +303,12 @@ func onSessionClosed(s *session.Session) {
 		}
 	}()
 
-	if len(s.OnCloseCallbacks) < 1 {
-		return
+	for _, fn1 := range s.OnCloseCallbacks {
+		fn1()
 	}
 
-	for _, fn := range s.OnCloseCallbacks {
-		fn()
+	for _, fn2 := range session.SessionCloseCallbacks {
+		fn2(s)
 	}
 }
 

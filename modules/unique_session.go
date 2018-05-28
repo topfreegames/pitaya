@@ -23,75 +23,44 @@ package modules
 import (
 	"context"
 
-	"github.com/gogo/protobuf/proto"
-	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
 )
 
 // UniqueSession module watches for sessions using the same UID and kicks them
 type UniqueSession struct {
 	server    *cluster.Server
-	rpcServer *cluster.NatsRPCServer
-	rpcClient *cluster.NatsRPCClient
-	dieChan   chan struct{}
+	rpcClient cluster.RPCClient
 }
 
 // NewUniqueSession creates a new unique session module
-func NewUniqueSession(server *cluster.Server, rpcServer *cluster.NatsRPCServer, rpcClient *cluster.NatsRPCClient) *UniqueSession {
+func NewUniqueSession(server *cluster.Server, rpcServer cluster.RPCServer, rpcClient cluster.RPCClient) *UniqueSession {
 	return &UniqueSession{
 		server:    server,
-		rpcServer: rpcServer,
 		rpcClient: rpcClient,
-		dieChan:   make(chan struct{}),
 	}
 }
 
-func (u *UniqueSession) processBindings(bindingsChan chan *nats.Msg) {
-	for {
-		select {
-		case s, ok := <-bindingsChan:
-			if !ok {
-				return
-			}
-			msgData := s.Data
-			msg := &protos.BindMsg{}
-			err := proto.Unmarshal(msgData, msg)
-			if err != nil {
-				continue
-			}
-			if u.server.ID == msg.Fid {
-				continue
-			}
-			oldSession := session.GetSessionByUID(msg.Uid)
-			if oldSession != nil {
-				// TODO it would be nice to set this correctly
-				oldSession.Kick(context.Background())
-			}
-		case <-u.dieChan:
-			return
-		}
+// OnUserBind method should be called when a user binds a session in remote servers
+func (u *UniqueSession) OnUserBind(uid, fid string) {
+	if u.server.ID == fid {
+		return
+	}
+	oldSession := session.GetSessionByUID(uid)
+	if oldSession != nil {
+		// TODO: it would be nice to set this correctly
+		oldSession.Kick(context.Background())
 	}
 }
 
 // Init initializes the module
 func (u *UniqueSession) Init() error {
-	go u.processBindings(u.rpcServer.GetBindingsChannel())
 	session.OnSessionBind(func(ctx context.Context, s *session.Session) error {
 		oldSession := session.GetSessionByUID(s.UID())
 		if oldSession != nil {
 			return oldSession.Kick(ctx)
 		}
-		msg := &protos.BindMsg{
-			Uid: s.UID(),
-			Fid: u.server.ID,
-		}
-		msgData, err := proto.Marshal(msg)
-		if err != nil {
-			return err
-		}
-		err = u.rpcClient.Send(cluster.GetBindBroadcastTopic(u.server.Type), msgData)
+		err := u.rpcClient.BroadcastSessionBind(s.UID())
 		return err
 	})
 	return nil
@@ -105,6 +74,5 @@ func (u *UniqueSession) BeforeShutdown() {}
 
 // Shutdown shutdowns the binary module
 func (u *UniqueSession) Shutdown() error {
-	close(u.dieChan)
 	return nil
 }

@@ -98,17 +98,18 @@ var (
 			Metadata: map[string]string{},
 			Frontend: true,
 		},
-		debug:         false,
-		startAt:       time.Now(),
-		dieChan:       make(chan bool),
-		acceptors:     []acceptor.Acceptor{},
-		packetDecoder: codec.NewPomeloPacketDecoder(),
-		packetEncoder: codec.NewPomeloPacketEncoder(),
-		serverMode:    Standalone,
-		serializer:    json.NewSerializer(),
-		configured:    false,
-		running:       false,
-		router:        router.New(),
+		debug:            false,
+		startAt:          time.Now(),
+		dieChan:          make(chan bool),
+		acceptors:        []acceptor.Acceptor{},
+		packetDecoder:    codec.NewPomeloPacketDecoder(),
+		packetEncoder:    codec.NewPomeloPacketEncoder(),
+		metricsReporters: make([]metrics.Reporter, 0),
+		serverMode:       Standalone,
+		serializer:       json.NewSerializer(),
+		configured:       false,
+		running:          false,
+		router:           router.New(),
 	}
 
 	remoteService  *service.RemoteService
@@ -197,23 +198,19 @@ func GetServerID() string {
 	return app.server.ID
 }
 
+// GetConfig gets the pitaya config instance
+func GetConfig() *config.Config {
+	return app.config
+}
+
+// GetMetricsReporters gets registered metrics reporters
+func GetMetricsReporters() []metrics.Reporter {
+	return app.metricsReporters
+}
+
 // SetRPCServer to be used
 func SetRPCServer(s cluster.RPCServer) {
 	app.rpcServer = s
-	if reflect.TypeOf(s) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
-		// When using nats rpc server the server must start listening to messages
-		// destined to the userID that's binding
-		session.OnSessionBind(func(ctx context.Context, s *session.Session) error {
-			if app.server.Frontend && app.rpcServer != nil {
-				subs, err := app.rpcServer.(*cluster.NatsRPCServer).SubscribeToUserMessages(s.UID(), app.server.Type)
-				if err != nil {
-					return err
-				}
-				s.Subscription = subs
-			}
-			return nil
-		})
-	}
 }
 
 // SetRPCClient to be used
@@ -237,8 +234,13 @@ func GetSerializer() serialize.Serializer {
 	return app.serializer
 }
 
-// GetServer returns the server with the specified id
-func GetServer(id string) (*cluster.Server, error) {
+// GetServer gets the local server instance
+func GetServer() *cluster.Server {
+	return app.server
+}
+
+// GetServerByID returns the server with the specified id
+func GetServerByID(id string) (*cluster.Server, error) {
 	return app.serviceDiscovery.GetServer(id)
 }
 
@@ -315,10 +317,15 @@ func Start() {
 			logger.Log.Warn("creating default rpc client because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetRPCClient")
 			startDefaultRPCClient()
-			RegisterModule(app.serviceDiscovery, "serviceDiscovery")
-			RegisterModule(app.rpcServer, "rpcServer")
-			RegisterModule(app.rpcClient, "rpcClient")
 		}
+
+		if reflect.TypeOf(app.rpcClient) == reflect.TypeOf(&cluster.GRPCClient{}) {
+			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
+		}
+
+		RegisterModule(app.serviceDiscovery, "serviceDiscovery")
+		RegisterModule(app.rpcServer, "rpcServer")
+		RegisterModule(app.rpcClient, "rpcClient")
 
 		app.router.SetServiceDiscovery(app.serviceDiscovery)
 
@@ -332,6 +339,9 @@ func Start() {
 			app.messageEncoder,
 			app.server,
 		)
+
+		app.rpcServer.SetPitayaServer(remoteService)
+
 		initSysRemotes()
 	}
 
@@ -399,25 +409,16 @@ func listen() {
 
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
-	if app.serverMode == Cluster && app.server.Frontend && reflect.TypeOf(app.rpcServer) == reflect.TypeOf(&cluster.NatsRPCServer{}) {
-		if app.config.GetBool("pitaya.session.unique") {
-			unique := mods.NewUniqueSession(app.server, app.rpcServer.(*cluster.NatsRPCServer), app.rpcClient.(*cluster.NatsRPCClient))
-			RegisterModule(unique, "uniqueSession")
-		}
+
+	if app.serverMode == Cluster && app.server.Frontend && app.config.GetBool("pitaya.session.unique") {
+		unique := mods.NewUniqueSession(app.server, app.rpcServer, app.rpcClient)
+		remoteService.AddRemoteBindingListener(unique)
+		RegisterModule(unique, "uniqueSession")
 	}
 
 	startModules()
 
 	logger.Log.Info("all modules started!")
-
-	// this handles remote messages
-	if app.rpcServer != nil {
-		for i := 0; i < app.config.GetInt("pitaya.concurrency.remote.service"); i++ {
-			go remoteService.ProcessRemoteMessages(i)
-		}
-		// this should be so fast that we shoudn't need concurrency
-		go remoteService.ProcessUserPush()
-	}
 
 	app.running = true
 }

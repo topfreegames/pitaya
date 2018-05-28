@@ -59,4 +59,6 @@ message BindMsg {
 
 service Pitaya {
   rpc Call(Request) returns (Response) {}
+  rpc PushToUser(Push) returns (Response) {}
+  rpc SessionBindRemote(BindMsg) returns (Response) {}
 }

@@ -17,7 +17,7 @@ run-chat-example:
 	@cd examples/demo/chat/ && go run main.go
 
 run-cluster-example-frontend:
-	@go run examples/demo/cluster/main.go
+	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
 
 run-cluster-protobuf-frontend-example:
 	@cd examples/demo/cluster_protobuf && go run main.go
@@ -26,14 +26,14 @@ run-cluster-protobuf-backend-example:
 	@cd examples/demo/cluster_protobuf && go run main.go --port 3251 --type room --frontend=false
 
 run-cluster-example-backend:
-	@go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
+	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-tadpole-example:
 	@go run examples/demo/tadpole/main.go
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I protos/ protos/pitaya.proto --gogofaster_out=plugins=grpc:protos
+	@protoc -I protos/ protos/*.proto --gogofaster_out=plugins=grpc:protos
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

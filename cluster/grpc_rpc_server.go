@@ -21,24 +21,77 @@
 package cluster
 
 import (
+	"fmt"
+	"net"
+
+	"google.golang.org/grpc"
+
+	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/metrics"
+	"github.com/topfreegames/pitaya/protos"
 )
 
-// GRPCRPCServer rpc server struct
-type GRPCRPCServer struct {
+// GRPCServer rpc server struct
+type GRPCServer struct {
 	server           *Server
 	config           *config.Config
-	stopChan         chan bool
 	metricsReporters []metrics.Reporter
+	grpcSv           *grpc.Server
+	pitayaServer     protos.PitayaServer
 }
 
-// NewGRPCRPCServer constructor
-func NewGRPCRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*GRPCRPCServer, error) {
-	gs := &GRPCRPCServer{
+// NewGRPCServer constructor
+func NewGRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*GRPCServer, error) {
+	gs := &GRPCServer{
 		config:           config,
 		server:           server,
 		metricsReporters: metricsReporters,
 	}
 	return gs, nil
+}
+
+// Init inits grpc rpc server
+func (gs *GRPCServer) Init() error {
+	port := gs.config.GetInt("pitaya.cluster.rpc.server.grpc.port")
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return err
+	}
+	gs.grpcSv = grpc.NewServer()
+	protos.RegisterPitayaServer(gs.grpcSv, gs.pitayaServer)
+	go gs.grpcSv.Serve(lis)
+	return nil
+}
+
+// SetPitayaServer sets the pitaya server
+func (gs *GRPCServer) SetPitayaServer(ps protos.PitayaServer) {
+	gs.pitayaServer = ps
+}
+
+// GetUnhandledRequestsChannel gets the channel of unhandled requests (not used in this implementation of rpcServer)
+func (gs *GRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
+	return nil
+}
+
+// GetUserPushChannel gets the channel of pushes to users (not used in this implementation of rpcServer)
+func (gs *GRPCServer) GetUserPushChannel() chan *protos.Push {
+	return nil
+}
+
+// GetBindingsChannel gets the channel of bindings
+func (gs *GRPCServer) GetBindingsChannel() chan *nats.Msg {
+	return nil
+}
+
+// AfterInit runs after initialization
+func (gs *GRPCServer) AfterInit() {}
+
+// BeforeShutdown runs before shutdown
+func (gs *GRPCServer) BeforeShutdown() {}
+
+// Shutdown stops grpc rpc server
+func (gs *GRPCServer) Shutdown() error {
+	gs.grpcSv.Stop()
+	return nil
 }

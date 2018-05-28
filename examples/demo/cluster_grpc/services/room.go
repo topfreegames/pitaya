@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/gob"
 	"fmt"
 	"time"
 
@@ -31,11 +32,6 @@ type (
 	Stats struct {
 		outboundBytes int
 		inboundBytes  int
-	}
-
-	// RPCResponse represents a rpc message
-	RPCResponse struct {
-		Msg string `json:"msg"`
 	}
 
 	// SendRPCMsg represents a rpc message
@@ -83,7 +79,11 @@ func NewRoom() *Room {
 }
 
 // Init runs on service initialization
-func (r *Room) Init() {}
+func (r *Room) Init() {
+	// It is necessary to register all structs that will be used in RPC calls
+	// This must be done both in the caller and callee servers
+	gob.Register(&UserMessage{})
+}
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
@@ -99,7 +99,7 @@ func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
 	//err := s.Bind(ctx, strconv.Itoa(int(s.ID())))
 
-	err := s.Bind(ctx, "helroow")
+	err := s.Bind(ctx, "herow")
 	if err != nil {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
@@ -155,9 +155,9 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, error) {
+func (r *Room) SendRPC(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
 	ret := &protos.RPCRes{}
-	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
+	err := pitaya.RPC(ctx, "connector.connectorremote.remotefunc", ret, msg)
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
 	}

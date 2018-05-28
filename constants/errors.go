@@ -24,6 +24,9 @@ import "errors"
 
 // Errors that could be occurred during message handling.
 var (
+	ErrNoBindingStorageModule         = errors.New("for sending remote pushes or using unique session module while using grpc you need to pass it a BindingStorage")
+	ErrBindingNotFound                = errors.New("binding for this user was not found in etcd")
+	ErrNotImplemented                 = errors.New("method not implemented")
 	ErrBrokenPipe                     = errors.New("broken low-level pipe")
 	ErrBufferExceed                   = errors.New("session send buffer exceed")
 	ErrChangeDictionaryWhileRunning   = errors.New("you shouldn't change the dictionary while the app is already running")
@@ -39,6 +42,7 @@ var (
 	ErrNatsPushBufferSizeZero         = errors.New("pitaya.buffer.cluster.rpc.server.push cant be zero")
 	ErrNilCondition                   = errors.New("pitaya/timer: nil condition")
 	ErrNoNatsConnectionString         = errors.New("you have to provide a nats url")
+	ErrNoConnectionToServer           = errors.New("rpc client has no connection to the chosen server")
 	ErrNoServerTypeChosenForRPC       = errors.New("no server type chosen for sending RPC, send a full route in the format server.service.component")
 	ErrNoServerWithID                 = errors.New("can't find any server with the provided ID")
 	ErrNoServersAvailableOfType       = errors.New("no servers available of this type")

@@ -1,0 +1,176 @@
+// Copyright (c) TFG Co. All Rights Reserved.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+package cluster
+
+import (
+	"context"
+	"fmt"
+	"sync"
+
+	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/metrics"
+	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/route"
+	"github.com/topfreegames/pitaya/session"
+	"google.golang.org/grpc"
+)
+
+// GRPCClient rpc server struct
+type GRPCClient struct {
+	server           *Server
+	config           *config.Config
+	metricsReporters []metrics.Reporter
+	clientMap        sync.Map
+	bindingStorage   BindingStorage
+}
+
+// NewGRPCClient returns a new instance of GRPCClient
+func NewGRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter, bindingStorage ...BindingStorage) (*GRPCClient, error) {
+	var bs BindingStorage
+	if len(bindingStorage) > 0 {
+		bs = bindingStorage[0]
+	}
+	gs := &GRPCClient{
+		config:           config,
+		server:           server,
+		metricsReporters: metricsReporters,
+		bindingStorage:   bs,
+	}
+	return gs, nil
+}
+
+// Init inits grpc rpc client
+func (gs *GRPCClient) Init() error {
+	// TODO: some configuration, retries? timeouts?
+	return nil
+}
+
+// Call makes a RPC Call
+// TODO: Jaeger
+func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) (*protos.Response, error) {
+	// TODO call code
+	req, err := buildRequest(ctx, rpcType, route, session, msg, gs.server)
+	if err != nil {
+		return nil, err
+	}
+	if c, ok := gs.clientMap.Load(server.ID); ok {
+		// TODO: what options should I use?
+		return c.(protos.PitayaClient).Call(ctx, &req)
+	}
+	return nil, constants.ErrNoConnectionToServer
+}
+
+// Send not implemented in grpc client
+// TODO: should we implement this? return error
+func (gs *GRPCClient) Send(uid string, d []byte) error {
+	return constants.ErrNotImplemented
+}
+
+// BroadcastSessionBind sends the binding information to other servers that may br interested in this info
+func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
+	if gs.bindingStorage == nil {
+		return constants.ErrNoBindingStorageModule
+	}
+	fid, _ := gs.bindingStorage.GetUserFrontendID(uid, gs.server.Type)
+	if fid != "" {
+		if c, ok := gs.clientMap.Load(fid); ok {
+			msg := &protos.BindMsg{
+				Uid: uid,
+				Fid: gs.server.ID,
+			}
+			// TODO: what options should I use?
+			_, err := c.(protos.PitayaClient).SessionBindRemote(context.Background(), msg)
+			return err
+		}
+	}
+	return nil
+}
+
+// SendPush sends a message to an user, if you dont know the serverID that the user is connected to, you need to set a BindingStorage when creating the client
+// TODO: Jaeger?
+func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.Push) error {
+	var svID string
+	var err error
+	if frontendSv.ID != "" {
+		svID = frontendSv.ID
+	} else {
+		if gs.bindingStorage == nil {
+			return constants.ErrNoBindingStorageModule
+		}
+		svID, err = gs.bindingStorage.GetUserFrontendID(userID, frontendSv.Type)
+		if err != nil {
+			return err
+		}
+	}
+	if c, ok := gs.clientMap.Load(svID); ok {
+		_, err := c.(protos.PitayaClient).PushToUser(context.Background(), push)
+		return err
+	}
+	return constants.ErrNoConnectionToServer
+}
+
+// AddServer is called when a new server is discovered
+func (gs *GRPCClient) AddServer(sv *Server) {
+	var host, port string
+	var ok bool
+	if host, ok = sv.Metadata["host"]; !ok {
+		logger.Log.Errorf("server %s doesn't have a host specified in metadata", sv.ID)
+		return
+	}
+	if port, ok = sv.Metadata["port"]; !ok {
+		logger.Log.Errorf("server %s doesn't have a port specified in metadata", sv.ID)
+		return
+	}
+	// TODO: what connection options should I use? disable insecure
+	address := fmt.Sprintf("%s:%s", host, port)
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		logger.Log.Errorf("unable to connect to server %s at %s", sv.ID, address)
+		return
+	}
+	// TODO: should we close this conn?
+	c := protos.NewPitayaClient(conn)
+	gs.clientMap.Store(sv.ID, c)
+	logger.Log.Debugf("[grpc client] added server %s at %s", sv.ID, address)
+}
+
+// RemoveServer is called when a server is removed
+func (gs *GRPCClient) RemoveServer(sv *Server) {
+	if _, ok := gs.clientMap.Load(sv.ID); ok {
+		// TODO: do I need to disconnect client?
+		gs.clientMap.Delete(sv.ID)
+		logger.Log.Debugf("[grpc client] removed server %s", sv.ID)
+	}
+}
+
+// AfterInit runs after initialization
+func (gs *GRPCClient) AfterInit() {}
+
+// BeforeShutdown runs before shutdown
+func (gs *GRPCClient) BeforeShutdown() {}
+
+// Shutdown stops grpc rpc server
+func (gs *GRPCClient) Shutdown() error {
+	return nil
+}
