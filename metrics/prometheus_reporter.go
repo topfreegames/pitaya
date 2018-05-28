@@ -113,8 +113,8 @@ func (p *PrometheusReporter) registerMetrics() {
 		[]string{"channel"},
 	)
 
-	p.countReportersMap[DroppedMessages] = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	p.gaugeReportersMap[DroppedMessages] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "pitaya",
 			Subsystem: "rpc_server",
 			Name:      DroppedMessages,

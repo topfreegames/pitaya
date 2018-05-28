@@ -333,7 +333,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 		{"test_error", &protos.Response{Data: []byte("nok"), Error: &protos.Error{Msg: "nok"}}, nil, e.NewError(errors.New("nok"), e.ErrUnknownCode)},
 		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
-		{"test_bad_proto", &protos.Session{ID: 1, Uid: "snap"}, nil, errors.New("proto: bad wiretype for field protos.Response.Data: got wiretype 0, want 2")},
+		{"test_bad_proto", &protos.Session{ID: 1, Uid: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
 		{"test_no_response", nil, nil, errors.New("nats: timeout")},
 	}
 
