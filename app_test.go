@@ -167,17 +167,27 @@ func TestSetPacketEncoder(t *testing.T) {
 func TestGetDieChan(t *testing.T) {
 	assert.Equal(t, app.dieChan, GetDieChan())
 }
+func TestGetConfig(t *testing.T) {
+	assert.Equal(t, app.config, GetConfig())
+}
 
 func TestGetSerializer(t *testing.T) {
 	assert.Equal(t, app.serializer, GetSerializer())
 }
 
-func TestGetServer(t *testing.T) {
+func TestGetSever(t *testing.T) {
+	assert.Equal(t, app.server, GetServer())
+}
+
+func TestGetMetricsReporters(t *testing.T) {
+	assert.Equal(t, app.metricsReporters, GetMetricsReporters())
+}
+func TestGetServerByID(t *testing.T) {
 	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
-	s, err := GetServer("id")
+	s, err := GetServerByID("id")
 	assert.Nil(t, s)
 	assert.EqualError(t, constants.ErrNoServerWithID, err.Error())
 }

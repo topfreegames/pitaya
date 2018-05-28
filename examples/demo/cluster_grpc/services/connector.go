@@ -128,10 +128,22 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 	}
 }
 
+// SendPushToUser sends a push to a user
+func (c *Connector) SendPushToUser(ctx context.Context, msg *UserMessage) (*Response, error) {
+	err := pitaya.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
+	if err != nil {
+		return nil, err
+	}
+	return &Response{
+		Code: 200,
+		Msg:  "boa",
+	}, nil
+}
+
 // RemoteFunc is a function that will be called remotely
 func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
-	fmt.Printf("received a remote call with this message: %s\n", msg.GetMsg())
+	fmt.Printf("received a remote call with this message: %s\n", msg)
 	return &protos.RPCRes{
-		Msg: msg.GetMsg(),
+		Msg: fmt.Sprintf("received msg: %s", msg.GetMsg()),
 	}, nil
 }

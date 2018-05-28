@@ -27,13 +27,11 @@ import (
 	"reflect"
 
 	"github.com/gogo/protobuf/proto"
-	opentracing "github.com/opentracing/opentracing-go"
 
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
-	pcontext "github.com/topfreegames/pitaya/context"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -49,15 +47,16 @@ import (
 
 // RemoteService struct
 type RemoteService struct {
-	rpcServer        cluster.RPCServer
-	serviceDiscovery cluster.ServiceDiscovery
-	serializer       serialize.Serializer
-	encoder          codec.PacketEncoder
-	rpcClient        cluster.RPCClient
-	services         map[string]*component.Service // all registered service
-	router           *router.Router
-	messageEncoder   message.Encoder
-	server           *cluster.Server // server obj
+	rpcServer              cluster.RPCServer
+	serviceDiscovery       cluster.ServiceDiscovery
+	serializer             serialize.Serializer
+	encoder                codec.PacketEncoder
+	rpcClient              cluster.RPCClient
+	services               map[string]*component.Service // all registered service
+	router                 *router.Router
+	messageEncoder         message.Encoder
+	server                 *cluster.Server // server obj
+	remoteBindingListeners []cluster.RemoteBindingListener
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -72,15 +71,16 @@ func NewRemoteService(
 	server *cluster.Server,
 ) *RemoteService {
 	return &RemoteService{
-		services:         make(map[string]*component.Service),
-		rpcClient:        rpcClient,
-		rpcServer:        rpcServer,
-		encoder:          encoder,
-		serviceDiscovery: sd,
-		serializer:       serializer,
-		router:           router,
-		messageEncoder:   messageEncoder,
-		server:           server,
+		services:               make(map[string]*component.Service),
+		rpcClient:              rpcClient,
+		rpcServer:              rpcServer,
+		encoder:                encoder,
+		serviceDiscovery:       sd,
+		serializer:             serializer,
+		router:                 router,
+		messageEncoder:         messageEncoder,
+		server:                 server,
+		remoteBindingListeners: make([]cluster.RemoteBindingListener, 0),
 	}
 }
 
@@ -116,6 +116,46 @@ func (r *RemoteService) remoteProcess(
 			logger.Log.Errorf("error while sending a notify: %s", err.Error())
 		}
 	}
+}
+
+// AddRemoteBindingListener adds a listener
+func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteBindingListener) {
+	r.remoteBindingListeners = append(r.remoteBindingListeners, bindingListener)
+}
+
+// Call processes a remote call
+func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
+	res := processRemoteMessage(ctx, req, r)
+	if res.Error != nil {
+		return res, errors.New(res.Error.GetMsg())
+	}
+	return res, nil
+}
+
+// SessionBindRemote is called when a remote server binds a user session and want us to acknowledge it
+func (r *RemoteService) SessionBindRemote(ctx context.Context, msg *protos.BindMsg) (*protos.Response, error) {
+	for _, r := range r.remoteBindingListeners {
+		r.OnUserBind(msg.Uid, msg.Fid)
+	}
+	return &protos.Response{
+		Data: []byte("ack"),
+	}, nil
+}
+
+// PushToUser sends a push to user
+func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*protos.Response, error) {
+	logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+	s := session.GetSessionByUID(push.GetUid())
+	if s != nil {
+		err := s.Push(push.Route, push.Data)
+		if err != nil {
+			return nil, err
+		}
+		return &protos.Response{
+			Data: []byte("ack"),
+		}, nil
+	}
+	return nil, constants.ErrSessionNotFound
 }
 
 // DoRPC do rpc and get answer
@@ -187,36 +227,6 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 	return nil
 }
 
-// ProcessUserPush receives and processes push to users
-func (r *RemoteService) ProcessUserPush() {
-	for push := range r.rpcServer.GetUserPushChannel() {
-		logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
-		s := session.GetSessionByUID(push.GetUid())
-		if s != nil {
-			s.Push(push.Route, push.Data)
-		}
-	}
-}
-
-func getContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
-	ctx, err := pcontext.Decode(req.GetMetadata())
-	if err != nil {
-		return nil, err
-	}
-	tags := opentracing.Tags{
-		"local.id":     serverID,
-		"span.kind":    "server",
-		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
-		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
-	}
-	parent, err := tracing.ExtractSpan(ctx)
-	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
-	}
-	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
-	return ctx, nil
-}
-
 func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteService) *protos.Response {
 	rt, err := route.Decode(req.GetMsg().GetRoute())
 	if err != nil {
@@ -246,29 +256,6 @@ func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteSer
 					"route": req.GetMsg().GetRoute(),
 				},
 			},
-		}
-	}
-}
-
-// ProcessRemoteMessages processes remote messages
-func (r *RemoteService) ProcessRemoteMessages(threadID int) {
-	if r.rpcServer.GetUnhandledRequestsChannel() != nil {
-		for req := range r.rpcServer.GetUnhandledRequestsChannel() {
-			logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
-			ctx, err := getContextFromRequest(req, r.server.ID)
-			reply := req.GetMsg().GetReply()
-			var response *protos.Response
-			if err != nil {
-				response = &protos.Response{
-					Error: &protos.Error{
-						Code: e.ErrInternalCode,
-						Msg:  err.Error(),
-					},
-				}
-			} else {
-				response = processRemoteMessage(ctx, req, r)
-			}
-			r.sendReply(ctx, reply, response)
 		}
 	}
 }
@@ -352,7 +339,6 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
 	reply := req.GetMsg().GetReply()
 	response := &protos.Response{}
-
 	// (warning) a new agent is created for every new request
 	a, err := agent.NewRemote(
 		req.GetSession(),
@@ -394,25 +380,6 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		response = &protos.Response{Data: ret}
 	}
 	return response
-}
-
-func (r *RemoteService) sendReply(ctx context.Context, reply string, response *protos.Response) {
-	p, err := proto.Marshal(response)
-	if err != nil {
-		response := &protos.Response{
-			Error: &protos.Error{
-				Code: e.ErrUnknownCode,
-				Msg:  err.Error(),
-			},
-		}
-		p, _ = proto.Marshal(response)
-	}
-
-	if err == nil && response.Error != nil {
-		err = errors.New(response.Error.Msg)
-	}
-	defer tracing.FinishSpan(ctx, err)
-	r.rpcClient.Send(reply, p)
 }
 
 func (r *RemoteService) remoteCall(

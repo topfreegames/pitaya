@@ -30,7 +30,6 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
-	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
@@ -87,6 +86,19 @@ func (ns *NatsRPCClient) configure() error {
 	return nil
 }
 
+// BroadcastSessionBind sends the binding information to other servers that may br interested in this info
+func (ns *NatsRPCClient) BroadcastSessionBind(uid string) error {
+	msg := &protos.BindMsg{
+		Uid: uid,
+		Fid: ns.server.ID,
+	}
+	msgData, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return ns.Send(GetBindBroadcastTopic(ns.server.Type), msgData)
+}
+
 // Send publishes a message in a given topic
 func (ns *NatsRPCClient) Send(topic string, data []byte) error {
 	if !ns.running {
@@ -95,55 +107,14 @@ func (ns *NatsRPCClient) Send(topic string, data []byte) error {
 	return ns.conn.Publish(topic, data)
 }
 
-func (ns *NatsRPCClient) buildRequest(
-	ctx context.Context,
-	rpcType protos.RPCType,
-	route *route.Route,
-	session *session.Session,
-	msg *message.Message,
-) (protos.Request, error) {
-	req := protos.Request{
-		Type: rpcType,
-		Msg: &protos.Msg{
-			Route: route.String(),
-			Data:  msg.Data,
-		},
-	}
-	ctx, err := tracing.InjectSpan(ctx)
+// SendPush sends a message to a user
+func (ns *NatsRPCClient) SendPush(userID string, frontendSv *Server, push *protos.Push) error {
+	topic := GetUserMessagesTopic(userID, frontendSv.Type)
+	msg, err := proto.Marshal(push)
 	if err != nil {
-		logger.Log.Errorf("failed to inject span: %s", err)
+		return err
 	}
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerIDKey, ns.server.ID)
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerServiceKey, ns.server.Type)
-	req.Metadata, err = pcontext.Encode(ctx)
-	if err != nil {
-		return req, err
-	}
-	if ns.server.Frontend {
-		req.FrontendID = ns.server.ID
-	}
-
-	switch msg.Type {
-	case message.Request:
-		req.Msg.Type = protos.MsgType_MsgRequest
-	case message.Notify:
-		req.Msg.Type = protos.MsgType_MsgNotify
-	}
-
-	if rpcType == protos.RPCType_Sys {
-		mid := uint(0)
-		if msg.Type == message.Request {
-			mid = msg.ID
-		}
-		req.Msg.ID = uint64(mid)
-		req.Session = &protos.Session{
-			ID:   session.ID(),
-			Uid:  session.UID(),
-			Data: session.GetDataEncoded(),
-		}
-	}
-
-	return req, nil
+	return ns.Send(topic, msg)
 }
 
 // Call calls a method remotelly
@@ -172,7 +143,7 @@ func (ns *NatsRPCClient) Call(
 		err = constants.ErrRPCClientNotInitialized
 		return nil, err
 	}
-	req, err := ns.buildRequest(ctx, rpcType, route, session, msg)
+	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
 	if err != nil {
 		return nil, err
 	}

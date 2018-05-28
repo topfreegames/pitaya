@@ -4,13 +4,16 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"strings"
 
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
+	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
+	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
@@ -97,6 +100,7 @@ func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
+	rpcServerPort := flag.String("rpcsvport", "3434", "the port that grpc server will listen")
 
 	flag.Parse()
 
@@ -110,6 +114,28 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	confs := viper.New()
+	confs.Set("pitaya.cluster.rpc.server.grpc.port", *rpcServerPort)
+
+	meta := map[string]string{
+		"host": "127.0.0.1",
+		"port": *rpcServerPort,
+	}
+
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, meta, confs)
+	gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
+	if err != nil {
+		panic(err)
+	}
+
+	bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
+	pitaya.RegisterModule(bs, "bindingsStorage")
+
+	gc, err := cluster.NewGRPCClient(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters(), bs)
+	if err != nil {
+		panic(err)
+	}
+	pitaya.SetRPCServer(gs)
+	pitaya.SetRPCClient(gc)
 	pitaya.Start()
 }

@@ -122,7 +122,7 @@ func (a *Remote) Push(route string, v interface{}) error {
 	}
 	return a.sendPush(
 		pendingMessage{typ: message.Push, route: route, payload: v},
-		cluster.GetUserMessagesTopic(a.Session.UID(), sv.Type),
+		a.Session.UID(), sv,
 	)
 }
 
@@ -199,7 +199,7 @@ func (a *Remote) send(m pendingMessage, to string) (err error) {
 	return a.rpcClient.Send(to, bt)
 }
 
-func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
+func (a *Remote) sendPush(m pendingMessage, userID string, sv *cluster.Server) (err error) {
 	payload, err := util.SerializeOrRaw(a.serializer, m.payload)
 	if err != nil {
 		return err
@@ -209,11 +209,7 @@ func (a *Remote) sendPush(m pendingMessage, to string) (err error) {
 		Uid:   a.Session.UID(),
 		Data:  payload,
 	}
-	msg, err := proto.Marshal(push)
-	if err != nil {
-		return err
-	}
-	return a.rpcClient.Send(to, msg)
+	return a.rpcClient.SendPush(userID, sv, push)
 }
 
 // SendRequest sends a request to a server
