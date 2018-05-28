@@ -264,19 +264,13 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			router := router.New()
 			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
 			assert.NotNil(t, svc)
-
-			mockRPCClient.EXPECT().Send(table.req.Msg.Reply, gomock.Any()).Do(func(r string, data []byte) {
-				res := &protos.Response{}
-				err := proto.Unmarshal(data, res)
-				assert.NoError(t, err)
-
-				if table.errSubstring != "" {
-					assert.Contains(t, res.Error.Msg, table.errSubstring)
-				} else if table.req.Msg.Data != nil {
-					assert.NotNil(t, res.Data)
-				}
-			})
-			svc.handleRPCUser(context.Background(), table.req, table.rt)
+			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
+			assert.NoError(t, err)
+			if table.errSubstring != "" {
+				assert.Contains(t, res.Error.Msg, table.errSubstring)
+			} else if table.req.Msg.Data != nil {
+				assert.NotNil(t, res.Data)
+			}
 		})
 	}
 }
@@ -320,18 +314,14 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			if table.errSubstring == "" {
 				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil)
 			}
-			mockRPCClient.EXPECT().Send(table.req.Msg.Reply, gomock.Any()).Do(func(r string, data []byte) {
-				res := &protos.Response{}
-				err := proto.Unmarshal(data, res)
-				assert.NoError(t, err)
+			res := svc.handleRPCSys(nil, table.req, table.rt)
 
-				if table.errSubstring != "" {
-					assert.Contains(t, res.Error.Msg, table.errSubstring)
-				} else {
-					assert.Equal(t, table.req.Msg.Data, res.Data)
-				}
-			})
-			svc.handleRPCSys(nil, table.req, table.rt)
+			if table.errSubstring != "" {
+				assert.Contains(t, res.Error.Msg, table.errSubstring)
+			} else {
+				assert.Equal(t, table.req.Msg.Data, res.Data)
+			}
+
 		})
 	}
 }

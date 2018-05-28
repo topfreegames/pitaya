@@ -189,60 +189,82 @@ func (r *RemoteService) ProcessUserPush() {
 	}
 }
 
-// ProcessRemoteMessages processes remote messages
-func (r *RemoteService) ProcessRemoteMessages(threadID int) {
-	for req := range r.rpcServer.GetUnhandledRequestsChannel() {
-		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
-		ctx, err := pcontext.Decode(req.GetMetadata())
-		if err != nil {
-			response := &protos.Response{
-				Error: &protos.Error{
-					Code: e.ErrInternalCode,
-					Msg:  err.Error(),
+func getContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
+	ctx, err := pcontext.Decode(req.GetMetadata())
+	if err != nil {
+		return nil, err
+	}
+	tags := opentracing.Tags{
+		"local.id":     serverID,
+		"span.kind":    "server",
+		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIdKey),
+		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
+	}
+	parent, err := tracing.ExtractSpan(ctx)
+	if err != nil {
+		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+	}
+	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
+	return ctx, nil
+}
+
+func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteService) *protos.Response {
+	rt, err := route.Decode(req.GetMsg().GetRoute())
+	if err != nil {
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrBadRequestCode,
+				Msg:  "cannot decode route",
+				Metadata: map[string]string{
+					"route": req.GetMsg().GetRoute(),
 				},
-			}
-			r.sendReply(ctx, req.GetMsg().GetReply(), response)
-			continue
+			},
 		}
-		parent, err := tracing.ExtractSpan(ctx)
-		if err != nil {
-			logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
-		}
+		return response
+	}
 
-		tags := opentracing.Tags{
-			"local.id":     r.server.ID,
-			"span.kind":    "server",
-			"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIdKey),
-			"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
-		}
-		ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
-
-		rt, err := route.Decode(req.GetMsg().GetRoute())
-		if err != nil {
-			response := &protos.Response{
-				Error: &protos.Error{
-					Code: e.ErrBadRequestCode,
-					Msg:  "cannot decode route",
-					Metadata: map[string]string{
-						"route": req.GetMsg().GetRoute(),
-					},
+	switch {
+	case req.Type == protos.RPCType_Sys:
+		return r.handleRPCSys(ctx, req, rt)
+	case req.Type == protos.RPCType_User:
+		return r.handleRPCUser(ctx, req, rt)
+	default:
+		return &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrBadRequestCode,
+				Msg:  "invalid rpc type",
+				Metadata: map[string]string{
+					"route": req.GetMsg().GetRoute(),
 				},
-			}
-			r.sendReply(ctx, req.GetMsg().GetReply(), response)
-			continue
-		}
-
-		switch {
-		case req.Type == protos.RPCType_Sys:
-			r.handleRPCSys(ctx, req, rt)
-		case req.Type == protos.RPCType_User:
-			r.handleRPCUser(ctx, req, rt)
+			},
 		}
 	}
 }
 
-func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) {
-	reply := req.GetMsg().GetReply()
+// ProcessRemoteMessages processes remote messages
+func (r *RemoteService) ProcessRemoteMessages(threadID int) {
+	if r.rpcServer.GetUnhandledRequestsChannel() != nil {
+		for req := range r.rpcServer.GetUnhandledRequestsChannel() {
+			logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetID())
+			ctx, err := getContextFromRequest(req, r.server.ID)
+			reply := req.GetMsg().GetReply()
+			var response *protos.Response
+			if err != nil {
+				response = &protos.Response{
+					Error: &protos.Error{
+						Code: e.ErrInternalCode,
+						Msg:  err.Error(),
+					},
+				}
+			} else {
+				response = processRemoteMessage(ctx, req, r)
+			}
+			r.sendReply(ctx, reply, response)
+		}
+	}
+}
+
+func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
 	response := &protos.Response{}
 
 	remote, ok := remotes[rt.Short()]
@@ -257,8 +279,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 				},
 			},
 		}
-		r.sendReply(ctx, reply, response)
-		return
+		return response
 	}
 	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
 	if remote.HasArgs {
@@ -270,8 +291,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 					Msg:  err.Error(),
 				},
 			}
-			r.sendReply(ctx, reply, response)
-			return
+			return response
 		}
 		for _, arg := range args {
 			params = append(params, reflect.ValueOf(arg))
@@ -292,8 +312,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 				response.Error.Metadata = val.Metadata
 			}
 		}
-		r.sendReply(ctx, reply, response)
-		return
+		return response
 	}
 
 	buf := bytes.NewBuffer([]byte(nil))
@@ -305,16 +324,15 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 					Msg:  err.Error(),
 				},
 			}
-			r.sendReply(ctx, reply, response)
-			return
+			return response
 		}
 	}
 
 	response.Data = buf.Bytes()
-	r.sendReply(ctx, reply, response)
+	return response
 }
 
-func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, rt *route.Route) {
+func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
 	reply := req.GetMsg().GetReply()
 	response := &protos.Response{}
 
@@ -337,8 +355,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 				Msg:  err.Error(),
 			},
 		}
-		r.sendReply(ctx, reply, response)
-		return
+		return response
 	}
 
 	ret, err := processHandlerMessage(ctx, rt, r.serializer, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
@@ -359,7 +376,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 	} else {
 		response = &protos.Response{Data: ret}
 	}
-	r.sendReply(ctx, reply, response)
+	return response
 }
 
 func (r *RemoteService) sendReply(ctx context.Context, reply string, response *protos.Response) {
