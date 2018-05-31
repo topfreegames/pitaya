@@ -384,21 +384,21 @@ func TestForwardToBackend(t *testing.T) {
 }
 
 func TestGroupBack(t *testing.T) {
-	portFront1 := helpers.GetFreePort(t)
-	portFront2 := helpers.GetFreePort(t)
+	port1 := helpers.GetFreePort(t)
+	port2 := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
 	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
-	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
-	defer helpers.StartServer(t, true, true, "connector", portFront2, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
-	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", portFront1))
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
 	assert.NoError(t, err)
 	defer c1.Disconnect()
 
-	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", portFront2))
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port2))
 	assert.NoError(t, err)
 	defer c2.Disconnect()
 
@@ -435,14 +435,14 @@ func TestGroupBack(t *testing.T) {
 }
 
 func TestUserRPC(t *testing.T) {
-	portFront1 := helpers.GetFreePort(t)
+	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix)()
-	defer helpers.StartServer(t, true, true, "connector", portFront1, sdPrefix)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix)()
 	c1 := client.New(logrus.InfoLevel)
 
-	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", portFront1))
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
 	assert.NoError(t, err)
 	defer c1.Disconnect()
 

@@ -63,4 +63,5 @@ var (
 	ErrInvalidCertificates            = errors.New("certificates must be exactly two")
 	ErrTimeoutTerminatingBinaryModule = errors.New("timeout waiting to binary module to die")
 	ErrFrontendTypeNotSpecified       = errors.New("for using SendPushToUsers from a backend server you have to specify a valid frontendType")
+	ErrMetricNotKnown                 = errors.New("the provided metric does not exist")
 )

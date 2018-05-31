@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/topfreegames/pitaya/constants"
 )
 
 var (
@@ -164,18 +165,30 @@ func GetPrometheusReporter(serverType string, game string, port int) *Prometheus
 
 // ReportSummary reports a summary metric
 func (p *PrometheusReporter) ReportSummary(metric string, tags map[string]string, value float64) error {
-	p.summaryReportersMap[metric].With(tags).Observe(value)
-	return nil
+	sum := p.summaryReportersMap[metric]
+	if sum != nil {
+		sum.With(tags).Observe(value)
+		return nil
+	}
+	return constants.ErrMetricNotKnown
 }
 
 // ReportCount reports a summary metric
 func (p *PrometheusReporter) ReportCount(metric string, tags map[string]string, count float64) error {
-	p.countReportersMap[metric].With(tags).Add(count)
-	return nil
+	cnt := p.countReportersMap[metric]
+	if cnt != nil {
+		cnt.With(tags).Add(count)
+		return nil
+	}
+	return constants.ErrMetricNotKnown
 }
 
 // ReportGauge reports a gauge metric
 func (p *PrometheusReporter) ReportGauge(metric string, tags map[string]string, value float64) error {
-	p.gaugeReportersMap[metric].With(tags).Set(value)
-	return nil
+	g := p.gaugeReportersMap[metric]
+	if g != nil {
+		g.With(tags).Set(value)
+		return nil
+	}
+	return constants.ErrMetricNotKnown
 }
