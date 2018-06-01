@@ -50,8 +50,7 @@ func configureBackend() {
 
 func configureFrontend(port int) {
 	configureJaeger("connector")
-	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port+1))
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 
 	pitaya.Register(&services.Connector{},
 		component.WithName("connector"),
@@ -90,7 +89,6 @@ func configureFrontend(port int) {
 		fmt.Printf("error setting route dictionary %s\n", err.Error())
 	}
 
-	pitaya.AddAcceptor(ws)
 	pitaya.AddAcceptor(tcp)
 }
 

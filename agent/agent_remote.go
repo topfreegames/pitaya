@@ -91,7 +91,9 @@ func (a *Remote) Kick(ctx context.Context) error {
 	if a.Session.UID() == "" {
 		return constants.ErrNoUIDBind
 	}
-	b, err := util.GobEncode([]byte(a.Session.UID()))
+	b, err := proto.Marshal(&protos.KickMsg{
+		UserID: a.Session.UID(),
+	})
 	if err != nil {
 		return err
 	}

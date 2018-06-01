@@ -21,9 +21,7 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -121,10 +119,14 @@ func (r *RemoteService) remoteProcess(
 }
 
 // RPC makes rpcs
-func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.Route, reply interface{}, args ...interface{}) error {
-	data, err := util.GobEncode(args...)
-	if err != nil {
-		return err
+func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.Route, reply proto.Message, arg proto.Message) error {
+	var data []byte
+	var err error
+	if arg != nil {
+		data, err = proto.Marshal(arg)
+		if err != nil {
+			return err
+		}
 	}
 	msg := &message.Message{
 		Type:  message.Request,
@@ -150,9 +152,11 @@ func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.R
 		}
 	}
 
-	err = util.GobDecode(reply, res.GetData())
-	if err != nil {
-		return err
+	if reply != nil {
+		err = proto.Unmarshal(res.GetData(), reply)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -197,7 +201,7 @@ func getContextFromRequest(req *protos.Request, serverID string) (context.Contex
 	tags := opentracing.Tags{
 		"local.id":     serverID,
 		"span.kind":    "server",
-		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIdKey),
+		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
 		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
 	}
 	parent, err := tracing.ExtractSpan(ctx)
@@ -283,7 +287,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 	}
 	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
 	if remote.HasArgs {
-		args, err := unmarshalRemoteArg(req.GetMsg().GetData())
+		arg, err := unmarshalRemoteArg(remote, req.GetMsg().GetData())
 		if err != nil {
 			response := &protos.Response{
 				Error: &protos.Error{
@@ -293,9 +297,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 			}
 			return response
 		}
-		for _, arg := range args {
-			params = append(params, reflect.ValueOf(arg))
-		}
+		params = append(params, reflect.ValueOf(arg))
 	}
 
 	ret, err := util.Pcall(remote.Method, params)
@@ -315,9 +317,19 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		return response
 	}
 
-	buf := bytes.NewBuffer([]byte(nil))
+	var b []byte
 	if ret != nil {
-		if err := gob.NewEncoder(buf).Encode(ret); err != nil {
+		pb, ok := ret.(proto.Message)
+		if !ok {
+			response := &protos.Response{
+				Error: &protos.Error{
+					Code: e.ErrUnknownCode,
+					Msg:  constants.ErrWrongValueType.Error(),
+				},
+			}
+			return response
+		}
+		if b, err = proto.Marshal(pb); err != nil {
 			response := &protos.Response{
 				Error: &protos.Error{
 					Code: e.ErrUnknownCode,
@@ -328,7 +340,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 	}
 
-	response.Data = buf.Bytes()
+	response.Data = b
 	return response
 }
 

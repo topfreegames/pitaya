@@ -80,7 +80,7 @@ func TestNewRemoteFailsIfFailedToSetEncodedData(t *testing.T) {
 	ss := &protos.Session{Data: []byte("invalid")}
 
 	remote, err := NewRemote(ss, "", nil, nil, nil, nil, "", nil)
-	assert.Equal(t, errors.New("unexpected EOF"), err)
+	assert.Equal(t, errors.New("invalid character 'i' looking for beginning of value").Error(), err.Error())
 	assert.Nil(t, remote)
 }
 

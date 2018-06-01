@@ -21,11 +21,10 @@
 package pitaya
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/cluster"
@@ -34,6 +33,7 @@ import (
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
@@ -41,7 +41,7 @@ import (
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
-	err := doSendRPC(nil, "", "", nil)
+	err := doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
@@ -51,15 +51,14 @@ func TestDoSendRPC(t *testing.T) {
 	tables := []struct {
 		name     string
 		routeStr string
-		reply    interface{}
-		args     []interface{}
+		reply    proto.Message
+		arg      proto.Message
 		err      error
 	}{
-		{"bad_reply", "", "badreply", nil, constants.ErrReplyShouldBePtr},
-		{"bad_route", "badroute", &someStruct{}, nil, route.ErrInvalidRoute},
-		{"no_server_type", "bla.bla", &someStruct{}, nil, constants.ErrNoServerTypeChosenForRPC},
-		{"nonsense_rpc", "mytype.bla.bla", &someStruct{}, nil, constants.ErrNonsenseRPC},
-		{"success", "bla.bla.bla", &someStruct{}, []interface{}{}, nil},
+		{"bad_route", "badroute", &test.SomeStruct{}, nil, route.ErrInvalidRoute},
+		{"no_server_type", "bla.bla", &test.SomeStruct{}, nil, constants.ErrNoServerTypeChosenForRPC},
+		{"nonsense_rpc", "mytype.bla.bla", &test.SomeStruct{}, nil, constants.ErrNonsenseRPC},
+		{"success", "bla.bla.bla", &test.SomeStruct{}, &test.SomeStruct{A: 1}, nil},
 	}
 
 	for _, table := range tables {
@@ -79,13 +78,12 @@ func TestDoSendRPC(t *testing.T) {
 				assert.NotNil(t, svc)
 				remoteService = svc
 				app.server.ID = "notmyserver"
-				buf := bytes.NewBuffer(nil)
-				err := gob.NewEncoder(buf).Encode(&someStruct{A: 1})
+				b, err := proto.Marshal(&test.SomeStruct{A: 1})
 				assert.NoError(t, err)
 				mockSD.EXPECT().GetServer("myserver").Return(&cluster.Server{}, nil)
-				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&protos.Response{Data: buf.Bytes()}, nil)
+				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&protos.Response{Data: b}, nil)
 			}
-			err := doSendRPC(ctx, "myserver", table.routeStr, table.reply, table.args...)
+			err := doSendRPC(ctx, "myserver", table.routeStr, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 		})
 	}

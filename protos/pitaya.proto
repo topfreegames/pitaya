@@ -52,3 +52,16 @@ message Error {
   string msg = 2;
   map<string, string> metadata = 3;
 }
+
+message KickMsg {
+  string UserID = 1;
+}
+
+message KickAnswer {
+  bool Kicked = 1;
+}
+
+message BindMsg {
+  string UID = 1;
+  string FID = 2;
+}

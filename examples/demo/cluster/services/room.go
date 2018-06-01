@@ -10,6 +10,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/examples/demo/cluster/protos"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -184,9 +185,9 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*RPCResponse, error) {
-	ret := &RPCResponse{Msg: "ok"}
-	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, msg.Msg)
+func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, error) {
+	ret := &protos.RPCRes{}
+	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
 	}

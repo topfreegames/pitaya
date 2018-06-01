@@ -8,6 +8,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/examples/demo/cluster/protos"
 	"github.com/topfreegames/pitaya/tracing/jaeger"
 )
 
@@ -128,9 +129,9 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 }
 
 // RemoteFunc is a function that will be called remotely
-func (c *ConnectorRemote) RemoteFunc(ctx context.Context, message string) (*RPCResponse, error) {
-	fmt.Printf("received a remote call with this message: %s\n", message)
-	return &RPCResponse{
-		Msg: message,
+func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
+	fmt.Printf("received a remote call with this message: %s\n", msg.GetMsg())
+	return &protos.RPCRes{
+		Msg: msg.GetMsg(),
 	}, nil
 }

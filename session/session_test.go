@@ -21,9 +21,9 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	nats "github.com/nats-io/go-nats"
@@ -41,7 +42,6 @@ import (
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session/mocks"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -59,9 +59,8 @@ func (ma *mockAddr) Network() string { return "tcp" }
 func (ma *mockAddr) String() string  { return "192.0.2.1:25" }
 
 func getEncodedEmptyMap() []byte {
-	buf := bytes.NewBuffer([]byte(nil))
-	gob.NewEncoder(buf).Encode(map[string]interface{}{})
-	return buf.Bytes()
+	b, _ := json.Marshal(map[string]interface{}{})
+	return b
 }
 
 func TestMain(m *testing.M) {
@@ -73,7 +72,6 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	gob.Register(someStruct{})
-	gob.Register(Data{})
 	gob.Register(map[string]interface{}{})
 }
 
@@ -355,9 +353,8 @@ func TestSessionSetEncodedData(t *testing.T) {
 		name string
 		data map[string]interface{}
 	}{
-		{"testUpdateEncodedData_1", map[string]interface{}{"byte": []byte{1}}},
-		{"testUpdateEncodedData_2", map[string]interface{}{"int": 1}},
-		{"testUpdateEncodedData_3", map[string]interface{}{"struct": someStruct{A: 1, B: "aaa"}}},
+		{"testUpdateEncodedData_2", map[string]interface{}{"int": float64(1)}},
+		{"testUpdateEncodedData_3", map[string]interface{}{"struct": map[string]interface{}{"A": float64(1), "B": "aaa"}}},
 		{"testUpdateEncodedData_4", map[string]interface{}{"string": "aaa"}},
 		{"testUpdateEncodedData_5", map[string]interface{}{}},
 	}
@@ -485,12 +482,12 @@ func TestSessionBindBackend(t *testing.T) {
 			assert.NotNil(t, ss)
 
 			uid := uuid.New().String()
-			expectedSessionData := &Data{
+			expectedSessionData := &protos.Session{
 				ID:  ss.frontendSessionID,
-				UID: uid,
+				Uid: uid,
 			}
 			ctx := context.Background()
-			expectedRequestData, err := util.GobEncode(expectedSessionData)
+			expectedRequestData, err := proto.Marshal(expectedSessionData)
 			assert.NoError(t, err)
 
 			mockEntity.EXPECT().SendRequest(ctx, ss.frontendID, constants.SessionBindRoute, expectedRequestData).Return(&protos.Response{}, table.err)
@@ -623,7 +620,6 @@ func TestSessionSet(t *testing.T) {
 		errStr string
 	}{
 		{"ok", "val", ""},
-		{"failed", &unregisteredStruct{}, "gob: type not registered for interface: session.unregisteredStruct"},
 	}
 
 	for _, table := range tables {
@@ -637,8 +633,6 @@ func TestSessionSet(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, table.val, val)
 				assert.NotEmpty(t, ss.encodedData)
-			} else {
-				assert.Equal(t, table.errStr, err.Error())
 			}
 		})
 	}
@@ -1249,12 +1243,12 @@ func TestSessionPushToFront(t *testing.T) {
 			uid := uuid.New().String()
 			ss.uid = uid
 
-			expectedSessionData := &Data{
+			expectedSessionData := &protos.Session{
 				ID:   ss.frontendSessionID,
-				UID:  uid,
-				Data: ss.data,
+				Uid:  uid,
+				Data: ss.encodedData,
 			}
-			expectedRequestData, err := util.GobEncode(expectedSessionData)
+			expectedRequestData, err := proto.Marshal(expectedSessionData)
 			assert.NoError(t, err)
 			ctx := context.Background()
 			mockEntity.EXPECT().SendRequest(ctx, ss.frontendID, constants.SessionPushRoute, expectedRequestData).Return(nil, table.err)

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package protos;
+
+// TestRequest message to be sent using rpc
+message TestRequest {
+  string Msg = 1;
+}
+
+// TestResponse is the rpc response
+message  TestResponse {
+  int32 Code = 1;
+  string Msg = 2;
+}

@@ -21,12 +21,14 @@
 package remote
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
@@ -36,16 +38,18 @@ func TestBindSession(t *testing.T) {
 	s := &Sys{}
 	ss := session.New(nil, true)
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  ss.ID(),
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello": "test",
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello": "test",
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   ss.ID(),
+		Uid:  uid,
+		Data: d,
 	}
 	res, err := s.BindSession(nil, data)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("ack"), res)
+	assert.Equal(t, []byte("ack"), res.Data)
 	assert.Equal(t, ss, session.GetSessionByUID(uid))
 }
 
@@ -53,14 +57,16 @@ func TestBindSessionShouldErrorIfNotExists(t *testing.T) {
 	t.Parallel()
 	s := &Sys{}
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  133,
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello": "test",
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello": "test",
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   133,
+		Uid:  uid,
+		Data: d,
 	}
-	_, err := s.BindSession(nil, data)
+	_, err = s.BindSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
 
@@ -69,16 +75,18 @@ func TestBindSessionShouldErrorIfAlreadyBound(t *testing.T) {
 	s := &Sys{}
 	ss := session.New(nil, true)
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  ss.ID(),
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello": "test",
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello": "test",
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   ss.ID(),
+		Uid:  uid,
+		Data: d,
 	}
 	res, err := s.BindSession(nil, data)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("ack"), res)
+	assert.Equal(t, []byte("ack"), res.Data)
 	assert.Equal(t, ss, session.GetSessionByUID(uid))
 	_, err = s.BindSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionAlreadyBound, err.Error())
@@ -89,33 +97,37 @@ func TestPushSession(t *testing.T) {
 	s := &Sys{}
 	ss := session.New(nil, true)
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  ss.ID(),
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello":   "test",
-			"hello22": 2,
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello":   "test",
+		"hello22": 2,
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   ss.ID(),
+		Uid:  uid,
+		Data: d,
 	}
 	res, err := s.PushSession(nil, data)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("ack"), res)
-	assert.Equal(t, data.Data, ss.GetData())
+	assert.Equal(t, []byte("ack"), res.Data)
+	assert.Equal(t, data.Data, ss.GetDataEncoded())
 }
 
 func TestPushSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 	t.Parallel()
 	s := &Sys{}
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  343,
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello":   "test",
-			"hello22": 2,
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello":   "test",
+		"hello22": 2,
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   343,
+		Uid:  uid,
+		Data: d,
 	}
-	_, err := s.PushSession(nil, data)
+	_, err = s.PushSession(nil, data)
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
 
@@ -127,19 +139,22 @@ func TestKick(t *testing.T) {
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
 	ss := session.New(mockEntity, true)
 	uid := uuid.New().String()
-	data := &session.Data{
-		ID:  ss.ID(),
-		UID: uid,
-		Data: map[string]interface{}{
-			"hello": "test",
-		},
+	d, err := json.Marshal(map[string]interface{}{
+		"hello":   "test",
+		"hello22": 2,
+	})
+	assert.NoError(t, err)
+	data := &protos.Session{
+		ID:   ss.ID(),
+		Uid:  uid,
+		Data: d,
 	}
-	_, err := s.BindSession(nil, data)
+	_, err = s.BindSession(nil, data)
 	assert.NoError(t, err)
 
 	mockEntity.EXPECT().Kick(nil)
 	mockEntity.EXPECT().Close()
-	res, err := s.Kick(nil, []byte(uid))
+	res, err := s.Kick(nil, &protos.KickMsg{UserID: uid})
 	assert.NoError(t, err)
 	assert.True(t, res.Kicked)
 }
@@ -147,6 +162,6 @@ func TestKick(t *testing.T) {
 func TestKickSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 	t.Parallel()
 	s := &Sys{}
-	_, err := s.Kick(nil, []byte(uuid.New().String()))
+	_, err := s.Kick(nil, &protos.KickMsg{UserID: uuid.New().String()})
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
