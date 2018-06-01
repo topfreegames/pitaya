@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package test;
+
+message SomeStruct{
+  int32 A = 1;
+  string B = 2;
+}
+
+message TestResponse {
+	int32 Code = 1;
+  string Msg = 2;
+}
+
+message TestRequest {
+	string Msg = 1;
+}

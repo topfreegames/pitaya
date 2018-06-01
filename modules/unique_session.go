@@ -22,10 +22,11 @@ package modules
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
 )
 
@@ -35,12 +36,6 @@ type UniqueSession struct {
 	rpcServer *cluster.NatsRPCServer
 	rpcClient *cluster.NatsRPCClient
 	dieChan   chan struct{}
-}
-
-// BindingMsg is the msg sent to other servers when a binding occurs
-type BindingMsg struct {
-	UID string `json:"uid"`
-	FID string `json:"fid"`
 }
 
 // NewUniqueSession creates a new unique session module
@@ -61,8 +56,8 @@ func (u *UniqueSession) processBindings(bindingsChan chan *nats.Msg) {
 				return
 			}
 			msgData := s.Data
-			msg := &BindingMsg{}
-			err := json.Unmarshal(msgData, msg)
+			msg := &protos.BindMsg{}
+			err := proto.Unmarshal(msgData, msg)
 			if err != nil {
 				continue
 			}
@@ -88,11 +83,11 @@ func (u *UniqueSession) Init() error {
 		if oldSession != nil {
 			return oldSession.Kick(ctx)
 		}
-		msg := &BindingMsg{
+		msg := &protos.BindMsg{
 			UID: s.UID(),
 			FID: u.server.ID,
 		}
-		msgData, err := json.Marshal(msg)
+		msgData, err := proto.Marshal(msg)
 		if err != nil {
 			return err
 		}

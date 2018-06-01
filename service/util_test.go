@@ -31,6 +31,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -42,10 +43,10 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -54,21 +55,16 @@ type TestType struct {
 	component.Base
 }
 
-type SomeStruct struct {
-	A int
-	B string
-}
-
-func (t *TestType) HandlerNil(context.Context)                         {}
-func (t *TestType) HandlerRaw(ctx context.Context, msg []byte)         {}
-func (t *TestType) HandlerPointer(ctx context.Context, ss *SomeStruct) {}
-func (t *TestType) HandlerPointerRaw(ctx context.Context, ss *SomeStruct) ([]byte, error) {
+func (t *TestType) HandlerNil(context.Context)                              {}
+func (t *TestType) HandlerRaw(ctx context.Context, msg []byte)              {}
+func (t *TestType) HandlerPointer(ctx context.Context, ss *test.SomeStruct) {}
+func (t *TestType) HandlerPointerRaw(ctx context.Context, ss *test.SomeStruct) ([]byte, error) {
 	return []byte("ok"), nil
 }
-func (t *TestType) HandlerPointerStruct(ctx context.Context, ss *SomeStruct) (*SomeStruct, error) {
-	return &SomeStruct{A: 1, B: "ok"}, nil
+func (t *TestType) HandlerPointerStruct(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {
+	return &test.SomeStruct{A: 1, B: "ok"}, nil
 }
-func (t *TestType) HandlerPointerErr(ctx context.Context, ss *SomeStruct) ([]byte, error) {
+func (t *TestType) HandlerPointerErr(ctx context.Context, ss *test.SomeStruct) ([]byte, error) {
 	return nil, errors.New("HandlerPointerErr")
 }
 
@@ -80,7 +76,7 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-	gob.Register(SomeStruct{})
+	gob.Register(test.SomeStruct{})
 	gob.Register(map[string]interface{}{})
 }
 
@@ -117,7 +113,7 @@ func TestUnmarshalHandlerArg(t *testing.T) {
 	}{
 		{"raw_arg", "HandlerRaw", true, []byte("hello"), []byte("hello"), nil},
 		{"nil_handler", "HandlerNil", false, []byte("hello"), nil, nil},
-		{"struct_handler", "HandlerPointer", false, []byte("hello"), &SomeStruct{}, nil},
+		{"struct_handler", "HandlerPointer", false, []byte("hello"), &test.SomeStruct{}, nil},
 		{"struct_handler_err", "HandlerPointer", false, []byte("hello"), nil, errors.New("some error")},
 	}
 
@@ -160,38 +156,43 @@ func TestUnmarshalRemoteArg(t *testing.T) {
 	t.Parallel()
 	tables := []struct {
 		name string
-		args []interface{}
+		arg  proto.Message
 	}{
-		{"unmarshal_remote_test_1", []interface{}{[]byte{1}, "test", 1}},
-		{"unmarshal_remote_test_2", []interface{}{[]byte{1}, SomeStruct{A: 1, B: "aaa"}, 34}},
-		{"unmarshal_remote_test_3", []interface{}{"aaa"}},
+		{"unmarshal_remote_test_1", &test.SomeStruct{A: 1, B: "blah"}},
+		{"unmarshal_remote_test_2", &test.SomeStruct{A: 1, B: "aaa"}},
+		{"unmarshal_remote_test_3", &test.SomeStruct{B: "aab"}},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			gp := filepath.Join("fixtures", table.name+".golden")
 			if *update {
-				b, err := util.GobEncode(table.args...)
+				b, err := proto.Marshal(table.arg)
 				require.NoError(t, err)
 				t.Log("updating golden file")
 				helpers.WriteFile(t, gp, b)
 			}
 			payload := helpers.ReadFile(t, gp)
 
-			args, err := unmarshalRemoteArg(payload)
-			assert.NoError(t, err)
-			for i, arg := range args {
-				assert.Equal(t, table.args[i], arg)
+			remote := &component.Remote{
+				Type: reflect.TypeOf(&test.SomeStruct{}),
 			}
+
+			arg, err := unmarshalRemoteArg(remote, payload)
+			assert.NoError(t, err)
+			assert.Equal(t, table.arg, arg)
 		})
 	}
 }
 
 func TestUnmarshalRemoteArgErr(t *testing.T) {
 	t.Parallel()
-	args, err := unmarshalRemoteArg([]byte(nil))
+	remote := &component.Remote{
+		Type: reflect.TypeOf(&test.SomeStruct{}),
+	}
+	args, err := unmarshalRemoteArg(remote, []byte("arg"))
 	assert.Empty(t, args)
-	assert.Equal(t, errors.New("EOF"), err)
+	assert.Equal(t, errors.New("unexpected EOF"), err)
 }
 
 func TestGetMsgType(t *testing.T) {
@@ -323,9 +324,9 @@ func TestSerializeReturn(t *testing.T) {
 		errGetErrorPayload error
 	}{
 		{"raw_arg", true, []byte("hello"), []byte("hello"), nil, nil},
-		{"success", false, SomeStruct{A: 1, B: "hello"}, []byte("hello"), nil, nil},
-		{"serialize_fail", false, SomeStruct{A: 1, B: "hello"}, nil, errors.New("some error"), nil},
-		{"serialize_fail_err_payload", false, SomeStruct{A: 1, B: "hello"}, nil, errors.New("some error"), errors.New("some other error")},
+		{"success", false, test.SomeStruct{A: 1, B: "hello"}, []byte("hello"), nil, nil},
+		{"serialize_fail", false, test.SomeStruct{A: 1, B: "hello"}, nil, errors.New("some error"), nil},
+		{"serialize_fail_err_payload", false, test.SomeStruct{A: 1, B: "hello"}, nil, errors.New("some error"), errors.New("some other error")},
 	}
 
 	for _, table := range tables {
@@ -385,12 +386,12 @@ func TestProcessHandlerMessage(t *testing.T) {
 		{"invalid_route", route.NewRoute("", "no", "no"), nil, nil, nil, message.Request, nil, false, nil, e.NewError(errors.New("pitaya/handler: no.no not found"), e.ErrNotFoundCode)},
 		{"invalid_msg_type", rt, nil, nil, nil, message.Request, nil, false, nil, e.NewError(errInvalidMsg, e.ErrInternalCode)},
 		{"request_on_notify", rt, nil, nil, nil, message.Notify, message.Request, false, nil, e.NewError(constants.ErrRequestOnNotify, e.ErrBadRequestCode)},
-		{"failed_handle_args_unmarshal", rt, nil, errors.New("some error"), &SomeStruct{}, message.Request, message.Request, false, nil, e.NewError(errors.New("some error"), e.ErrBadRequestCode)},
-		{"failed_pcall", rtErr, nil, nil, &SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, nil, errors.New("HandlerPointerErr")},
-		{"failed_serialize_return", rtSt, errors.New("ser ret error"), nil, &SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, []byte("failed"), nil},
-		{"ok", rt, nil, nil, &SomeStruct{}, message.Request, message.Request, false, []byte("ok"), nil},
-		{"notify_on_request", rt, nil, nil, &SomeStruct{}, message.Request, message.Notify, false, []byte("ok"), nil},
-		{"remote_notify", rt, nil, nil, &SomeStruct{}, message.Notify, message.Notify, true, []byte("ack"), nil},
+		{"failed_handle_args_unmarshal", rt, nil, errors.New("some error"), &test.SomeStruct{}, message.Request, message.Request, false, nil, e.NewError(errors.New("some error"), e.ErrBadRequestCode)},
+		{"failed_pcall", rtErr, nil, nil, &test.SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, nil, errors.New("HandlerPointerErr")},
+		{"failed_serialize_return", rtSt, errors.New("ser ret error"), nil, &test.SomeStruct{A: 1, B: "ok"}, message.Request, message.Request, false, []byte("failed"), nil},
+		{"ok", rt, nil, nil, &test.SomeStruct{}, message.Request, message.Request, false, []byte("ok"), nil},
+		{"notify_on_request", rt, nil, nil, &test.SomeStruct{}, message.Request, message.Notify, false, []byte("ok"), nil},
+		{"remote_notify", rt, nil, nil, &test.SomeStruct{}, message.Notify, message.Notify, true, []byte("ack"), nil},
 	}
 
 	for _, table := range tables {
@@ -456,7 +457,7 @@ func TestProcessHandlerMessageBrokenAfterPipeline(t *testing.T) {
 	mockSerializer := mocks.NewMockSerializer(ctrl)
 	mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil).Do(
 		func(p []byte, arg interface{}) {
-			arg = &SomeStruct{}
+			arg = &test.SomeStruct{}
 		})
 	expected := []byte("oops")
 	mockSerializer.EXPECT().Marshal(gomock.Any()).Return(expected, nil)

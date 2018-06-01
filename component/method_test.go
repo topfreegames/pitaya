@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/protos/test"
 )
 
 type TestType struct {
@@ -42,10 +43,10 @@ func (t *TestType) ExportedHandlerWithSessionAndPointerWithRawOut(ctx context.Co
 func (t *TestType) ExportedHandlerWithSessionAndPointerWithPointerOut(ctx context.Context, tt *TestType) (*TestType, error) {
 	return nil, nil
 }
-func (t *TestType) ExportedRemoteRawOut(ctx context.Context) ([]byte, error) {
+func (t *TestType) ExportedRemoteRawOut(ctx context.Context) (*test.SomeStruct, error) {
 	return nil, nil
 }
-func (t *TestType) ExportedRemotePointerOut(ctx context.Context) (*TestType, error) {
+func (t *TestType) ExportedRemotePointerOut(ctx context.Context) (*test.SomeStruct, error) {
 	return nil, nil
 }
 

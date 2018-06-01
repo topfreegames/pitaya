@@ -106,7 +106,7 @@ func (ns *NatsRPCClient) buildRequest(
 	if err != nil {
 		logger.Log.Errorf("failed to inject span: %s", err)
 	}
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerIdKey, ns.server.ID)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerIDKey, ns.server.ID)
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.PeerServiceKey, ns.server.Type)
 	req.Metadata, err = pcontext.Encode(ctx)
 	if err != nil {

@@ -23,6 +23,7 @@ package context
 import (
 	"context"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"flag"
 	"os"
@@ -33,7 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/util"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -166,8 +166,6 @@ func TestEncode(t *testing.T) {
 	}{
 		{"no_elements", map[string]interface{}{}, nil},
 		{"one_element", map[string]interface{}{"key1": "val1"}, nil},
-		{"unregistered_struct", map[string]interface{}{"key1": &unregisteredStruct{}}, errors.New("gob: type not registered for interface: context.unregisteredStruct")},
-		{"registered_struct", map[string]interface{}{"key1": &registeredStruct{}}, nil},
 	}
 
 	for _, table := range tables {
@@ -177,7 +175,7 @@ func TestEncode(t *testing.T) {
 			if len(table.items) > 0 && table.err == nil {
 				gp := filepath.Join("fixtures", table.name+".golden")
 				if *update {
-					b, err := util.GobEncode(table.items)
+					b, err := json.Marshal(table.items)
 					require.NoError(t, err)
 					t.Log("updating golden file")
 					helpers.WriteFile(t, gp, b)
@@ -202,7 +200,6 @@ func TestDecode(t *testing.T) {
 		items map[string]interface{}
 	}{
 		{"one_element", map[string]interface{}{"key1": "val1"}},
-		{"registered_struct", map[string]interface{}{"key1": &registeredStruct{}}},
 	}
 
 	for _, table := range tables {
@@ -221,7 +218,7 @@ func TestDecode(t *testing.T) {
 
 func TestDecodeFailsIfBadEncodedData(t *testing.T) {
 	decoded, err := Decode([]byte("oh noes"))
-	assert.Equal(t, errors.New("unexpected EOF"), err)
+	assert.Equal(t, errors.New("invalid character 'o' looking for beginning of value").Error(), err.Error())
 	assert.Nil(t, decoded)
 }
 

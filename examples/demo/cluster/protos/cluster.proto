@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package protos;
+
+// RPCMsg message to be sent using rpc
+message RPCMsg {
+  string Msg = 1;
+}
+
+// RPCRes is the rpc response
+message RPCRes {
+  string Msg = 1;
+}

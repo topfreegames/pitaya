@@ -21,20 +21,19 @@
 package session
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
+	"encoding/json"
 	"net"
 	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/util"
 )
 
 // NetworkEntity represent low-level network instance
@@ -73,13 +72,6 @@ type Session struct {
 	frontendID        string                 // the id of the frontend that owns the session
 	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
-}
-
-// Data to send over rpc
-type Data struct {
-	ID   int64
-	UID  string
-	Data map[string]interface{}
 }
 
 type sessionIDService struct {
@@ -149,12 +141,12 @@ func OnSessionBind(f func(ctx context.Context, s *Session) error) {
 }
 
 func (s *Session) updateEncodedData() error {
-	buf := bytes.NewBuffer([]byte(nil))
-	err := gob.NewEncoder(buf).Encode(s.data)
+	var b []byte
+	b, err := json.Marshal(s.data)
 	if err != nil {
 		return err
 	}
-	s.encodedData = buf.Bytes()
+	s.encodedData = b
 	return nil
 }
 
@@ -207,7 +199,7 @@ func (s *Session) SetDataEncoded(encodedData []byte) error {
 		return nil
 	}
 	var data map[string]interface{}
-	err := util.GobDecode(&data, encodedData)
+	err := json.Unmarshal(encodedData, &data)
 	if err != nil {
 		return err
 	}
@@ -590,14 +582,14 @@ func (s *Session) Clear() {
 }
 
 func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
-	sessionData := &Data{
+	sessionData := &protos.Session{
 		ID:  s.frontendSessionID,
-		UID: s.uid,
+		Uid: s.uid,
 	}
 	if includeData {
-		sessionData.Data = s.data
+		sessionData.Data = s.encodedData
 	}
-	b, err := util.GobEncode(sessionData)
+	b, err := proto.Marshal(sessionData)
 	if err != nil {
 		return err
 	}

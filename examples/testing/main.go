@@ -22,7 +22,6 @@ package main
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,6 +34,8 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/examples/testing/protos"
+	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
@@ -51,17 +52,6 @@ type TestRemoteSvc struct {
 	component.Base
 }
 
-// TestResponse for e2e tests
-type TestResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-}
-
-// TestRequest for e2e tests
-type TestRequest struct {
-	Msg string `json:"msg"`
-}
-
 // TestRPCRequest for e2e tests
 type TestRPCRequest struct {
 	Route string `json:"route"`
@@ -75,30 +65,29 @@ type TestSendToUsers struct {
 }
 
 // RPCTestRawPtrReturnsPtr remote for e2e tests
-func (tr *TestRemoteSvc) RPCTestRawPtrReturnsPtr(ctx context.Context, data []byte) (*TestResponse, error) {
-	return &TestResponse{
+func (tr *TestRemoteSvc) RPCTestRawPtrReturnsPtr(ctx context.Context, data *test.TestRequest) (*test.TestResponse, error) {
+	return &test.TestResponse{
 		Code: 200,
-		Msg:  fmt.Sprintf("got %s", string(data)),
+		Msg:  fmt.Sprintf("got %s", data.GetMsg()),
 	}, nil
 }
 
 // RPCTestPtrReturnsPtr remote for e2e tests
-func (tr *TestRemoteSvc) RPCTestPtrReturnsPtr(ctx context.Context, req *TestRequest) (*TestResponse, error) {
-	return &TestResponse{
+func (tr *TestRemoteSvc) RPCTestPtrReturnsPtr(ctx context.Context, req *test.TestRequest) (*test.TestResponse, error) {
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  fmt.Sprintf("got %s", req.Msg),
 	}, nil
 }
 
 // RPCTestReturnsError remote for e2e tests
-func (tr *TestRemoteSvc) RPCTestReturnsError(ctx context.Context, data []byte) (*TestResponse, error) {
+func (tr *TestRemoteSvc) RPCTestReturnsError(ctx context.Context, data *test.TestRequest) (*test.TestResponse, error) {
 	return nil, pitaya.Error(errors.New("test error"), "PIT-433", map[string]string{"some": "meta"})
-
 }
 
 // RPCTestNoArgs remote for e2e tests
-func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*TestResponse, error) {
-	return &TestResponse{
+func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*test.TestResponse, error) {
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  "got nothing",
 	}, nil
@@ -110,7 +99,7 @@ func (t *TestSvc) Init() {
 }
 
 // TestRequestKickUser handler for e2e tests
-func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*TestResponse, error) {
+func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*test.TestResponse, error) {
 	s := session.GetSessionByUID(string(userID))
 	if s == nil {
 		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
@@ -119,14 +108,14 @@ func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*Test
 	if err != nil {
 		return nil, err
 	}
-	return &TestResponse{
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  "ok",
 	}, nil
 }
 
 // TestRequestKickMe handler for e2e tests
-func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*TestResponse, error) {
+func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*test.TestResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
 	if s == nil {
 		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
@@ -135,28 +124,28 @@ func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*TestResponse, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &TestResponse{
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  "ok",
 	}, nil
 }
 
 // TestRequestOnlySessionReturnsPtr handler for e2e tests
-func (t *TestSvc) TestRequestOnlySessionReturnsPtr(ctx context.Context) (*TestResponse, error) {
-	return &TestResponse{
+func (t *TestSvc) TestRequestOnlySessionReturnsPtr(ctx context.Context) (*test.TestResponse, error) {
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  "hello",
 	}, nil
 }
 
 // TestRequestOnlySessionReturnsPtrNil handler for e2e tests
-func (t *TestSvc) TestRequestOnlySessionReturnsPtrNil(ctx context.Context) (*TestResponse, error) {
+func (t *TestSvc) TestRequestOnlySessionReturnsPtrNil(ctx context.Context) (*test.TestResponse, error) {
 	return nil, nil
 }
 
 // TestRequestReturnsPtr handler for e2e tests
-func (t *TestSvc) TestRequestReturnsPtr(ctx context.Context, in *TestRequest) (*TestResponse, error) {
-	return &TestResponse{
+func (t *TestSvc) TestRequestReturnsPtr(ctx context.Context, in *test.TestRequest) (*test.TestResponse, error) {
+	return &test.TestResponse{
 		Code: 200,
 		Msg:  in.Msg,
 	}, nil
@@ -168,7 +157,7 @@ func (t *TestSvc) TestRequestOnlySessionReturnsRawNil(ctx context.Context) ([]by
 }
 
 // TestRequestReturnsRaw handler for e2e tests
-func (t *TestSvc) TestRequestReturnsRaw(ctx context.Context, in *TestRequest) ([]byte, error) {
+func (t *TestSvc) TestRequestReturnsRaw(ctx context.Context, in *test.TestRequest) ([]byte, error) {
 	return []byte(in.Msg), nil
 }
 
@@ -217,7 +206,7 @@ func (t *TestSvc) TestSendGroupMsg(ctx context.Context, msg []byte) {
 }
 
 // TestSendGroupMsgPtr handler for e2e tests
-func (t *TestSvc) TestSendGroupMsgPtr(ctx context.Context, msg *TestRequest) {
+func (t *TestSvc) TestSendGroupMsgPtr(ctx context.Context, msg *test.TestRequest) {
 	t.group.Broadcast("route.testptr", msg)
 }
 
@@ -226,20 +215,10 @@ func (t *TestSvc) TestSendToUsers(ctx context.Context, msg *TestSendToUsers) {
 	pitaya.SendPushToUsers("route.sendtousers", []byte(msg.Msg), msg.UIDs, "connector")
 }
 
-// TestSendRPCPointer tests sending a RPC
-func (t *TestSvc) TestSendRPCPointer(ctx context.Context, msg *TestRPCRequest) (*TestResponse, error) {
-	rep := &TestResponse{}
-	err := pitaya.RPC(ctx, msg.Route, rep, &TestRequest{Msg: msg.Data})
-	if err != nil {
-		return nil, err
-	}
-	return rep, nil
-}
-
 // TestSendRPC tests sending a RPC
-func (t *TestSvc) TestSendRPC(ctx context.Context, msg *TestRPCRequest) (*TestResponse, error) {
-	rep := &TestResponse{}
-	err := pitaya.RPC(ctx, msg.Route, rep, []byte(msg.Data))
+func (t *TestSvc) TestSendRPC(ctx context.Context, msg *TestRPCRequest) (*protos.TestResponse, error) {
+	rep := &protos.TestResponse{}
+	err := pitaya.RPC(ctx, msg.Route, rep, &protos.TestRequest{Msg: msg.Data})
 	if err != nil {
 		return nil, err
 	}
@@ -247,9 +226,9 @@ func (t *TestSvc) TestSendRPC(ctx context.Context, msg *TestRPCRequest) (*TestRe
 }
 
 // TestSendRPCNoArgs tests sending a RPC
-func (t *TestSvc) TestSendRPCNoArgs(ctx context.Context, msg *TestRPCRequest) (*TestResponse, error) {
-	rep := &TestResponse{}
-	err := pitaya.RPC(ctx, msg.Route, rep, []byte(nil))
+func (t *TestSvc) TestSendRPCNoArgs(ctx context.Context, msg *TestRPCRequest) (*protos.TestResponse, error) {
+	rep := &protos.TestResponse{}
+	err := pitaya.RPC(ctx, msg.Route, rep, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -257,8 +236,6 @@ func (t *TestSvc) TestSendRPCNoArgs(ctx context.Context, msg *TestRPCRequest) (*
 }
 
 func main() {
-	gob.Register(&TestRequest{})
-
 	port := flag.Int("port", 32222, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")

@@ -26,13 +26,15 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/internal/message"
 )
 
 var (
-	typeOfError   = reflect.TypeOf((*error)(nil)).Elem()
-	typeOfBytes   = reflect.TypeOf(([]byte)(nil))
-	typeOfContext = reflect.TypeOf(new(context.Context)).Elem()
+	typeOfError    = reflect.TypeOf((*error)(nil)).Elem()
+	typeOfBytes    = reflect.TypeOf(([]byte)(nil))
+	typeOfContext  = reflect.TypeOf(new(context.Context)).Elem()
+	typeOfProtoMsg = reflect.TypeOf(new(proto.Message)).Elem()
 )
 
 func isExported(name string) bool {
@@ -50,7 +52,7 @@ func isRemoteMethod(method reflect.Method) bool {
 	}
 
 	// Method needs at least two ins: receiver and context.Context
-	if mt.NumIn() < 2 {
+	if mt.NumIn() != 2 && mt.NumIn() != 3 {
 		return false
 	}
 
@@ -58,12 +60,22 @@ func isRemoteMethod(method reflect.Method) bool {
 		return false
 	}
 
-	// Method needs two outs: interface{}(or []byte), error
+	if mt.NumIn() == 3 {
+		if t2 := mt.In(2); !t2.Implements(typeOfProtoMsg) {
+			return false
+		}
+	}
+
+	// Method needs two outs: interface{}(that implements proto.Message), error
 	if mt.NumOut() != 2 {
 		return false
 	}
 
-	if (mt.Out(0).Kind() != reflect.Ptr && mt.Out(0) != typeOfBytes) || mt.Out(1) != typeOfError {
+	if (mt.Out(0).Kind() != reflect.Ptr) || mt.Out(1) != typeOfError {
+		return false
+	}
+
+	if o0 := mt.Out(0); !o0.Implements(typeOfProtoMsg) {
 		return false
 	}
 
@@ -107,6 +119,7 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 	methods := make(map[string]*Remote)
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
+		mt := method.Type
 		mn := method.Name
 		if isRemoteMethod(method) {
 			// rewrite remote name
@@ -115,7 +128,10 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 			}
 			methods[mn] = &Remote{
 				Method:  method,
-				HasArgs: method.Type.NumIn() > 2,
+				HasArgs: method.Type.NumIn() == 3,
+			}
+			if mt.NumIn() == 3 {
+				methods[mn].Type = mt.In(2)
 			}
 		}
 	}

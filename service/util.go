@@ -21,13 +21,12 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
@@ -69,13 +68,20 @@ func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serial
 	return arg, nil
 }
 
-func unmarshalRemoteArg(payload []byte) ([]interface{}, error) {
-	args := make([]interface{}, 0)
-	err := gob.NewDecoder(bytes.NewReader(payload)).Decode(&args)
-	if err != nil {
-		return nil, err
+func unmarshalRemoteArg(remote *component.Remote, payload []byte) (interface{}, error) {
+	var arg interface{}
+	if remote.Type != nil {
+		arg = reflect.New(remote.Type.Elem()).Interface()
+		pb, ok := arg.(proto.Message)
+		if !ok {
+			return nil, constants.ErrWrongValueType
+		}
+		err := proto.Unmarshal(payload, pb)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return args, nil
+	return arg, nil
 }
 
 func getMsgType(msgTypeIface interface{}) (message.Type, error) {

@@ -21,12 +21,10 @@
 package context
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
+	"encoding/json"
 
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/util"
 )
 
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls
@@ -63,7 +61,7 @@ func FromMap(val map[string]interface{}) context.Context {
 func Encode(ctx context.Context) ([]byte, error) {
 	m := ToMap(ctx)
 	if len(m) > 0 {
-		return util.GobEncode(m)
+		return json.Marshal(m)
 	}
 	return nil, nil
 }
@@ -74,10 +72,10 @@ func Decode(m []byte) (context.Context, error) {
 		// TODO maybe return an error
 		return nil, nil
 	}
-	args := make([]interface{}, 0)
-	err := gob.NewDecoder(bytes.NewReader(m)).Decode(&args)
+	mp := make(map[string]interface{}, 0)
+	err := json.Unmarshal(m, &mp)
 	if err != nil {
 		return nil, err
 	}
-	return FromMap(args[0].(map[string]interface{})), nil
+	return FromMap(mp), nil
 }

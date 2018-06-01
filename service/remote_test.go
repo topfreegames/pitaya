@@ -21,9 +21,7 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"errors"
 	"math/rand"
 	"reflect"
@@ -46,27 +44,27 @@ import (
 	messagemocks "github.com/topfreegames/pitaya/internal/message/mocks"
 	connmock "github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
+	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
-	"github.com/topfreegames/pitaya/util"
 )
 
-func (m *MyComp) Remote1(ctx context.Context, ss *SomeStruct) ([]byte, error) {
-	return []byte("ok"), nil
+func (m *MyComp) Remote1(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {
+	return &test.SomeStruct{B: "ack"}, nil
 }
 
-func (m *MyComp) Remote2(ctx context.Context) (*SomeStruct, error) {
+func (m *MyComp) Remote2(ctx context.Context) (*test.SomeStruct, error) {
 	return nil, nil
 }
 
-func (m *MyComp) RemoteRes(ctx context.Context, b []byte) ([]byte, error) {
+func (m *MyComp) RemoteRes(ctx context.Context, b *test.SomeStruct) (*test.SomeStruct, error) {
 	return b, nil
 }
 
-func (m *MyComp) RemoteErr(ctx context.Context) ([]byte, error) {
+func (m *MyComp) RemoteErr(ctx context.Context) (*test.SomeStruct, error) {
 	return nil, e.NewError(errors.New("remote err"), e.ErrUnknownCode)
 }
 
@@ -233,10 +231,10 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtRes := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtRes.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	remotes[rtRes.Short()] = &component.Remote{
+		Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2, Type: reflect.TypeOf(&test.SomeStruct{B: "aa"})}
 
-	buf := bytes.NewBuffer(nil)
-	err := gob.NewEncoder(buf).Encode([]interface{}{[]byte("ok")})
+	b, err := proto.Marshal(&test.SomeStruct{B: "aa"})
 	assert.NoError(t, err)
 	tables := []struct {
 		name         string
@@ -245,10 +243,10 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 		errSubstring string
 	}{
 		{"remote_not_found", &protos.Request{Msg: &protos.Msg{}}, route.NewRoute("bla", "bla", "bla"), "route not found"},
-		{"failed_unmarshal", &protos.Request{Msg: &protos.Msg{Data: []byte("dd")}}, rt, "unexpected EOF"},
+		{"failed_unmarshal", &protos.Request{Msg: &protos.Msg{Data: []byte("dd")}}, rt, "reflect: Call using zero Value argument"},
 		{"failed_pcall", &protos.Request{Msg: &protos.Msg{}}, rtErr, "remote err"},
 		{"success_nil_response", &protos.Request{Msg: &protos.Msg{}}, rtStr, ""},
-		{"success_response", &protos.Request{Msg: &protos.Msg{Data: buf.Bytes()}}, rtRes, ""},
+		{"success_response", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, ""},
 	}
 
 	for _, table := range tables {
@@ -291,8 +289,8 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 	}{
 		{"new_remote_err", &protos.Request{
 			Msg:     &protos.Msg{Reply: uuid.New().String()},
-			Session: &protos.Session{Data: []byte("no")},
-		}, nil, "unexpected EOF"},
+			Session: &protos.Session{Data: []byte("{no")},
+		}, nil, "invalid character 'n' looking for beginning of object key string"},
 		{"process_handler_msg_err", &protos.Request{Msg: &protos.Msg{Reply: uuid.New().String()}}, route.NewRoute("bla", "bla", "bla"), "bla.bla.bla not found"},
 		{"success", &protos.Request{Msg: &protos.Msg{Data: []byte("ok")}}, rt, ""},
 	}
@@ -387,16 +385,15 @@ func TestRemoteServiceRPC(t *testing.T) {
 	tables := []struct {
 		name        string
 		serverID    string
-		reply       interface{}
-		args        []interface{}
+		reply       proto.Message
+		arg         proto.Message
 		foundServer bool
 		err         error
 	}{
-		{"bad_args", "", nil, []interface{}{&unregisteredStruct{}}, false, errors.New("gob: type not registered for interface: service.unregisteredStruct")},
-		{"server_id_and_no_target", "serverId", nil, []interface{}{&SomeStruct{}}, false, constants.ErrServerNotFound},
-		{"failed_remote_call", "serverId", nil, []interface{}{&SomeStruct{}}, true, errors.New("rpc failed")},
-		{"success", "serverId", &SomeStruct{}, []interface{}{&SomeStruct{}}, true, nil},
-		{"success_nil_reply", "serverId", nil, []interface{}{&SomeStruct{}}, true, nil},
+		{"server_id_and_no_target", "serverId", nil, &test.SomeStruct{}, false, constants.ErrServerNotFound},
+		{"failed_remote_call", "serverId", nil, &test.SomeStruct{}, true, errors.New("rpc failed")},
+		{"success", "serverId", &test.SomeStruct{}, &test.SomeStruct{}, true, nil},
+		{"success_nil_reply", "serverId", nil, &test.SomeStruct{}, true, nil},
 	}
 
 	for _, table := range tables {
@@ -421,23 +418,22 @@ func TestRemoteServiceRPC(t *testing.T) {
 				mockSD.EXPECT().GetServer(table.serverID).Return(sdRet, nil)
 			}
 
-			var expected *SomeStruct
+			var expected *test.SomeStruct
 			ctx := context.Background()
 			if table.foundServer {
-				expectedData, _ := util.GobEncode(table.args...)
+				expectedData, _ := proto.Marshal(table.arg)
 				expectedMsg := &message.Message{
 					Type:  message.Request,
 					Route: rt.Short(),
 					Data:  expectedData,
 				}
 
-				expected = &SomeStruct{A: 1, B: "one"}
-				buf := bytes.NewBuffer(nil)
-				err := gob.NewEncoder(buf).Encode(expected)
+				expected = &test.SomeStruct{}
+				b, err := proto.Marshal(expected)
 				assert.NoError(t, err)
-				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: buf.Bytes()}, table.err)
+				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: b}, table.err)
 			}
-			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.args...)
+			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 			if table.reply != nil {
 				assert.Equal(t, table.reply, expected)
