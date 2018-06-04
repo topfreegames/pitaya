@@ -43,8 +43,8 @@ message Request {
 }
 
 message Response {
-  bytes Data = 1;
-  Error Error = 2;
+  bytes data = 1;
+  Error error = 2;
 }
 
 message Error {
@@ -54,14 +54,14 @@ message Error {
 }
 
 message KickMsg {
-  string UserID = 1;
+  string userId = 1;
 }
 
 message KickAnswer {
-  bool Kicked = 1;
+  bool kicked = 1;
 }
 
 message BindMsg {
-  string UID = 1;
-  string FID = 2;
+  string uid = 1;
+  string fid = 2;
 }

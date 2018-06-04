@@ -61,10 +61,10 @@ func (u *UniqueSession) processBindings(bindingsChan chan *nats.Msg) {
 			if err != nil {
 				continue
 			}
-			if u.server.ID == msg.FID {
+			if u.server.ID == msg.Fid {
 				continue
 			}
-			oldSession := session.GetSessionByUID(msg.UID)
+			oldSession := session.GetSessionByUID(msg.Uid)
 			if oldSession != nil {
 				// TODO it would be nice to set this correctly
 				oldSession.Kick(context.Background())
@@ -84,8 +84,8 @@ func (u *UniqueSession) Init() error {
 			return oldSession.Kick(ctx)
 		}
 		msg := &protos.BindMsg{
-			UID: s.UID(),
-			FID: u.server.ID,
+			Uid: s.UID(),
+			Fid: u.server.ID,
 		}
 		msgData, err := proto.Marshal(msg)
 		if err != nil {

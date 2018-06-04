@@ -8,10 +8,10 @@ message SomeStruct{
 }
 
 message TestResponse {
-	int32 Code = 1;
-  string Msg = 2;
+  int32 code = 1;
+  string msg = 2;
 }
 
 message TestRequest {
-	string Msg = 1;
+  string msg = 1;
 }
