@@ -22,11 +22,9 @@ package service
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -67,20 +65,6 @@ func (t *TestType) HandlerPointerStruct(ctx context.Context, ss *test.SomeStruct
 func (t *TestType) HandlerPointerErr(ctx context.Context, ss *test.SomeStruct) ([]byte, error) {
 	return nil, errors.New("HandlerPointerErr")
 }
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
-func setup() {
-	gob.Register(test.SomeStruct{})
-	gob.Register(map[string]interface{}{})
-}
-
-func shutdown() {}
 
 func TestGetHandlerExists(t *testing.T) {
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())

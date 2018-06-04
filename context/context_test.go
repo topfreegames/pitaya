@@ -22,11 +22,9 @@ package context
 
 import (
 	"context"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"flag"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -40,20 +38,6 @@ var update = flag.Bool("update", false, "update .golden files")
 
 type unregisteredStruct struct{}
 type registeredStruct struct{}
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
-func setup() {
-	gob.Register(map[string]interface{}{})
-	gob.Register(&registeredStruct{})
-}
-
-func shutdown() {}
 
 func TestAddToPropagateCtx(t *testing.T) {
 	tables := []struct {

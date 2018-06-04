@@ -21,20 +21,16 @@
 package util
 
 import (
-	"encoding/gob"
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/mocks"
 	"github.com/topfreegames/pitaya/protos"
@@ -65,19 +61,6 @@ func (s *someStruct) TestFuncThrow() (*someStruct, error) {
 func (s *someStruct) TestFuncNil(arg string) (*someStruct, error) {
 	return nil, nil
 }
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
-func setup() {
-	gob.Register(someStruct{})
-}
-
-func shutdown() {}
 
 func TestPcall(t *testing.T) {
 	t.Parallel()
@@ -162,54 +145,6 @@ func TestSerializeOrRaw(t *testing.T) {
 			res, err := SerializeOrRaw(mockSerializer, table.in)
 			assert.NoError(t, err)
 			assert.Equal(t, table.out, res)
-		})
-	}
-}
-
-func TestGobEncode(t *testing.T) {
-	ins := []struct {
-		name string
-		data []interface{}
-	}{
-		{"gob_encode_test_1", []interface{}{[]byte{1}, "test", 1}},
-		{"gob_encode_test_2", []interface{}{[]byte{1}, someStruct{A: 1, B: "aaa"}, 34}},
-		{"gob_encode_test_3", []interface{}{"aaa"}},
-	}
-
-	for _, in := range ins {
-		t.Run(in.name, func(t *testing.T) {
-			b, err := GobEncode(in.data...)
-			require.NoError(t, err)
-			gp := filepath.Join("fixtures", in.name+".golden")
-			if *update {
-				t.Log("updating golden file")
-				helpers.WriteFile(t, gp, b)
-			}
-			expected := helpers.ReadFile(t, gp)
-
-			assert.Equal(t, expected, b)
-		})
-	}
-}
-
-func TestGobDecode(t *testing.T) {
-	ins := []struct {
-		name string
-		out  []interface{}
-	}{
-		{"gob_encode_test_1", []interface{}{[]byte{1}, "test", 1}},
-		{"gob_encode_test_2", []interface{}{[]byte{1}, someStruct{A: 1, B: "aaa"}, 34}},
-		{"gob_encode_test_3", []interface{}{"aaa"}},
-	}
-
-	for _, in := range ins {
-		t.Run(in.name, func(t *testing.T) {
-			gp := filepath.Join("fixtures", in.name+".golden")
-			data := helpers.ReadFile(t, gp)
-			var reply []interface{}
-			err := GobDecode(&reply, data)
-			require.NoError(t, err)
-			assert.Equal(t, in.out, reply)
 		})
 	}
 }

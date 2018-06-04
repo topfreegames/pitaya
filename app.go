@@ -22,7 +22,6 @@ package pitaya
 
 import (
 	"context"
-	"encoding/gob"
 	"os"
 	"os/signal"
 	"reflect"
@@ -265,7 +264,6 @@ func startDefaultRPCClient() {
 }
 
 func initSysRemotes() {
-	gob.Register(map[string]interface{}{})
 	sys := &remote.Sys{}
 	RegisterRemote(sys,
 		component.WithName("sys"),
