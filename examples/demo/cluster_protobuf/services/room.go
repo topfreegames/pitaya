@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/gob"
 	"fmt"
 	"time"
 
@@ -51,11 +50,7 @@ func NewRoom() *Room {
 }
 
 // Init runs on service initialization
-func (r *Room) Init() {
-	// It is necessary to register all structs that will be used in RPC calls
-	// This must be done both in the caller and callee servers
-	gob.Register(&protos.UserMessage{})
-}
+func (r *Room) Init() {}
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {

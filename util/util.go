@@ -21,8 +21,6 @@
 package util
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"os"
 	"reflect"
@@ -85,20 +83,6 @@ func SerializeOrRaw(serializer serialize.Serializer, v interface{}) ([]byte, err
 		return nil, err
 	}
 	return data, nil
-}
-
-// GobEncode encodes interfaces with gob
-func GobEncode(args ...interface{}) ([]byte, error) {
-	buf := bytes.NewBuffer([]byte(nil))
-	if err := gob.NewEncoder(buf).Encode(args); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// GobDecode decodes a gob encoded binary
-func GobDecode(reply interface{}, data []byte) error {
-	return gob.NewDecoder(bytes.NewReader(data)).Decode(reply)
 }
 
 // FileExists tells if a file exists

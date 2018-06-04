@@ -22,13 +22,11 @@ package session
 
 import (
 	"context"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -62,20 +60,6 @@ func getEncodedEmptyMap() []byte {
 	b, _ := json.Marshal(map[string]interface{}{})
 	return b
 }
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
-func setup() {
-	gob.Register(someStruct{})
-	gob.Register(map[string]interface{}{})
-}
-
-func shutdown() {}
 
 func TestNewSessionIDService(t *testing.T) {
 	t.Parallel()

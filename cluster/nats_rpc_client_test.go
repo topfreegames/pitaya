@@ -22,10 +22,8 @@ package cluster
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -45,19 +43,6 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
 )
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
-func setup() {
-	gob.Register(map[string]interface{}{})
-}
-
-func shutdown() {}
 
 func TestNewNatsRPCClient(t *testing.T) {
 	t.Parallel()
