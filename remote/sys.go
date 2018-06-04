@@ -63,7 +63,7 @@ func (s *Sys) Kick(ctx context.Context, msg *protos.KickMsg) (*protos.KickAnswer
 	res := &protos.KickAnswer{
 		Kicked: false,
 	}
-	sess := session.GetSessionByUID(msg.GetUserID())
+	sess := session.GetSessionByUID(msg.GetUserId())
 	if sess == nil {
 		return res, constants.ErrSessionNotFound
 	}

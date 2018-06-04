@@ -92,7 +92,7 @@ func (a *Remote) Kick(ctx context.Context) error {
 		return constants.ErrNoUIDBind
 	}
 	b, err := proto.Marshal(&protos.KickMsg{
-		UserID: a.Session.UID(),
+		UserId: a.Session.UID(),
 	})
 	if err != nil {
 		return err

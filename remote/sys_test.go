@@ -154,7 +154,7 @@ func TestKick(t *testing.T) {
 
 	mockEntity.EXPECT().Kick(nil)
 	mockEntity.EXPECT().Close()
-	res, err := s.Kick(nil, &protos.KickMsg{UserID: uid})
+	res, err := s.Kick(nil, &protos.KickMsg{UserId: uid})
 	assert.NoError(t, err)
 	assert.True(t, res.Kicked)
 }
@@ -162,6 +162,6 @@ func TestKick(t *testing.T) {
 func TestKickSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 	t.Parallel()
 	s := &Sys{}
-	_, err := s.Kick(nil, &protos.KickMsg{UserID: uuid.New().String()})
+	_, err := s.Kick(nil, &protos.KickMsg{UserId: uuid.New().String()})
 	assert.EqualError(t, constants.ErrSessionNotFound, err.Error())
 }
