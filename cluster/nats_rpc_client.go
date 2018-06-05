@@ -51,15 +51,22 @@ type NatsRPCClient struct {
 	running                bool
 	server                 *Server
 	metricsReporters       []metrics.Reporter
+	appDieChan             chan bool
 }
 
 // NewNatsRPCClient ctor
-func NewNatsRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*NatsRPCClient, error) {
+func NewNatsRPCClient(
+	config *config.Config,
+	server *Server,
+	metricsReporters []metrics.Reporter,
+	appDieChan chan bool,
+) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
 		config:           config,
 		server:           server,
 		running:          false,
 		metricsReporters: metricsReporters,
+		appDieChan:       appDieChan,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -222,7 +229,7 @@ func (ns *NatsRPCClient) Call(
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true
-	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnectionRetries))
+	conn, err := setupNatsConn(ns.connString, ns.appDieChan, nats.MaxReconnects(ns.maxReconnectionRetries))
 	if err != nil {
 		return err
 	}

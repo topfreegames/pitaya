@@ -45,7 +45,7 @@ func TestNewNatsRPCServer(t *testing.T) {
 
 	cfg := getConfig()
 	sv := getServer()
-	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
+	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
@@ -74,7 +74,7 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 			cfg.Set("pitaya.buffer.cluster.rpc.server.messages", table.messagesBufferSize)
 			cfg.Set("pitaya.buffer.cluster.rpc.server.push", table.pushBufferSize)
 			conf := getConfig(cfg)
-			_, err := NewNatsRPCServer(conf, getServer(), nil)
+			_, err := NewNatsRPCServer(conf, getServer(), nil, nil)
 			assert.Equal(t, table.err, err)
 		})
 	}
@@ -91,7 +91,7 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil)
+	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	assert.NotNil(t, n.GetUnhandledRequestsChannel())
 	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
 }
@@ -100,7 +100,7 @@ func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil)
+	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	assert.Equal(t, n.bindingsChan, n.GetBindingsChannel())
 }
 
@@ -108,10 +108,10 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.SubscribeToBindingsChannel()
@@ -126,7 +126,7 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil)
+	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	assert.NotNil(t, n.GetUserPushChannel())
 	assert.IsType(t, make(chan *protos.Push), n.GetUserPushChannel())
 }
@@ -134,10 +134,10 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -164,10 +164,10 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 func TestNatsRPCServerSubscribe(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -199,10 +199,10 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -240,7 +240,7 @@ func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", "nats://localhost:1")
 	config := getConfig(cfg)
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(config, sv, nil)
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil, nil)
 	err := rpcServer.Init()
 	assert.Error(t, err)
 }
@@ -252,7 +252,7 @@ func TestNatsRPCServerInit(t *testing.T) {
 	cfg.Set("pitaya.cluster.rpc.server.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
 	config := getConfig(cfg)
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(config, sv, nil)
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil, nil)
 	err := rpcServer.Init()
 	assert.NoError(t, err)
 	// should setup conn
@@ -293,7 +293,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters)
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil)
 	rpcServer.dropped = 100
 	rpcServer.messagesBufferSize = 100
 	rpcServer.pushBufferSize = 100

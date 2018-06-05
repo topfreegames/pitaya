@@ -50,10 +50,16 @@ type NatsRPCServer struct {
 	sub                    *nats.Subscription
 	dropped                int
 	metricsReporters       []metrics.Reporter
+	appDieChan             chan bool
 }
 
 // NewNatsRPCServer ctor
-func NewNatsRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*NatsRPCServer, error) {
+func NewNatsRPCServer(
+	config *config.Config,
+	server *Server,
+	metricsReporters []metrics.Reporter,
+	appDieChan chan bool,
+) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
 		config:           config,
 		server:           server,
@@ -61,6 +67,7 @@ func NewNatsRPCServer(config *config.Config, server *Server, metricsReporters []
 		unhandledReqCh:   make(chan *protos.Request),
 		dropped:          0,
 		metricsReporters: metricsReporters,
+		appDieChan:       appDieChan,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -180,7 +187,7 @@ func (ns *NatsRPCServer) GetUserPushChannel() chan *protos.Push {
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
-	conn, err := setupNatsConn(ns.connString, nats.MaxReconnects(ns.maxReconnectionRetries))
+	conn, err := setupNatsConn(ns.connString, ns.appDieChan, nats.MaxReconnects(ns.maxReconnectionRetries))
 	if err != nil {
 		return err
 	}

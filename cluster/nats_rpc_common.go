@@ -22,7 +22,6 @@ package cluster
 
 import (
 	"fmt"
-	"syscall"
 
 	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/logger"
@@ -32,7 +31,7 @@ func getChannel(serverType, serverID string) string {
 	return fmt.Sprintf("pitaya/servers/%s/%s", serverType, serverID)
 }
 
-func setupNatsConn(connectString string, options ...nats.Option) (*nats.Conn, error) {
+func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
 	natsOptions := append(
 		options,
 		nats.DisconnectHandler(func(_ *nats.Conn) {
@@ -48,8 +47,10 @@ func setupNatsConn(connectString string, options ...nats.Option) (*nats.Conn, er
 				return
 			}
 
-			syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 			logger.Log.Errorf("nats connection closed. reason: %q", nc.LastError())
+			if appDieChan != nil {
+				close(appDieChan)
+			}
 		}),
 	)
 
