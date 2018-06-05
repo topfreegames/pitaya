@@ -80,10 +80,10 @@ func setup() {
 	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server)
 	typeOfetcdSD = reflect.TypeOf(etcdSD)
 
-	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server, nil)
+	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
 	typeOfNatsRPCServer = reflect.TypeOf(natsRPCServer)
 
-	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil)
+	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
 	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
 }
 
@@ -177,7 +177,7 @@ func TestSetHeartbeatInterval(t *testing.T) {
 func TestSetRPCServer(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := cluster.NewNatsRPCServer(app.config, app.server, nil)
+	r, err := cluster.NewNatsRPCServer(app.config, app.server, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 
@@ -188,7 +188,7 @@ func TestSetRPCServer(t *testing.T) {
 func TestSetRPCClient(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := cluster.NewNatsRPCClient(app.config, app.server, nil)
+	r, err := cluster.NewNatsRPCClient(app.config, app.server, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetRPCClient(r)

@@ -23,7 +23,9 @@ package cluster
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/nats-io/go-nats"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/helpers"
 )
@@ -46,14 +48,31 @@ func TestNatsRPCCommonSetupNatsConn(t *testing.T) {
 	t.Parallel()
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()))
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 }
 
 func TestNatsRPCCommonSetupNatsConnShouldError(t *testing.T) {
 	t.Parallel()
-	conn, err := setupNatsConn("nats://localhost:1234")
+	conn, err := setupNatsConn("nats://localhost:1234", nil)
 	assert.Error(t, err)
 	assert.Nil(t, conn)
+}
+
+func TestNatsRPCCommonCloseHandler(t *testing.T) {
+	t.Parallel()
+	s := helpers.GetTestNatsServer(t)
+
+	dieChan := make(chan bool)
+
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), dieChan, nats.MaxReconnects(1),
+		nats.ReconnectWait(1*time.Millisecond))
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	s.Shutdown()
+
+	_, ok := <-dieChan
+	assert.False(t, ok)
 }
