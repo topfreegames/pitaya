@@ -118,6 +118,22 @@ func (r *RemoteService) remoteProcess(
 	}
 }
 
+// DoRPC do rpc and get answer
+func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route.Route, protoData []byte) (*protos.Response, error) {
+	msg := &message.Message{
+		Type:  message.Request,
+		Route: route.Short(),
+		Data:  protoData,
+	}
+
+	target, _ := r.serviceDiscovery.GetServer(serverID)
+	if serverID != "" && target == nil {
+		return nil, constants.ErrServerNotFound
+	}
+
+	return r.remoteCall(ctx, target, protos.RPCType_User, route, nil, msg)
+}
+
 // RPC makes rpcs
 func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.Route, reply proto.Message, arg proto.Message) error {
 	var data []byte
@@ -128,18 +144,7 @@ func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.R
 			return err
 		}
 	}
-	msg := &message.Message{
-		Type:  message.Request,
-		Route: route.Short(),
-		Data:  data,
-	}
-
-	target, _ := r.serviceDiscovery.GetServer(serverID)
-	if serverID != "" && target == nil {
-		return constants.ErrServerNotFound
-	}
-
-	res, err := r.remoteCall(ctx, target, protos.RPCType_User, route, nil, msg)
+	res, err := r.DoRPC(ctx, serverID, route, data)
 	if err != nil {
 		return err
 	}
