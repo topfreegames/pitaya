@@ -42,17 +42,6 @@ message Request {
   bytes Metadata = 5;
 }
 
-message Response {
-  bytes data = 1;
-  Error error = 2;
-}
-
-message Error {
-  string code = 1;
-  string msg = 2;
-  map<string, string> metadata = 3;
-}
-
 message KickMsg {
   string userId = 1;
 }
