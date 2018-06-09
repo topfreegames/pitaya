@@ -33,7 +33,7 @@ run-tadpole-example:
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@cd protos && protoc --gogofaster_out=. pitaya.proto
+	@cd protos && protoc --gogofaster_out=. *.proto
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*
