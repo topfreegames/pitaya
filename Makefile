@@ -55,8 +55,8 @@ e2e-test: ensure-testing-deps ensure-testing-bin
 benchmark-test: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING BENCHMARK TESTS==============="
 	@echo "--- starting testing servers"
-	@./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID
-	@./examples/testing/server -type connector -frontend=true > /dev/null 2>&1 & echo $$! > front.PID
+	@PITAYA_METRICS_PROMETHEUS_PORT=9098 ./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID
+	@PITAYA_METRICS_PROMETHEUS_PORT=9099 ./examples/testing/server -type connector -frontend=true > /dev/null 2>&1 & echo $$! > front.PID
 	@echo "--- sleeping for 5 seconds"
 	@sleep 5
 	@go test ./benchmark/benchmark_test.go -bench=.
