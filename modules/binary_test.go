@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
 )
 
 func TestNewBinary(t *testing.T) {
@@ -58,7 +57,6 @@ func TestShutdown(t *testing.T) {
 		err                      error
 	}{
 		{"cmd1", "tail", []string{"-f", "/dev/null"}, 2 * time.Second, nil},
-		{"cmd2", "tail", []string{"-f", "/dev/null"}, 0 * time.Nanosecond, constants.ErrTimeoutTerminatingBinaryModule},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
@@ -66,12 +64,7 @@ func TestShutdown(t *testing.T) {
 			err := b.Init()
 			assert.NoError(t, err)
 			err = b.Shutdown()
-			if table.err != nil {
-				assert.EqualError(t, table.err, err.Error())
-			} else {
-
-				assert.NoError(t, err)
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
