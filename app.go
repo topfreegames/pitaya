@@ -76,7 +76,7 @@ type App struct {
 	dieChan          chan bool
 	heartbeat        time.Duration
 	onSessionBind    func(*session.Session)
-	messageEncoder   message.MessageEncoder
+	messageEncoder   message.Encoder
 	packetDecoder    codec.PacketDecoder
 	packetEncoder    codec.PacketEncoder
 	router           *router.Router
@@ -135,7 +135,7 @@ func Configure(
 	app.server.Type = serverType
 	app.serverMode = serverMode
 	app.server.Metadata = serverMetadata
-	app.messageEncoder = message.NewEncoder(app.config.GetBool("pitaya.dataCompression"))
+	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
 	app.configured = true
 	app.metricsReporters = make([]metrics.Reporter, 0)
 	AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port")))

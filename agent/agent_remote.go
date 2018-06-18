@@ -43,7 +43,7 @@ import (
 type Remote struct {
 	Session          *session.Session // session
 	chDie            chan struct{}    // wait for close
-	messageEncoder   message.MessageEncoder
+	messageEncoder   message.Encoder
 	encoder          codec.PacketEncoder      // binary encoder
 	frontendID       string                   // the frontend that sent the request
 	reply            string                   // nats reply topic
@@ -61,7 +61,7 @@ func NewRemote(
 	serializer serialize.Serializer,
 	serviceDiscovery cluster.ServiceDiscovery,
 	frontendID string,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 ) (*Remote, error) {
 	a := &Remote{
 		chDie:            make(chan struct{}),

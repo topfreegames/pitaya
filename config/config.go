@@ -73,7 +73,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  "60s",
 		"pitaya.cluster.sd.etcd.heartbeat.log":                  true,
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
-		"pitaya.dataCompression":                                true,
+		"pitaya.handler.messages.compression":                   true,
 		"pitaya.heartbeat.interval":                             "30s",
 		"pitaya.session.unique":                                 true,
 		"pitaya.metrics.statsd.enabled":                         false,

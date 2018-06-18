@@ -22,24 +22,29 @@ package message
 
 import (
 	"encoding/binary"
+
 	"github.com/topfreegames/pitaya/util/compression"
 )
 
-type MessageEncoder interface {
-	CompressEnabled() (bool)
+// Encoder interface
+type Encoder interface {
+	IsCompressionEnabled() bool
 	Encode(message *Message) ([]byte, error)
 }
 
-type MessageEncoderStruct struct {
+// MessagesEncoder implements MessageEncoder interface
+type MessagesEncoder struct {
 	DataCompression bool
 }
 
-func NewEncoder(dataCompression bool) MessageEncoder {
-	me := &MessageEncoderStruct{dataCompression}
+// NewMessagesEncoder returns a new message encoder
+func NewMessagesEncoder(dataCompression bool) *MessagesEncoder {
+	me := &MessagesEncoder{dataCompression}
 	return me
 }
 
-func (me *MessageEncoderStruct) CompressEnabled() (bool) {
+// IsCompressionEnabled returns wether the compression is enabled or not
+func (me *MessagesEncoder) IsCompressionEnabled() bool {
 	return me.DataCompression
 }
 
@@ -56,7 +61,7 @@ func (me *MessageEncoderStruct) CompressEnabled() (bool) {
 // ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
 // See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
-func (me *MessageEncoderStruct) Encode(message *Message) ([]byte, error) {
+func (me *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	if invalidType(message.Type) {
 		return nil, ErrWrongMessageType
 	}
@@ -103,12 +108,12 @@ func (me *MessageEncoderStruct) Encode(message *Message) ([]byte, error) {
 	if me.DataCompression {
 		d, err := compression.DeflateData(message.Data)
 		if err != nil {
-			   return nil, err
+			return nil, err
 		}
 
 		if len(d) < len(message.Data) {
-			   message.Data = d
-			   buf[0] |= gzipMask
+			message.Data = d
+			buf[0] |= gzipMask
 		}
 	}
 
@@ -116,7 +121,8 @@ func (me *MessageEncoderStruct) Encode(message *Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (me *MessageEncoderStruct)Decode(data []byte) (*Message, error){
+// Decode decodes the message
+func (me *MessagesEncoder) Decode(data []byte) (*Message, error) {
 	return Decode(data)
 }
 
@@ -182,4 +188,3 @@ func Decode(data []byte) (*Message, error) {
 	}
 	return m, nil
 }
-

@@ -85,7 +85,7 @@ func TestNewAgent(t *testing.T) {
 		func(typ packet.Type, d []byte) {
 			assert.EqualValues(t, packet.Heartbeat, typ)
 		})
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
@@ -131,7 +131,7 @@ func TestKick(t *testing.T) {
 			assert.EqualValues(t, packet.Kick, typ)
 		})
 	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
 	c := context.Background()
@@ -159,7 +159,7 @@ func TestAgentSend(t *testing.T) {
 			mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 			dieChan := make(chan bool)
 			hbTime := time.Second
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 
 			mockConn := mocks.NewMockConn(ctrl)
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
@@ -186,7 +186,7 @@ func TestAgentPushFailsIfClosedAgent(t *testing.T) {
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 
 	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
@@ -217,7 +217,7 @@ func TestAgentPush(t *testing.T) {
 			mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 			dieChan := make(chan bool)
 			hbTime := time.Second
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 			mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 			mockConn := mocks.NewMockConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -257,7 +257,7 @@ func TestAgentPushFullChannel(t *testing.T) {
 	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 	dieChan := make(chan bool)
 	hbTime := time.Second
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -279,7 +279,7 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -321,7 +321,7 @@ func TestAgentResponseMID(t *testing.T) {
 			mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 			dieChan := make(chan bool)
 			hbTime := time.Second
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 
 			mockConn := mocks.NewMockConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -375,7 +375,7 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 	dieChan := make(chan bool)
 	hbTime := time.Second
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -396,7 +396,7 @@ func TestAgentCloseFailsIfAlreadyClosed(t *testing.T) {
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 
 	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
@@ -412,7 +412,7 @@ func TestAgentClose(t *testing.T) {
 	mockConn := mocks.NewMockConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -456,7 +456,7 @@ func TestAgentRemoteAddr(t *testing.T) {
 	mockConn := mocks.NewMockConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -473,7 +473,7 @@ func TestAgentString(t *testing.T) {
 	mockConn := mocks.NewMockConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -500,7 +500,7 @@ func TestAgentGetStatus(t *testing.T) {
 			mockConn := mocks.NewMockConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
-			mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 			ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -518,7 +518,7 @@ func TestAgentSetLastAt(t *testing.T) {
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -543,7 +543,7 @@ func TestAgentSetStatus(t *testing.T) {
 
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
-			mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 			ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -597,7 +597,7 @@ func TestAgentSendHandshakeResponse(t *testing.T) {
 			mockConn := mocks.NewMockConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
-			mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 			ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -628,7 +628,7 @@ func TestAnswerWithError(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 			ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 1, nil, messageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -649,7 +649,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockConn(ctrl)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -680,7 +680,7 @@ func TestAgentHeartbeatExitsIfConnError(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockConn(ctrl)
-	mockMessageEncoder := messagemocks.NewMockMessageEncoder(ctrl)
+	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -710,7 +710,7 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockConn(ctrl)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 
 	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
 	mockConn.EXPECT().Close().MaxTimes(1)
@@ -733,7 +733,7 @@ func TestAgentWriteChSend(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	mockConn := mocks.NewMockConn(ctrl)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
@@ -787,7 +787,7 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	mockConn := mocks.NewMockConn(ctrl)
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	ag := &Agent{ // avoid heartbeat and handshake to fully test serialize
@@ -851,7 +851,7 @@ func TestAgentHandle(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockConn(ctrl)
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -902,7 +902,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
 	dieChan := make(chan bool)
 	hbTime := time.Second
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockConn := mocks.NewMockConn(ctrl)

@@ -56,7 +56,7 @@ type RemoteService struct {
 	rpcClient        cluster.RPCClient
 	services         map[string]*component.Service // all registered service
 	router           *router.Router
-	messageEncoder   message.MessageEncoder
+	messageEncoder   message.Encoder
 	server           *cluster.Server // server obj
 }
 
@@ -68,7 +68,7 @@ func NewRemoteService(
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	router *router.Router,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 	server *cluster.Server,
 ) *RemoteService {
 	return &RemoteService{

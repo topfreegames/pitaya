@@ -71,7 +71,7 @@ type (
 		messagesBufferSize int                  // size of the pending messages buffer
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
-		messageEncoder     message.MessageEncoder
+		messageEncoder     message.Encoder
 		metricsReporters   []metrics.Reporter
 	}
 
@@ -94,12 +94,12 @@ func NewAgent(
 	heartbeatTime time.Duration,
 	messagesBufferSize int,
 	dieChan chan bool,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 	metricsReporters []metrics.Reporter,
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.CompressEnabled())
+		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled())
 	})
 
 	a := &Agent{

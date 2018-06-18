@@ -83,7 +83,7 @@ func TestNewHandlerService(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	serializer := json.NewSerializer()
 	heartbeatTimeout := 1 * time.Second
-	messageEncoder := message.NewEncoder(rand.Int()%2 == 0)
+	messageEncoder := message.NewMessagesEncoder(rand.Int()%2 == 0)
 	sv := &cluster.Server{}
 	remoteSvc := &RemoteService{}
 	ctrl := gomock.NewController(t)
@@ -177,7 +177,7 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 				mockSerializer.EXPECT().Marshal(table.err).Return([]byte("err"), nil)
 			}
 
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 			svc.processMessage(ag, table.msg)
 
@@ -221,7 +221,7 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 			if table.err != nil {
@@ -240,7 +240,7 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
@@ -259,7 +259,7 @@ func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
 
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
@@ -275,7 +275,7 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
@@ -289,7 +289,7 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 
 func TestHandlerServiceProcessPacketData(t *testing.T) {
 	msg := &message.Message{Type: message.Request, ID: 1, Data: []byte("ok")}
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	encodedMsg, err := messageEncoder.Encode(msg)
 	assert.NoError(t, err)
 	tables := []struct {
@@ -310,7 +310,7 @@ func TestHandlerServiceProcessPacketData(t *testing.T) {
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
-			messageEncoder := message.NewEncoder(false)
+			messageEncoder := message.NewMessagesEncoder(false)
 			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, &cluster.Server{}, nil, nil, nil)
 			if table.socketStatus < constants.StatusWorking {
 				mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
@@ -337,7 +337,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	packetDecoder := codec.NewPomeloPacketDecoder()
-	messageEncoder := message.NewEncoder(false)
+	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder, nil)
 	var wg sync.WaitGroup
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {

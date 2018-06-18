@@ -72,7 +72,7 @@ func TestDoSendRPC(t *testing.T) {
 				mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
 				mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 				mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-				messageEncoder := message.NewEncoder(false)
+				messageEncoder := message.NewMessagesEncoder(false)
 				router := router.New()
 				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
 				assert.NotNil(t, svc)

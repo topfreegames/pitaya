@@ -62,7 +62,7 @@ func TestEncode(t *testing.T) {
 			message := table.message
 			SetDictionary(table.routes)
 
-			messageEncoder := NewEncoder(table.gzip == 0x10)
+			messageEncoder := NewMessagesEncoder(table.gzip == 0x10)
 			result, err := messageEncoder.Encode(message)
 			gp := filepath.Join("fixtures", name+".golden")
 

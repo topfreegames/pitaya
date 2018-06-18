@@ -83,7 +83,7 @@ type Client struct {
 	requestTimeout  time.Duration
 	closeChan       chan struct{}
 	nextID          uint32
-	messageEncoder  message.MessageEncoder
+	messageEncoder  message.Encoder
 }
 
 // New returns a new client
@@ -110,7 +110,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
-		messageEncoder: message.NewEncoder(true),
+		messageEncoder: message.NewMessagesEncoder(true),
 	}
 }
 

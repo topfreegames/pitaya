@@ -63,7 +63,7 @@ type (
 		serializer         serialize.Serializer          // message serializer
 		server             *cluster.Server               // server obj
 		services           map[string]*component.Service // all registered service
-		messageEncoder     message.MessageEncoder
+		messageEncoder     message.Encoder
 		metricsReporters   []metrics.Reporter
 	}
 
@@ -87,7 +87,7 @@ func NewHandlerService(
 	remoteProcessBufferSize int,
 	server *cluster.Server,
 	remoteService *RemoteService,
-	messageEncoder message.MessageEncoder,
+	messageEncoder message.Encoder,
 	metricsReporters []metrics.Reporter,
 ) *HandlerService {
 	h := &HandlerService{
