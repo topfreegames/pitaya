@@ -232,6 +232,21 @@ func SetSerializer(seri serialize.Serializer) {
 	app.serializer = seri
 }
 
+// GetSerializer gets the app serializer
+func GetSerializer() serialize.Serializer {
+	return app.serializer
+}
+
+// GetServer returns the server with the specified id
+func GetServer(id string) (*cluster.Server, error) {
+	return app.serviceDiscovery.GetServer(id)
+}
+
+// GetServersByType get all servers of type
+func GetServersByType(t string) (map[string]*cluster.Server, error) {
+	return app.serviceDiscovery.GetServersByType(t)
+}
+
 // AddMetricsReporter to be used
 func AddMetricsReporter(mr metrics.Reporter) {
 	app.metricsReporters = append(app.metricsReporters, mr)

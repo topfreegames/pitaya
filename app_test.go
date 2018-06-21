@@ -168,6 +168,30 @@ func TestGetDieChan(t *testing.T) {
 	assert.Equal(t, app.dieChan, GetDieChan())
 }
 
+func TestGetSerializer(t *testing.T) {
+	assert.Equal(t, app.serializer, GetSerializer())
+}
+
+func TestGetServer(t *testing.T) {
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	SetServiceDiscoveryClient(r)
+	s, err := GetServer("id")
+	assert.Nil(t, s)
+	assert.EqualError(t, constants.ErrNoServerWithID, err.Error())
+}
+
+func TestGetServersByType(t *testing.T) {
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	SetServiceDiscoveryClient(r)
+	s, err := GetServersByType("id")
+	assert.Nil(t, s)
+	assert.EqualError(t, constants.ErrNoServersAvailableOfType, err.Error())
+}
+
 func TestSetHeartbeatInterval(t *testing.T) {
 	inter := 35 * time.Millisecond
 	SetHeartbeatTime(inter)
