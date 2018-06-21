@@ -193,6 +193,11 @@ func SetLogger(l logger.Logger) {
 	logger.Log = l
 }
 
+// GetServerID returns the generated server id
+func GetServerID() string {
+	return app.server.ID
+}
+
 // SetRPCServer to be used
 func SetRPCServer(s cluster.RPCServer) {
 	app.rpcServer = s
