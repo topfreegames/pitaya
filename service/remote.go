@@ -429,7 +429,7 @@ func (r *RemoteService) remoteCall(
 	target := server
 
 	if target == nil {
-		target, err = r.router.Route(rpcType, svType, session, route)
+		target, err = r.router.Route(rpcType, svType, session, route, msg)
 		if err != nil {
 			return nil, e.NewError(err, e.ErrInternalCode)
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/cluster/mocks"
+	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/session"
@@ -25,6 +26,7 @@ var (
 	routingFunction = func(
 		session *session.Session,
 		route *route.Route,
+		payload []byte,
 		servers map[string]*cluster.Server,
 	) (*cluster.Server, error) {
 		return server, nil
@@ -84,7 +86,9 @@ func TestRoute(t *testing.T) {
 			router.AddRoute(serverType, routingFunction)
 			router.SetServiceDiscovery(mockServiceDiscovery)
 
-			retServer, err := router.Route(table.rpcType, table.serverType, session, route)
+			retServer, err := router.Route(table.rpcType, table.serverType, session, route, &message.Message{
+				Data: []byte{0x01},
+			})
 			assert.Equal(t, table.server, retServer)
 			assert.Equal(t, table.err, err)
 		})

@@ -26,6 +26,7 @@ import (
 
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -35,21 +36,21 @@ import (
 // Router struct
 type Router struct {
 	serviceDiscovery cluster.ServiceDiscovery
-	routesMap        map[string]func(
-		session *session.Session,
-		route *route.Route,
-		servers map[string]*cluster.Server,
-	) (*cluster.Server, error)
+	routesMap        map[string]RoutingFunc
 }
+
+// RoutingFunc defines a routing function
+type RoutingFunc func(
+	session *session.Session,
+	route *route.Route,
+	payload []byte,
+	servers map[string]*cluster.Server,
+) (*cluster.Server, error)
 
 // New returns the router
 func New() *Router {
 	return &Router{
-		routesMap: make(map[string]func(
-			session *session.Session,
-			route *route.Route,
-			servers map[string]*cluster.Server,
-		) (*cluster.Server, error)),
+		routesMap: make(map[string]RoutingFunc),
 	}
 }
 
@@ -77,6 +78,7 @@ func (r *Router) Route(
 	svType string,
 	session *session.Session,
 	route *route.Route,
+	msg *message.Message,
 ) (*cluster.Server, error) {
 	if r.serviceDiscovery == nil {
 		return nil, constants.ErrServiceDiscoveryNotInitialized
@@ -95,17 +97,13 @@ func (r *Router) Route(
 		server := r.defaultRoute(serversOfType)
 		return server, nil
 	}
-	return routeFunc(session, route, serversOfType)
+	return routeFunc(session, route, msg.Data, serversOfType)
 }
 
 // AddRoute adds a routing function to a server type
 func (r *Router) AddRoute(
 	serverType string,
-	routingFunction func(
-		session *session.Session,
-		route *route.Route,
-		servers map[string]*cluster.Server,
-	) (*cluster.Server, error),
+	routingFunction RoutingFunc,
 ) {
 	if _, ok := r.routesMap[serverType]; ok {
 		logger.Log.Warnf("overriding the route to svType %s", serverType)

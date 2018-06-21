@@ -46,7 +46,6 @@ import (
 	"github.com/topfreegames/pitaya/metrics"
 	mods "github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/remote"
-	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -419,11 +418,7 @@ func SetDictionary(dict map[string]uint16) error {
 // AddRoute adds a routing function to a server type
 func AddRoute(
 	serverType string,
-	routingFunction func(
-		session *session.Session,
-		route *route.Route,
-		servers map[string]*cluster.Server,
-	) (*cluster.Server, error),
+	routingFunction router.RoutingFunc,
 ) error {
 	if app.router != nil {
 		if app.running {
