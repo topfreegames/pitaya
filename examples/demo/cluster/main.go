@@ -64,6 +64,7 @@ func configureFrontend(port int) {
 	err := pitaya.AddRoute("room", func(
 		session *session.Session,
 		route *route.Route,
+		payload []byte,
 		servers map[string]*cluster.Server,
 	) (*cluster.Server, error) {
 		// will return the first server
