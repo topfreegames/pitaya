@@ -78,7 +78,7 @@ func TestHandlerCallToFront(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.req, func(t *testing.T) {
-			err = c.SendRequest(table.req, table.data)
+			_, err = c.SendRequest(table.req, table.data)
 			assert.NoError(t, err)
 
 			msg := helpers.ShouldEventuallyReceive(t, c.IncomingMsgChan).(*message.Message)
@@ -104,9 +104,9 @@ func TestGroupFront(t *testing.T) {
 	assert.NoError(t, err)
 	defer c2.Disconnect()
 
-	err = c1.SendRequest("connector.testsvc.testbind", []byte{})
+	_, err = c1.SendRequest("connector.testsvc.testbind", []byte{})
 	assert.NoError(t, err)
-	err = c2.SendRequest("connector.testsvc.testbind", []byte{})
+	_, err = c2.SendRequest("connector.testsvc.testbind", []byte{})
 	assert.NoError(t, err)
 
 	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
@@ -153,12 +153,12 @@ func TestKick(t *testing.T) {
 	defer c2.Disconnect()
 
 	uid1 := uuid.New().String()
-	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
 
-	err = c2.SendRequest("connector.testsvc.testrequestkickuser", []byte(uid1))
+	_, err = c2.SendRequest("connector.testsvc.testrequestkickuser", []byte(uid1))
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
@@ -185,11 +185,11 @@ func TestSameUIDUserShouldBeKicked(t *testing.T) {
 	defer c2.Disconnect()
 
 	uid1 := uuid.New().String()
-	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
 
-	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
@@ -218,11 +218,11 @@ func TestSameUIDUserShouldBeKickedInDifferentServersFromSameType(t *testing.T) {
 	defer c2.Disconnect()
 
 	uid1 := uuid.New().String()
-	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan, 1*time.Second)
 
-	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan, 2*time.Second)
@@ -251,11 +251,11 @@ func TestSameUIDUserShouldNotBeKickedInDifferentServersFromDiffType(t *testing.T
 	defer c2.Disconnect()
 
 	uid1 := uuid.New().String()
-	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 	helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
 
-	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
@@ -277,11 +277,11 @@ func TestKickOnBack(t *testing.T) {
 	assert.NoError(t, err)
 	defer c1.Disconnect()
 
-	err = c1.SendRequest("game.testsvc.testbind", nil)
+	_, err = c1.SendRequest("game.testsvc.testbind", nil)
 	assert.NoError(t, err)
 	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
 	assert.Equal(t, []byte("ack"), msg1.Data)
-	err = c1.SendRequest("game.testsvc.testrequestkickme", nil)
+	_, err = c1.SendRequest("game.testsvc.testrequestkickme", nil)
 	assert.NoError(t, err)
 
 	helpers.ShouldEventuallyReturn(t, func() bool {
@@ -309,10 +309,10 @@ func TestPushToUsers(t *testing.T) {
 	defer c2.Disconnect()
 
 	uid1 := uuid.New().String()
-	err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
+	_, err = c1.SendRequest("connector.testsvc.testbindid", []byte(uid1))
 	assert.NoError(t, err)
 	uid2 := uuid.New().String()
-	err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid2))
+	_, err = c2.SendRequest("connector.testsvc.testbindid", []byte(uid2))
 	assert.NoError(t, err)
 
 	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan, 1*time.Second).(*message.Message)
@@ -373,7 +373,7 @@ func TestForwardToBackend(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.req, func(t *testing.T) {
-			err = c.SendRequest(table.req, table.data)
+			_, err = c.SendRequest(table.req, table.data)
 			assert.NoError(t, err)
 
 			msg := helpers.ShouldEventuallyReceive(t, c.IncomingMsgChan).(*message.Message)
@@ -402,9 +402,9 @@ func TestGroupBack(t *testing.T) {
 	assert.NoError(t, err)
 	defer c2.Disconnect()
 
-	err = c1.SendRequest("game.testsvc.testbind", []byte{})
+	_, err = c1.SendRequest("game.testsvc.testbind", []byte{})
 	assert.NoError(t, err)
-	err = c2.SendRequest("game.testsvc.testbind", []byte{})
+	_, err = c2.SendRequest("game.testsvc.testbind", []byte{})
 	assert.NoError(t, err)
 
 	msg1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
@@ -464,7 +464,7 @@ func TestUserRPC(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			err := c1.SendRequest(table.route, table.data)
+			_, err := c1.SendRequest(table.route, table.data)
 			assert.NoError(t, err)
 			msg := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
 			assert.Equal(t, table.res, msg.Data)

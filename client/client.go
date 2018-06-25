@@ -328,13 +328,14 @@ func (c *Client) ConnectTo(addr string) error {
 }
 
 // SendRequest sends a request to the server
-func (c *Client) SendRequest(route string, data []byte) error {
+func (c *Client) SendRequest(route string, data []byte) (uint, error) {
 	return c.sendMsg(message.Request, route, data)
 }
 
 // SendNotify sends a notify to the server
 func (c *Client) SendNotify(route string, data []byte) error {
-	return c.sendMsg(message.Notify, route, data)
+	_, err := c.sendMsg(message.Notify, route, data)
+	return err
 }
 
 func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
@@ -351,7 +352,7 @@ func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
 }
 
 // sendMsg sends the request to the server
-func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error {
+func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint, error) {
 	// TODO mount msg and encode
 	m := message.Message{
 		Type:  msgType,
@@ -374,8 +375,8 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) error 
 	}
 
 	if err != nil {
-		return err
+		return m.ID, err
 	}
 	_, err = c.conn.Write(p)
-	return err
+	return m.ID, err
 }
