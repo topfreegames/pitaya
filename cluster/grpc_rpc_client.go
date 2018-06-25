@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
@@ -43,6 +44,8 @@ type GRPCClient struct {
 	metricsReporters []metrics.Reporter
 	clientMap        sync.Map
 	bindingStorage   BindingStorage
+	reqTimeout       time.Duration
+	dialTimeout      time.Duration
 }
 
 // NewGRPCClient returns a new instance of GRPCClient
@@ -62,27 +65,30 @@ func NewGRPCClient(config *config.Config, server *Server, metricsReporters []met
 
 // Init inits grpc rpc client
 func (gs *GRPCClient) Init() error {
-	// TODO: some configuration, retries? timeouts?
+	gs.configure()
 	return nil
+}
+
+func (gs *GRPCClient) configure() {
+	gs.reqTimeout = gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout")
+	gs.dialTimeout = gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout")
 }
 
 // Call makes a RPC Call
 // TODO: Jaeger
 func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) (*protos.Response, error) {
-	// TODO call code
 	req, err := buildRequest(ctx, rpcType, route, session, msg, gs.server)
 	if err != nil {
 		return nil, err
 	}
 	if c, ok := gs.clientMap.Load(server.ID); ok {
-		// TODO: what options should I use?
-		return c.(protos.PitayaClient).Call(ctx, &req)
+		ctxT, _ := context.WithTimeout(ctx, gs.reqTimeout)
+		return c.(protos.PitayaClient).Call(ctxT, &req)
 	}
 	return nil, constants.ErrNoConnectionToServer
 }
 
 // Send not implemented in grpc client
-// TODO: should we implement this? return error
 func (gs *GRPCClient) Send(uid string, d []byte) error {
 	return constants.ErrNotImplemented
 }
@@ -99,8 +105,8 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 				Uid: uid,
 				Fid: gs.server.ID,
 			}
-			// TODO: what options should I use?
-			_, err := c.(protos.PitayaClient).SessionBindRemote(context.Background(), msg)
+			ctxT, _ := context.WithTimeout(context.Background(), gs.reqTimeout)
+			_, err := c.(protos.PitayaClient).SessionBindRemote(ctxT, msg)
 			return err
 		}
 	}
@@ -124,7 +130,8 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 		}
 	}
 	if c, ok := gs.clientMap.Load(svID); ok {
-		_, err := c.(protos.PitayaClient).PushToUser(context.Background(), push)
+		ctxT, _ := context.WithTimeout(context.Background(), gs.reqTimeout)
+		_, err := c.(protos.PitayaClient).PushToUser(ctxT, push)
 		return err
 	}
 	return constants.ErrNoConnectionToServer
@@ -142,14 +149,13 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 		logger.Log.Errorf("server %s doesn't have a port specified in metadata", sv.ID)
 		return
 	}
-	// TODO: what connection options should I use? disable insecure
 	address := fmt.Sprintf("%s:%s", host, port)
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	ctxT, _ := context.WithTimeout(context.Background(), gs.dialTimeout)
+	conn, err := grpc.DialContext(ctxT, address, grpc.WithInsecure())
 	if err != nil {
-		logger.Log.Errorf("unable to connect to server %s at %s", sv.ID, address)
+		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)
 		return
 	}
-	// TODO: should we close this conn?
 	c := protos.NewPitayaClient(conn)
 	gs.clientMap.Store(sv.ID, c)
 	logger.Log.Debugf("[grpc client] added server %s at %s", sv.ID, address)
