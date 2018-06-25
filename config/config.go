@@ -62,6 +62,8 @@ func (c *Config) fillDefaultValues() {
 		// than the sum of the config pitaya.concurrency.handler.dispatch among all frontend servers
 		"pitaya.concurrency.handler.dispatch":                   25,
 		"pitaya.concurrency.remote.service":                     30,
+		"pitaya.cluster.rpc.client.grpc.requesttimeout":         "5s",
+		"pitaya.cluster.rpc.client.grpc.dialtimeout":            "5s",
 		"pitaya.cluster.rpc.client.nats.connect":                "nats://localhost:4222",
 		"pitaya.cluster.rpc.client.nats.requesttimeout":         "5s",
 		"pitaya.cluster.rpc.client.nats.maxreconnectionretries": 15,
