@@ -1,11 +1,12 @@
 TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
-setup:
-	@git submodule init
+setup: init-submodules protos-compile
 	@dep ensure
 
-setup-ci:
+init-submodules:
 	@git submodule init
+
+setup-ci: init-submodules protos-compile
 	@go get github.com/mattn/goveralls
 	@go get -u github.com/golang/dep/cmd/dep
 	@go get -u github.com/wadey/gocovmerge
