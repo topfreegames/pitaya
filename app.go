@@ -137,13 +137,13 @@ func Configure(
 	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
 	app.configured = true
 	app.metricsReporters = make([]metrics.Reporter, 0)
-	AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port")))
+
+	defaultTags := app.config.GetStringMapString("pitaya.metrics.tags")
+	AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port"), defaultTags))
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
-		logger.Log.Infof(
-			"statsd is enabled, configuring the metrics reporter with host: %s",
-			app.config.Get("pitaya.metrics.statsd.host"))
-		metricsReporter, err := metrics.NewStatsdReporter(app.config, serverType)
+		logger.Log.Infof("statsd is enabled, configuring the metrics reporter with host: %s", app.config.Get("pitaya.metrics.statsd.host"))
+		metricsReporter, err := metrics.NewStatsdReporter(app.config, serverType, defaultTags)
 		if err != nil {
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {

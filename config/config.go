@@ -81,6 +81,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.prefix":                          "pitaya.",
 		"pitaya.metrics.statsd.rate":                            1,
 		"pitaya.metrics.prometheus.port":                        9090,
+		"pitaya.metrics.tags":                                   map[string]string{},
 	}
 
 	for param := range defaultsMap {
@@ -118,4 +119,9 @@ func (c *Config) GetStringSlice(s string) []string {
 // Get returns an interface from the inner config
 func (c *Config) Get(s string) interface{} {
 	return c.config.Get(s)
+}
+
+// GetStringMapString returns a string map string from the inner config
+func (c *Config) GetStringMapString(s string) map[string]string {
+	return c.config.GetStringMapString(s)
 }

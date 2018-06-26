@@ -54,19 +54,19 @@ type PrometheusReporter struct {
 	gaugeReportersMap   map[string]*prometheus.GaugeVec
 }
 
-func (p *PrometheusReporter) registerMetrics() {
+func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
+	constLabels["game"] = p.game
+	constLabels["serverType"] = p.serverType
+
 	// HanadlerResponseTimeMs summaary
 	p.summaryReportersMap[ResponseTime] = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Namespace:  "pitaya",
-			Subsystem:  "handler",
-			Name:       ResponseTime,
-			Help:       "the time to process a msg in nanoseconds",
-			Objectives: map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
-			ConstLabels: map[string]string{
-				"game":       p.game,
-				"serverType": p.serverType,
-			},
+			Namespace:   "pitaya",
+			Subsystem:   "handler",
+			Name:        ResponseTime,
+			Help:        "the time to process a msg in nanoseconds",
+			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
+			ConstLabels: constLabels,
 		},
 		[]string{"route", "status", "type"},
 	)
@@ -74,56 +74,44 @@ func (p *PrometheusReporter) registerMetrics() {
 	// ConnectedClients gauge
 	p.gaugeReportersMap[ConnectedClients] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "pitaya",
-			Subsystem: "acceptor",
-			Name:      ConnectedClients,
-			Help:      "the number of clients connected right now",
-			ConstLabels: map[string]string{
-				"game":       p.game,
-				"serverType": p.serverType,
-			},
+			Namespace:   "pitaya",
+			Subsystem:   "acceptor",
+			Name:        ConnectedClients,
+			Help:        "the number of clients connected right now",
+			ConstLabels: constLabels,
 		},
 		[]string{},
 	)
 
 	p.gaugeReportersMap[CountServers] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "pitaya",
-			Subsystem: "service_discovery",
-			Name:      CountServers,
-			Help:      "the number of discovered servers by service discovery",
-			ConstLabels: map[string]string{
-				"game":       p.game,
-				"serverType": p.serverType,
-			},
+			Namespace:   "pitaya",
+			Subsystem:   "service_discovery",
+			Name:        CountServers,
+			Help:        "the number of discovered servers by service discovery",
+			ConstLabels: constLabels,
 		},
 		[]string{"type"},
 	)
 
 	p.gaugeReportersMap[ChannelCapacity] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "pitaya",
-			Subsystem: "channel",
-			Name:      ChannelCapacity,
-			Help:      "the available capacity of the channel",
-			ConstLabels: map[string]string{
-				"game":       p.game,
-				"serverType": p.serverType,
-			},
+			Namespace:   "pitaya",
+			Subsystem:   "channel",
+			Name:        ChannelCapacity,
+			Help:        "the available capacity of the channel",
+			ConstLabels: constLabels,
 		},
 		[]string{"channel"},
 	)
 
 	p.gaugeReportersMap[DroppedMessages] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "pitaya",
-			Subsystem: "rpc_server",
-			Name:      DroppedMessages,
-			Help:      "the number of rpc server dropped messages (messages that are not handled)",
-			ConstLabels: map[string]string{
-				"game":       p.game,
-				"serverType": p.serverType,
-			},
+			Namespace:   "pitaya",
+			Subsystem:   "rpc_server",
+			Name:        DroppedMessages,
+			Help:        "the number of rpc server dropped messages (messages that are not handled)",
+			ConstLabels: constLabels,
 		},
 		[]string{},
 	)
@@ -145,7 +133,7 @@ func (p *PrometheusReporter) registerMetrics() {
 }
 
 // GetPrometheusReporter gets the prometheus reporter singleton
-func GetPrometheusReporter(serverType string, game string, port int) *PrometheusReporter {
+func GetPrometheusReporter(serverType string, game string, port int, constLabels map[string]string) *PrometheusReporter {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:          serverType,
@@ -154,7 +142,7 @@ func GetPrometheusReporter(serverType string, game string, port int) *Prometheus
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics()
+		prometheusReporter.registerMetrics(constLabels)
 		http.Handle("/metrics", prometheus.Handler())
 		go (func() {
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
@@ -164,30 +152,30 @@ func GetPrometheusReporter(serverType string, game string, port int) *Prometheus
 }
 
 // ReportSummary reports a summary metric
-func (p *PrometheusReporter) ReportSummary(metric string, tags map[string]string, value float64) error {
+func (p *PrometheusReporter) ReportSummary(metric string, labels map[string]string, value float64) error {
 	sum := p.summaryReportersMap[metric]
 	if sum != nil {
-		sum.With(tags).Observe(value)
+		sum.With(labels).Observe(value)
 		return nil
 	}
 	return constants.ErrMetricNotKnown
 }
 
 // ReportCount reports a summary metric
-func (p *PrometheusReporter) ReportCount(metric string, tags map[string]string, count float64) error {
+func (p *PrometheusReporter) ReportCount(metric string, labels map[string]string, count float64) error {
 	cnt := p.countReportersMap[metric]
 	if cnt != nil {
-		cnt.With(tags).Add(count)
+		cnt.With(labels).Add(count)
 		return nil
 	}
 	return constants.ErrMetricNotKnown
 }
 
 // ReportGauge reports a gauge metric
-func (p *PrometheusReporter) ReportGauge(metric string, tags map[string]string, value float64) error {
+func (p *PrometheusReporter) ReportGauge(metric string, labels map[string]string, value float64) error {
 	g := p.gaugeReportersMap[metric]
 	if g != nil {
-		g.With(tags).Set(value)
+		g.With(labels).Set(value)
 		return nil
 	}
 	return constants.ErrMetricNotKnown
