@@ -104,7 +104,6 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
-		IncomingMsgChan: make(chan *message.Message, 10),
 		pendingRequests: make(map[uint]*pendingRequest),
 		requestTimeout:  reqTimeout,
 		// 30 here is the limit of inflight messages
