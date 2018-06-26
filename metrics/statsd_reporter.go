@@ -39,14 +39,20 @@ type Client interface {
 
 // StatsdReporter sends application metrics to statsd
 type StatsdReporter struct {
-	client     Client
-	rate       float64
-	serverType string
-	hostname   string
+	client      Client
+	rate        float64
+	serverType  string
+	hostname    string
+	defaultTags []string
 }
 
 // NewStatsdReporter returns an instance of statsd reportar and an error if something fails
-func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...Client) (*StatsdReporter, error) {
+func NewStatsdReporter(
+	config *config.Config,
+	serverType string,
+	tagsMap map[string]string,
+	clientOrNil ...Client,
+) (*StatsdReporter, error) {
 	host := config.GetString("pitaya.metrics.statsd.host")
 	prefix := config.GetString("pitaya.metrics.statsd.prefix")
 	rate, err := strconv.ParseFloat(config.GetString("pitaya.metrics.statsd.rate"), 64)
@@ -64,6 +70,8 @@ func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...
 		hostname:   hostname,
 	}
 
+	sr.buildDefaultTags(tagsMap)
+
 	if len(clientOrNil) > 0 {
 		sr.client = clientOrNil[0]
 	} else {
@@ -77,12 +85,24 @@ func NewStatsdReporter(config *config.Config, serverType string, clientOrNil ...
 	return sr, nil
 }
 
+func (s *StatsdReporter) buildDefaultTags(tagsMap map[string]string) {
+	defaultTags := make([]string, len(tagsMap)+2)
+
+	defaultTags[0] = fmt.Sprintf("serverType:%s", s.serverType)
+	defaultTags[1] = fmt.Sprintf("hostname:%s", s.hostname)
+
+	idx := 2
+	for k, v := range tagsMap {
+		defaultTags[idx] = fmt.Sprintf("%s:%s", k, v)
+		idx++
+	}
+
+	s.defaultTags = defaultTags
+}
+
 // ReportCount sends count reports to statsd
 func (s *StatsdReporter) ReportCount(metric string, tagsMap map[string]string, count float64) error {
-	fullTags := []string{
-		fmt.Sprintf("serverType:%s", s.serverType),
-		fmt.Sprintf("hostname:%s", s.hostname),
-	}
+	fullTags := s.defaultTags
 
 	for k, v := range tagsMap {
 		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
@@ -98,10 +118,7 @@ func (s *StatsdReporter) ReportCount(metric string, tagsMap map[string]string, c
 
 // ReportGauge sents the gauge value and reports to statsd
 func (s *StatsdReporter) ReportGauge(metric string, tagsMap map[string]string, value float64) error {
-	fullTags := []string{
-		fmt.Sprintf("serverType:%s", s.serverType),
-		fmt.Sprintf("hostname:%s", s.hostname),
-	}
+	fullTags := s.defaultTags
 
 	for k, v := range tagsMap {
 		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
@@ -117,10 +134,7 @@ func (s *StatsdReporter) ReportGauge(metric string, tagsMap map[string]string, v
 
 // ReportSummary observes the summary value and reports to statsd
 func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string, value float64) error {
-	fullTags := []string{
-		fmt.Sprintf("serverType:%s", s.serverType),
-		fmt.Sprintf("hostname:%s", s.hostname),
-	}
+	fullTags := s.defaultTags
 
 	for k, v := range tagsMap {
 		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))

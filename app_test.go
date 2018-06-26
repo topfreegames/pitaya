@@ -232,7 +232,9 @@ func TestSetServiceDiscovery(t *testing.T) {
 func TestAddMetricsReporter(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := metrics.NewStatsdReporter(app.config, app.server.Type)
+	r, err := metrics.NewStatsdReporter(app.config, app.server.Type, map[string]string{
+		"tag1": "value1",
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	AddMetricsReporter(r)
