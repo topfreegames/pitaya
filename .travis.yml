@@ -4,8 +4,6 @@ go:
 sudo: false
 services:
 - docker
-before_install:
-  - ./.travis/install-protoc.sh 3.1.0
 before_script: make setup-ci
 script: make test
 after_success: $HOME/gopath/bin/goveralls -coverprofile coverprofile.out -service=travis-ci
