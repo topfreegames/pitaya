@@ -39,7 +39,7 @@ func TestNewStatsdReporter(t *testing.T) {
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
 	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClient, sr.client)
 	assert.Equal(t, float64(cfg.GetInt("pitaya.metrics.statsd.rate")), sr.rate)
@@ -53,7 +53,9 @@ func TestReportLatency(t *testing.T) {
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
 	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+		"defaultTag": "value",
+	}, mockClient)
 	assert.NoError(t, err)
 
 	expectedDuration, err := time.ParseDuration("200ms")
@@ -67,6 +69,7 @@ func TestReportLatency(t *testing.T) {
 		assert.Contains(t, tags, fmt.Sprintf("type:%s", expectedType))
 		assert.Contains(t, tags, fmt.Sprintf("status:%s", expectedErrored))
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
+		assert.Contains(t, tags, "defaultTag:value")
 	})
 
 	err = sr.ReportSummary(ResponseTime, map[string]string{
@@ -84,7 +87,7 @@ func TestReportLatencyError(t *testing.T) {
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
 	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
@@ -100,7 +103,9 @@ func TestReportCount(t *testing.T) {
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
 	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+		"defaultTag": "value",
+	}, mockClient)
 	assert.NoError(t, err)
 
 	expectedCount := 123
@@ -115,6 +120,7 @@ func TestReportCount(t *testing.T) {
 		}
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
 		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
+		assert.Contains(t, tags, "defaultTag:value")
 	})
 
 	err = sr.ReportCount(expectedMetric, customTags, float64(expectedCount))
@@ -127,7 +133,7 @@ func TestReportCountError(t *testing.T) {
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
 	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
