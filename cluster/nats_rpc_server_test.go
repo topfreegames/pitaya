@@ -92,8 +92,8 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
-	assert.NotNil(t, n.GetUnhandledRequestsChannel())
-	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
+	assert.NotNil(t, n.getUnhandledRequestsChannel())
+	assert.IsType(t, make(chan *protos.Request), n.getUnhandledRequestsChannel())
 }
 
 func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
@@ -114,7 +114,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
-	err = rpcServer.SubscribeToBindingsChannel()
+	err = rpcServer.subscribeToBindingsChannel()
 	assert.NoError(t, err)
 	dt := []byte("somedata")
 	conn.Publish(GetBindBroadcastTopic(sv.Type), dt)
@@ -127,8 +127,8 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
-	assert.NotNil(t, n.GetUserPushChannel())
-	assert.IsType(t, make(chan *protos.Push), n.GetUserPushChannel())
+	assert.NotNil(t, n.getUserPushChannel())
+	assert.IsType(t, make(chan *protos.Push), n.getUserPushChannel())
 }
 
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
@@ -152,7 +152,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.uid, func(t *testing.T) {
-			subs, err := rpcServer.SubscribeToUserMessages(table.uid, table.svType)
+			subs, err := rpcServer.subscribeToUserMessages(table.uid, table.svType)
 			assert.NoError(t, err)
 			assert.Equal(t, true, subs.IsValid())
 			conn.Publish(GetUserMessagesTopic(table.uid, table.svType), table.msg)
@@ -209,8 +209,8 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 		topic string
 		req   *protos.Request
 	}{
-		{"user1/messages", &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{ID: 1, Reply: "ae"}}},
-		{"user2/messages", &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{ID: 1}}},
+		{"user1/messages", &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{Id: 1, Reply: "ae"}}},
+		{"user2/messages", &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{Id: 1}}},
 	}
 
 	go rpcServer.handleMessages()
@@ -229,7 +229,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			conn.Publish(table.topic, b)
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
 			assert.Equal(t, table.req.FrontendID, r.FrontendID)
-			assert.Equal(t, table.req.Msg.ID, r.Msg.ID)
+			assert.Equal(t, table.req.Msg.Id, r.Msg.Id)
 		})
 	}
 }
@@ -266,21 +266,16 @@ func TestNatsRPCServerInit(t *testing.T) {
 		topic string
 		req   *protos.Request
 	}{
-		{"test1", getChannel(sv.Type, sv.ID), &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{ID: 1, Reply: "ae"}}},
-		{"test2", getChannel(sv.Type, sv.ID), &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{ID: 1}}},
+		{"test1", getChannel(sv.Type, sv.ID), &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{Id: 1, Reply: "ae"}}},
+		{"test2", getChannel(sv.Type, sv.ID), &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{Id: 1, Reply: "boa"}}},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			subs, err := rpcServer.subscribe(table.topic)
-			assert.NoError(t, err)
-			assert.Equal(t, true, subs.IsValid())
-			b, err := proto.Marshal(table.req)
-			assert.NoError(t, err)
-			rpcServer.conn.Publish(table.topic, b)
-			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
-			<-rpcServer.unhandledReqCh
-			assert.Equal(t, table.req.FrontendID, r.FrontendID)
-			assert.Equal(t, table.req.Msg.ID, r.Msg.ID)
+			c := make(chan *nats.Msg)
+			rpcServer.conn.ChanSubscribe(table.req.Msg.Reply, c)
+			rpcServer.unhandledReqCh <- table.req
+			r := helpers.ShouldEventuallyReceive(t, c).(*nats.Msg)
+			assert.NotNil(t, r.Data)
 		})
 	}
 }

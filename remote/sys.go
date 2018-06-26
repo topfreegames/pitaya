@@ -36,7 +36,7 @@ type Sys struct {
 
 // BindSession binds the local session
 func (s *Sys) BindSession(ctx context.Context, sessionData *protos.Session) (*protos.Response, error) {
-	sess := session.GetSessionByID(sessionData.ID)
+	sess := session.GetSessionByID(sessionData.Id)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound
 	}
@@ -48,7 +48,7 @@ func (s *Sys) BindSession(ctx context.Context, sessionData *protos.Session) (*pr
 
 // PushSession updates the local session
 func (s *Sys) PushSession(ctx context.Context, sessionData *protos.Session) (*protos.Response, error) {
-	sess := session.GetSessionByID(sessionData.ID)
+	sess := session.GetSessionByID(sessionData.Id)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound
 	}

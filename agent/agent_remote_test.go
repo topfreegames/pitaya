@@ -27,7 +27,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -135,7 +134,6 @@ func TestAgentRemotePush(t *testing.T) {
 
 			if table.uid != "" {
 				expectedData := []byte("done")
-				topic := cluster.GetUserMessagesTopic(table.uid, "connector")
 
 				if reflect.TypeOf(table.data) == reflect.TypeOf(([]byte)(nil)) {
 					expectedData = table.data.([]byte)
@@ -149,8 +147,7 @@ func TestAgentRemotePush(t *testing.T) {
 						Uid:   table.uid,
 						Data:  expectedData,
 					}
-					out, _ := proto.Marshal(expectedPush)
-					table.rpcClient.(*clustermocks.MockRPCClient).EXPECT().Send(topic, out).Return(table.err)
+					table.rpcClient.(*clustermocks.MockRPCClient).EXPECT().SendPush(table.uid, gomock.Any(), expectedPush).Return(table.err)
 				}
 			}
 

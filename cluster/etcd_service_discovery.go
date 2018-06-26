@@ -374,7 +374,7 @@ func (sd *etcdServiceDiscovery) Shutdown() error {
 	if err != nil {
 		return err
 	}
-	return sd.cli.Close()
+	return nil
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {

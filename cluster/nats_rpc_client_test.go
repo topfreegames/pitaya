@@ -206,11 +206,11 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 					Route: rt.String(),
 					Data:  data,
 					Type:  protos.MsgType_MsgRequest,
-					ID:    uint64(id),
+					Id:    uint64(id),
 				},
 				FrontendID: sv.ID,
 				Session: &protos.Session{
-					ID:   ss.ID(),
+					Id:   ss.ID(),
 					Uid:  ss.UID(),
 					Data: ss.GetDataEncoded(),
 				},
@@ -225,11 +225,11 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 					Route: rt.String(),
 					Data:  data,
 					Type:  protos.MsgType_MsgRequest,
-					ID:    uint64(id),
+					Id:    uint64(id),
 				},
 				FrontendID: "",
 				Session: &protos.Session{
-					ID:   ss.ID(),
+					Id:   ss.ID(),
 					Uid:  ss.UID(),
 					Data: ss.GetDataEncoded(),
 				},
@@ -257,11 +257,11 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 					Route: rt.String(),
 					Data:  data,
 					Type:  protos.MsgType_MsgNotify,
-					ID:    0,
+					Id:    0,
 				},
 				FrontendID: "",
 				Session: &protos.Session{
-					ID:   ss.ID(),
+					Id:   ss.ID(),
 					Uid:  ss.UID(),
 					Data: ss.GetDataEncoded(),
 				},
@@ -271,7 +271,7 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			rpcClient.server.Frontend = table.frontendServer
-			req, err := rpcClient.buildRequest(context.Background(), table.rpcType, table.route, table.session, table.msg)
+			req, err := buildRequest(context.Background(), table.rpcType, table.route, table.session, table.msg, rpcClient.server)
 			assert.NoError(t, err)
 			assert.NotNil(t, req.Metadata)
 			req.Metadata = nil
@@ -318,7 +318,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 		{"test_error", &protos.Response{Data: []byte("nok"), Error: &protos.Error{Msg: "nok"}}, nil, e.NewError(errors.New("nok"), e.ErrUnknownCode)},
 		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
-		{"test_bad_proto", &protos.Session{ID: 1, Uid: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
+		{"test_bad_proto", &protos.Session{Id: 1, Uid: "snap"}, nil, errors.New("proto: wrong wireType = 0 for field Data")},
 		{"test_no_response", nil, nil, errors.New("nats: timeout")},
 	}
 

@@ -467,7 +467,7 @@ func TestSessionBindBackend(t *testing.T) {
 
 			uid := uuid.New().String()
 			expectedSessionData := &protos.Session{
-				ID:  ss.frontendSessionID,
+				Id:  ss.frontendSessionID,
 				Uid: uid,
 			}
 			ctx := context.Background()
@@ -1228,7 +1228,7 @@ func TestSessionPushToFront(t *testing.T) {
 			ss.uid = uid
 
 			expectedSessionData := &protos.Session{
-				ID:   ss.frontendSessionID,
+				Id:   ss.frontendSessionID,
 				Uid:  uid,
 				Data: ss.encodedData,
 			}

@@ -38,7 +38,6 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
-	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
 	messagemocks "github.com/topfreegames/pitaya/internal/message/mocks"
@@ -49,7 +48,6 @@ import (
 	"github.com/topfreegames/pitaya/router"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/session/mocks"
 )
 
 func (m *MyComp) Remote1(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {
@@ -129,49 +127,6 @@ func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
 	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of remote type"), err)
-}
-
-func TestRemoteServiceProcessUserPush(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-	mockEntity := mocks.NewMockNetworkEntity(ctrl)
-
-	uid := uuid.New().String()
-	push := &protos.Push{Route: "bla.bla", Uid: uid, Data: []byte("data")}
-	userPushCh := make(chan *protos.Push)
-
-	ss := session.New(mockEntity, true)
-	err := ss.Bind(nil, uid)
-	assert.NoError(t, err)
-
-	svc := NewRemoteService(nil, mockRPCServer, nil, nil, nil, nil, nil, nil)
-	assert.NotNil(t, svc)
-	mockRPCServer.EXPECT().GetUserPushChannel().Return(userPushCh)
-
-	called := false
-	mockEntity.EXPECT().Push(push.Route, push.Data).Do(func(route string, data []byte) {
-		called = true
-	})
-	go svc.ProcessUserPush()
-	userPushCh <- push
-	helpers.ShouldEventuallyReturn(t, func() bool { return called == true }, true)
-}
-
-func TestRemoteServiceSendReply(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-	svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, nil, nil, nil)
-	assert.NotNil(t, svc)
-
-	reply := uuid.New().String()
-	resp := &protos.Response{Data: []byte(uuid.New().String()), Error: &protos.Error{Msg: uuid.New().String()}}
-	p, _ := proto.Marshal(resp)
-	mockRPCClient.EXPECT().Send(reply, p)
-	svc.sendReply(nil, reply, resp)
 }
 
 func TestRemoteServiceRemoteCall(t *testing.T) {

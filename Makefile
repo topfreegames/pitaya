@@ -1,9 +1,11 @@
 TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
 setup:
+	@git submodule init
 	@dep ensure
 
 setup-ci:
+	@git submodule init
 	@go get github.com/mattn/goveralls
 	@go get -u github.com/golang/dep/cmd/dep
 	@go get -u github.com/wadey/gocovmerge
@@ -34,6 +36,7 @@ run-tadpole-example:
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I protos/ protos/*.proto --gogofaster_out=plugins=grpc:protos
+	@protoc -I protos/test protos/test/*.proto --gogofaster_out=protos/test
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

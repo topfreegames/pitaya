@@ -119,9 +119,9 @@ func buildRequest(
 		if msg.Type == message.Request {
 			mid = msg.ID
 		}
-		req.Msg.ID = uint64(mid)
+		req.Msg.Id = uint64(mid)
 		req.Session = &protos.Session{
-			ID:   session.ID(),
+			Id:   session.ID(),
 			Uid:  session.UID(),
 			Data: session.GetDataEncoded(),
 		}
@@ -134,6 +134,9 @@ func getContextFromRequest(req *protos.Request, serverID string) (context.Contex
 	ctx, err := pcontext.Decode(req.GetMetadata())
 	if err != nil {
 		return nil, err
+	}
+	if ctx == nil {
+		return nil, constants.ErrNoContextFound
 	}
 	tags := opentracing.Tags{
 		"local.id":     serverID,
