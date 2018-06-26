@@ -37,6 +37,8 @@ func TestSendRequestShouldTimeout(t *testing.T) {
 
 	mockConn.EXPECT().Write(pkt)
 
+	c.IncomingMsgChan = make(chan *message.Message, 10)
+
 	c.nextID = 0
 	c.SendRequest(route, data)
 
