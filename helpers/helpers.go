@@ -105,8 +105,15 @@ func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
 }
 
 // StartServer starts a server
-func StartServer(t testing.TB, frontend bool, debug bool, svType string, port int, sdPrefix string) func() {
+func StartServer(t testing.TB, frontend bool, debug bool, svType string, port int, sdPrefix string, grpc bool) func() {
+	grpcPort := GetFreePort(t)
 	promPort := GetFreePort(t)
+	var useGRPC string
+	if grpc {
+		useGRPC = "true"
+	} else {
+		useGRPC = "false"
+	}
 	t.Helper()
 	args := []string{
 		"-type",
@@ -114,8 +121,9 @@ func StartServer(t testing.TB, frontend bool, debug bool, svType string, port in
 		"-port",
 		strconv.Itoa(port),
 		fmt.Sprintf("-frontend=%s", strconv.FormatBool(frontend)),
-		"-sdprefix",
-		sdPrefix,
+		"-sdprefix", sdPrefix,
+		"-grpcport", fmt.Sprintf("%d", grpcPort),
+		fmt.Sprintf("-grpc=%s", useGRPC),
 	}
 	if debug {
 		args = append(args, "-debug")

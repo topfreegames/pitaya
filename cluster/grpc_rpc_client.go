@@ -28,6 +28,7 @@ import (
 
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	pitErrors "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
@@ -60,12 +61,14 @@ func NewGRPCClient(config *config.Config, server *Server, metricsReporters []met
 		metricsReporters: metricsReporters,
 		bindingStorage:   bs,
 	}
+
+	gs.configure()
+
 	return gs, nil
 }
 
 // Init inits grpc rpc client
 func (gs *GRPCClient) Init() error {
-	gs.configure()
 	return nil
 }
 
@@ -83,7 +86,23 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 	}
 	if c, ok := gs.clientMap.Load(server.ID); ok {
 		ctxT, _ := context.WithTimeout(ctx, gs.reqTimeout)
-		return c.(protos.PitayaClient).Call(ctxT, &req)
+		res, err := c.(protos.PitayaClient).Call(ctxT, &req)
+		if err != nil {
+			return nil, err
+		}
+		if res.Error != nil {
+			if res.Error.Code == "" {
+				res.Error.Code = pitErrors.ErrUnknownCode
+			}
+			e := &pitErrors.Error{
+				Code:     res.Error.Code,
+				Message:  res.Error.Msg,
+				Metadata: res.Error.Metadata,
+			}
+			return nil, e
+		}
+		return res, nil
+
 	}
 	return nil, constants.ErrNoConnectionToServer
 }
