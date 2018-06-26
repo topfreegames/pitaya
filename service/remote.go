@@ -126,9 +126,6 @@ func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteB
 // Call processes a remote call
 func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	res := processRemoteMessage(ctx, req, r)
-	if res.Error != nil {
-		return res, errors.New(res.Error.GetMsg())
-	}
 	return res, nil
 }
 

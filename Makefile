@@ -48,9 +48,15 @@ ensure-testing-deps:
 kill-testing-deps:
 	@cd ./examples/testing && docker-compose down; true
 
-e2e-test: ensure-testing-deps ensure-testing-bin
-	@echo "===============RUNNING E2E TESTS==============="
+e2e-test: e2e-test-nats e2e-test-grpc
+
+e2e-test-nats: ensure-testing-deps ensure-testing-bin
+	@echo "===============RUNNING E2E NATS TESTS==============="
 	@go test ./e2e/e2e_test.go -update
+
+e2e-test-grpc: ensure-testing-deps ensure-testing-bin
+	@echo "===============RUNNING E2E GRPC TESTS==============="
+	@go test ./e2e/e2e_test.go -update -grpc
 
 benchmark-test: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING BENCHMARK TESTS==============="
