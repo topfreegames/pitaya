@@ -49,6 +49,9 @@ ensure-testing-bin:
 ensure-testing-deps:
 	@cd ./examples/testing && docker-compose up -d
 
+ensure-e2e-deps-grpc:
+	@cd ./examples/testing && docker-compose up -d etcd
+
 kill-testing-deps:
 	@cd ./examples/testing && docker-compose down; true
 
@@ -62,18 +65,35 @@ e2e-test-grpc: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING E2E GRPC TESTS==============="
 	@go test ./e2e/e2e_test.go -update -grpc
 
-benchmark-test: ensure-testing-deps ensure-testing-bin
-	@echo "===============RUNNING BENCHMARK TESTS==============="
-	@echo "--- starting testing servers"
+bench-nats-sv:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9098 ./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID
 	@PITAYA_METRICS_PROMETHEUS_PORT=9099 ./examples/testing/server -type connector -frontend=true > /dev/null 2>&1 & echo $$! > front.PID
+
+bench-grpc-sv:
+	@PITAYA_METRICS_PROMETHEUS_PORT=9098 ./examples/testing/server -grpc -grpcport=3435 -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID
+	@PITAYA_METRICS_PROMETHEUS_PORT=9099 ./examples/testing/server -grpc -grpcport=3436 -type connector -frontend=true > /dev/null 2>&1 & echo $$! > front.PID
+
+benchmark-test-nats: ensure-testing-deps ensure-testing-bin
+	@echo "===============RUNNING BENCHMARK TESTS WITH NATS==============="
+	@echo "--- starting testing servers"
 	@echo "--- sleeping for 5 seconds"
+	@make bench-nats-sv
 	@sleep 5
 	@go test ./benchmark/benchmark_test.go -bench=.
 	@echo "--- killing testing servers"
 	@kill `cat back.PID` && rm back.PID
 	@kill `cat front.PID` && rm front.PID
 
+benchmark-test-grpc: ensure-e2e-deps-grpc ensure-testing-bin
+	@echo "===============RUNNING BENCHMARK TESTS WITH GRPC==============="
+	@echo "--- starting testing servers"
+	@echo "--- sleeping for 5 seconds"
+	@make bench-grpc-sv
+	@sleep 5
+	@go test ./benchmark/benchmark_test.go -bench=.
+	@echo "--- killing testing servers"
+	@kill `cat back.PID` && rm back.PID
+	@kill `cat front.PID` && rm front.PID
 
 unit-test-coverage: kill-testing-deps
 	@echo "===============RUNNING UNIT TESTS==============="
