@@ -24,6 +24,7 @@ import "errors"
 
 // Errors that could be occurred during message handling.
 var (
+	ErrNoContextFound                 = errors.New("no context found")
 	ErrNoBindingStorageModule         = errors.New("for sending remote pushes or using unique session module while using grpc you need to pass it a BindingStorage")
 	ErrBindingNotFound                = errors.New("binding for this user was not found in etcd")
 	ErrNotImplemented                 = errors.New("method not implemented")

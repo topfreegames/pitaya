@@ -43,7 +43,7 @@ func TestBindSession(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   ss.ID(),
+		Id:   ss.ID(),
 		Uid:  uid,
 		Data: d,
 	}
@@ -62,7 +62,7 @@ func TestBindSessionShouldErrorIfNotExists(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   133,
+		Id:   133,
 		Uid:  uid,
 		Data: d,
 	}
@@ -80,7 +80,7 @@ func TestBindSessionShouldErrorIfAlreadyBound(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   ss.ID(),
+		Id:   ss.ID(),
 		Uid:  uid,
 		Data: d,
 	}
@@ -103,7 +103,7 @@ func TestPushSession(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   ss.ID(),
+		Id:   ss.ID(),
 		Uid:  uid,
 		Data: d,
 	}
@@ -123,7 +123,7 @@ func TestPushSessionShouldFailIfSessionDoesntExists(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   343,
+		Id:   343,
 		Uid:  uid,
 		Data: d,
 	}
@@ -145,7 +145,7 @@ func TestKick(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	data := &protos.Session{
-		ID:   ss.ID(),
+		Id:   ss.ID(),
 		Uid:  uid,
 		Data: d,
 	}

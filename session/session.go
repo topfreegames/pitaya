@@ -618,7 +618,7 @@ func (s *Session) Clear() {
 
 func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
 	sessionData := &protos.Session{
-		ID:  s.frontendSessionID,
+		Id:  s.frontendSessionID,
 		Uid: s.uid,
 	}
 	if includeData {

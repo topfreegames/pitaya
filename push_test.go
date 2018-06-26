@@ -24,11 +24,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/cluster"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
 	"github.com/topfreegames/pitaya/protos"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
@@ -110,22 +108,24 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			uid1 := uuid.New().String()
 			uid2 := uuid.New().String()
 
-			topic1 := cluster.GetUserMessagesTopic(uid1, svType)
-			topic2 := cluster.GetUserMessagesTopic(uid2, svType)
-			expectedMsg1, _ := proto.Marshal(&protos.Push{
+			expectedMsg1 := &protos.Push{
 				Route: route,
 				Uid:   uid1,
 				Data:  data,
-			})
-			expectedMsg2, _ := proto.Marshal(&protos.Push{
+			}
+			expectedMsg2 := &protos.Push{
 				Route: route,
 				Uid:   uid2,
 				Data:  data,
-			})
-			mockRPCClient.EXPECT().Send(topic1, expectedMsg1).Return(table.err)
-			mockRPCClient.EXPECT().Send(topic2, expectedMsg2).Return(table.err)
+			}
+			mockRPCClient.EXPECT().SendPush(uid1, gomock.Any(), expectedMsg1).Return(table.err)
+			mockRPCClient.EXPECT().SendPush(uid2, gomock.Any(), expectedMsg2).Return(table.err)
 			err := SendPushToUsers(route, data, []string{uid1, uid2}, svType)
-			assert.NoError(t, err)
+			if table.err != nil {
+				assert.EqualError(t, err, table.err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
