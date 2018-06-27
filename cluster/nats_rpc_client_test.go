@@ -134,6 +134,80 @@ func TestNatsRPCClientInit(t *testing.T) {
 	assert.True(t, rpcClient.conn.IsConnected())
 }
 
+func TestNatsRPCClientBroadcastSessionBind(t *testing.T) {
+	uid := "testuid123"
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+
+	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient.Init()
+
+	subChan := make(chan *nats.Msg)
+	subs, err := rpcClient.conn.ChanSubscribe(GetBindBroadcastTopic(sv.Type), subChan)
+	assert.NoError(t, err)
+	// TODO this is ugly, can lead to flaky tests and we could probably do it better
+	time.Sleep(50 * time.Millisecond)
+
+	err = rpcClient.BroadcastSessionBind(uid)
+	assert.NoError(t, err)
+
+	m := helpers.ShouldEventuallyReceive(t, subChan).(*nats.Msg)
+
+	bMsg := &protos.BindMsg{}
+	err = proto.Unmarshal(m.Data, bMsg)
+	assert.NoError(t, err)
+
+	assert.Equal(t, uid, bMsg.Uid)
+	assert.Equal(t, sv.ID, bMsg.Fid)
+
+	subs.Unsubscribe()
+}
+
+func TestNatsRPCClientSendPush(t *testing.T) {
+	uid := "testuid123"
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+
+	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient.Init()
+
+	subChan := make(chan *nats.Msg)
+	subs, err := rpcClient.conn.ChanSubscribe(GetUserMessagesTopic(uid, sv.Type), subChan)
+	assert.NoError(t, err)
+	// TODO this is ugly, can lead to flaky tests and we could probably do it better
+	time.Sleep(50 * time.Millisecond)
+
+	push := &protos.Push{
+		Route: "hellow",
+		Uid:   uid,
+		Data:  []byte{0x01},
+	}
+
+	err = rpcClient.SendPush(uid, sv, push)
+	assert.NoError(t, err)
+
+	m := helpers.ShouldEventuallyReceive(t, subChan).(*nats.Msg)
+
+	actual := &protos.Push{}
+	err = proto.Unmarshal(m.Data, actual)
+	assert.NoError(t, err)
+
+	assert.Equal(t, push.Route, actual.Route)
+	assert.Equal(t, push.Uid, actual.Uid)
+	assert.Equal(t, push.Data, actual.Data)
+
+	subs.Unsubscribe()
+
+}
+
 func TestNatsRPCClientSendShouldFailIfNotRunning(t *testing.T) {
 	config := getConfig()
 	sv := getServer()

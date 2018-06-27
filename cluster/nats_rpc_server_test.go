@@ -21,8 +21,10 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
@@ -34,6 +36,8 @@ import (
 	"github.com/topfreegames/pitaya/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
 	"github.com/topfreegames/pitaya/protos"
+	protosmocks "github.com/topfreegames/pitaya/protos/mocks"
+	"github.com/topfreegames/pitaya/session"
 )
 
 func TestNewNatsRPCServer(t *testing.T) {
@@ -102,6 +106,23 @@ func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
 	sv := getServer()
 	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	assert.Equal(t, n.bindingsChan, n.GetBindingsChannel())
+}
+
+func TestNatsRPCServerOnSessionBind(t *testing.T) {
+	t.Parallel()
+	cfg := getConfig()
+	sv := getServer()
+	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil)
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	assert.NoError(t, err)
+	rpcServer.conn = conn
+	sess := session.New(nil, true, "uid123")
+	assert.Nil(t, sess.Subscription)
+	err = rpcServer.onSessionBind(context.Background(), sess)
+	assert.NoError(t, err)
+	assert.NotNil(t, sess.Subscription)
 }
 
 func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
@@ -278,6 +299,79 @@ func TestNatsRPCServerInit(t *testing.T) {
 			assert.NotNil(t, r.Data)
 		})
 	}
+}
+
+func TestNatsRPCServerProcessBindings(t *testing.T) {
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.server.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil, nil)
+	err := rpcServer.Init()
+
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	pitayaSvMock := protosmocks.NewMockPitayaServer(ctrl)
+	defer ctrl.Finish()
+
+	rpcServer.SetPitayaServer(pitayaSvMock)
+
+	bindMsg := &protos.BindMsg{
+		Uid: "testuid",
+		Fid: "testfid",
+	}
+
+	bindData, err := proto.Marshal(bindMsg)
+	assert.NoError(t, err)
+
+	msg := &nats.Msg{
+		Data: bindData,
+	}
+
+	pitayaSvMock.EXPECT().SessionBindRemote(context.Background(), bindMsg).Do(func(ctx context.Context, b *protos.BindMsg) {
+		assert.Equal(t, bindMsg.Uid, b.Uid)
+		assert.Equal(t, bindMsg.Fid, b.Fid)
+	})
+
+	rpcServer.bindingsChan <- msg
+	time.Sleep(30 * time.Millisecond)
+}
+
+func TestNatsRPCServerProcessPushes(t *testing.T) {
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.server.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+	rpcServer, _ := NewNatsRPCServer(config, sv, nil, nil)
+	err := rpcServer.Init()
+
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	pitayaSvMock := protosmocks.NewMockPitayaServer(ctrl)
+	defer ctrl.Finish()
+
+	rpcServer.SetPitayaServer(pitayaSvMock)
+
+	push := &protos.Push{
+		Route: "someroute",
+		Uid:   "someuid",
+		Data:  []byte{0x01},
+	}
+
+	pitayaSvMock.EXPECT().PushToUser(context.Background(), push).Do(func(ctx context.Context, p *protos.Push) {
+		assert.Equal(t, push.Route, p.Route)
+		assert.Equal(t, push.Uid, p.Uid)
+		assert.Equal(t, push.Data, p.Data)
+	})
+
+	rpcServer.userPushCh <- push
+	time.Sleep(30 * time.Millisecond)
 }
 
 func TestNatsRPCServerReportMetrics(t *testing.T) {

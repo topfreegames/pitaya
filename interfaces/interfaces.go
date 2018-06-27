@@ -27,3 +27,9 @@ type Module interface {
 	BeforeShutdown()
 	Shutdown() error
 }
+
+// BindingStorage interface
+type BindingStorage interface {
+	GetUserFrontendID(uid, frontendType string) (string, error)
+	PutBinding(uid string) error
+}

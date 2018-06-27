@@ -23,7 +23,6 @@ package cluster
 import (
 	"context"
 
-	nats "github.com/nats-io/go-nats"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
@@ -38,7 +37,6 @@ import (
 
 // RPCServer interface
 type RPCServer interface {
-	GetBindingsChannel() chan *nats.Msg
 	SetPitayaServer(protos.PitayaServer)
 	interfaces.Module
 }
@@ -50,12 +48,6 @@ type RPCClient interface {
 	BroadcastSessionBind(uid string) error
 	Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) (*protos.Response, error)
 	interfaces.Module
-}
-
-// BindingStorage interface
-type BindingStorage interface {
-	GetUserFrontendID(uid, frontendType string) (string, error)
-	PutBinding(uid string) error
 }
 
 // SDListener interface

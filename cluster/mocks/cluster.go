@@ -7,7 +7,6 @@ package mocks
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	go_nats "github.com/nats-io/go-nats"
 	cluster "github.com/topfreegames/pitaya/cluster"
 	message "github.com/topfreegames/pitaya/internal/message"
 	protos "github.com/topfreegames/pitaya/protos"
@@ -37,18 +36,6 @@ func NewMockRPCServer(ctrl *gomock.Controller) *MockRPCServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockRPCServer) EXPECT() *MockRPCServerMockRecorder {
 	return m.recorder
-}
-
-// GetBindingsChannel mocks base method
-func (m *MockRPCServer) GetBindingsChannel() chan *go_nats.Msg {
-	ret := m.ctrl.Call(m, "GetBindingsChannel")
-	ret0, _ := ret[0].(chan *go_nats.Msg)
-	return ret0
-}
-
-// GetBindingsChannel indicates an expected call of GetBindingsChannel
-func (mr *MockRPCServerMockRecorder) GetBindingsChannel() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingsChannel", reflect.TypeOf((*MockRPCServer)(nil).GetBindingsChannel))
 }
 
 // SetPitayaServer mocks base method
@@ -219,54 +206,6 @@ func (m *MockRPCClient) Shutdown() error {
 // Shutdown indicates an expected call of Shutdown
 func (mr *MockRPCClientMockRecorder) Shutdown() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockRPCClient)(nil).Shutdown))
-}
-
-// MockBindingStorage is a mock of BindingStorage interface
-type MockBindingStorage struct {
-	ctrl     *gomock.Controller
-	recorder *MockBindingStorageMockRecorder
-}
-
-// MockBindingStorageMockRecorder is the mock recorder for MockBindingStorage
-type MockBindingStorageMockRecorder struct {
-	mock *MockBindingStorage
-}
-
-// NewMockBindingStorage creates a new mock instance
-func NewMockBindingStorage(ctrl *gomock.Controller) *MockBindingStorage {
-	mock := &MockBindingStorage{ctrl: ctrl}
-	mock.recorder = &MockBindingStorageMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockBindingStorage) EXPECT() *MockBindingStorageMockRecorder {
-	return m.recorder
-}
-
-// GetUserFrontendID mocks base method
-func (m *MockBindingStorage) GetUserFrontendID(uid, frontendType string) (string, error) {
-	ret := m.ctrl.Call(m, "GetUserFrontendID", uid, frontendType)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserFrontendID indicates an expected call of GetUserFrontendID
-func (mr *MockBindingStorageMockRecorder) GetUserFrontendID(uid, frontendType interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserFrontendID", reflect.TypeOf((*MockBindingStorage)(nil).GetUserFrontendID), uid, frontendType)
-}
-
-// PutBinding mocks base method
-func (m *MockBindingStorage) PutBinding(uid string) error {
-	ret := m.ctrl.Call(m, "PutBinding", uid)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PutBinding indicates an expected call of PutBinding
-func (mr *MockBindingStorageMockRecorder) PutBinding(uid interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutBinding", reflect.TypeOf((*MockBindingStorage)(nil).PutBinding), uid)
 }
 
 // MockSDListener is a mock of SDListener interface

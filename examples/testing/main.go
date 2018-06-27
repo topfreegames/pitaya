@@ -288,7 +288,7 @@ func main() {
 	cfg.Set("pitaya.cluster.sd.etcd.prefix", *sdPrefix)
 	cfg.Set("pitaya.cluster.rpc.server.grpc.port", *grpcPort)
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{"host": "127.0.0.1", "port": fmt.Sprintf("%d", *grpcPort)}, cfg)
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{"grpc-host": "127.0.0.1", "grpc-port": fmt.Sprintf("%d", *grpcPort)}, cfg)
 	if *grpc {
 		gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
 		if err != nil {
