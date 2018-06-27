@@ -29,6 +29,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	pitErrors "github.com/topfreegames/pitaya/errors"
+	"github.com/topfreegames/pitaya/interfaces"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
@@ -44,14 +45,14 @@ type GRPCClient struct {
 	config           *config.Config
 	metricsReporters []metrics.Reporter
 	clientMap        sync.Map
-	bindingStorage   BindingStorage
+	bindingStorage   interfaces.BindingStorage
 	reqTimeout       time.Duration
 	dialTimeout      time.Duration
 }
 
 // NewGRPCClient returns a new instance of GRPCClient
-func NewGRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter, bindingStorage ...BindingStorage) (*GRPCClient, error) {
-	var bs BindingStorage
+func NewGRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter, bindingStorage ...interfaces.BindingStorage) (*GRPCClient, error) {
+	var bs interfaces.BindingStorage
 	if len(bindingStorage) > 0 {
 		bs = bindingStorage[0]
 	}
@@ -85,7 +86,8 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 		return nil, err
 	}
 	if c, ok := gs.clientMap.Load(server.ID); ok {
-		ctxT, _ := context.WithTimeout(ctx, gs.reqTimeout)
+		ctxT, done := context.WithTimeout(ctx, gs.reqTimeout)
+		defer done()
 		res, err := c.(protos.PitayaClient).Call(ctxT, &req)
 		if err != nil {
 			return nil, err
@@ -124,7 +126,8 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 				Uid: uid,
 				Fid: gs.server.ID,
 			}
-			ctxT, _ := context.WithTimeout(context.Background(), gs.reqTimeout)
+			ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
+			defer done()
 			_, err := c.(protos.PitayaClient).SessionBindRemote(ctxT, msg)
 			return err
 		}
@@ -149,7 +152,8 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 		}
 	}
 	if c, ok := gs.clientMap.Load(svID); ok {
-		ctxT, _ := context.WithTimeout(context.Background(), gs.reqTimeout)
+		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
+		defer done()
 		_, err := c.(protos.PitayaClient).PushToUser(ctxT, push)
 		return err
 	}
@@ -160,16 +164,17 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 func (gs *GRPCClient) AddServer(sv *Server) {
 	var host, port string
 	var ok bool
-	if host, ok = sv.Metadata["host"]; !ok {
-		logger.Log.Errorf("server %s doesn't have a host specified in metadata", sv.ID)
+	if host, ok = sv.Metadata["grpc-host"]; !ok {
+		logger.Log.Errorf("server %s doesn't have a grpc-host specified in metadata", sv.ID)
 		return
 	}
-	if port, ok = sv.Metadata["port"]; !ok {
-		logger.Log.Errorf("server %s doesn't have a port specified in metadata", sv.ID)
+	if port, ok = sv.Metadata["grpc-port"]; !ok {
+		logger.Log.Errorf("server %s doesn't have a grpc-port specified in metadata", sv.ID)
 		return
 	}
 	address := fmt.Sprintf("%s:%s", host, port)
-	ctxT, _ := context.WithTimeout(context.Background(), gs.dialTimeout)
+	ctxT, done := context.WithTimeout(context.Background(), gs.dialTimeout)
+	defer done()
 	conn, err := grpc.DialContext(ctxT, address, grpc.WithInsecure())
 	if err != nil {
 		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)

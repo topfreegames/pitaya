@@ -251,6 +251,7 @@ func (ns *NatsRPCServer) processSessionBindings() {
 		err := proto.Unmarshal(bind.Data, b)
 		if err != nil {
 			logger.Log.Errorf("error processing binding msg: %v", err)
+			continue
 		}
 		ns.pitayaServer.SessionBindRemote(context.Background(), b)
 	}

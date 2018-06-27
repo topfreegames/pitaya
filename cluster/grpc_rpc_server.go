@@ -26,7 +26,6 @@ import (
 
 	"google.golang.org/grpc"
 
-	nats "github.com/nats-io/go-nats"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
@@ -67,21 +66,6 @@ func (gs *GRPCServer) Init() error {
 // SetPitayaServer sets the pitaya server
 func (gs *GRPCServer) SetPitayaServer(ps protos.PitayaServer) {
 	gs.pitayaServer = ps
-}
-
-// GetUnhandledRequestsChannel gets the channel of unhandled requests (not used in this implementation of rpcServer)
-func (gs *GRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
-	return nil
-}
-
-// GetUserPushChannel gets the channel of pushes to users (not used in this implementation of rpcServer)
-func (gs *GRPCServer) GetUserPushChannel() chan *protos.Push {
-	return nil
-}
-
-// GetBindingsChannel gets the channel of bindings
-func (gs *GRPCServer) GetBindingsChannel() chan *nats.Msg {
-	return nil
 }
 
 // AfterInit runs after initialization

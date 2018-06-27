@@ -48,6 +48,7 @@ import (
 	"github.com/topfreegames/pitaya/router"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/session"
+	sessionmocks "github.com/topfreegames/pitaya/session/mocks"
 )
 
 func (m *MyComp) Remote1(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {
@@ -113,6 +114,79 @@ func TestRemoteServiceRegister(t *testing.T) {
 	val2, ok = remotes["MyComp.RemoteRes"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
+}
+
+func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
+
+	svc.AddRemoteBindingListener(mockBindingListener)
+	assert.Equal(t, mockBindingListener, svc.remoteBindingListeners[0])
+}
+
+func TestRemoteServiceSessionBindRemote(t *testing.T) {
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
+
+	svc.AddRemoteBindingListener(mockBindingListener)
+	assert.Equal(t, mockBindingListener, svc.remoteBindingListeners[0])
+
+	msg := &protos.BindMsg{
+		Uid: "uid",
+		Fid: "fid",
+	}
+
+	mockBindingListener.EXPECT().OnUserBind(msg.Uid, msg.Fid)
+
+	_, err := svc.SessionBindRemote(context.Background(), msg)
+
+	assert.NoError(t, err)
+}
+
+func TestRemoteServicePushToUser(t *testing.T) {
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNetEntity := sessionmocks.NewMockNetworkEntity(ctrl)
+	tables := []struct {
+		name string
+		uid  string
+		sess *session.Session
+		p    *protos.Push
+		err  error
+	}{
+		{"success", "uid1", session.New(mockNetEntity, true), &protos.Push{
+			Route: "sv.svc.mth",
+			Uid:   "uid1",
+			Data:  []byte{0x01},
+		}, nil},
+		{"no_sess_found", "uid2", nil, &protos.Push{
+			Route: "sv.svc.mth",
+			Uid:   "uid2",
+			Data:  []byte{0x01},
+		}, constants.ErrSessionNotFound},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			if table.sess != nil {
+				err := table.sess.Bind(context.Background(), table.uid)
+				assert.NoError(t, err)
+				mockNetEntity.EXPECT().Push(table.p.Route, table.p.Data)
+			}
+			_, err := svc.PushToUser(context.Background(), table.p)
+			if table.err != nil {
+				assert.EqualError(t, err, table.err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
