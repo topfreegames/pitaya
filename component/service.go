@@ -82,9 +82,12 @@ func NewService(comp Component, opts []Option) *Service {
 // ExtractHandler extract the set of methods from the
 // receiver value which satisfy the following conditions:
 // - exported method of exported type
-// - two arguments, both of exported type
-// - the first argument is *session.Session
-// - the second argument is []byte or a pointer
+// - one or two arguments
+// - the first argument is context.Context
+// - the second argument (if it exists) is []byte or a pointer
+// - zero or two outputs
+// - the first output is [] or a pointer
+// - the second output is an error
 func (s *Service) ExtractHandler() error {
 	typeName := reflect.Indirect(s.Receiver).Type().Name()
 	if typeName == "" {
