@@ -134,9 +134,6 @@ func (h *HandlerService) Dispatch(thread int) {
 
 		case id := <-timer.Manager.ChClosingTimer: // closing Timers
 			timer.RemoveTimer(id)
-
-		case <-h.appDieChan: // application quit signal
-			return
 		}
 	}
 }

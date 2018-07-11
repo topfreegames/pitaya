@@ -275,8 +275,6 @@ func (a *Agent) Handle() {
 	select {
 	case <-a.chDie: // agent closed signal
 		return
-	case <-a.appDieChan: // application quit
-		return
 	}
 }
 
