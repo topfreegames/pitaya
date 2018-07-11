@@ -61,9 +61,9 @@ var (
 // HandshakeClientData represents information about the client sent on the handshake.
 type HandshakeClientData struct {
 	Platform    string `json:"platform"`
-	LibVersion  string `json:"lib_version"`
-	BuildNumber string `json:"client_build_number"`
-	Version     string `json:"client_version"`
+	LibVersion  string `json:"libVersion"`
+	BuildNumber string `json:"clientBuildNumber"`
+	Version     string `json:"clientVersion"`
 }
 
 // HandshakeData represents information about the handshake sent by the client.

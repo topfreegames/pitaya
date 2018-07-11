@@ -209,7 +209,6 @@ func (h *HandlerService) Handle(conn net.Conn) {
 }
 
 func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
-	fmt.Println("PROCESSING PAKCET MAMN")
 	switch p.Type {
 	case packet.Handshake:
 		if err := a.SendHandshakeResponse(); err != nil {
@@ -223,7 +222,6 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 
 		if err != nil {
 			a.SetStatus(constants.StatusClosed)
-			println("INVALID HANDSHAKE DATA BOI")
 			return fmt.Errorf("Invalid handshake data. Id=%d", a.Session.ID())
 		}
 
