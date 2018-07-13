@@ -43,9 +43,9 @@ var (
 {
 	"sys": {
 		"platform": "mac",
-		"lib_version": "0.3.5-release",
-		"client_build_number":"20",
-		"client_version":"2.1"
+		"libVersion": "0.3.5-release",
+		"clientBuildNumber":"20",
+		"clientVersion":"2.1"
 	},
 	"user": {
 		"age": 30

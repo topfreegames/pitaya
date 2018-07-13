@@ -361,7 +361,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder, nil)
 	var wg sync.WaitGroup
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
-		handshakeBuffer := `{"sys":{"platform":"mac","lib_version":"0.3.5-release","client_build_number":"20","client_version":"2.1"},"user":{"age":30}}`
+		handshakeBuffer := `{"sys":{"platform":"mac","libVersion":"0.3.5-release","clientBuildNumber":"20","clientVersion":"2.1"},"user":{"age":30}}`
 		bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
 		for i, c := range bbb {
 			b[i] = c
