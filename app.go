@@ -302,6 +302,10 @@ func Start() {
 		logger.Log.Fatal("acceptors are not allowed on backend servers")
 	}
 
+	if app.server.Frontend && len(app.acceptors) == 0 {
+		logger.Log.Fatal("frontend servers should have at least one configured acceptor")
+	}
+
 	if app.serverMode == Cluster {
 		if app.serviceDiscovery == nil {
 			logger.Log.Warn("creating default service discovery because cluster mode is enabled, " +
