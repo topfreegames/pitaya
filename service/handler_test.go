@@ -360,16 +360,18 @@ func TestHandlerServiceHandle(t *testing.T) {
 	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder, nil)
 	var wg sync.WaitGroup
+
+	handshakeBuffer := `{"sys":{"platform":"mac","libVersion":"0.3.5-release","clientBuildNumber":"20","clientVersion":"2.1"},"user":{"age":30}}`
+	bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
+
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
-		handshakeBuffer := `{"sys":{"platform":"mac","libVersion":"0.3.5-release","clientBuildNumber":"20","clientVersion":"2.1"},"user":{"age":30}}`
-		bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
 		for i, c := range bbb {
 			b[i] = c
 		}
 
 		assert.NoError(t, err)
 		wg.Done()
-	}).Return(128, nil)
+	}).Return(len(bbb), nil)
 
 	mockConn.EXPECT().Read(gomock.Any()).Return(0, errors.New("die")).Do(func(b []byte) {
 		wg.Done()
