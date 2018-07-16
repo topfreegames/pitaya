@@ -363,13 +363,13 @@ func TestHandlerServiceHandle(t *testing.T) {
 
 	handshakeBuffer := `{"sys":{"platform":"mac","libVersion":"0.3.5-release","clientBuildNumber":"20","clientVersion":"2.1"},"user":{"age":30}}`
 	bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
+	assert.NoError(t, err)
 
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
 		for i, c := range bbb {
 			b[i] = c
 		}
 
-		assert.NoError(t, err)
 		wg.Done()
 	}).Return(len(bbb), nil)
 
