@@ -163,12 +163,16 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 		{"remote_process", &message.Message{ID: 1, Route: "k.k.k"}, nil, false},
 	}
 
-	for _, table := range tables {
+	for i, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			if i == 0 {
+				mockSerializer.EXPECT().GetName().Times(1)
+			}
+
 			mockConn := connmock.NewMockConn(ctrl)
 			sv := &cluster.Server{}
 			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{}, nil, nil)
@@ -249,6 +253,8 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockSerializer.EXPECT().GetName().AnyTimes()
+
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			messageEncoder := message.NewMessagesEncoder(false)
@@ -354,6 +360,8 @@ func TestHandlerServiceHandle(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName().AnyTimes()
+
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	packetDecoder := codec.NewPomeloPacketDecoder()
