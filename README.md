@@ -3,7 +3,7 @@
 Pitaya is currently under development and is not yet ready for production use.
 We're working on tests and better documentation and we'll update the project as soon as possible.
 
-# pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
+# pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
 [1]: https://godoc.org/github.com/topfreegames/pitaya?status.svg
 [2]: https://godoc.org/github.com/topfreegames/pitaya
@@ -15,6 +15,8 @@ We're working on tests and better documentation and we'll update the project as 
 [8]: https://travis-ci.org/topfreegames/pitaya
 [9]: https://coveralls.io/repos/github/topfreegames/pitaya/badge.svg?branch=master
 [10]: https://coveralls.io/github/topfreegames/pitaya?branch=master
+[11]: https://readthedocs.org/projects/pitaya/badge/?version=latest
+[12]: https://pitaya.readthedocs.io/en/latest/?badge=latest
 
 Pitaya is an easy to use, fast and lightweight game server framework inspired by [starx](https://github.com/lonnng/starx) and [pomelo](https://github.com/NetEase/pomelo) and built on top of [nano](https://github.com/lonnng/nano)'s networking library.
 
@@ -22,13 +24,33 @@ The goal of pitaya is to provide a basic development framework for distributed m
 
 ## How to build a system with `pitaya`
 
-#### What does a `pitaya` application look like?
+### What does a `pitaya` application look like?
 
-A `pitaya` application is a collection of components made of handlers and/or remotes. Handlers are methods that will be called directly by the client while remotes are called by other servers via RPCs. Once you register a component to pitaya, pitaya will register to its service container all methods that can be converted to `Handler` or `Remote`. Pitaya service handler will be called when the client makes a request and it receives two parameters while handling a message:
-  - `*session.Session`: corresponding a client that apply this request or notify.
-  - `pointer or []byte`: the payload of the request.
+A `pitaya` application is a collection of components made of handlers and/or remotes.
 
-When the server has processed the logic, it must return a struct that will be serialized and sent to the client.
+Handlers are methods that will be called directly by the client while remotes are called by other servers via RPCs. Once you register a component to pitaya, pitaya will register to its service container all methods that can be converted to `Handler` or `Remote`.
+
+#### Handlers
+
+Pitaya service handler will be called when the client makes a request and it receives one or two parameters while handling a message:
+  - `context.Context`: the context of the request, which contains the client's session.
+  - `pointer or []byte`: the payload of the request (optional).
+
+There are two types of handlers, request and push. For the first case the handler must have two return values:
+  - `pointer or []byte`: the response payload
+  - `error`: an error variable
+
+for the second type the method should not return anything.
+
+#### Remotes
+
+Pitaya service remote will be called by other pitaya servers and it receives one or two parameters while handling the request:
+  - `context.Context`: the context of the request.
+  - `protobuf`: the payload in protobuf format (optional).
+
+The remote method should always return two parameters:
+  - `protobuf`: the response payload in protobuf format.
+  - `error`: an error variable
 
 #### Standalone application
 
@@ -36,7 +58,7 @@ The easiest way of running `pitaya` is by starting a standalone application. The
 
 #### Cluster mode
 
-In order to run several `pitaya` applications in a cluster it is necessary to configure RPC and Service Discovery services. Currently we are using [NATS](https://nats.io/) for RPC and [ETCD](https://github.com/coreos/etcd) for service discovery. Other options may be implemented in the future.
+In order to run several `pitaya` applications in a cluster it is necessary to configure RPC and Service Discovery services. Currently we are using [NATS](https://nats.io/) for RPC and [ETCD](https://github.com/coreos/etcd) for service discovery as default options. The option to use gRPC for RPC is also available. Other options may be implemented in the future.
 
 
 There's an working example of `pitaya` running in cluster mode [here](./examples/demo/cluster).
@@ -55,14 +77,17 @@ make run-cluster-example-frontend
 make run-cluster-example-backend
 ```
 
-##### Frontend and backend servers
+#### Frontend and backend servers
 
-In short, frontend servers handle client calls while backend servers only handle RPCs coming from other servers.
+In short, frontend servers handle client calls while backend servers only handle RPCs coming from other servers. Both types of servers are capable of receiving RPCs.
+
+Frontend servers are responsible for accepting connections with the clients and processing the messages, forwarding them to the appropriate servers as needed. Backend servers receive messages forwarded from the frontend servers. It's possible to set custom forwarding logic based on the client's session data, route and payload.
 
 ## Resources
 
 - Documents
-    + [API Reference](https://godoc.org/github.com/topfreegames/pitaya)
+  + [API Reference](https://godoc.org/github.com/topfreegames/pitaya)
+  + [In-depth documentation](https://pitaya.readthedocs.io/en/latest/)
 
 - Demo
   + [Implement a chat room in ~100 lines with pitaya and WebSocket](./examples/demo/chat) (adapted from [nano](https://github.com/lonnng/nano)'s example)
@@ -76,13 +101,14 @@ In short, frontend servers handle client calls while backend servers only handle
 go get github.com/topfreegames/pitaya
 
 # dependencies
-dep ensure
+make setup
 ```
 
 ## Testing
 
-TBD
-
+```shell
+make test
+```
 
 ## Benchmark
 
