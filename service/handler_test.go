@@ -234,23 +234,43 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 }
 
 func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	tables := []struct {
+		name         string
+		packet       *packet.Packet
+		socketStatus int32
+		errStr       string
+	}{
+		{"invalid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte("asiodjasd")}, constants.StatusClosed, "Invalid handshake data"},
+		{"valid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte(`{"sys":{"platform":"mac"}}`)}, constants.StatusHandshake, ""},
+	}
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	mockConn := connmock.NewMockConn(ctrl)
-	packetEncoder := codec.NewPomeloPacketEncoder()
-	messageEncoder := message.NewMessagesEncoder(false)
-	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockConn := connmock.NewMockConn(ctrl)
+			packetEncoder := codec.NewPomeloPacketEncoder()
+			messageEncoder := message.NewMessagesEncoder(false)
+			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	mockConn.EXPECT().Write(gomock.Any()).Do(func(d []byte) {
-		assert.Contains(t, string(d), "heartbeat")
-	})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
-	err := svc.processPacket(ag, &packet.Packet{Type: packet.Handshake})
-	assert.NoError(t, err)
-	assert.Equal(t, constants.StatusHandshake, ag.GetStatus())
+			mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
+			mockConn.EXPECT().Write(gomock.Any()).Do(func(d []byte) {
+				assert.Contains(t, string(d), "heartbeat")
+			})
+
+			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
+
+			err := svc.processPacket(ag, table.packet)
+			if table.errStr == "" {
+				assert.Nil(t, err)
+			} else {
+				assert.NotNil(t, err)
+				assert.Contains(t, err.Error(), table.errStr)
+			}
+			assert.Equal(t, table.socketStatus, ag.GetStatus())
+		})
+	}
 }
 
 func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
@@ -340,22 +360,18 @@ func TestHandlerServiceHandle(t *testing.T) {
 	messageEncoder := message.NewMessagesEncoder(false)
 	svc := NewHandlerService(nil, packetDecoder, packetEncoder, mockSerializer, 1*time.Second, 1, 1, 1, nil, nil, messageEncoder, nil)
 	var wg sync.WaitGroup
+
+	handshakeBuffer := `{"sys":{"platform":"mac","libVersion":"0.3.5-release","clientBuildNumber":"20","clientVersion":"2.1"},"user":{"age":30}}`
+	bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
+	assert.NoError(t, err)
+
 	firstCall := mockConn.EXPECT().Read(gomock.Any()).Do(func(b []byte) {
-		handshakeBuffer := `{
-  "sys": {
-    "type": "golang-tcp",
-    "version": "0.0.1",
-    "rsa": {}
-  },
-  "user": {}
-};`
-		bbb, err := packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
 		for i, c := range bbb {
 			b[i] = c
 		}
-		assert.NoError(t, err)
+
 		wg.Done()
-	}).Return(101, nil)
+	}).Return(len(bbb), nil)
 
 	mockConn.EXPECT().Read(gomock.Any()).Return(0, errors.New("die")).Do(func(b []byte) {
 		wg.Done()

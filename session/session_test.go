@@ -1261,3 +1261,89 @@ func TestSessionClear(t *testing.T) {
 	expectedEncoded := getEncodedEmptyMap()
 	assert.Equal(t, expectedEncoded, ss.encodedData)
 }
+
+func TestSessionGetHandshakeData(t *testing.T) {
+	t.Parallel()
+
+	data1 := &HandshakeData{
+		Sys: HandshakeClientData{
+			Platform:    "macos",
+			LibVersion:  "2.3.2",
+			BuildNumber: "20",
+			Version:     "14.0.2",
+		},
+		User: make(map[string]interface{}),
+	}
+	data2 := &HandshakeData{
+		Sys: HandshakeClientData{
+			Platform:    "windows",
+			LibVersion:  "2.3.10",
+			BuildNumber: "",
+			Version:     "ahaha",
+		},
+		User: map[string]interface{}{
+			"ababa": make(map[string]interface{}),
+			"pepe":  1,
+		},
+	}
+	tables := []struct {
+		name string
+		data *HandshakeData
+	}{
+		{"test_1", data1},
+		{"test_2", data2},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+
+			assert.Nil(t, ss.GetHandshakeData())
+
+			ss.handshakeData = table.data
+
+			assert.Equal(t, ss.GetHandshakeData(), table.data)
+		})
+	}
+}
+
+func TestSessionSetHandshakeData(t *testing.T) {
+	t.Parallel()
+
+	data1 := &HandshakeData{
+		Sys: HandshakeClientData{
+			Platform:    "macos",
+			LibVersion:  "2.3.2",
+			BuildNumber: "20",
+			Version:     "14.0.2",
+		},
+		User: make(map[string]interface{}),
+	}
+	data2 := &HandshakeData{
+		Sys: HandshakeClientData{
+			Platform:    "windows",
+			LibVersion:  "2.3.10",
+			BuildNumber: "",
+			Version:     "ahaha",
+		},
+		User: map[string]interface{}{
+			"ababa": make(map[string]interface{}),
+			"pepe":  1,
+		},
+	}
+	tables := []struct {
+		name string
+		data *HandshakeData
+	}{
+		{"testSessionSetData_1", data1},
+		{"testSessionSetData_2", data2},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, false)
+			ss.SetHandshakeData(table.data)
+			assert.Equal(t, table.data, ss.handshakeData)
+		})
+	}
+}

@@ -58,6 +58,22 @@ var (
 	SessionCount int64
 )
 
+// HandshakeClientData represents information about the client sent on the handshake.
+type HandshakeClientData struct {
+	Platform    string `json:"platform"`
+	LibVersion  string `json:"libVersion"`
+	BuildNumber string `json:"clientBuildNumber"`
+	Version     string `json:"clientVersion"`
+}
+
+// HandshakeData represents information about the handshake sent by the client.
+// `sys` corresponds to information independent from the app and `user` information
+// that depends on the app and is customized by the user.
+type HandshakeData struct {
+	Sys  HandshakeClientData    `json:"sys"`
+	User map[string]interface{} `json:"user,omitempty"`
+}
+
 // Session represents a client session which could storage temp data during low-level
 // keep connected, all data will be released when the low-level connection was broken.
 // Session instance related to the client will be passed to Handler method as the first
@@ -69,6 +85,7 @@ type Session struct {
 	lastTime          int64                  // last heartbeat time
 	entity            NetworkEntity          // low-level network entity
 	data              map[string]interface{} // session data store
+	handshakeData     *HandshakeData         // handshake data received by the client
 	encodedData       []byte                 // session data encoded as a byte array
 	OnCloseCallbacks  []func()               //onClose callbacks
 	IsFrontend        bool                   // if session is a frontend session
@@ -99,6 +116,7 @@ func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 		id:               sessionIDSvc.sessionID(),
 		entity:           entity,
 		data:             make(map[string]interface{}),
+		handshakeData:    nil,
 		lastTime:         time.Now().Unix(),
 		OnCloseCallbacks: []func(){},
 		IsFrontend:       frontend,
@@ -614,6 +632,19 @@ func (s *Session) Clear() {
 	s.uid = ""
 	s.data = map[string]interface{}{}
 	s.updateEncodedData()
+}
+
+// SetHandshakeData sets the handshake data received by the client.
+func (s *Session) SetHandshakeData(data *HandshakeData) {
+	s.Lock()
+	defer s.Unlock()
+
+	s.handshakeData = data
+}
+
+// GetHandshakeData gets the handshake data received by the client.
+func (s *Session) GetHandshakeData() *HandshakeData {
+	return s.handshakeData
 }
 
 func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {

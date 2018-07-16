@@ -41,21 +41,24 @@ import (
 var (
 	handshakeBuffer = `
 {
-    "sys": {
-      "type": "golang-tcp",
-      "version": "0.0.1",
-      "rsa": {}
-    },
-    "user": {
-    }
-  };
+	"sys": {
+		"platform": "mac",
+		"libVersion": "0.3.5-release",
+		"clientBuildNumber":"20",
+		"clientVersion":"2.1"
+	},
+	"user": {
+		"age": 30
+	}
+}
 `
 )
 
 // HandshakeSys struct
 type HandshakeSys struct {
-	Dict      map[string]uint16 `json:"dict"`
-	Heartbeat int               `json:"heartbeat"`
+	Dict       map[string]uint16 `json:"dict"`
+	Heartbeat  int               `json:"heartbeat"`
+	Serializer string            `json:"serializer"`
 }
 
 // HandshakeData struct

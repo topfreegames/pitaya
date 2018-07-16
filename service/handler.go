@@ -22,6 +22,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -41,6 +42,7 @@ import (
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 	"github.com/topfreegames/pitaya/tracing"
 )
@@ -209,8 +211,19 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		if err := a.SendHandshakeResponse(); err != nil {
 			return err
 		}
-		a.SetStatus(constants.StatusHandshake)
 		logger.Log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+
+		// Parse the json sent with the handshake by the client
+		handshakeData := &session.HandshakeData{}
+		err := json.Unmarshal(p.Data, handshakeData)
+
+		if err != nil {
+			a.SetStatus(constants.StatusClosed)
+			return fmt.Errorf("Invalid handshake data. Id=%d", a.Session.ID())
+		}
+
+		a.Session.SetHandshakeData(handshakeData)
+		a.SetStatus(constants.StatusHandshake)
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
