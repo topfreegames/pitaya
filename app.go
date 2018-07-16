@@ -149,7 +149,7 @@ func Configure(
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {
 			logger.Log.Info("successfully configured statsd metrics reporter")
-			app.metricsReporters = append(app.metricsReporters, metricsReporter)
+			AddMetricsReporter(metricsReporter)
 		}
 	}
 }
