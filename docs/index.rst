@@ -10,6 +10,9 @@ Welcome to Pitaya's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   overview
+   architecture
+   API
 
 
 Indices and tables
