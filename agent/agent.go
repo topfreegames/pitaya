@@ -38,8 +38,6 @@ import (
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/serialize/json"
-	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/tracing"
 	"github.com/topfreegames/pitaya/util"
@@ -101,16 +99,7 @@ func NewAgent(
 ) *Agent {
 	// initialize heartbeat and handshake data on first player connection
 	once.Do(func() {
-		var serializerName string
-		switch serializer.(type) {
-		case *json.Serializer:
-			serializerName = "json"
-		case *protobuf.Serializer:
-			serializerName = "protobuf"
-		default:
-			serializerName = "unknown"
-		}
-		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
+		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializer.GetName())
 	})
 
 	a := &Agent{

@@ -36,5 +36,6 @@ type (
 	Serializer interface {
 		Marshaler
 		Unmarshaler
+		GetName() string
 	}
 )
