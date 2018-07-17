@@ -31,29 +31,68 @@ import (
 func TestNewError(t *testing.T) {
 	t.Parallel()
 
+	const code = "code"
+
+	type (
+		input struct {
+			err      error
+			code     string
+			metadata map[string]string
+		}
+
+		expected struct {
+			code     string
+			metadata map[string]string
+		}
+	)
+
 	tables := []struct {
 		name     string
-		err      error
-		code     string
-		metadata map[string]string
+		input    input
+		expected expected
 	}{
-		{"nil_metadata", errors.New(uuid.New().String()), uuid.New().String(), nil},
-		{"empty_metadata", errors.New(uuid.New().String()), uuid.New().String(), map[string]string{}},
-		{"non_empty_metadata", errors.New(uuid.New().String()), uuid.New().String(), map[string]string{"key": uuid.New().String()}},
+		{"nil_metadata",
+			input{err: errors.New(uuid.New().String()), code: code, metadata: nil},
+			expected{code: code, metadata: nil},
+		},
+		{"empty_metadata",
+			input{err: errors.New(uuid.New().String()), code: code, metadata: map[string]string{}},
+			expected{code: code, metadata: map[string]string{}},
+		},
+		{"non_empty_metadata",
+			input{err: errors.New(uuid.New().String()), code: code, metadata: map[string]string{"key": "value"}},
+			expected{code: code, metadata: map[string]string{"key": "value"}},
+		},
+		{"pitaya_error",
+			input{
+				err:      NewError(errors.New(uuid.New().String()), code, map[string]string{"key1": "value1", "key2": "value2"}),
+				code:     "another-code",
+				metadata: map[string]string{"key1": "new-value1", "key3": "value3"},
+			},
+			expected{code: code, metadata: map[string]string{"key1": "new-value1", "key2": "value2", "key3": "value3"}},
+		},
+		{"pitaya_error_nil_metadata",
+			input{
+				err:      NewError(errors.New(uuid.New().String()), code),
+				code:     "another-code",
+				metadata: map[string]string{"key1": "value1", "key2": "value2"},
+			},
+			expected{code: code, metadata: map[string]string{"key1": "value1", "key2": "value2"}},
+		},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			var err *Error
-			if table.metadata != nil {
-				err = NewError(table.err, table.code, table.metadata)
+			if table.input.metadata != nil {
+				err = NewError(table.input.err, table.input.code, table.input.metadata)
 			} else {
-				err = NewError(table.err, table.code)
+				err = NewError(table.input.err, table.input.code)
 			}
 			assert.NotNil(t, err)
-			assert.Equal(t, table.code, err.Code)
-			assert.Equal(t, table.err.Error(), err.Message)
-			assert.Equal(t, table.metadata, err.Metadata)
+			assert.Equal(t, table.input.err.Error(), err.Message)
+			assert.Equal(t, table.expected.code, err.Code)
+			assert.Equal(t, table.expected.metadata, err.Metadata)
 		})
 	}
 }
