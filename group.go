@@ -35,12 +35,12 @@ const (
 	groupStatusClosed  = 1
 )
 
-// SessionFilter represents a filter which was used to filter session when Multicast,
-// the session will receive the message while filter returns true.
+// SessionFilter represents a filter which is used to filter sessions when Multicast,
+// the session will receive the message when the filter returns true.
 type SessionFilter func(*session.Session) bool
 
-// Group represents a session group which used to manage a number of
-// sessions, data send to the group will send to all session in it.
+// Group represents a session group which is used to manage a number of
+// sessions, data sent to the group will be sent to all sessions in it.
 type Group struct {
 	mu       sync.RWMutex
 	status   int32                       // channel current status
@@ -110,7 +110,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 	return nil
 }
 
-// Broadcast push  the message(s) to  all members
+// Broadcast pushes the message to all members
 func (c *Group) Broadcast(route string, v interface{}) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
@@ -141,7 +141,7 @@ func (c *Group) Contains(uid string) bool {
 	return err == nil
 }
 
-// Add add session to group
+// Add adds session to group
 func (c *Group) Add(session *session.Session) error {
 	if session.UID() == "" {
 		return constants.ErrNoUIDBind
@@ -165,7 +165,7 @@ func (c *Group) Add(session *session.Session) error {
 	return nil
 }
 
-// Leave remove specified UID related session from group
+// Leave removes specified UID related session from group
 func (c *Group) Leave(s *session.Session) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
@@ -180,7 +180,7 @@ func (c *Group) Leave(s *session.Session) error {
 	return nil
 }
 
-// LeaveAll clear all sessions in the group
+// LeaveAll clears all sessions in the group
 func (c *Group) LeaveAll() error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
@@ -216,7 +216,7 @@ func (c *Group) Close() error {
 
 	atomic.StoreInt32(&c.status, groupStatusClosed)
 
-	// release all reference
+	// release all references
 	c.sessions = make(map[string]*session.Session)
 	return nil
 }

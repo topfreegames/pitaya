@@ -39,7 +39,7 @@ type (
 	}
 )
 
-// PushFront should not be used after pitaya running
+// PushFront should not be used after pitaya is running
 func (p *pipelineChannel) PushFront(h Handler) {
 	Handlers := make([]Handler, len(p.Handlers)+1)
 	Handlers[0] = h
@@ -47,7 +47,7 @@ func (p *pipelineChannel) PushFront(h Handler) {
 	p.Handlers = Handlers
 }
 
-// PushBack should not be used after pitaya running
+// PushBack should not be used after pitaya is running
 func (p *pipelineChannel) PushBack(h Handler) {
 	p.Handlers = append(p.Handlers, h)
 }

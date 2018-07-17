@@ -1,7 +1,9 @@
-Architecture
-============
+Features
+========
 
 Pitaya has a modular and configurable architecture which helps to hide the complexity of scaling the application and managing clients' sessions and communications.
+
+Some of its core features are described below.
 
 ## Standalone mode
 
@@ -33,13 +35,23 @@ By default the routing function chooses one instance of the target server type a
 
 ### Sessions
 
-Every connection established by the clients has an associated session instance, the session is destroyed when the connection closes. The session can be bound to an user id and can be used to set or retrieve data. The session is passed to every handler method through the context instance. Sessions can be used to send push messages to the client or kick her.
+Every connection established by the clients has an associated session instance, which is ephemeral and destroyed when the connection closes. Sessions are part of the core functionality of Pitaya, because they allow asynchronous communication with the clients and storage of data between requests. The main features of sessions are:
 
-There are some differences if the server is a frontend or backend server. Explained below
+* **ID binding** - Sessions can be bound to an user ID, allowing other parts of the application to send messages to the user without needing to know which server or connection the user is connected to
+* **Data storage** - Sessions can be used for data storage, storing and retrieving data between requests
+* **Message passing** - Messages can be sent to connected users through their sessions, without needing to have knowledge about the underlying connection protocol
+* **Accessible on requests** - Sessions are accessible on handler requests in the context instance
+* **Kick** - Users can be kicked from the server through the session's `Kick` method
+
+Even though sessions are accessible on handler requests both on frontend and backend servers, their behavior is a bit different if they are a frontend or backend session. This is mostly due to the fact that the session actually lives in the frontend servers, and just a representation of its state is sent to the backend server.
+
+A session is considered a frontend session if it is being accessed from a frontend server, and a backend session is accessed from a backend server. Each kind of session is better described below.
 
 #### Frontend sessions
 
-Sessions are associated to a connection in the frontend server, and can be retrieved by session ID or bound user ID in the server the connection was established, but cannot be retrieved from a different server. Callbacks can be added to some session lifecycle changes, such as closing and binding. The callbacks can be on a per-session basis (with `s.OnClose`) or for every session (with `OnSessionClose`, `OnSessionBind` and `OnAfterSessionBind`).
+Sessions are associated to a connection in the frontend server, and can be retrieved by session ID or bound user ID in the server the connection was established, but cannot be retrieved from a different server.
+
+Callbacks can be added to some session lifecycle changes, such as closing and binding. The callbacks can be on a per-session basis (with `s.OnClose`) or for every session (with `OnSessionClose`, `OnSessionBind` and `OnAfterSessionBind`).
 
 #### Backend sessions
 
@@ -47,7 +59,7 @@ Backend sessions have access to the sessions through the handler's methods, but 
 
 ### Service discovery
 
-Servers operating in cluster mode must have a service discovery client to be able to work, Pitaya comes with a default client using etcd, which is used if no other client is defined. The service discovery client is responsible for registering the server and keeping the list of valid server updated, as well as providing information about requested servers as needed.
+Servers operating in cluster mode must have a service discovery client to be able to work. Pitaya comes with a default client using etcd, which is used if no other client is defined. The service discovery client is responsible for registering the server and keeping the list of valid servers updated, as well as providing information about requested servers as needed.
 
 ### RPCs
 
@@ -63,9 +75,21 @@ These are the RPCs done by the servers when forwarding handler messages to the a
 
 User RPCs are done when the application actively calls a remote method in another server. The call can specify the ID of the target server or let Pitaya choose one according to the routing logic.
 
+### Groups
+
+Groups are structures which store information about target users and allows sending broadcast messages to all users in the group and also multicast messages to a subset of the users according to some criteria.
+
+### Pipelines
+
+Pipelines are middlewares which allow methods to be executed before and after handler requests, they receive the request's context and request data and return the request data, which is passed to the next method in the pipeline.
+
+### Push
+
+Messages can be pushed to users without previous information about either session or connection status. These push messages have a route (so that the client can identify the source and treat properly), the message, the target ids and the server type the client is expected to be connected to.
+
 ### Modules
 
-Modules are entities that can be registered to the Pitaya application and must implement the defined interface. Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
+Modules are entities that can be registered to the Pitaya application and must implement the defined [interface](https://github.com/topfreegames/pitaya/tree/master/interfaces/interfaces.go#L24). Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
 
 Pitaya comes with a few already implemented modules, and more modules can be implemented as needed. The modules Pitaya has currently are:
 

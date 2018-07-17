@@ -11,7 +11,7 @@ Welcome to Pitaya's documentation!
    :caption: Contents:
 
    overview
-   architecture
+   features
    API
 
 
