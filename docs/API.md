@@ -30,7 +30,7 @@ The clients can call the handler by calling `serverType.handlerName.methodName`.
 Messages are forwarded by pitaya to the appropriate server type, and custom routers can be added to the application by calling `pitaya.AddRoute`, it expects two arguments:
 
 * `serverType`: the server type of the target requests to be routed
-* `routingFunction`: the routing function with the signature `func(*session.Session, *route.Route, []byte, map[string]*cluster.Server) (*cluster.Server, error)`, it receives the user's session, the route being requested, the message and the map of valid servers of the given type.
+* `routingFunction`: the routing function with the signature `func(*session.Session, *route.Route, []byte, map[string]*cluster.Server) (*cluster.Server, error)`, it receives the user's session, the route being requested, the message and the map of valid servers of the given type, the key being the servers' ids
 
 The server will then use the routing function when routing requests to the given server type.
 
@@ -39,10 +39,10 @@ The server will then use the routing function when routing requests to the given
 
 Handlers can optionally implement the following lifecycle methods:
 
-* `Init`
-* `AfterInit`
-* `BeforeShutdown`
-* `Shutdown`
+* `Init()` - Called by Pitaya when initializing the application
+* `AfterInit()` - Called by Pitaya after initializing the application
+* `BeforeShutdown()` - Called by Pitaya when shutting down components, but before calling shutdown
+* `Shutdown()` - Called by Pitaya after the start of shutdown
 
 
 ### Handler example
@@ -51,7 +51,7 @@ Below is a very barebones example of a handler definition, for a complete workin
 
 ```go
 import (
-	"github.com/topfreegames/pitaya"
+  "github.com/topfreegames/pitaya"
   "github.com/topfreegames/pitaya/component"
 )
 
