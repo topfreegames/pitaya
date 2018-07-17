@@ -47,12 +47,36 @@ Backend sessions have access to the sessions through the handler's methods, but 
 
 ### Service discovery
 
-**TODO**
+Servers operating in cluster mode must have a service discovery client to be able to work, Pitaya comes with a default client using etcd, which is used if no other client is defined. The service discovery client is responsible for registering the server and keeping the list of valid server updated, as well as providing information about requested servers as needed.
 
 ### RPCs
 
-**TODO**
+Pitaya has support for RPC calls when in cluster mode, there are two components to enable this, RPC client and RPC server. There are currently two options for using RPCs implemented for Pitaya, NATS and gRPC, the default is NATS.
+
+There are two types of RPCs, _Sys_ and _User_.
+
+#### Sys RPCs
+
+These are the RPCs done by the servers when forwarding handler messages to the appropriate server type.
+
+#### User RPCs
+
+User RPCs are done when the application actively calls a remote method in another server. The call can specify the ID of the target server or let Pitaya choose one according to the routing logic.
 
 ### Modules
 
-**TODO**
+Modules are entities that can be registered to the Pitaya application and must implement the defined interface. Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
+
+Pitaya comes with a few already implemented modules, and more modules can be implemented as needed. The modules Pitaya has currently are:
+
+#### Binary
+
+This module starts a binary as a child process and pipes its stdout and stderr to info and error log messages, respectively.
+
+#### Unique session
+
+This module adds a callback for `OnSessionBind` that checks if the id being bound has already been bound in one of the other frontend servers.
+
+#### Binding storage
+
+This module implements functionality needed by the gRPC RPC implementation to enable the functionality of broadcasting session binds and pushes to users without knowledge of the servers the users are connected to.

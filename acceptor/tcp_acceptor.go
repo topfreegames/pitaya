@@ -122,5 +122,4 @@ func (a *TCPAcceptor) serve() {
 		}
 		a.connChan <- conn
 	}
-
 }

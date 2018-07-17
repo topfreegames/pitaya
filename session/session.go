@@ -75,7 +75,7 @@ type HandshakeData struct {
 }
 
 // Session represents a client session, which can store data during the connection.
-// All data is be released when the low-level connection is broken.
+// All data is released when the low-level connection is broken.
 // Session instance related to the client will be passed to Handler method in the
 // context parameter.
 type Session struct {

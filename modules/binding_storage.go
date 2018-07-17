@@ -156,7 +156,6 @@ func (b *ETCDBindingStorage) bootstrapLease() error {
 	<-c
 	go b.watchLeaseChan(c)
 	return nil
-
 }
 
 // Init starts the binding storage module
