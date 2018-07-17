@@ -74,10 +74,10 @@ type HandshakeData struct {
 	User map[string]interface{} `json:"user,omitempty"`
 }
 
-// Session represents a client session which could storage temp data during low-level
-// keep connected, all data will be released when the low-level connection was broken.
-// Session instance related to the client will be passed to Handler method as the first
-// parameter.
+// Session represents a client session, which can store data during the connection.
+// All data is released when the low-level connection is broken.
+// Session instance related to the client will be passed to Handler method in the
+// context parameter.
 type Session struct {
 	sync.RWMutex                             // protect data
 	id                int64                  // session global unique id
@@ -133,6 +133,7 @@ func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 
 // GetSessionByUID return a session bound to an user id
 func GetSessionByUID(uid string) *Session {
+	// TODO: Block this operation in backend servers
 	if val, ok := sessionsByUID.Load(uid); ok {
 		return val.(*Session)
 	}
@@ -141,6 +142,7 @@ func GetSessionByUID(uid string) *Session {
 
 // GetSessionByID return a session bound to a frontend server id
 func GetSessionByID(id int64) *Session {
+	// TODO: Block this operation in backend servers
 	if val, ok := sessionsByID.Load(id); ok {
 		return val.(*Session)
 	}
@@ -161,7 +163,7 @@ func OnSessionBind(f func(ctx context.Context, s *Session) error) {
 	sessionBindCallbacks = append(sessionBindCallbacks, f)
 }
 
-// OnAfterSessionBind adds a method to be caalled when session is bound and after all sessionBind callbacks
+// OnAfterSessionBind adds a method to be called when session is bound and after all sessionBind callbacks
 func OnAfterSessionBind(f func(ctx context.Context, s *Session) error) {
 	// Prevents the same function to be added twice in onSessionBind
 	sf1 := reflect.ValueOf(f)
@@ -320,7 +322,7 @@ func (s *Session) OnClose(c func()) error {
 	return nil
 }
 
-// Close terminate current session, session related data will not be released,
+// Close terminates current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *Session) Close() {
 	atomic.AddInt64(&SessionCount, -1)

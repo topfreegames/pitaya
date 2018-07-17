@@ -29,7 +29,7 @@ import (
 	"github.com/topfreegames/pitaya/util"
 )
 
-// SendPushToUsers sends a message to given list of users
+// SendPushToUsers sends a message to the given list of users
 func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) error {
 	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
