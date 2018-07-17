@@ -42,6 +42,13 @@ type Error struct {
 
 //NewError ctor
 func NewError(err error, code string, metadata ...map[string]string) *Error {
+	if pitayaErr, ok := err.(*Error); ok {
+		if len(metadata) > 0 {
+			mergeMetadatas(pitayaErr, metadata[0])
+		}
+		return pitayaErr
+	}
+
 	e := &Error{
 		Code:    code,
 		Message: err.Error(),
@@ -55,4 +62,15 @@ func NewError(err error, code string, metadata ...map[string]string) *Error {
 
 func (e *Error) Error() string {
 	return e.Message
+}
+
+func mergeMetadatas(pitayaErr *Error, metadata map[string]string) {
+	if pitayaErr.Metadata == nil {
+		pitayaErr.Metadata = metadata
+		return
+	}
+
+	for key, value := range metadata {
+		pitayaErr.Metadata[key] = value
+	}
 }
