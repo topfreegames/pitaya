@@ -121,3 +121,6 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34mFunctions NOT COVERED by Tests\033[0m"
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
+
+serializer-mock:
+	@mockgen github.com/topfreegames/pitaya/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go

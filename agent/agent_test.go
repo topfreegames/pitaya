@@ -69,6 +69,8 @@ func TestNewAgent(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
@@ -76,6 +78,7 @@ func TestNewAgent(t *testing.T) {
 	hbTime := time.Second
 
 	mockConn := mocks.NewMockConn(ctrl)
+
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Not(gomock.Nil())).Do(
 		func(typ packet.Type, d []byte) {
 			// cannot compare inside the expect because they are equivalent but not equal

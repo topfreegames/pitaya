@@ -51,3 +51,8 @@ func (s *Serializer) Unmarshal(data []byte, v interface{}) error {
 	}
 	return proto.Unmarshal(data, pb)
 }
+
+// GetName returns the name of the serializer.
+func (s *Serializer) GetName() string {
+	return "protobuf"
+}

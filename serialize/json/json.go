@@ -42,3 +42,8 @@ func (s *Serializer) Marshal(v interface{}) ([]byte, error) {
 func (s *Serializer) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
+
+// GetName returns the name of the serializer.
+func (s *Serializer) GetName() string {
+	return "json"
+}

@@ -51,6 +51,10 @@ import (
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 )
 
+var (
+	once sync.Once
+)
+
 type mockAddr struct{}
 
 func (m *mockAddr) Network() string { return "" }
@@ -169,6 +173,10 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			once.Do(func() {
+				mockSerializer.EXPECT().GetName()
+			})
+
 			mockConn := connmock.NewMockConn(ctrl)
 			sv := &cluster.Server{}
 			svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, sv, &RemoteService{}, nil, nil)
@@ -249,6 +257,10 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			once.Do(func() {
+				mockSerializer.EXPECT().GetName()
+			})
+
 			mockConn := connmock.NewMockConn(ctrl)
 			packetEncoder := codec.NewPomeloPacketEncoder()
 			messageEncoder := message.NewMessagesEncoder(false)
@@ -354,6 +366,10 @@ func TestHandlerServiceHandle(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	once.Do(func() {
+		mockSerializer.EXPECT().GetName()
+	})
+
 	mockConn := connmock.NewMockConn(ctrl)
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	packetDecoder := codec.NewPomeloPacketDecoder()
