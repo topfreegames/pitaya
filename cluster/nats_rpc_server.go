@@ -35,7 +35,7 @@ import (
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/tracing"
+	"github.com/topfreegames/pitaya/util"
 )
 
 // NatsRPCServer struct
@@ -225,7 +225,7 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
 		reply := req.GetMsg().GetReply()
 		var response *protos.Response
-		ctx, err := getContextFromRequest(req, ns.server.ID)
+		ctx, err := util.GetContextFromRequest(req, ns.server.ID)
 		if err != nil {
 			response = &protos.Response{
 				Error: &protos.Error{
@@ -237,7 +237,6 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 			response, _ = ns.pitayaServer.Call(ctx, req)
 		}
 		p, err := ns.marshalResponse(response)
-		defer tracing.FinishSpan(ctx, err)
 		err = ns.conn.Publish(reply, p)
 		if err != nil {
 			logger.Log.Error("error sending message response")

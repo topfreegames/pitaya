@@ -23,6 +23,7 @@ package tracing
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
@@ -36,9 +37,13 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	var spanCtx opentracing.SpanContext
 	span := opentracing.SpanFromContext(ctx)
 	if span == nil {
-		if spanData, ok := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey).([]byte); ok {
+		if s := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey); s != nil {
+			spanData, err := base64.StdEncoding.DecodeString(s.(string))
+			if err != nil {
+				return nil, err
+			}
+
 			tracer := opentracing.GlobalTracer()
-			var err error
 			spanCtx, err = tracer.Extract(opentracing.Binary, bytes.NewBuffer(spanData))
 			if err != nil {
 				return nil, err

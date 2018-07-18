@@ -23,7 +23,6 @@ package cluster
 import (
 	"context"
 
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/interfaces"
@@ -120,26 +119,4 @@ func buildRequest(
 	}
 
 	return req, nil
-}
-
-func getContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
-	ctx, err := pcontext.Decode(req.GetMetadata())
-	if err != nil {
-		return nil, err
-	}
-	if ctx == nil {
-		return nil, constants.ErrNoContextFound
-	}
-	tags := opentracing.Tags{
-		"local.id":     serverID,
-		"span.kind":    "server",
-		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
-		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
-	}
-	parent, err := tracing.ExtractSpan(ctx)
-	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
-	}
-	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
-	return ctx, nil
 }

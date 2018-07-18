@@ -21,17 +21,22 @@
 package util
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"runtime/debug"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/tracing"
 )
 
 // Pcall calls a method that returns an interface and an error and recovers in case of panic
@@ -120,4 +125,28 @@ func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
 		msgType = message.Notify
 	}
 	return msgType
+}
+
+// GetContextFromRequest gets the context from a request
+func GetContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
+	ctx, err := pcontext.Decode(req.GetMetadata())
+	if err != nil {
+		return nil, err
+	}
+	if ctx == nil {
+		return nil, constants.ErrNoContextFound
+	}
+	tags := opentracing.Tags{
+		"local.id":     serverID,
+		"span.kind":    "server",
+		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
+		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
+	}
+	parent, err := tracing.ExtractSpan(ctx)
+	fmt.Printf("parent span is %s", parent)
+	if err != nil {
+		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+	}
+	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
+	return ctx, nil
 }

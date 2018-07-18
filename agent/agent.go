@@ -30,6 +30,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -377,7 +378,8 @@ func (a *Agent) write() {
 				logger.Log.Error(err.Error())
 				return
 			}
-			tracing.FinishSpan(data.ctx, nil)
+			var e error
+			tracing.FinishSpan(data.ctx, e)
 			if data.typ == message.Response {
 				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, m.Err)
 			}
@@ -394,6 +396,10 @@ func (a *Agent) SendRequest(ctx context.Context, serverID, route string, v inter
 
 // AnswerWithError answers with an error
 func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
+	if err != nil {
+		s := opentracing.SpanFromContext(ctx)
+		tracing.LogError(s, err.Error())
+	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
 		logger.Log.Error("error answering the player with an error: ", e.Error())
