@@ -194,7 +194,8 @@ func (ns *NatsRPCServer) handleMessages() {
 	}
 }
 
-func (ns *NatsRPCServer) getUnhandledRequestsChannel() chan *protos.Request {
+// GetUnhandledRequestsChannel gets the unhandled requests channel from nats rpc server
+func (ns *NatsRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
 	return ns.unhandledReqCh
 }
 
@@ -221,7 +222,7 @@ func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 }
 
 func (ns *NatsRPCServer) processMessages(threadID int) {
-	for req := range ns.getUnhandledRequestsChannel() {
+	for req := range ns.GetUnhandledRequestsChannel() {
 		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
 		reply := req.GetMsg().GetReply()
 		var response *protos.Response

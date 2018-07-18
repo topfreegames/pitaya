@@ -96,8 +96,8 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	cfg := getConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
-	assert.NotNil(t, n.getUnhandledRequestsChannel())
-	assert.IsType(t, make(chan *protos.Request), n.getUnhandledRequestsChannel())
+	assert.NotNil(t, n.GetUnhandledRequestsChannel())
+	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
 }
 
 func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
