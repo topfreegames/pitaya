@@ -38,13 +38,18 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	span := opentracing.SpanFromContext(ctx)
 	if span == nil {
 		if s := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey); s != nil {
-			spanData, err := base64.StdEncoding.DecodeString(s.(string))
-			if err != nil {
-				return nil, err
+			var data []byte
+			var err error
+			if dataString, ok := s.(string); ok {
+				data, err = base64.StdEncoding.DecodeString(dataString)
+				if err != nil {
+					return nil, err
+				}
+			} else if sData, ok := s.([]byte); ok {
+				data = sData
 			}
-
 			tracer := opentracing.GlobalTracer()
-			spanCtx, err = tracer.Extract(opentracing.Binary, bytes.NewBuffer(spanData))
+			spanCtx, err = tracer.Extract(opentracing.Binary, bytes.NewBuffer(data))
 			if err != nil {
 				return nil, err
 			}

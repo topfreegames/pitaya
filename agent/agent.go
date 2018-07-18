@@ -396,9 +396,11 @@ func (a *Agent) SendRequest(ctx context.Context, serverID, route string, v inter
 
 // AnswerWithError answers with an error
 func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
-	if err != nil {
+	if ctx != nil && err != nil {
 		s := opentracing.SpanFromContext(ctx)
-		tracing.LogError(s, err.Error())
+		if s != nil {
+			tracing.LogError(s, err.Error())
+		}
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
