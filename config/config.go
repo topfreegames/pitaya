@@ -88,8 +88,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.prefix":                          "pitaya.",
 		"pitaya.metrics.statsd.rate":                            1,
 		"pitaya.metrics.prometheus.port":                        9090,
+		"pitaya.metrics.prometheus.enabled":                     false,
 		"pitaya.metrics.tags":                                   map[string]string{},
-		"pitaya.metrics.prometheus.enabled":                     true,
 	}
 
 	for param := range defaultsMap {
