@@ -87,6 +87,12 @@ Pipelines are middlewares which allow methods to be executed before and after ha
 
 Messages can be pushed to users without previous information about either session or connection status. These push messages have a route (so that the client can identify the source and treat properly), the message, the target ids and the server type the client is expected to be connected to.
 
+### Monitoring
+
+Pitaya has support for metrics reporting, it comes with Prometheus and Statsd support already implemented and has support for custom reporters that implement the `Reporter` interface. Pitaya also comes with support for open tracing compatible frameworks, allowing the easy integration of Jaeger and others.
+
+Some of the reported metrics reported by the `Reporter` include: number of connected clients, request duration and dropped messages.
+
 ### Modules
 
 Modules are entities that can be registered to the Pitaya application and must implement the defined [interface](https://github.com/topfreegames/pitaya/tree/master/interfaces/interfaces.go#L24). Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
