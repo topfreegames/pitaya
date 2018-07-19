@@ -23,7 +23,6 @@ package util
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -143,7 +142,6 @@ func GetContextFromRequest(req *protos.Request, serverID string) (context.Contex
 		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
 	}
 	parent, err := tracing.ExtractSpan(ctx)
-	fmt.Printf("parent span is %s", parent)
 	if err != nil {
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}

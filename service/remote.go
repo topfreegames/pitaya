@@ -126,7 +126,6 @@ func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteB
 // Call processes a remote call
 func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	c, err := util.GetContextFromRequest(req, r.server.ID)
-	fmt.Printf("hello, got this ctx: %s", c)
 	var res *protos.Response
 	if err != nil {
 		res = &protos.Response{
