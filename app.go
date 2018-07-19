@@ -140,7 +140,12 @@ func Configure(
 	app.metricsReporters = make([]metrics.Reporter, 0)
 
 	defaultTags := app.config.GetStringMapString("pitaya.metrics.tags")
-	AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port"), defaultTags))
+	if app.config.GetBool("pitaya.metrics.prometheus.enabled") {
+		logger.Log.Infof("prometheus is enabled, configuring the metrics reporter on port %d", app.config.GetInt("pitaya.metrics.prometheus.port"))
+		AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port"), defaultTags))
+	} else {
+		logger.Log.Info("prometheus is disabled, the metrics reporter will not be enabled")
+	}
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
 		logger.Log.Infof("statsd is enabled, configuring the metrics reporter with host: %s", app.config.Get("pitaya.metrics.statsd.host"))

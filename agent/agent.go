@@ -121,7 +121,7 @@ func NewAgent(
 		metricsReporters:   metricsReporters,
 	}
 
-	// bindng session
+	// binding session
 	s := session.New(a, true)
 	metrics.ReportNumberOfConnectedClients(metricsReporters, session.SessionCount)
 	a.Session = s
