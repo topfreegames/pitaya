@@ -323,6 +323,7 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 		t.Run(fmt.Sprintf("%t", table.enabled), func(t *testing.T) {
 			initApp()
 			cfg := viper.New()
+			cfg.Set("pitaya.metrics.prometheus.enabled", table.enabled)
 			cfg.Set("pitaya.metrics.statsd.enabled", table.enabled)
 			Configure(true, "testtype", Cluster, map[string]string{}, cfg)
 			// if statsd is enabled there are 2 metricsReporters, prometheus and statsd
