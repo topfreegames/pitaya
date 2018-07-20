@@ -200,11 +200,10 @@ func processHandlerMessage(
 	}
 
 	ret, err := serializeReturn(serializer, resp)
-	if err == nil {
-		if r := executeAfterPipeline(ctx, serializer, ret); r != nil {
-			return r, nil
-		}
+	if err != nil {
+		return nil, err
 	}
+	ret = executeAfterPipeline(ctx, serializer, ret)
 
 	return ret, nil
 }
