@@ -106,7 +106,6 @@ func (r *RemoteService) remoteProcess(
 			logger.Log.Error(err)
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
-
 	case message.Notify:
 		defer tracing.FinishSpan(ctx, err)
 		if err == nil && res.Error != nil {

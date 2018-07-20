@@ -12,6 +12,7 @@ Welcome to Pitaya's documentation!
 
    overview
    features
+   communication
    API
 
 

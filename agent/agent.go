@@ -157,7 +157,7 @@ func (a *Agent) Push(route string, v interface{}) error {
 }
 
 // ResponseMID implementation for session.NetworkEntity interface
-// Response message to session
+// Respond message to session
 func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isError ...bool) error {
 	err := false
 	if len(isError) > 0 {
