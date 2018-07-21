@@ -385,7 +385,7 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 
 			expectedMsg := &message.Message{
 				ID:    uint(rand.Int()),
-				Type:  message.Request,
+				Type:  table.msgType,
 				Route: rt.Short(),
 				Data:  []byte("ok"),
 			}

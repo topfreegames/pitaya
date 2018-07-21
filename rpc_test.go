@@ -83,7 +83,7 @@ func TestDoSendRPC(t *testing.T) {
 				mockSD.EXPECT().GetServer("myserver").Return(&cluster.Server{}, nil)
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&protos.Response{Data: b}, nil)
 			}
-			err := doSendRPC(ctx, "myserver", table.routeStr, table.reply, table.arg)
+			err := RPCTo(ctx, "myserver", table.routeStr, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 		})
 	}
