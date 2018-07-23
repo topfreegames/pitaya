@@ -96,3 +96,48 @@ func main() {
 }
 
 ```
+
+## Remotes
+
+Remotes are one of the core features of Pitaya, they are the entities responsible for receiving the RPCs from other Pitaya servers.
+
+### Signature
+
+Remotes must be public methods of the struct and have a signature following:
+
+Arguments
+* `context.Context`: the context of the request.
+* `protobuf`: the payload of the request (_optional_).
+
+Remote methods must return:
+* `protobuf`: the response payload in protobuf format
+* `error`: an error variable
+
+
+### Registering remotes
+
+Remotes must be explicitly registered by the application by calling `pitaya.RegisterRemote` with a instance of the remote component. The remote's name can be defined by calling `pitaya/component`.WithName(`"remoteName"`) and the methods can be renamed by using `pitaya/component`.WithNameFunc(`func(string) string`).
+
+The servers can call the remote by calling `serverType.remoteName.methodName`.
+
+
+### RPC calls
+
+There are two options when sending RPCs between servers:
+* **Specify only server type**: In this case Pitaya will select one of the available servers at random
+* **Specify server type and ID**: In this scenario Pitaya will send the RPC to the specified server
+
+
+### Lifecycle Methods
+
+Remotes can optionally implement the following lifecycle methods:
+
+* `Init()` - Called by Pitaya when initializing the application
+* `AfterInit()` - Called by Pitaya after initializing the application
+* `BeforeShutdown()` - Called by Pitaya when shutting down components, but before calling shutdown
+* `Shutdown()` - Called by Pitaya after the start of shutdown
+
+
+### Remote example
+
+For a complete working example, check the [cluster demo](https://github.com/topfreegames/pitaya/tree/master/examples/demo/cluster).

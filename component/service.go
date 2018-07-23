@@ -123,8 +123,8 @@ func (s *Service) ExtractHandler() error {
 // receiver value which satisfy the following conditions:
 // - exported method of exported type
 // - two return values
-// - the first return is interface{} or []byte
-// - the second return an error
+// - the first return implements protobuf interface
+// - the second return is an error
 func (s *Service) ExtractRemote() error {
 	typeName := reflect.Indirect(s.Receiver).Type().Name()
 	if typeName == "" {

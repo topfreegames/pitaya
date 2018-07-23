@@ -43,7 +43,6 @@ func isExported(name string) bool {
 }
 
 // isRemoteMethod decide a method is suitable remote method
-// has to be exported and return interface{}(or byte[]), error
 func isRemoteMethod(method reflect.Method) bool {
 	mt := method.Type
 	// Method must be exported.
