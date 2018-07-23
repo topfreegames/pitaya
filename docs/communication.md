@@ -41,9 +41,13 @@ Pitaya has a configuration to define the number of concurrent messages being pro
 
 The agent entity is responsible for storing information about the client's connection, it stores the session, encoder, serializer, state, connection, among others. It is used to communicate with the client to send messages and also ensure the connection is kept alive.
 
+### Route compression
+
+The application can define a dictionary of compressed routes before starting, these routes are sent to the clients on the handshake. Compressing the routes might be useful for the routes that are used a lot to reduce the communication overhead.
+
 ### Handshake
 
-The first operation that happens when a client connects is the handshake. The handshake is initiated by the client, who sends informations about the client, such as platform, version of the client library, and others, and can also send user data in this step. This data is stored in the client's session and can be accessed later.
+The first operation that happens when a client connects is the handshake. The handshake is initiated by the client, who sends informations about the client, such as platform, version of the client library, and others, and can also send user data in this step. This data is stored in the client's session and can be accessed later. The server replies with heartbeat interval, name of the serializer and the dictionary of compressed routes.
 
 ### Remote service
 
@@ -63,4 +67,4 @@ The handler must first deserialize the message before processing it. So the func
 
 ### Handler
 
-Each Pitaya server can register multiple handler structures, as long as they have different names. Each structure can have multiple methods and Pitaya will choose the right structure and methods based on the called route. After the method 
+Each Pitaya server can register multiple handler structures, as long as they have different names. Each structure can have multiple methods and Pitaya will choose the right structure and methods based on the called route.
