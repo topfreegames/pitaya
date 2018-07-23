@@ -73,6 +73,7 @@ func TestNatsRPCCommonCloseHandler(t *testing.T) {
 
 	s.Shutdown()
 
-	_, ok := <-dieChan
-	assert.False(t, ok)
+	value, ok := <-dieChan
+	assert.True(t, ok)
+	assert.True(t, value)
 }
