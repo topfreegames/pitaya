@@ -1,8 +1,3 @@
-# Attention
-
-Pitaya is currently under development and is not yet ready for production use.
-We're working on tests and better documentation and we'll update the project as soon as possible.
-
 # pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
 [1]: https://godoc.org/github.com/topfreegames/pitaya?status.svg
