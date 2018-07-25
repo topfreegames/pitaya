@@ -14,6 +14,7 @@ Welcome to Pitaya's documentation!
    features
    communication
    API
+   examples
 
 
 Indices and tables

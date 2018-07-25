@@ -3,7 +3,7 @@ Pitaya API
 
 ## Handlers
 
-Handlers are one of the core features of Pitaya, they are the entities responsible for receiving the requests from the clients and handling them, returning the response if the method is a request handler, or nothing, if the method is a push handler.
+Handlers are one of the core features of Pitaya, they are the entities responsible for receiving the requests from the clients and handling them, returning the response if the method is a request handler, or nothing, if the method is a notify handler.
 
 ### Signature
 
@@ -13,7 +13,7 @@ Arguments
 * `context.Context`: the context of the request, which contains the client's session.
 * `pointer or []byte`: the payload of the request (_optional_).
 
-Push handlers return nothing, while request handlers must return:
+Notify handlers return nothing, while request handlers must return:
 * `pointer or []byte`: the response payload
 * `error`: an error variable
 
@@ -107,10 +107,10 @@ Remotes must be public methods of the struct and have a signature following:
 
 Arguments
 * `context.Context`: the context of the request.
-* `protobuf`: the payload of the request (_optional_).
+* `proto.Message`: the payload of the request (_optional_).
 
 Remote methods must return:
-* `protobuf`: the response payload in protobuf format
+* `proto.Message`: the response payload in protobuf format
 * `error`: an error variable
 
 
@@ -136,7 +136,6 @@ Remotes can optionally implement the following lifecycle methods:
 * `AfterInit()` - Called by Pitaya after initializing the application
 * `BeforeShutdown()` - Called by Pitaya when shutting down components, but before calling shutdown
 * `Shutdown()` - Called by Pitaya after the start of shutdown
-
 
 ### Remote example
 

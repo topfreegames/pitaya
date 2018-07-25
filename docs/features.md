@@ -9,13 +9,15 @@ Some of its core features are described below.
 
 In cluster mode servers can either be a frontend or backend server.
 
-Frontend servers must specify listeners and receive incoming client connections. They forward received messages to the appropriate servers according to the routing logic.
+Frontend servers must specify listeners for receiving incoming client connections. They are capable of forwarding received messages to the appropriate servers according to the routing logic.
 
-Backend servers don't listen for connections, they only receive RPCs, either forwarded client messages or RPCs from other servers.
+Backend servers don't listen for connections, they only receive RPCs, either forwarded client messages (sys rpc) or RPCs from other servers (user rpc).
 
 ## Groups
 
 Groups are structures which store information about target users and allows sending broadcast messages to all users in the group and also multicast messages to a subset of the users according to some criteria.
+
+They are useful for creating game rooms for example, you just put all the players from a game room into the same group and then you'll be able to broadcast the room's state to all of them.
 
 ## Listeners
 
