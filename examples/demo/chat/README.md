@@ -12,4 +12,4 @@ refs: https://github.com/topfreegames/pitaya
 go run main.go
 ```
 
-open browser => http://localhost:3250/web/
+open browser => http://localhost:3251/web/
