@@ -119,6 +119,7 @@ func (h *HandlerService) Dispatch(thread int) {
 
 	for {
 		// Calls to remote servers block calls to local server
+		// TODO: Measure pressure here (time between setting message and processing it)
 		select {
 		case lm := <-h.chLocalProcess:
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)

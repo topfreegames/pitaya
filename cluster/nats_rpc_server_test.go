@@ -75,8 +75,8 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 		t.Run(fmt.Sprintf("%s-%d-%d", table.natsConnect, table.messagesBufferSize, table.pushBufferSize), func(t *testing.T) {
 			cfg := viper.New()
 			cfg.Set("pitaya.cluster.rpc.server.nats.connect", table.natsConnect)
-			cfg.Set("pitaya.buffer.cluster.rpc.server.messages", table.messagesBufferSize)
-			cfg.Set("pitaya.buffer.cluster.rpc.server.push", table.pushBufferSize)
+			cfg.Set("pitaya.buffer.cluster.rpc.server.nats.messages", table.messagesBufferSize)
+			cfg.Set("pitaya.buffer.cluster.rpc.server.nats.push", table.pushBufferSize)
 			conf := getConfig(cfg)
 			_, err := NewNatsRPCServer(conf, getServer(), nil, nil)
 			assert.Equal(t, table.err, err)

@@ -128,7 +128,7 @@ func (gs *GRPCClient) Send(uid string, d []byte) error {
 	return constants.ErrNotImplemented
 }
 
-// BroadcastSessionBind sends the binding information to other servers that may br interested in this info
+// BroadcastSessionBind sends the binding information to other servers that may be interested in this info
 func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 	if gs.bindingStorage == nil {
 		return constants.ErrNoBindingStorageModule

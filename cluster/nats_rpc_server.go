@@ -88,11 +88,11 @@ func (ns *NatsRPCServer) configure() error {
 		return constants.ErrNoNatsConnectionString
 	}
 	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.server.nats.maxreconnectionretries")
-	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.messages")
+	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.nats.messages")
 	if ns.messagesBufferSize == 0 {
 		return constants.ErrNatsMessagesBufferSizeZero
 	}
-	ns.pushBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.push")
+	ns.pushBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.nats.push")
 	if ns.pushBufferSize == 0 {
 		return constants.ErrNatsPushBufferSizeZero
 	}
