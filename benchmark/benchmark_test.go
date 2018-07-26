@@ -69,7 +69,7 @@ func BenchmarkFrontHandlerWithSessionAndRawReturnsRaw(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := clients[0].SendRequest("connector.testsvc.testrequestreceivereturnsraw", []byte("ola"))
+		_, err := clients[0].SendRequest("connector.testsvc.testrequestreceivereturnsraw", []byte("ola"))
 		if err != nil {
 			b.Logf("failed to send request to server")
 			b.FailNow()
@@ -83,7 +83,7 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtr(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench single"}`))
+		_, err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench single"}`))
 		if err != nil {
 			b.Logf("failed to send request to server")
 			b.FailNow()
@@ -99,7 +99,7 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrManyClientsParallel(b *test
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := clients[b.N%numClients].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench parall"}`))
+			_, err := clients[b.N%numClients].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"bench parall"}`))
 			if err != nil {
 				b.Logf("failed to send request to server")
 				b.FailNow()
@@ -116,7 +116,7 @@ func BenchmarkFrontHandlerWithSessionAndPtrReturnsPtrParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"b"}`))
+			_, err := clients[0].SendRequest("connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"b"}`))
 			if err != nil {
 				b.Logf("failed to send request to server")
 				b.FailNow()
@@ -131,7 +131,7 @@ func BenchmarkFrontHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
+		_, err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
 		if err != nil {
 			b.Logf("failed to send request to server")
 			b.FailNow()
@@ -146,7 +146,7 @@ func BenchmarkFrontHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
+			_, err := clients[0].SendRequest("connector.testsvc.testrequestonlysessionreturnsptr", []byte{})
 			if err != nil {
 				b.Logf("failed to send request to server")
 				b.FailNow()
@@ -161,7 +161,7 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtr(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
+		_, err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
 		if err != nil {
 			b.Logf("failed to send request to server")
 			b.FailNow()
@@ -177,7 +177,7 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallel(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
+			_, err := clients[0].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
 			if err != nil {
 				b.Logf("failed to send request to server")
 				b.FailNow()
@@ -195,7 +195,7 @@ func BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallelMultipleClients(b *tes
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := clients[b.N%numClients].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
+			_, err := clients[b.N%numClients].SendRequest("game.testsvc.testrequestonlysessionreturnsptr", []byte{})
 			if err != nil {
 				b.Logf("failed to send request to server")
 				b.FailNow()
