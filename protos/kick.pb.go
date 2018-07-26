@@ -14,14 +14,50 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type KickMsg struct {
-	UserId string `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	UserId               string   `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *KickMsg) Reset()                    { *m = KickMsg{} }
-func (m *KickMsg) String() string            { return proto.CompactTextString(m) }
-func (*KickMsg) ProtoMessage()               {}
-func (*KickMsg) Descriptor() ([]byte, []int) { return fileDescriptorKick, []int{0} }
+func (m *KickMsg) Reset()         { *m = KickMsg{} }
+func (m *KickMsg) String() string { return proto.CompactTextString(m) }
+func (*KickMsg) ProtoMessage()    {}
+func (*KickMsg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_kick_86dda695c270ad80, []int{0}
+}
+func (m *KickMsg) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KickMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KickMsg.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *KickMsg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KickMsg.Merge(dst, src)
+}
+func (m *KickMsg) XXX_Size() int {
+	return m.Size()
+}
+func (m *KickMsg) XXX_DiscardUnknown() {
+	xxx_messageInfo_KickMsg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KickMsg proto.InternalMessageInfo
 
 func (m *KickMsg) GetUserId() string {
 	if m != nil {
@@ -31,13 +67,43 @@ func (m *KickMsg) GetUserId() string {
 }
 
 type KickAnswer struct {
-	Kicked bool `protobuf:"varint,1,opt,name=kicked,proto3" json:"kicked,omitempty"`
+	Kicked               bool     `protobuf:"varint,1,opt,name=kicked,proto3" json:"kicked,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *KickAnswer) Reset()                    { *m = KickAnswer{} }
-func (m *KickAnswer) String() string            { return proto.CompactTextString(m) }
-func (*KickAnswer) ProtoMessage()               {}
-func (*KickAnswer) Descriptor() ([]byte, []int) { return fileDescriptorKick, []int{1} }
+func (m *KickAnswer) Reset()         { *m = KickAnswer{} }
+func (m *KickAnswer) String() string { return proto.CompactTextString(m) }
+func (*KickAnswer) ProtoMessage()    {}
+func (*KickAnswer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_kick_86dda695c270ad80, []int{1}
+}
+func (m *KickAnswer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KickAnswer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KickAnswer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *KickAnswer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KickAnswer.Merge(dst, src)
+}
+func (m *KickAnswer) XXX_Size() int {
+	return m.Size()
+}
+func (m *KickAnswer) XXX_DiscardUnknown() {
+	xxx_messageInfo_KickAnswer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KickAnswer proto.InternalMessageInfo
 
 func (m *KickAnswer) GetKicked() bool {
 	if m != nil {
@@ -397,9 +463,9 @@ var (
 	ErrIntOverflowKick   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("kick.proto", fileDescriptorKick) }
+func init() { proto.RegisterFile("kick.proto", fileDescriptor_kick_86dda695c270ad80) }
 
-var fileDescriptorKick = []byte{
+var fileDescriptor_kick_86dda695c270ad80 = []byte{
 	// 116 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xce, 0x4c, 0xce,
 	0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x8a, 0x5c, 0xec, 0xde,

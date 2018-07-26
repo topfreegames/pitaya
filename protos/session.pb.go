@@ -14,16 +14,52 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Session struct {
-	Id   int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Uid  string `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Id                   int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Session) Reset()                    { *m = Session{} }
-func (m *Session) String() string            { return proto.CompactTextString(m) }
-func (*Session) ProtoMessage()               {}
-func (*Session) Descriptor() ([]byte, []int) { return fileDescriptorSession, []int{0} }
+func (m *Session) Reset()         { *m = Session{} }
+func (m *Session) String() string { return proto.CompactTextString(m) }
+func (*Session) ProtoMessage()    {}
+func (*Session) Descriptor() ([]byte, []int) {
+	return fileDescriptor_session_1eed24d917be59c9, []int{0}
+}
+func (m *Session) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Session) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Session.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Session) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Session.Merge(dst, src)
+}
+func (m *Session) XXX_Size() int {
+	return m.Size()
+}
+func (m *Session) XXX_DiscardUnknown() {
+	xxx_messageInfo_Session.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Session proto.InternalMessageInfo
 
 func (m *Session) GetId() int64 {
 	if m != nil {
@@ -357,9 +393,9 @@ var (
 	ErrIntOverflowSession   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("session.proto", fileDescriptorSession) }
+func init() { proto.RegisterFile("session.proto", fileDescriptor_session_1eed24d917be59c9) }
 
-var fileDescriptorSession = []byte{
+var fileDescriptor_session_1eed24d917be59c9 = []byte{
 	// 122 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4e, 0x2d, 0x2e,
 	0xce, 0xcc, 0xcf, 0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0xf6,

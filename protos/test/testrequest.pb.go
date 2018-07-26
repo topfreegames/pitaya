@@ -14,14 +14,50 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type TestRequest struct {
-	Msg string `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+	Msg                  string   `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TestRequest) Reset()                    { *m = TestRequest{} }
-func (m *TestRequest) String() string            { return proto.CompactTextString(m) }
-func (*TestRequest) ProtoMessage()               {}
-func (*TestRequest) Descriptor() ([]byte, []int) { return fileDescriptorTestrequest, []int{0} }
+func (m *TestRequest) Reset()         { *m = TestRequest{} }
+func (m *TestRequest) String() string { return proto.CompactTextString(m) }
+func (*TestRequest) ProtoMessage()    {}
+func (*TestRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_testrequest_2a8563a6fbbdc37a, []int{0}
+}
+func (m *TestRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TestRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *TestRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TestRequest.Merge(dst, src)
+}
+func (m *TestRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *TestRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TestRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TestRequest proto.InternalMessageInfo
 
 func (m *TestRequest) GetMsg() string {
 	if m != nil {
@@ -273,9 +309,9 @@ var (
 	ErrIntOverflowTestrequest   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("testrequest.proto", fileDescriptorTestrequest) }
+func init() { proto.RegisterFile("testrequest.proto", fileDescriptor_testrequest_2a8563a6fbbdc37a) }
 
-var fileDescriptorTestrequest = []byte{
+var fileDescriptor_testrequest_2a8563a6fbbdc37a = []byte{
 	// 98 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x49, 0x2d, 0x2e,
 	0x29, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x01,

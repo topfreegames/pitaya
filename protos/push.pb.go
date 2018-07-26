@@ -14,16 +14,52 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Push struct {
-	Route string `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
-	Uid   string `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	Data  []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Route                string   `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Push) Reset()                    { *m = Push{} }
-func (m *Push) String() string            { return proto.CompactTextString(m) }
-func (*Push) ProtoMessage()               {}
-func (*Push) Descriptor() ([]byte, []int) { return fileDescriptorPush, []int{0} }
+func (m *Push) Reset()         { *m = Push{} }
+func (m *Push) String() string { return proto.CompactTextString(m) }
+func (*Push) ProtoMessage()    {}
+func (*Push) Descriptor() ([]byte, []int) {
+	return fileDescriptor_push_0793df48678e78de, []int{0}
+}
+func (m *Push) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Push) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Push.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Push) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Push.Merge(dst, src)
+}
+func (m *Push) XXX_Size() int {
+	return m.Size()
+}
+func (m *Push) XXX_DiscardUnknown() {
+	xxx_messageInfo_Push.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Push proto.InternalMessageInfo
 
 func (m *Push) GetRoute() string {
 	if m != nil {
@@ -369,9 +405,9 @@ var (
 	ErrIntOverflowPush   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("push.proto", fileDescriptorPush) }
+func init() { proto.RegisterFile("push.proto", fileDescriptor_push_0793df48678e78de) }
 
-var fileDescriptorPush = []byte{
+var fileDescriptor_push_0793df48678e78de = []byte{
 	// 119 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2a, 0x28, 0x2d, 0xce,
 	0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x4e, 0x5c, 0x2c, 0x01,

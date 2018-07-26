@@ -14,15 +14,51 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type TestResponse struct {
-	Code int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Msg  string `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	Code                 int32    `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Msg                  string   `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TestResponse) Reset()                    { *m = TestResponse{} }
-func (m *TestResponse) String() string            { return proto.CompactTextString(m) }
-func (*TestResponse) ProtoMessage()               {}
-func (*TestResponse) Descriptor() ([]byte, []int) { return fileDescriptorTestresponse, []int{0} }
+func (m *TestResponse) Reset()         { *m = TestResponse{} }
+func (m *TestResponse) String() string { return proto.CompactTextString(m) }
+func (*TestResponse) ProtoMessage()    {}
+func (*TestResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_testresponse_54fc8a606ea520b4, []int{0}
+}
+func (m *TestResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *TestResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TestResponse.Merge(dst, src)
+}
+func (m *TestResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *TestResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_TestResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TestResponse proto.InternalMessageInfo
 
 func (m *TestResponse) GetCode() int32 {
 	if m != nil {
@@ -308,9 +344,9 @@ var (
 	ErrIntOverflowTestresponse   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("testresponse.proto", fileDescriptorTestresponse) }
+func init() { proto.RegisterFile("testresponse.proto", fileDescriptor_testresponse_54fc8a606ea520b4) }
 
-var fileDescriptorTestresponse = []byte{
+var fileDescriptor_testresponse_54fc8a606ea520b4 = []byte{
 	// 115 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2a, 0x49, 0x2d, 0x2e,
 	0x29, 0x4a, 0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62,

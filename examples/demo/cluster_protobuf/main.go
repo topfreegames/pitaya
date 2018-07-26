@@ -8,12 +8,9 @@ import (
 
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
-	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
-	"github.com/topfreegames/pitaya/session"
 )
 
 func configureBackend() {
@@ -43,22 +40,6 @@ func configureFrontend(port int) {
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
 	)
-
-	err := pitaya.AddRoute("room", func(
-		session *session.Session,
-		route *route.Route,
-		servers map[string]*cluster.Server,
-	) (*cluster.Server, error) {
-		// will return the first server
-		for k := range servers {
-			return servers[k], nil
-		}
-		return nil, nil
-	})
-
-	if err != nil {
-		fmt.Printf("error adding route: %s\n", err.Error())
-	}
 
 	pitaya.AddAcceptor(ws)
 }

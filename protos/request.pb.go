@@ -14,6 +14,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type RPCType int32
 
 const (
@@ -33,20 +39,52 @@ var RPCType_value = map[string]int32{
 func (x RPCType) String() string {
 	return proto.EnumName(RPCType_name, int32(x))
 }
-func (RPCType) EnumDescriptor() ([]byte, []int) { return fileDescriptorRequest, []int{0} }
-
-type Request struct {
-	Type       RPCType  `protobuf:"varint,1,opt,name=type,proto3,enum=protos.RPCType" json:"type,omitempty"`
-	Session    *Session `protobuf:"bytes,2,opt,name=session" json:"session,omitempty"`
-	Msg        *Msg     `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`
-	FrontendID string   `protobuf:"bytes,4,opt,name=frontendID,proto3" json:"frontendID,omitempty"`
-	Metadata   []byte   `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+func (RPCType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_request_a2f5d4b72cadfadc, []int{0}
 }
 
-func (m *Request) Reset()                    { *m = Request{} }
-func (m *Request) String() string            { return proto.CompactTextString(m) }
-func (*Request) ProtoMessage()               {}
-func (*Request) Descriptor() ([]byte, []int) { return fileDescriptorRequest, []int{0} }
+type Request struct {
+	Type                 RPCType  `protobuf:"varint,1,opt,name=type,proto3,enum=protos.RPCType" json:"type,omitempty"`
+	Session              *Session `protobuf:"bytes,2,opt,name=session" json:"session,omitempty"`
+	Msg                  *Msg     `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`
+	FrontendID           string   `protobuf:"bytes,4,opt,name=frontendID,proto3" json:"frontendID,omitempty"`
+	Metadata             []byte   `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Request) Reset()         { *m = Request{} }
+func (m *Request) String() string { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()    {}
+func (*Request) Descriptor() ([]byte, []int) {
+	return fileDescriptor_request_a2f5d4b72cadfadc, []int{0}
+}
+func (m *Request) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Request) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Request.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Request) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Request.Merge(dst, src)
+}
+func (m *Request) XXX_Size() int {
+	return m.Size()
+}
+func (m *Request) XXX_DiscardUnknown() {
+	xxx_messageInfo_Request.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Request proto.InternalMessageInfo
 
 func (m *Request) GetType() RPCType {
 	if m != nil {
@@ -489,9 +527,9 @@ var (
 	ErrIntOverflowRequest   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("request.proto", fileDescriptorRequest) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_request_a2f5d4b72cadfadc) }
 
-var fileDescriptorRequest = []byte{
+var fileDescriptor_request_a2f5d4b72cadfadc = []byte{
 	// 231 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4a, 0x2d, 0x2c,
 	0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x52, 0xbc,

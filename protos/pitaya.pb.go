@@ -15,6 +15,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -41,7 +47,7 @@ func NewPitayaClient(cc *grpc.ClientConn) PitayaClient {
 
 func (c *pitayaClient) Call(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := grpc.Invoke(ctx, "/protos.Pitaya/Call", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/protos.Pitaya/Call", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +56,7 @@ func (c *pitayaClient) Call(ctx context.Context, in *Request, opts ...grpc.CallO
 
 func (c *pitayaClient) PushToUser(ctx context.Context, in *Push, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := grpc.Invoke(ctx, "/protos.Pitaya/PushToUser", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/protos.Pitaya/PushToUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +65,7 @@ func (c *pitayaClient) PushToUser(ctx context.Context, in *Push, opts ...grpc.Ca
 
 func (c *pitayaClient) SessionBindRemote(ctx context.Context, in *BindMsg, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := grpc.Invoke(ctx, "/protos.Pitaya/SessionBindRemote", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/protos.Pitaya/SessionBindRemote", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +159,9 @@ var _Pitaya_serviceDesc = grpc.ServiceDesc{
 	Metadata: "pitaya.proto",
 }
 
-func init() { proto.RegisterFile("pitaya.proto", fileDescriptorPitaya) }
+func init() { proto.RegisterFile("pitaya.proto", fileDescriptor_pitaya_0f049d2a113c2f60) }
 
-var fileDescriptorPitaya = []byte{
+var fileDescriptor_pitaya_0f049d2a113c2f60 = []byte{
 	// 186 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x29, 0xc8, 0x2c, 0x49,
 	0xac, 0x4c, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x52, 0xbc, 0x45,

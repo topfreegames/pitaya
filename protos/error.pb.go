@@ -14,16 +14,52 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Error struct {
-	Code     string            `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	Msg      string            `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	Metadata map[string]string `protobuf:"bytes,3,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Code                 string            `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Msg                  string            `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	Metadata             map[string]string `protobuf:"bytes,3,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *Error) Reset()                    { *m = Error{} }
-func (m *Error) String() string            { return proto.CompactTextString(m) }
-func (*Error) ProtoMessage()               {}
-func (*Error) Descriptor() ([]byte, []int) { return fileDescriptorError, []int{0} }
+func (m *Error) Reset()         { *m = Error{} }
+func (m *Error) String() string { return proto.CompactTextString(m) }
+func (*Error) ProtoMessage()    {}
+func (*Error) Descriptor() ([]byte, []int) {
+	return fileDescriptor_error_3488e9bb30467a12, []int{0}
+}
+func (m *Error) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Error) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Error.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Error) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Error.Merge(dst, src)
+}
+func (m *Error) XXX_Size() int {
+	return m.Size()
+}
+func (m *Error) XXX_DiscardUnknown() {
+	xxx_messageInfo_Error.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Error proto.InternalMessageInfo
 
 func (m *Error) GetCode() string {
 	if m != nil {
@@ -48,6 +84,7 @@ func (m *Error) GetMetadata() map[string]string {
 
 func init() {
 	proto.RegisterType((*Error)(nil), "protos.Error")
+	proto.RegisterMapType((map[string]string)(nil), "protos.Error.MetadataEntry")
 }
 func (m *Error) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -471,9 +508,9 @@ var (
 	ErrIntOverflowError   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("error.proto", fileDescriptorError) }
+func init() { proto.RegisterFile("error.proto", fileDescriptor_error_3488e9bb30467a12) }
 
-var fileDescriptorError = []byte{
+var fileDescriptor_error_3488e9bb30467a12 = []byte{
 	// 172 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4e, 0x2d, 0x2a, 0xca,
 	0x2f, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x8b, 0x19, 0xb9,

@@ -14,6 +14,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type MsgType int32
 
 const (
@@ -39,20 +45,52 @@ var MsgType_value = map[string]int32{
 func (x MsgType) String() string {
 	return proto.EnumName(MsgType_name, int32(x))
 }
-func (MsgType) EnumDescriptor() ([]byte, []int) { return fileDescriptorMsg, []int{0} }
-
-type Msg struct {
-	Id    uint64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Route string  `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
-	Data  []byte  `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	Reply string  `protobuf:"bytes,4,opt,name=reply,proto3" json:"reply,omitempty"`
-	Type  MsgType `protobuf:"varint,5,opt,name=type,proto3,enum=protos.MsgType" json:"type,omitempty"`
+func (MsgType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_msg_c2815429f76b6c17, []int{0}
 }
 
-func (m *Msg) Reset()                    { *m = Msg{} }
-func (m *Msg) String() string            { return proto.CompactTextString(m) }
-func (*Msg) ProtoMessage()               {}
-func (*Msg) Descriptor() ([]byte, []int) { return fileDescriptorMsg, []int{0} }
+type Msg struct {
+	Id                   uint64   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Route                string   `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
+	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Reply                string   `protobuf:"bytes,4,opt,name=reply,proto3" json:"reply,omitempty"`
+	Type                 MsgType  `protobuf:"varint,5,opt,name=type,proto3,enum=protos.MsgType" json:"type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Msg) Reset()         { *m = Msg{} }
+func (m *Msg) String() string { return proto.CompactTextString(m) }
+func (*Msg) ProtoMessage()    {}
+func (*Msg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_msg_c2815429f76b6c17, []int{0}
+}
+func (m *Msg) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Msg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Msg.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Msg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Msg.Merge(dst, src)
+}
+func (m *Msg) XXX_Size() int {
+	return m.Size()
+}
+func (m *Msg) XXX_DiscardUnknown() {
+	xxx_messageInfo_Msg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Msg proto.InternalMessageInfo
 
 func (m *Msg) GetId() uint64 {
 	if m != nil {
@@ -467,9 +505,9 @@ var (
 	ErrIntOverflowMsg   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("msg.proto", fileDescriptorMsg) }
+func init() { proto.RegisterFile("msg.proto", fileDescriptor_msg_c2815429f76b6c17) }
 
-var fileDescriptorMsg = []byte{
+var fileDescriptor_msg_c2815429f76b6c17 = []byte{
 	// 222 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x2c, 0x8f, 0xb1, 0x4e, 0xc4, 0x30,
 	0x0c, 0x86, 0xcf, 0x6d, 0x0f, 0x54, 0x1f, 0xf4, 0x22, 0x8b, 0x21, 0x53, 0x55, 0xc1, 0x12, 0x31,
