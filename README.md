@@ -49,12 +49,11 @@ The remote method should always return two parameters:
 
 #### Standalone application
 
-The easiest way of running `pitaya` is by starting a standalone application. There's an working example [here](./examples/demo/tadpole).
+The easiest way of running `pitaya` is by starting a standalone application. There's an working example [here](./examples/demo/chat).
 
 #### Cluster mode
 
 In order to run several `pitaya` applications in a cluster it is necessary to configure RPC and Service Discovery services. Currently we are using [NATS](https://nats.io/) for RPC and [ETCD](https://github.com/coreos/etcd) for service discovery as default options. The option to use gRPC for RPC is also available. Other options may be implemented in the future.
-
 
 There's an working example of `pitaya` running in cluster mode [here](./examples/demo/cluster).
 
@@ -86,9 +85,8 @@ Frontend servers are responsible for accepting connections with the clients and 
 
 - Demo
   + [Implement a chat room in ~100 lines with pitaya and WebSocket](./examples/demo/chat) (adapted from [nano](https://github.com/lonnng/nano)'s example)
-  + [Tadpole demo](./examples/demo/tadpole) (adapted from [nano](https://github.com/lonnng/nano)'s example)
   + [Pitaya cluster mode example](./examples/demo/cluster)
-  + [Pitaya cluster mode with protobuf compression example](./examples/demo/cluster_protobuf)
+  + [Pitaya cluster mode with protobuf protocol example](./examples/demo/cluster_protobuf)
 
 ## Installation
 

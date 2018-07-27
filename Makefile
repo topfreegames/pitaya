@@ -31,9 +31,6 @@ run-cluster-protobuf-backend-example:
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
-run-tadpole-example:
-	@go run examples/demo/tadpole/main.go
-
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --gogofaster_out=plugins=grpc:protos
