@@ -34,6 +34,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/docgenerator"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -315,4 +316,12 @@ func (h *HandlerService) DumpServices() {
 	for name := range handlers {
 		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}
+}
+
+// Docs returns documentation for handlers
+func (h *HandlerService) Docs() (map[string]interface{}, error) {
+	if h == nil {
+		return map[string]interface{}{}, nil
+	}
+	return docgenerator.HandlersDocs(h.server.Type, h.services)
 }

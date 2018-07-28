@@ -481,3 +481,19 @@ func TestExtractSpan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, span.Context(), spanCtx)
 }
+
+func TestDocumentation(t *testing.T) {
+	initApp()
+	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
+	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
+	AddAcceptor(acc)
+
+	go Start()
+
+	doc, err := Documentation()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"handlers": map[string]interface{}{},
+		"remotes":  map[string]interface{}{},
+	}, doc)
+}

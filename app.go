@@ -496,3 +496,19 @@ func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	return tracing.ExtractSpan(ctx)
 }
+
+// Documentation returns handler and remotes documentacion
+func Documentation() (map[string]interface{}, error) {
+	handlerDocs, err := handlerService.Docs()
+	if err != nil {
+		return nil, err
+	}
+	remoteDocs, err := remoteService.Docs()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"handlers": handlerDocs,
+		"remotes":  remoteDocs,
+	}, nil
+}
