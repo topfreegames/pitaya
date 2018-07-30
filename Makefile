@@ -31,6 +31,12 @@ run-cluster-protobuf-backend-example:
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
+run-cluster-grpc-example-connector:
+	@cd examples/demo/cluster_grpc && go run main.go
+
+run-cluster-grpc-example-room:
+	@cd examples/demo/cluster_grpc && go run main.go --port 3251 --rpcsvport 3435 --type room --frontend=false
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --gogofaster_out=plugins=grpc:protos

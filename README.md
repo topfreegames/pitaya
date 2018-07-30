@@ -13,69 +13,73 @@
 [11]: https://readthedocs.org/projects/pitaya/badge/?version=latest
 [12]: https://pitaya.readthedocs.io/en/latest/?badge=latest
 
-Pitaya is an easy to use, fast and lightweight game server framework inspired by [starx](https://github.com/lonnng/starx) and [pomelo](https://github.com/NetEase/pomelo) and built on top of [nano](https://github.com/lonnng/nano)'s networking library.
-
+Pitaya is an easy to use, fast and lightweight game server framework with clustering support and client libraries for iOS, Android, Unity and others through the [C SDK](https://github.com/topfreegames/libpitaya).
 The goal of pitaya is to provide a basic development framework for distributed multiplayer games and server-side applications.
 
-## How to build a system with `pitaya`
+## Getting Started
 
-### What does a `pitaya` application look like?
+### Prerequisites
 
-A `pitaya` application is a collection of components made of handlers and/or remotes.
+* [Go](https://golang.org/) >= 1.10
+* [etcd](https://github.com/coreos/etcd) (used for service discovery)
+* [nats](https://github.com/nats-io/go-nats) (optional, it's used for sending and receiving rpc, you can use grpc implementations too if you prefer)
+* [docker](https://www.docker.com) (optional: for running etcd and nats dependencies on containers)
 
-Handlers are methods that will be called directly by the client while remotes are called by other servers via RPCs. Once you register a component to pitaya, pitaya will register to its service container all methods that can be converted to `Handler` or `Remote`.
-
-#### Handlers
-
-Pitaya service handler will be called when the client makes a request and it receives one or two parameters while handling a message:
-  - `context.Context`: the context of the request, which contains the client's session.
-  - `pointer or []byte`: the payload of the request (optional).
-
-There are two types of handlers, request and push. For the first case the handler must have two return values:
-  - `pointer or []byte`: the response payload
-  - `error`: an error variable
-
-for the second type the method should not return anything.
-
-#### Remotes
-
-Pitaya service remote will be called by other pitaya servers and it receives one or two parameters while handling the request:
-  - `context.Context`: the context of the request.
-  - `protobuf`: the payload in protobuf format (optional).
-
-The remote method should always return two parameters:
-  - `protobuf`: the response payload in protobuf format.
-  - `error`: an error variable
-
-#### Standalone application
-
-The easiest way of running `pitaya` is by starting a standalone application. There's an working example [here](./examples/demo/chat).
-
-#### Cluster mode
-
-In order to run several `pitaya` applications in a cluster it is necessary to configure RPC and Service Discovery services. Currently we are using [NATS](https://nats.io/) for RPC and [ETCD](https://github.com/coreos/etcd) for service discovery as default options. The option to use gRPC for RPC is also available. Other options may be implemented in the future.
-
-There's an working example of `pitaya` running in cluster mode [here](./examples/demo/cluster).
-
-To run this example you need to have both nats and etcd running. To start them you can use the following commands:
-
-```bash
-docker run -p 4222:4222 -d --name nats-main nats
-docker run -d -p 2379:2379 -p 2380:2380 appcelerator/etcd
+### Installing
+clone the repo
+```
+git clone https://github.com/topfreegames/pitaya.git
+```
+setup pitaya dependencies
+```
+make setup
 ```
 
-You can start the backend and frontend servers with the following commands:
+### Hacking pitaya
 
-```make
-make run-cluster-example-frontend
-make run-cluster-example-backend
+Here's how to run one of the examples:
+
+start etcd (this command requires docker-compose and will run an etcd container locally, you may run an etcd without docker if you prefer)
+```
+cd ./examples/testing && docker-compose up -d etcd
+```
+run the connector frontend server from cluster_grpc example
+```run-cluster-grpc-example-connector```
+run the room backend server from the cluster_grpc example
+```run-cluster-grpc-example-room```
+
+you should now have 2 pitaya servers running, a frontend connector and a backend room.
+You can then use [pitaya-cli](https://github.com/topfreegames/pitaya-cli) a REPL client for pitaya for sending some requests:
+```
+$ pitaya-cli
+Pitaya REPL Client
+>>> connect localhost:3250
+connected!
+>>> request room.room.entry
+>>> sv-> {"code":0,"result":"ok"}
 ```
 
-#### Frontend and backend servers
+## Running the tests
+```
+make test
+```
+This command will run both unit and e2e tests.
 
-In short, frontend servers handle client calls while backend servers only handle RPCs coming from other servers. Both types of servers are capable of receiving RPCs.
+## Deployment
+#TODO
 
-Frontend servers are responsible for accepting connections with the clients and processing the messages, forwarding them to the appropriate servers as needed. Backend servers receive messages forwarded from the frontend servers. It's possible to set custom forwarding logic based on the client's session data, route and payload.
+## Contributing
+#TODO
+
+## Authors
+* **TFG Co** - Initial work
+
+## License
+[MIT License](./LICENSE)
+
+## Acknowledgements
+* [nano](https://github.com/lonnng/nano) authors for building the framework pitaya is based on.
+* [pomelo](https://github.com/NetEase/pomelo) authors for the inspiration on the distributed design and protocol
 
 ## Resources
 
@@ -88,22 +92,7 @@ Frontend servers are responsible for accepting connections with the clients and 
   + [Pitaya cluster mode example](./examples/demo/cluster)
   + [Pitaya cluster mode with protobuf protocol example](./examples/demo/cluster_protobuf)
 
-## Installation
-
-```shell
-go get github.com/topfreegames/pitaya
-
-# dependencies
-make setup
-```
-
-## Testing
-
-```shell
-make test
-```
-
-## Benchmark
+## Benchmarks
 
 using grpc
 ```
@@ -142,9 +131,3 @@ BenchmarkBackHandlerWithSessionOnlyReturnsPtr-30                           	    
 BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallel-30                   	    2000	    784496 ns/op
 BenchmarkBackHandlerWithSessionOnlyReturnsPtrParallelMultipleClients-30    	    2000	    846923 ns/op
 ```
-
-## License
-
-[MIT License](./LICENSE)
-
-Forked from [© 2017 nano Authors](https://github.com/lonnng/nano)

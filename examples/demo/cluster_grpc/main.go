@@ -17,24 +17,9 @@ import (
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/tracing/jaeger"
 )
 
-func configureJaeger(svc string) {
-	opts := jaeger.Options{
-		Disabled:    false,
-		Probability: 1.0,
-		ServiceName: svc,
-	}
-
-	_, err := jaeger.Configure(opts)
-	if err != nil {
-		fmt.Println("failed to configure jaeger")
-	}
-}
-
 func configureBackend() {
-	configureJaeger("room")
 	room := services.NewRoom()
 	pitaya.Register(room,
 		component.WithName("room"),
@@ -52,7 +37,6 @@ func configureBackend() {
 }
 
 func configureFrontend(port int) {
-	configureJaeger("connector")
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 
 	pitaya.Register(&services.Connector{},

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/topfreegames/pitaya"
@@ -97,9 +98,7 @@ func (r *Room) AfterInit() {
 // Entry is the entrypoint
 func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
-	//err := s.Bind(ctx, strconv.Itoa(int(s.ID())))
-
-	err := s.Bind(ctx, "herow")
+	err := s.Bind(ctx, strconv.Itoa(int(s.ID())))
 	if err != nil {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
