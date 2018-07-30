@@ -44,11 +44,15 @@ start etcd (this command requires docker-compose and will run an etcd container 
 cd ./examples/testing && docker-compose up -d etcd
 ```
 run the connector frontend server from cluster_grpc example
-```run-cluster-grpc-example-connector```
+```
+run-cluster-grpc-example-connector
+```
 run the room backend server from the cluster_grpc example
-```run-cluster-grpc-example-room```
+```
+run-cluster-grpc-example-room
+```
 
-you should now have 2 pitaya servers running, a frontend connector and a backend room.
+You should now have 2 pitaya servers running, a frontend connector and a backend room.
 You can then use [pitaya-cli](https://github.com/topfreegames/pitaya-cli) a REPL client for pitaya for sending some requests:
 ```
 $ pitaya-cli
