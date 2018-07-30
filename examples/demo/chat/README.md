@@ -1,4 +1,4 @@
-# starx-chat-demo
+# pitaya-chat-demo
 chat room demo base on [pitaya](https://github.com/topfreegames/pitaya) in 100 lines
 
 refs: https://github.com/topfreegames/pitaya
