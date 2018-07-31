@@ -11,4 +11,6 @@ var (
 	ChannelCapacity = "channel_capacity"
 	// DroppedMessages reports the number of dropped messages in rpc server (messages that will not be handled)
 	DroppedMessages = "dropped_messages"
+	// ProcessDelay reports the message processing delay to handle the messages at the handler service
+	ProcessDelay = "handler_delay_ns"
 )

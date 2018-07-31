@@ -61,6 +61,19 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 		[]string{"route", "status", "type"},
 	)
 
+	// ProcessDelay summary
+	p.summaryReportersMap[ProcessDelay] = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "handler",
+			Name:        ProcessDelay,
+			Help:        "the delay to start processing a msg in nanoseconds",
+			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
+			ConstLabels: constLabels,
+		},
+		[]string{"type"},
+	)
+
 	// ConnectedClients gauge
 	p.gaugeReportersMap[ConnectedClients] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{

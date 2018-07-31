@@ -49,6 +49,20 @@ func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, 
 	}
 }
 
+// ReportMessageProcessDelayFromCtx reports the delay to process the messages
+func ReportMessageProcessDelayFromCtx(ctx context.Context, reporters []Reporter, typ string) {
+	if len(reporters) > 0 {
+		startTime := pcontext.GetFromPropagateCtx(ctx, constants.StartTimeKey)
+		elapsed := time.Since(time.Unix(0, startTime.(int64)))
+		tags := map[string]string{
+			"type": typ,
+		}
+		for _, r := range reporters {
+			r.ReportSummary(ProcessDelay, tags, float64(elapsed.Nanoseconds()))
+		}
+	}
+}
+
 // ReportNumberOfConnectedClients reports the number of connected clients
 func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
 	for _, r := range reporters {

@@ -566,14 +566,6 @@
   version = "v1.1"
 
 [[projects]]
-  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
-  name = "github.com/urfave/cli"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
-  version = "v1.20.0"
-
-[[projects]]
   digest = "1:6dff6d02950c110d7d61da0c200eaff9da9f312101291b2d8c07235954eaa19d"
   name = "github.com/xiang90/probing"
   packages = ["."]
@@ -730,7 +722,6 @@
     "github.com/stretchr/testify/require",
     "github.com/uber/jaeger-client-go",
     "github.com/uber/jaeger-client-go/config",
-    "github.com/urfave/cli",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
   ]

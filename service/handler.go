@@ -113,18 +113,18 @@ func NewHandlerService(
 
 // Dispatch message to corresponding logic handler
 func (h *HandlerService) Dispatch(thread int) {
-	// close chLocalProcess & chCloseSession when application quits
 	// TODO: This timer is being stopped multiple times, it probably doesn't need to be stopped here
 	defer timer.GlobalTicker.Stop()
 
 	for {
 		// Calls to remote servers block calls to local server
-		// TODO: Measure pressure here (time between setting message and processing it)
 		select {
 		case lm := <-h.chLocalProcess:
+			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
 
 		case rm := <-h.chRemoteProcess:
+			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
 
 		case <-timer.GlobalTicker.C: // execute cron task
