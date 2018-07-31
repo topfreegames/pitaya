@@ -147,6 +147,7 @@ func main() {
 	config.SetDefault("pitaya.buffer.handler.localprocess", 15)
 	config.Set("pitaya.heartbeat.interval", "15s")
 	config.Set("pitaya.buffer.agent.messages", 32)
+	config.Set("pitaya.handler.messages.compression", false)
 	pitaya.Configure(true, "chat", pitaya.Standalone, map[string]string{}, config)
 	pitaya.Start()
 }
