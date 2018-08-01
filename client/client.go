@@ -149,6 +149,7 @@ func (c *Client) handleHandshakeResponse() error {
 	if err != nil {
 		return err
 	}
+
 	logger.Log.Debug("got handshake from sv, data: %v", handshake)
 
 	if handshake.Sys.Dict != nil {
@@ -162,6 +163,8 @@ func (c *Client) handleHandshakeResponse() error {
 	if err != nil {
 		return err
 	}
+
+	c.Connected = true
 
 	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
@@ -324,7 +327,6 @@ func (c *Client) ConnectTo(addr string) error {
 	}
 
 	c.closeChan = make(chan struct{})
-	c.Connected = true
 
 	return nil
 }
