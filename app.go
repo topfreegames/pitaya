@@ -136,7 +136,11 @@ func Configure(
 	app.serverMode = serverMode
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
+	configureMetrics(serverType)
 	app.configured = true
+}
+
+func configureMetrics(serverType string) {
 	app.metricsReporters = make([]metrics.Reporter, 0)
 
 	defaultTags := app.config.GetStringMapString("pitaya.metrics.tags")
@@ -157,6 +161,7 @@ func Configure(
 			AddMetricsReporter(metricsReporter)
 		}
 	}
+
 }
 
 // AddAcceptor adds a new acceptor to app
