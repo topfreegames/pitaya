@@ -33,6 +33,7 @@ import (
 // Binary is a pitaya module that starts a binary as a child process and
 // pipes its stdout
 type Binary struct {
+	Base
 	binPath                  string
 	args                     []string
 	gracefulShutdownInterval time.Duration
@@ -47,10 +48,10 @@ func NewBinary(binPath string, args []string, gracefulShutdownInterval ...time.D
 		gracefulTime = gracefulShutdownInterval[0]
 	}
 	return &Binary{
-		binPath: binPath,
-		args:    args,
+		binPath:                  binPath,
+		args:                     args,
 		gracefulShutdownInterval: gracefulTime,
-		exitCh: make(chan struct{}),
+		exitCh:                   make(chan struct{}),
 	}
 }
 
@@ -83,12 +84,6 @@ func (b *Binary) Init() error {
 	}()
 	return err
 }
-
-// AfterInit runs after initialization tasks
-func (b *Binary) AfterInit() {}
-
-// BeforeShutdown runs tasks before shutting down the binary module
-func (b *Binary) BeforeShutdown() {}
 
 // Shutdown shutdowns the binary module
 func (b *Binary) Shutdown() error {

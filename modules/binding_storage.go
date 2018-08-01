@@ -36,6 +36,7 @@ import (
 
 // ETCDBindingStorage module that uses etcd to keep in which frontend server each user is bound
 type ETCDBindingStorage struct {
+	Base
 	config          *config.Config
 	cli             *clientv3.Client
 	etcdEndpoints   []string
@@ -63,10 +64,6 @@ func (b *ETCDBindingStorage) configure() {
 	b.etcdEndpoints = b.config.GetStringSlice("pitaya.modules.bindingstorage.etcd.endpoints")
 	b.etcdPrefix = b.config.GetString("pitaya.modules.bindingstorage.etcd.prefix")
 	b.leaseTTL = b.config.GetDuration("pitaya.modules.bindingstorage.etcd.leasettl")
-}
-
-// AfterInit executes after Init
-func (b *ETCDBindingStorage) AfterInit() {
 }
 
 func getUserBindingKey(uid, frontendType string) string {
@@ -185,10 +182,6 @@ func (b *ETCDBindingStorage) Init() error {
 	}
 
 	return nil
-}
-
-// BeforeShutdown executes before shutting down
-func (b *ETCDBindingStorage) BeforeShutdown() {
 }
 
 // Shutdown executes on shutdown and will clean etcd

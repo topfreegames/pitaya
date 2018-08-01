@@ -21,48 +21,29 @@
 package modules
 
 import (
-	"context"
-
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/logger"
 )
 
-// UniqueSession module watches for sessions using the same UID and kicks them
-type UniqueSession struct {
+// APIDocsGen is a pitaya module that generates api docs for pitaya servers
+type APIDocsGen struct {
 	Base
-	server    *cluster.Server
-	rpcClient cluster.RPCClient
+	basePath string
+	services []*component.Service
 }
 
-// NewUniqueSession creates a new unique session module
-func NewUniqueSession(server *cluster.Server, rpcServer cluster.RPCServer, rpcClient cluster.RPCClient) *UniqueSession {
-	return &UniqueSession{
-		server:    server,
-		rpcClient: rpcClient,
+// NewAPIDocsGen creates a new APIDocsGen
+func NewAPIDocsGen(basePath string, services []*component.Service) *APIDocsGen {
+	return &APIDocsGen{
+		basePath: basePath,
+		services: services,
 	}
 }
 
-// OnUserBind method should be called when a user binds a session in remote servers
-func (u *UniqueSession) OnUserBind(uid, fid string) {
-	if u.server.ID == fid {
-		return
+// Init is called on init method
+func (a *APIDocsGen) Init() error {
+	for _, s := range a.services {
+		logger.Log.Infof("loaded svc: %s", s.Name)
 	}
-	oldSession := session.GetSessionByUID(uid)
-	if oldSession != nil {
-		// TODO: it would be nice to set this correctly
-		oldSession.Kick(context.Background())
-	}
-}
-
-// Init initializes the module
-func (u *UniqueSession) Init() error {
-	session.OnSessionBind(func(ctx context.Context, s *session.Session) error {
-		oldSession := session.GetSessionByUID(s.UID())
-		if oldSession != nil {
-			return oldSession.Kick(ctx)
-		}
-		err := u.rpcClient.BroadcastSessionBind(s.UID())
-		return err
-	})
 	return nil
 }
