@@ -87,6 +87,12 @@ This command will run both unit and e2e tests.
 
 ## Resources
 
+- Other pitaya-related projects
+  + [libpitaya](https://github.com/topfreegames/libpitaya)
+  + [libpitaya-cluster](https://github.com/topfreegames/libpitaya-cluster)
+  + [pitaya-cli](https://github.com/topfreegames/pitaya-cli)
+  + [pitaya-protos](https://github.com/topfreegames/pitaya-protos)
+
 - Documents
   + [API Reference](https://godoc.org/github.com/topfreegames/pitaya)
   + [In-depth documentation](https://pitaya.readthedocs.io/en/latest/)
