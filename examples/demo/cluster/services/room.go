@@ -137,9 +137,6 @@ func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 	}
 	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
-	err = s.OnClose(func() {
-		r.group.Leave(s)
-	})
 	if err != nil {
 		return nil, err
 	}
