@@ -270,6 +270,7 @@ func startDefaultSD() {
 	app.serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(
 		app.config,
 		app.server,
+		app.dieChan,
 	)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster service discovery component: %s", err.Error())

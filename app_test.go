@@ -77,7 +77,7 @@ func setup() {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 
-	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
 	typeOfetcdSD = reflect.TypeOf(etcdSD)
 
 	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
@@ -183,7 +183,7 @@ func TestGetMetricsReporters(t *testing.T) {
 	assert.Equal(t, app.metricsReporters, GetMetricsReporters())
 }
 func TestGetServerByID(t *testing.T) {
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -193,7 +193,7 @@ func TestGetServerByID(t *testing.T) {
 }
 
 func TestGetServersByType(t *testing.T) {
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -232,7 +232,7 @@ func TestSetRPCClient(t *testing.T) {
 func TestSetServiceDiscovery(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -399,7 +399,7 @@ func TestStartAndListenCluster(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, cfg)
 
-	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, cli)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, cli)
 	assert.NoError(t, err)
 	SetServiceDiscoveryClient(etcdSD)
 

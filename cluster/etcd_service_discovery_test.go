@@ -49,7 +49,8 @@ func getConfig(conf ...*viper.Viper) *config.Config {
 
 func getEtcdSD(t *testing.T, config *config.Config, server *Server, cli *clientv3.Client) *etcdServiceDiscovery {
 	t.Helper()
-	e, err := NewEtcdServiceDiscovery(config, server, cli)
+	appDieChan := make(chan bool)
+	e, err := NewEtcdServiceDiscovery(config, server, appDieChan, cli)
 	assert.NoError(t, err)
 	return e.(*etcdServiceDiscovery)
 }
