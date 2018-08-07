@@ -42,7 +42,7 @@
   source = "https://github.com/coreos/bbolt"
 
 [[projects]]
-  digest = "1:4dddd3bf25f52dcf4f19f4f53e456dd78e5613d9c269b2029747dfa0680fcc32"
+  digest = "1:5cc25f40e6da40581b148f2f23395efd2b68098b09766b5afb96c1872a7f1b4e"
   name = "github.com/coreos/etcd"
   packages = [
     "alarm",
@@ -120,8 +120,8 @@
     "wal/walpb",
   ]
   pruneopts = "UT"
-  revision = "c9d46ab3799b7f2174268e75f72d01e6d6aac953"
-  version = "v3.3.2"
+  revision = "fca8add78a9d926166eb739b8e4a124434025ba3"
+  version = "v3.3.9"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -162,14 +162,6 @@
   pruneopts = "UT"
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:ee7fe6a68ba9f21bc748293d4e1e66ad327f64a89b0f5ba2d021430babd4b8c9"
-  name = "github.com/dustin/go-humanize"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "bb3d318650d48840a39aa21a027c6630e198e626"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
