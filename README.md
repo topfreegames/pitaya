@@ -39,17 +39,17 @@ make setup
 
 Here's how to run one of the examples:
 
-start etcd (this command requires docker-compose and will run an etcd container locally, you may run an etcd without docker if you prefer)
+Start etcd (this command requires docker-compose and will run an etcd container locally, you may run an etcd without docker if you prefer)
 ```
 cd ./examples/testing && docker-compose up -d etcd
 ```
 run the connector frontend server from cluster_grpc example
 ```
-run-cluster-grpc-example-connector
+make run-cluster-grpc-example-connector
 ```
 run the room backend server from the cluster_grpc example
 ```
-run-cluster-grpc-example-room
+make run-cluster-grpc-example-room
 ```
 
 You should now have 2 pitaya servers running, a frontend connector and a backend room.
