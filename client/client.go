@@ -301,7 +301,6 @@ func (c *Client) Disconnect() {
 	if c.Connected {
 		c.Connected = false
 		close(c.closeChan)
-		close(c.IncomingMsgChan)
 		c.conn.Close()
 	}
 }
