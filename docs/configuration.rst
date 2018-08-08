@@ -31,6 +31,14 @@ These configuration values configure service discovery for the default etcd serv
     - 60s
     - time.Time
     - Hearbeat interval for the etcd lease
+  * - pitaya.cluster.sd.etcd.bootstrap.timeout
+    - 60s
+    - time.Duration
+    - Connection timeout when waiting for etcd to become available
+  * - pitaya.cluster.sd.etcd.revoke.timeout
+    - 5s
+    - time.Duration
+    - Timeout for etcd's revoke function
   * - pitaya.cluster.sd.etcd.heartbeat.log
     - false
     - bool

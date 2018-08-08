@@ -261,7 +261,6 @@ func (sd *etcdServiceDiscovery) bootstrap() error {
 		}
 		return nil
 	}
-
 }
 
 // GetServer returns a server given it's id
