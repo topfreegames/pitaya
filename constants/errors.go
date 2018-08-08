@@ -35,6 +35,7 @@ var (
 	ErrCloseClosedGroup               = errors.New("close closed group")
 	ErrCloseClosedSession             = errors.New("close closed session")
 	ErrClosedGroup                    = errors.New("group closed")
+	ErrEtcdGrantLeaseTimeout          = errors.New("timed out waiting for etcd lease grant")
 	ErrFrontSessionCantPushToFront    = errors.New("frontend session can't push to front")
 	ErrIllegalUID                     = errors.New("illegal uid")
 	ErrMemberNotFound                 = errors.New("member not found in the group")
