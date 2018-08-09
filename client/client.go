@@ -264,7 +264,7 @@ func (c *Client) handleServerMessages() {
 	defer c.Disconnect()
 	for c.Connected {
 		packets, err := c.readPackets(buf)
-		if err != nil {
+		if err != nil && c.Connected {
 			logger.Log.Error(err)
 			break
 		}
