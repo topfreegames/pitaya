@@ -54,12 +54,16 @@ type etcdServiceDiscovery struct {
 	stopChan            chan bool
 	lastSyncTime        time.Time
 	listeners           []SDListener
+	revokeTimeout       time.Duration
+	bootstrapTimeout    time.Duration
+	appDieChan          chan bool
 }
 
 // NewEtcdServiceDiscovery ctor
 func NewEtcdServiceDiscovery(
 	config *config.Config,
 	server *Server,
+	appDieChan chan bool,
 	cli ...*clientv3.Client,
 ) (ServiceDiscovery, error) {
 	var client *clientv3.Client
@@ -72,6 +76,7 @@ func NewEtcdServiceDiscovery(
 		server:    server,
 		listeners: make([]SDListener, 0),
 		stopChan:  make(chan bool),
+		appDieChan: appDieChan,
 		cli:       client,
 	}
 
@@ -87,6 +92,8 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
 	sd.logHeartbeat = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
 	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
+	sd.revokeTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.revoke.timeout")
+	sd.bootstrapTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.bootstrap.timeout")
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
@@ -232,16 +239,28 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 }
 
 func (sd *etcdServiceDiscovery) bootstrap() error {
-	err := sd.bootstrapLease()
-	if err != nil {
+	c := make(chan error)
+	defer close(c)
+	go func() {
+		logger.Log.Infof("waiting for etcd connection")
+		err := sd.bootstrapLease()
+		if err != nil {
+			c <- err
+			return
+		}
+		err = sd.bootstrapServer(sd.server)
+		c <- err
+	}()
+	select {
+	case err := <-c:
 		return err
+	case <-time.After(sd.bootstrapTimeout):
+		logger.Log.Warn("timed out waiting for etcd connection")
+		if sd.appDieChan != nil {
+			sd.appDieChan <- true
+		}
+		return nil
 	}
-
-	err = sd.bootstrapServer(sd.server)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // GetServer returns a server given it's id
@@ -369,12 +388,26 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 func (sd *etcdServiceDiscovery) Shutdown() error {
 	sd.running = false
 	close(sd.stopChan)
+	return sd.revoke()
+}
 
-	_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
-	if err != nil {
-		return err
+// revoke prevents Pitaya from crashing when etcd is not available
+func (sd *etcdServiceDiscovery) revoke()  error {
+	c := make(chan error)
+	defer close(c)
+	go func() {
+		logger.Log.Debug("waiting for etcd revoke")
+		_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
+		c <- err
+		logger.Log.Debug("finished waiting for etcd revoke")
+	}()
+	select {
+	case err := <-c:
+		return err // completed normally
+	case <-time.After(sd.revokeTimeout):
+		logger.Log.Warn("timed out waiting for etcd revoke")
+		return nil // timed out
 	}
-	return nil
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {

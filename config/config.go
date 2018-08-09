@@ -74,6 +74,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
 		"pitaya.cluster.sd.etcd.prefix":                         "pitaya/",
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  "60s",
+		"pitaya.cluster.sd.etcd.bootstrap.timeout":              "60s",
+		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
 		"pitaya.cluster.sd.etcd.heartbeat.log":                  false,
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
 		"pitaya.modules.bindingstorage.etcd.endpoints":          "localhost:2379",
