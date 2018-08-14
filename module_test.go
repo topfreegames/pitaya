@@ -86,10 +86,14 @@ func TestStartupModules(t *testing.T) {
 	resetModules()
 	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
 
-	RegisterModule(&MyMod{name: "mod1"}, "mod1")
-	RegisterModuleBefore(&MyMod{name: "mod2"}, "mod2")
-	RegisterModuleBefore(&MyMod{name: "mod3"}, "mod3")
-	RegisterModuleAfter(&MyMod{name: "mod4"}, "mod4")
+	err := RegisterModule(&MyMod{name: "mod1"}, "mod1")
+	assert.NoError(t, err)
+	err = RegisterModuleBefore(&MyMod{name: "mod2"}, "mod2")
+	assert.NoError(t, err)
+	err = RegisterModuleBefore(&MyMod{name: "mod3"}, "mod3")
+	assert.NoError(t, err)
+	err = RegisterModuleAfter(&MyMod{name: "mod4"}, "mod4")
+	assert.NoError(t, err)
 
 	startModules()
 	assert.Equal(t, true, modulesMap["mod1"].(*MyMod).running)
@@ -104,10 +108,15 @@ func TestShutdownModules(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
 
-	RegisterModule(&MyMod{name: "mod1"}, "mod1")
-	RegisterModuleBefore(&MyMod{name: "mod2"}, "mod2")
-	RegisterModuleBefore(&MyMod{name: "mod3"}, "mod3")
-	RegisterModuleAfter(&MyMod{name: "mod4"}, "mod4")
+	err := RegisterModule(&MyMod{name: "mod1"}, "mod1")
+	assert.NoError(t, err)
+	err = RegisterModuleBefore(&MyMod{name: "mod2"}, "mod2")
+	assert.NoError(t, err)
+	err = RegisterModuleBefore(&MyMod{name: "mod3"}, "mod3")
+	assert.NoError(t, err)
+	err = RegisterModuleAfter(&MyMod{name: "mod4"}, "mod4")
+	assert.NoError(t, err)
+
 	startModules()
 
 	modulesOrder = []string{}
