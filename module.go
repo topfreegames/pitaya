@@ -27,46 +27,95 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 )
 
-var modules = make(map[string]interfaces.Module)
+var (
+	modulesMap = make(map[string]interfaces.Module)
+	modulesArr = []moduleWrapper{}
+)
 
-// RegisterModule registers a module
+type moduleWrapper struct {
+	module interfaces.Module
+	name   string
+}
+
+// RegisterModule registers a module, by default it register after registered modules
 func RegisterModule(module interfaces.Module, name string) error {
-	if _, ok := modules[name]; ok {
-		return fmt.Errorf("module with name %s already exists", name)
+	return RegisterModuleAfter(module, name)
+}
+
+// RegisterModuleAfter registers a module after all registered modules
+func RegisterModuleAfter(module interfaces.Module, name string) error {
+	if err := alreadyRegistered(name); err != nil {
+		return err
 	}
-	modules[name] = module
+
+	modulesMap[name] = module
+	modulesArr = append(modulesArr, moduleWrapper{
+		module: module,
+		name:   name,
+	})
+
+	return nil
+}
+
+// RegisterModuleBefore registers a module before all registered modules
+func RegisterModuleBefore(module interfaces.Module, name string) error {
+	if err := alreadyRegistered(name); err != nil {
+		return err
+	}
+
+	modulesMap[name] = module
+	modulesArr = append([]moduleWrapper{
+		{
+			module: module,
+			name:   name,
+		},
+	}, modulesArr...)
+
 	return nil
 }
 
 // GetModule gets a module with a name
 func GetModule(name string) (interfaces.Module, error) {
-	if m, ok := modules[name]; ok {
+	if m, ok := modulesMap[name]; ok {
 		return m, nil
 	}
 	return nil, fmt.Errorf("module with name %s not found", name)
 }
 
-// StartModules starts all modules
+func alreadyRegistered(name string) error {
+	if _, ok := modulesMap[name]; ok {
+		return fmt.Errorf("module with name %s already exists", name)
+	}
+
+	return nil
+}
+
+// startModules starts all modules in order
 func startModules() {
 	logger.Log.Debug("initializing all modules")
-	for name, mod := range modules {
-		logger.Log.Debugf("initializing module: %s", name)
-		if err := mod.Init(); err != nil {
-			logger.Log.Fatalf("error starting module %s, error: %s", name, err.Error())
+	for _, modWrapper := range modulesArr {
+		logger.Log.Debugf("initializing module: %s", modWrapper.name)
+		if err := modWrapper.module.Init(); err != nil {
+			logger.Log.Fatalf("error starting module %s, error: %s", modWrapper.name, err.Error())
 		}
 	}
 
-	for name, mod := range modules {
-		mod.AfterInit()
-		logger.Log.Infof("module: %s successfully loaded", name)
+	for _, modWrapper := range modulesArr {
+		modWrapper.module.AfterInit()
+		logger.Log.Infof("module: %s successfully loaded", modWrapper.name)
 	}
 }
 
+// shutdownModules starts all modules in reverse order
 func shutdownModules() {
-	for _, mod := range modules {
-		mod.BeforeShutdown()
+	for i := len(modulesArr) - 1; i >= 0; i-- {
+		modulesArr[i].module.BeforeShutdown()
 	}
-	for name, mod := range modules {
+
+	for i := len(modulesArr) - 1; i >= 0; i-- {
+		name := modulesArr[i].name
+		mod := modulesArr[i].module
+
 		logger.Log.Debugf("stopping module: %s", name)
 		if err := mod.Shutdown(); err != nil {
 			logger.Log.Warnf("error stopping module: %s", name)

@@ -338,9 +338,18 @@ func Start() {
 			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
 		}
 
-		RegisterModule(app.serviceDiscovery, "serviceDiscovery")
-		RegisterModule(app.rpcServer, "rpcServer")
-		RegisterModule(app.rpcClient, "rpcClient")
+		err := RegisterModuleBefore(app.serviceDiscovery, "serviceDiscovery")
+		if err != nil {
+			logger.Log.Fatal("failed to register service discovery module: %s", err.Error())
+		}
+		err = RegisterModuleBefore(app.rpcServer, "rpcServer")
+		if err != nil {
+			logger.Log.Fatal("failed to register rpc server module: %s", err.Error())
+		}
+		err = RegisterModuleBefore(app.rpcClient, "rpcClient")
+		if err != nil {
+			logger.Log.Fatal("failed to register rpc client module: %s", err.Error())
+		}
 
 		app.router.SetServiceDiscovery(app.serviceDiscovery)
 
