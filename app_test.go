@@ -481,3 +481,60 @@ func TestExtractSpan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, span.Context(), spanCtx)
 }
+
+func TestDocumentation(t *testing.T) {
+	doc, err := Documentation()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"handlers": map[string]interface{}{},
+		"remotes": map[string]interface{}{
+			"testtype.sys.bindsession": map[string]interface{}{
+				"input": map[string]interface{}{
+					"uid":  "string",
+					"data": "[]byte",
+					"id":   "int64",
+				},
+				"output": []interface{}{
+					map[string]interface{}{
+						"error": map[string]interface{}{
+							"msg":      "string",
+							"code":     "string",
+							"metadata": "map[string]string",
+						},
+						"data": "[]byte",
+					},
+					"error",
+				},
+			},
+			"testtype.sys.kick": map[string]interface{}{
+				"input": map[string]interface{}{
+					"userId": "string",
+				},
+				"output": []interface{}{
+					map[string]interface{}{
+						"kicked": "bool",
+					},
+					"error",
+				},
+			},
+			"testtype.sys.pushsession": map[string]interface{}{
+				"input": map[string]interface{}{
+					"data": "[]byte",
+					"id":   "int64",
+					"uid":  "string",
+				},
+				"output": []interface{}{
+					map[string]interface{}{
+						"error": map[string]interface{}{
+							"code":     "string",
+							"metadata": "map[string]string",
+							"msg":      "string",
+						},
+						"data": "[]byte",
+					},
+					"error",
+				},
+			},
+		},
+	}, doc)
+}
