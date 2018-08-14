@@ -338,9 +338,9 @@ func Start() {
 			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
 		}
 
-		RegisterModule(app.serviceDiscovery, "serviceDiscovery")
-		RegisterModule(app.rpcServer, "rpcServer")
-		RegisterModule(app.rpcClient, "rpcClient")
+		RegisterModuleBefore(app.serviceDiscovery, "serviceDiscovery")
+		RegisterModuleBefore(app.rpcServer, "rpcServer")
+		RegisterModuleBefore(app.rpcClient, "rpcClient")
 
 		app.router.SetServiceDiscovery(app.serviceDiscovery)
 
