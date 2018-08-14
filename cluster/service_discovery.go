@@ -26,7 +26,7 @@ import "github.com/topfreegames/pitaya/interfaces"
 type ServiceDiscovery interface {
 	GetServersByType(serverType string) (map[string]*Server, error)
 	GetServer(id string) (*Server, error)
-	GetAllServers() ([]*Server, error)
+	GetServers() []*Server
 	SyncServers() error
 	AddListener(listener SDListener)
 	interfaces.Module

@@ -280,23 +280,14 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 	return nil, constants.ErrNoServersAvailableOfType
 }
 
-// GetAllServers returns a slice with all the servers
-func (sd *etcdServiceDiscovery) GetAllServers() ([]*Server, error) {
+// GetServers returns a slice with all the servers
+func (sd *etcdServiceDiscovery) GetServers() []*Server {
 	ret := make([]*Server, 0)
-	var rangeErr error
 	sd.serverMapByID.Range(func(k, v interface{}) bool {
-		s, err := sd.GetServer(k.(string))
-		if err != nil {
-			rangeErr = err
-			return false
-		}
-		ret = append(ret, s)
+		ret = append(ret, v.(*Server))
 		return true
 	})
-	if rangeErr != nil {
-		return nil, rangeErr
-	}
-	return ret, nil
+	return ret
 }
 
 func (sd *etcdServiceDiscovery) bootstrap() error {

@@ -259,9 +259,9 @@ func GetServersByType(t string) (map[string]*cluster.Server, error) {
 	return app.serviceDiscovery.GetServersByType(t)
 }
 
-// GetAllServers get all servers
-func GetAllServers() ([]*cluster.Server, error) {
-	return app.serviceDiscovery.GetAllServers()
+// GetServers get all servers
+func GetServers() []*cluster.Server {
+	return app.serviceDiscovery.GetServers()
 }
 
 // AddMetricsReporter to be used

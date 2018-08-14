@@ -59,17 +59,16 @@ func (mr *MockServiceDiscoveryMockRecorder) GetServer(id interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServer", reflect.TypeOf((*MockServiceDiscovery)(nil).GetServer), id)
 }
 
-// GetAllServers mocks base method
-func (m *MockServiceDiscovery) GetAllServers() ([]*cluster.Server, error) {
-	ret := m.ctrl.Call(m, "GetAllServers")
+// GetServers mocks base method
+func (m *MockServiceDiscovery) GetServers() []*cluster.Server {
+	ret := m.ctrl.Call(m, "GetServers")
 	ret0, _ := ret[0].([]*cluster.Server)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
-// GetAllServers indicates an expected call of GetAllServers
-func (mr *MockServiceDiscoveryMockRecorder) GetAllServers() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllServers", reflect.TypeOf((*MockServiceDiscovery)(nil).GetAllServers))
+// GetServers indicates an expected call of GetServers
+func (mr *MockServiceDiscoveryMockRecorder) GetServers() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServers", reflect.TypeOf((*MockServiceDiscovery)(nil).GetServers))
 }
 
 // SyncServers mocks base method
