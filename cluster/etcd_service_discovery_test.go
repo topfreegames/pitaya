@@ -42,6 +42,22 @@ var etcdSDTables = []struct {
 	{NewServer("backend-2", "type3", false, nil)},
 }
 
+var etcdSDTablesMultipleServers = []struct {
+	servers []*Server
+}{
+	{[]*Server{}},
+	{[]*Server{
+		NewServer("frontend-1", "type1", true, map[string]string{"k1": "v1"}),
+		NewServer("backend-1", "type2", false, map[string]string{"k2": "v2"}),
+		NewServer("backend-2", "type3", false, nil),
+	}},
+	{[]*Server{
+		NewServer("frontend-1", "type2", true, map[string]string{"k1": "v1"}),
+		NewServer("frontend-2", "type2", true, map[string]string{"k2": "v2"}),
+		NewServer("frontend-3", "type2", true, map[string]string{"k1": "v1"}),
+	}},
+}
+
 func getConfig(conf ...*viper.Viper) *config.Config {
 	config := config.NewConfig(conf...)
 	return config
@@ -196,6 +212,22 @@ func TestEtcdSDGetServer(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, table.server, sv)
 		})
+	}
+}
+
+func TestEtcdSDGetServers(t *testing.T) {
+	t.Parallel()
+	for _, table := range etcdSDTablesMultipleServers {
+		config := getConfig()
+		c, cli := helpers.GetTestEtcd(t)
+		defer c.Terminate(t)
+		e := getEtcdSD(t, config, &Server{}, cli)
+		e.bootstrapLease()
+		for _, server := range table.servers {
+			e.bootstrapServer(server)
+		}
+		serverList := e.GetServers()
+		assert.ElementsMatch(t, table.servers, serverList)
 	}
 }
 
