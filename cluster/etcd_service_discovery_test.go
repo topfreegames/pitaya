@@ -222,7 +222,7 @@ func TestEtcdSDGetServers(t *testing.T) {
 		c, cli := helpers.GetTestEtcd(t)
 		defer c.Terminate(t)
 		e := getEtcdSD(t, config, &Server{}, cli)
-		e.bootstrapLease()
+		e.grantLease()
 		for _, server := range table.servers {
 			e.bootstrapServer(server)
 		}
