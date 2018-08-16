@@ -25,7 +25,6 @@ type (
 		component.Base
 		group *pitaya.Group
 		timer *timer.Timer
-		stats *stats
 	}
 
 	// UserMessage represents a message that user sent
@@ -49,28 +48,12 @@ type (
 		Code   int    `json:"code"`
 		Result string `json:"result"`
 	}
-
-	stats struct {
-		outboundBytes int
-		inboundBytes  int
-	}
 )
-
-func (stats *stats) outbound(ctx context.Context, in []byte) ([]byte, error) {
-	stats.outboundBytes += len(in)
-	return in, nil
-}
-
-func (stats *stats) inbound(ctx context.Context, in []byte) ([]byte, error) {
-	stats.inboundBytes += len(in)
-	return in, nil
-}
 
 // NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
 		group: pitaya.NewGroup("room"),
-		stats: &stats{},
 	}
 }
 
@@ -78,8 +61,6 @@ func NewRoom() *Room {
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
 		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
-		println("OutboundBytes", r.stats.outboundBytes)
-		println("InboundBytes", r.stats.outboundBytes)
 	})
 }
 
@@ -128,10 +109,6 @@ func main() {
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
-
-	// traffic stats
-	pitaya.AfterHandler(room.stats.outbound)
-	pitaya.BeforeHandler(room.stats.inbound)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 

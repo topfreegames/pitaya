@@ -217,12 +217,12 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 	data := []byte("ok")
 	expected1 := []byte("oh noes 1")
 	expected2 := []byte("oh noes 2")
-	before1 := func(ctx context.Context, in []byte) ([]byte, error) {
+	before1 := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, data, in)
 		return expected1, nil
 	}
-	before2 := func(ctx context.Context, in []byte) ([]byte, error) {
+	before2 := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, expected1, in)
 		return expected2, nil
@@ -239,7 +239,7 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 func TestExecuteBeforePipelineError(t *testing.T) {
 	c := context.Background()
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in []byte) ([]byte, error) {
+	before := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		return nil, expected
 	}
@@ -261,12 +261,12 @@ func TestExecuteAfterPipelineSuccess(t *testing.T) {
 	data := []byte("ok")
 	expected1 := []byte("oh noes 1")
 	expected2 := []byte("oh noes 2")
-	after1 := func(ctx context.Context, in []byte) ([]byte, error) {
+	after1 := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, data, in)
 		return expected1, nil
 	}
-	after2 := func(ctx context.Context, in []byte) ([]byte, error) {
+	after2 := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, expected1, in)
 		return expected2, nil
@@ -285,7 +285,7 @@ func TestExecuteAfterPipelineError(t *testing.T) {
 	mockSerializer := mocks.NewMockSerializer(ctrl)
 
 	c := context.Background()
-	after := func(ctx context.Context, in []byte) ([]byte, error) {
+	after := func(ctx context.Context, in interface{}) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		return nil, errors.New("oh noes")
 	}
@@ -407,7 +407,7 @@ func TestProcessHandlerMessageBrokenBeforePipeline(t *testing.T) {
 	handlers[rt.Short()] = &component.Handler{}
 	defer func() { delete(handlers, rt.Short()) }()
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in []byte) ([]byte, error) {
+	before := func(ctx context.Context, in interface{}) (interface{}, error) {
 		return nil, expected
 	}
 	pipeline.BeforeHandler.PushFront(before)
@@ -428,7 +428,7 @@ func TestProcessHandlerMessageBrokenAfterPipeline(t *testing.T) {
 	handlers[rt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 	defer func() { delete(handlers, rt.Short()) }()
 
-	after := func(ctx context.Context, in []byte) ([]byte, error) {
+	after := func(ctx context.Context, in interface{}) (interface{}, error) {
 		return nil, errors.New("oh noes")
 	}
 	pipeline.AfterHandler.PushFront(after)

@@ -33,7 +33,7 @@ func resetPipelines() {
 	pipeline.AfterHandler.Handlers = make([]pipeline.Handler, 0)
 }
 
-var myHandler = func(ctx context.Context, in []byte) ([]byte, error) {
+var myHandler = func(ctx context.Context, in interface{}) (interface{}, error) {
 	return []byte("test"), nil
 }
 
