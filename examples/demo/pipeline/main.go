@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/serialize/json"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // MetagameServer ...
@@ -26,7 +26,10 @@ func NewMetagameMock() *MetagameServer {
 	}
 }
 
-// CreatePlayerCheatArgs ...
+// CreatePlayerCheatArgs is the struct used as parameter for the CreatePlayerCheat handler
+// Using the 'validate' tag it's possible to add validations on all struct fields.
+// For reference on the default validator see https://github.com/go-playground/validator.
+// Also, to enable this validation pipeline see docs/configuration.rst.
 type CreatePlayerCheatArgs struct {
 	Name         string `json:"name"`
 	Email        string `json:"email" validate:"email"`
@@ -45,20 +48,6 @@ func (g *MetagameServer) CreatePlayerCheat(ctx context.Context, args *CreatePlay
 	return &CreatePlayerCheatResponse{
 		Msg: "ok",
 	}, nil
-}
-
-// This is a beforeHandler that validates the handler argument based on the struct tags.
-// As for this example, the CreatePlayerCheatArgs has the 'validate' tags for email,
-// softCurrency and hardCurrency. If any of the validations fail an error will be returned
-func handlerParamsValidator(ctx context.Context, in interface{}) (interface{}, error) {
-	var validate *validator.Validate
-	validate = validator.New()
-
-	if err := validate.Struct(in); err != nil {
-		return nil, err
-	}
-
-	return in, nil
 }
 
 // Simple example of a before pipeline that actually asserts the type of the
@@ -99,13 +88,17 @@ func main() {
 	)
 
 	// Pipelines registration
-	pitaya.BeforeHandler(handlerParamsValidator)
 	pitaya.BeforeHandler(metagameServer.simpleBefore)
 	pitaya.AfterHandler(metagameServer.simpleAfter)
 
 	port := 3251
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	pitaya.AddAcceptor(tcp)
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+
+	config := viper.New()
+
+	// Enable default validator
+	config.Set("pitaya.defaultpipelines.structvalidation.enabled", true)
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
 	pitaya.Start()
 }

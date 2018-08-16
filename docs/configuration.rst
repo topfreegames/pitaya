@@ -245,3 +245,21 @@ These configurations are only used if the modules are created. It is recommended
     - time.Time
     - Duration of the etcd lease before automatic renewal
 
+Default Pipelines
+=================
+
+These configurations control if the default pipelines should be enabled or not
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.defaultpipelines.structvalidation.enabled
+    - false
+    - bool
+    - Whether Pitaya should enable the default struct validator for handler arguments

@@ -94,6 +94,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.prometheus.port":                        9090,
 		"pitaya.metrics.prometheus.enabled":                     false,
 		"pitaya.metrics.tags":                                   map[string]string{},
+		"pitaya.defaultpipelines.structvalidation.enabled":      false,
 	}
 
 	for param := range defaultsMap {

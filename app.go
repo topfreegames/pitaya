@@ -39,6 +39,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/defaultpipelines"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -137,6 +138,7 @@ func Configure(
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
 	configureMetrics(serverType)
+	configureDefaultPipelines(app.config)
 	app.configured = true
 }
 
@@ -161,7 +163,12 @@ func configureMetrics(serverType string) {
 			AddMetricsReporter(metricsReporter)
 		}
 	}
+}
 
+func configureDefaultPipelines(config *config.Config) {
+	if config.GetBool("pitaya.defaultpipelines.structvalidation.enabled") {
+		BeforeHandler(defaultpipelines.StructValidatorInstance.Validate)
+	}
 }
 
 // AddAcceptor adds a new acceptor to app
