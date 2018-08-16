@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	handler1 = func(ctx context.Context, in []byte) ([]byte, error) {
+	handler1 = func(ctx context.Context, in interface{}) (interface{}, error) {
 		return in, errors.New("ohno")
 	}
-	handler2 = func(ctx context.Context, in []byte) ([]byte, error) {
+	handler2 = func(ctx context.Context, in interface{}) (interface{}, error) {
 		return nil, nil
 	}
 	p = &pipelineChannel{}

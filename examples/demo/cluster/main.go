@@ -27,10 +27,6 @@ func configureBackend() {
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
-
-	// traffic stats
-	pitaya.AfterHandler(room.Stats.Outbound)
-	pitaya.BeforeHandler(room.Stats.Inbound)
 }
 
 func configureFrontend(port int) {
