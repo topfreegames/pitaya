@@ -52,6 +52,7 @@ type NatsRPCServer struct {
 	bindingsChan           chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
 	unhandledReqCh         chan *protos.Request
 	userPushCh             chan *protos.Push
+	userKickCh             chan *nats.Msg
 	sub                    *nats.Subscription
 	dropped                int
 	pitayaServer           protos.PitayaServer
@@ -101,6 +102,7 @@ func (ns *NatsRPCServer) configure() error {
 	// the reason this channel is buffered is that we can achieve more performance by not
 	// blocking producers on a massive push
 	ns.userPushCh = make(chan *protos.Push, ns.pushBufferSize)
+	ns.userKickCh = make(chan *nats.Msg, ns.messagesBufferSize)
 	return nil
 }
 
@@ -114,6 +116,11 @@ func GetUserMessagesTopic(uid string, svType string) string {
 	return fmt.Sprintf("pitaya/%s/user/%s/push", svType, uid)
 }
 
+// GetUserKickTopic get the topic for kicking an user
+func GetUserKickTopic(uid string, svType string) string {
+	return fmt.Sprintf("pitaya/%s/user/%s/kick", svType, uid)
+}
+
 // GetBindBroadcastTopic gets the topic on which bind events will be broadcasted
 func GetBindBroadcastTopic(svType string) string {
 	return fmt.Sprintf("pitaya/%s/bindings", svType)
@@ -123,6 +130,10 @@ func GetBindBroadcastTopic(svType string) string {
 func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s *session.Session) error {
 	if ns.server.Frontend {
 		subs, err := ns.subscribeToUserMessages(s.UID(), ns.server.Type)
+		if err != nil {
+			return err
+		}
+		err = ns.subscribeToUserKickChannel(s.UID(), ns.server.Type)
 		if err != nil {
 			return err
 		}
@@ -138,6 +149,11 @@ func (ns *NatsRPCServer) SetPitayaServer(ps protos.PitayaServer) {
 
 func (ns *NatsRPCServer) subscribeToBindingsChannel() error {
 	_, err := ns.conn.ChanSubscribe(GetBindBroadcastTopic(ns.server.Type), ns.bindingsChan)
+	return err
+}
+
+func (ns *NatsRPCServer) subscribeToUserKickChannel(uid string, svType string) error {
+	_, err := ns.conn.ChanSubscribe(GetUserKickTopic(uid, svType), ns.userKickCh)
 	return err
 }
 
@@ -201,6 +217,10 @@ func (ns *NatsRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
 
 func (ns *NatsRPCServer) getUserPushChannel() chan *protos.Push {
 	return ns.userPushCh
+}
+
+func (ns *NatsRPCServer) getUserKickChannel() chan *nats.Msg {
+	return ns.userKickCh
 }
 
 func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
@@ -267,6 +287,22 @@ func (ns *NatsRPCServer) processPushes() {
 	}
 }
 
+func (ns *NatsRPCServer) processKick() {
+	for kick := range ns.getUserKickChannel() {
+		k := &protos.KickMsg{}
+		err := proto.Unmarshal(kick.Data, k)
+		if err != nil {
+			logger.Log.Error("error processing kick msg: %v", err)
+			continue
+		}
+		logger.Log.Debugf("sending kick to user %s", k.GetUserId())
+		_, err = ns.pitayaServer.KickUser(context.Background(), k)
+		if err != nil {
+			logger.Log.Errorf("error sending kick to user: %v", err)
+		}
+	}
+}
+
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
@@ -294,6 +330,7 @@ func (ns *NatsRPCServer) Init() error {
 	// this should be so fast that we shoudn't need concurrency
 	go ns.processPushes()
 	go ns.processSessionBindings()
+	go ns.processKick()
 
 	return nil
 }

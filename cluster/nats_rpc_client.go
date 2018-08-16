@@ -117,6 +117,16 @@ func (ns *NatsRPCClient) SendPush(userID string, frontendSv *Server, push *proto
 	return ns.Send(topic, msg)
 }
 
+// SendKick kicks an user
+func (ns *NatsRPCClient) SendKick(userID string, serverType string, kick *protos.KickMsg) error {
+	topic := GetUserKickTopic(userID, serverType)
+	msg, err := proto.Marshal(kick)
+	if err != nil {
+		return err
+	}
+	return ns.Send(topic, msg)
+}
+
 // Call calls a method remotelly
 func (ns *NatsRPCClient) Call(
 	ctx context.Context,

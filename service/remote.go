@@ -172,6 +172,22 @@ func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*pro
 	return nil, constants.ErrSessionNotFound
 }
 
+// KickUser sends a kick to user
+func (r *RemoteService) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
+	logger.Log.Debugf("sending kick to user %s", kick.GetUserId())
+	s := session.GetSessionByUID(kick.GetUserId())
+	if s != nil {
+		err := s.Kick(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &protos.KickAnswer{
+			Kicked: true,
+		}, nil
+	}
+	return nil, constants.ErrSessionNotFound
+}
+
 // DoRPC do rpc and get answer
 func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route.Route, protoData []byte) (*protos.Response, error) {
 	msg := &message.Message{
