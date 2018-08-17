@@ -35,10 +35,14 @@ import (
 
 func TestSendKickToUsersLocalSession(t *testing.T) {
 	tables := []struct {
-		name string
-		err  error
+		name         string
+		uid1         string
+		uid2         string
+		frontendType string
+		err          error
 	}{
-		{"success", nil},
+		{"success", uuid.New().String(), uuid.New().String(), "connector", nil},
+		{"fail", uuid.New().String(), uuid.New().String(), "connector", nil},
 	}
 
 	for _, table := range tables {
@@ -47,19 +51,20 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 
-			uid1 := uuid.New().String()
-			uid2 := uuid.New().String()
 			s1 := session.New(mockNetworkEntity, true)
-			err := s1.Bind(context.Background(), uid1)
+			err := s1.Bind(context.Background(), table.uid1)
 			assert.NoError(t, err)
 
 			s2 := session.New(mockNetworkEntity, true)
-			err = s2.Bind(context.Background(), uid2)
+			err = s2.Bind(context.Background(), table.uid2)
 			assert.NoError(t, err)
 
-			mockNetworkEntity.EXPECT().Kick(context.Background()).Times(2)
-			mockNetworkEntity.EXPECT().Close().Times(2)
-			err = SendKickToUsers([]string{uid1, uid2}, app.server.Type)
+			mockNetworkEntity.EXPECT().Kick(context.Background()).Times(2).Return(table.err)
+			if table.err == nil {
+				mockNetworkEntity.EXPECT().Close().Times(2)
+			}
+			err = SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
+
 			assert.NoError(t, err)
 		})
 	}
@@ -67,11 +72,13 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 
 func TestSendKickToUsersRemoteSession(t *testing.T) {
 	tables := []struct {
-		name string
+		name         string
+		uids         []string
+		frontendType string
+		err          error
 	}{
-		{"success"},
+		{"success", []string{uuid.New().String(), uuid.New().String()}, "connector", nil},
 	}
-
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -79,17 +86,12 @@ func TestSendKickToUsersRemoteSession(t *testing.T) {
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			app.rpcClient = mockRPCClient
 
-			svType := "connector"
-			uid1 := uuid.New().String()
-			uid2 := uuid.New().String()
+			for _, uid := range table.uids {
+				expectedKick := &protos.KickMsg{UserId: uid}
+				mockRPCClient.EXPECT().SendKick(uid, gomock.Any(), expectedKick)
+			}
 
-			expectedKick1 := &protos.KickMsg{UserId: uid1}
-			expectedKick2 := &protos.KickMsg{UserId: uid2}
-
-			mockRPCClient.EXPECT().SendKick(uid1, gomock.Any(), expectedKick1)
-			mockRPCClient.EXPECT().SendKick(uid2, gomock.Any(), expectedKick2)
-
-			err := SendKickToUsers([]string{uid1, uid2}, svType)
+			err := SendKickToUsers(table.uids, table.frontendType)
 			assert.NoError(t, err)
 		})
 	}

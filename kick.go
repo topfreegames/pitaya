@@ -30,7 +30,6 @@ import (
 
 // SendKickToUsers sends kick to an user
 func SendKickToUsers(uids []string, frontendType string) error {
-
 	if !app.server.Frontend && frontendType == "" {
 		return constants.ErrFrontendTypeNotSpecified
 	}
