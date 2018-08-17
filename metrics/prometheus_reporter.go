@@ -71,7 +71,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
 			ConstLabels: constLabels,
 		},
-		[]string{"type"},
+		[]string{"route", "type"},
 	)
 
 	// ConnectedClients gauge

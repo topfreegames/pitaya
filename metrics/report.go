@@ -54,8 +54,10 @@ func ReportMessageProcessDelayFromCtx(ctx context.Context, reporters []Reporter,
 	if len(reporters) > 0 {
 		startTime := pcontext.GetFromPropagateCtx(ctx, constants.StartTimeKey)
 		elapsed := time.Since(time.Unix(0, startTime.(int64)))
+		route := pcontext.GetFromPropagateCtx(ctx, constants.RouteKey)
 		tags := map[string]string{
-			"type": typ,
+			"route": route.(string),
+			"type":  typ,
 		}
 		for _, r := range reporters {
 			r.ReportSummary(ProcessDelay, tags, float64(elapsed.Nanoseconds()))
