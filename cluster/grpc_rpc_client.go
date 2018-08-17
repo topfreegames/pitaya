@@ -149,6 +149,29 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 	return nil
 }
 
+// SendKick sends a kick to an user
+func (gs *GRPCClient) SendKick(userID string, serverType string, kick *protos.KickMsg) error {
+	var svID string
+	var err error
+
+	if gs.bindingStorage == nil {
+		return constants.ErrNoBindingStorageModule
+	}
+
+	svID, err = gs.bindingStorage.GetUserFrontendID(userID, serverType)
+	if err != nil {
+		return err
+	}
+
+	if c, ok := gs.clientMap.Load(svID); ok {
+		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
+		defer done()
+		_, err := c.(protos.PitayaClient).KickUser(ctxT, kick)
+		return err
+	}
+	return constants.ErrNoConnectionToServer
+}
+
 // SendPush sends a message to an user, if you dont know the serverID that the user is connected to, you need to set a BindingStorage when creating the client
 // TODO: Jaeger?
 func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.Push) error {

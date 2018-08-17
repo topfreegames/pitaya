@@ -189,6 +189,46 @@ func TestRemoteServicePushToUser(t *testing.T) {
 	}
 }
 
+func TestRemoteServiceKickUser(t *testing.T) {
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNetEntity := sessionmocks.NewMockNetworkEntity(ctrl)
+	tables := []struct {
+		name string
+		uid  string
+		sess *session.Session
+		p    *protos.KickMsg
+		err  error
+	}{
+		{"success", "uid1", session.New(mockNetEntity, true), &protos.KickMsg{
+			UserId: "uid1",
+		}, nil},
+		{"sessionNotFound", "uid2", nil, &protos.KickMsg{
+			UserId: "uid2",
+		}, constants.ErrSessionNotFound},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			if table.sess != nil {
+				err := table.sess.Bind(context.Background(), table.uid)
+				assert.NoError(t, err)
+				mockNetEntity.EXPECT().Kick(context.Background())
+				mockNetEntity.EXPECT().Close()
+			}
+			_, err := svc.KickUser(context.Background(), table.p)
+			if table.err != nil {
+				assert.EqualError(t, err, table.err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+
+}
+
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
