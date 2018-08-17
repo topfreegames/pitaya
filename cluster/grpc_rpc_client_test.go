@@ -122,6 +122,66 @@ func TestBroadcastSessionBind(t *testing.T) {
 	}
 }
 
+func TestSendKick(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBindingStorage := mocks.NewMockBindingStorage(ctrl)
+	mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
+	tables := []struct {
+		name           string
+		userId         string
+		bindingStorage interfaces.BindingStorage
+		sv             *Server
+		err            error
+	}{
+		{"bindingstorage", "uid", mockBindingStorage, &Server{
+			Type:     "tp",
+			Frontend: true}, nil,
+		},
+		{"nobindingstorage", "uid", nil, &Server{
+			Type:     "tp",
+			Frontend: true,
+		}, constants.ErrNoBindingStorageModule},
+		{"nobindingstorage", "", mockBindingStorage, &Server{
+			Type:     "tp",
+			Frontend: true,
+		}, nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			c := getConfig()
+			g, err := getRPCClient(c)
+			assert.NoError(t, err)
+
+			if table.bindingStorage != nil {
+				g.clientMap.Store(table.sv.ID, mockPitayaClient)
+				g.bindingStorage = table.bindingStorage
+				mockBindingStorage.EXPECT().GetUserFrontendID(table.userId, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
+					assert.Equal(t, table.userId, u)
+					assert.Equal(t, table.sv.Type, svType)
+					return table.sv.ID, nil
+				})
+
+				mockPitayaClient.EXPECT().KickUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.KickMsg) {
+					assert.Equal(t, table.userId, msg.UserId)
+				})
+			}
+
+			kick := &protos.KickMsg{
+				UserId: table.userId,
+			}
+
+			err = g.SendKick(table.userId, table.sv.Type, kick)
+			if table.err != nil {
+				assert.Equal(t, err, table.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestSendPush(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

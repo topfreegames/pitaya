@@ -167,6 +167,42 @@ func TestNatsRPCClientBroadcastSessionBind(t *testing.T) {
 	subs.Unsubscribe()
 }
 
+func TestNatsRPCClientSendKick(t *testing.T) {
+	uid := "testuid"
+	s := helpers.GetTestNatsServer(t)
+	defer s.Shutdown()
+	cfg := viper.New()
+	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
+	config := getConfig(cfg)
+	sv := getServer()
+
+	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	err := rpcClient.Init()
+	assert.NoError(t, err)
+
+	kickChan := make(chan *nats.Msg)
+	subs, err := rpcClient.conn.ChanSubscribe(GetUserKickTopic(uid, sv.Type), kickChan)
+	assert.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
+
+	kick := &protos.KickMsg{
+		UserId: uid,
+	}
+
+	err = rpcClient.SendKick(uid, sv.Type, kick)
+	assert.NoError(t, err)
+
+	m := helpers.ShouldEventuallyReceive(t, kickChan).(*nats.Msg)
+
+	actual := &protos.KickMsg{}
+	err = proto.Unmarshal(m.Data, actual)
+	assert.NoError(t, err)
+
+	assert.Equal(t, kick.UserId, actual.UserId)
+	err = subs.Unsubscribe()
+	assert.NoError(t, err)
+}
+
 func TestNatsRPCClientSendPush(t *testing.T) {
 	uid := "testuid123"
 	s := helpers.GetTestNatsServer(t)

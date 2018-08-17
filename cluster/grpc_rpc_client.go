@@ -157,6 +157,7 @@ func (gs *GRPCClient) SendKick(userID string, serverType string, kick *protos.Ki
 	if gs.bindingStorage == nil {
 		return constants.ErrNoBindingStorageModule
 	}
+
 	svID, err = gs.bindingStorage.GetUserFrontendID(userID, serverType)
 	if err != nil {
 		return err
