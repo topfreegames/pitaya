@@ -27,7 +27,9 @@ import (
 	"reflect"
 	"runtime/debug"
 
+	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
 	e "github.com/topfreegames/pitaya/errors"
@@ -126,6 +128,26 @@ func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
 	return msgType
 }
 
+// CtxWithDefaultLogger inserts a default logger on ctx to be used on handlers and remotes.
+// If using logrus, sessionsId, route and requestId will be added as fields.
+// Otherwise the pitaya logger will be used as it is.
+func CtxWithDefaultLogger(ctx context.Context, route, sessionID string) context.Context {
+	var defaultLogger logger.Logger
+	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
+	if ok {
+		defaultLogger = logrusLogger.WithFields(
+			logrus.Fields{
+				"sessionId": sessionID,
+				"route":     route,
+				"requestId": uuid.New(),
+			})
+	} else {
+		defaultLogger = logger.Log
+	}
+
+	return context.WithValue(ctx, constants.LoggerCtxKey, defaultLogger)
+}
+
 // GetContextFromRequest gets the context from a request
 func GetContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
 	ctx, err := pcontext.Decode(req.GetMetadata())
@@ -146,5 +168,6 @@ func GetContextFromRequest(req *protos.Request, serverID string) (context.Contex
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
 	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
+	ctx = CtxWithDefaultLogger(ctx, req.GetMsg().GetRoute(), "")
 	return ctx, nil
 }
