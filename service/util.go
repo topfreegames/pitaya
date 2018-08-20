@@ -154,6 +154,8 @@ func processHandlerMessage(
 	remote bool,
 ) ([]byte, error) {
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
+	ctx = util.CtxWithDefaultLogger(ctx, rt.String(), session.UID())
+
 	h, err := getHandler(rt)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrNotFoundCode)

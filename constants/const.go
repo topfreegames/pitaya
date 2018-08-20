@@ -46,6 +46,9 @@ const (
 // SessionCtxKey is the context key where the session will be set
 var SessionCtxKey = "session"
 
+// LoggerCtxKey is the context key where the default logger will be set
+var LoggerCtxKey = "default-logger"
+
 type propagateKey struct{}
 
 // PropagateCtxKey is the context key where the content that will be

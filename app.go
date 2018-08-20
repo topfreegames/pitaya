@@ -502,6 +502,11 @@ func GetSessionFromCtx(ctx context.Context) *session.Session {
 	return ctx.Value(constants.SessionCtxKey).(*session.Session)
 }
 
+// GetDefaultLoggerFromCtx returns the default logger from the given context
+func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
+	return ctx.Value(constants.LoggerCtxKey).(logger.Logger)
+}
+
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls
 func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context.Context {
 	return pcontext.AddToPropagateCtx(ctx, key, val)
