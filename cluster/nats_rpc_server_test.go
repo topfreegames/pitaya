@@ -164,11 +164,13 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	rpcServer.conn = conn
 	err = rpcServer.subscribeToUserKickChannel("someuid", sv.Type)
 	assert.NoError(t, err)
-	dt := []byte("somedata")
+	kick := &protos.KickMsg{UserId: "randomid"}
+	dt, err := proto.Marshal(kick)
+	assert.NoError(t, err)
 	err = conn.Publish(GetUserKickTopic("someuid", sv.Type), dt)
 	assert.NoError(t, err)
-	msg := helpers.ShouldEventuallyReceive(t, rpcServer.getUserKickChannel()).(*nats.Msg)
-	assert.Equal(t, msg.Data, dt)
+	msg := helpers.ShouldEventuallyReceive(t, rpcServer.getUserKickChannel()).(*protos.KickMsg)
+	assert.Equal(t, msg, kick)
 }
 
 func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
@@ -186,6 +188,7 @@ func TestNatsRPCServerGetUserKickChannel(t *testing.T) {
 	sv := getServer()
 	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
 	assert.NotNil(t, n.getUserKickChannel())
+	assert.IsType(t, make(chan *protos.KickMsg), n.getUserKickChannel())
 }
 
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
@@ -432,14 +435,11 @@ func TestNatsRPCServerProcessKick(t *testing.T) {
 		UserId: "someuid",
 	}
 
-	msg, err := proto.Marshal(kick)
-	assert.NoError(t, err)
-
 	pitayaSvMock.EXPECT().KickUser(gomock.Any(), kick).Do(func(ctx context.Context, p *protos.KickMsg) {
 		assert.Equal(t, kick.UserId, p.UserId)
 	})
 
-	rpcServer.userKickCh <- &nats.Msg{Data: msg}
+	rpcServer.userKickCh <- kick
 	time.Sleep(30 * time.Millisecond)
 }
 
