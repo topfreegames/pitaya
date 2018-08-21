@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
@@ -16,14 +15,11 @@ import (
 // MetagameServer ...
 type MetagameServer struct {
 	component.Base
-	Logger logrus.FieldLogger
 }
 
 // NewMetagameMock ...
 func NewMetagameMock() *MetagameServer {
-	return &MetagameServer{
-		Logger: logrus.New(),
-	}
+	return &MetagameServer{}
 }
 
 // CreatePlayerCheatArgs is the struct used as parameter for the CreatePlayerCheat handler
@@ -44,6 +40,8 @@ type CreatePlayerCheatResponse struct {
 
 // CreatePlayerCheat ...
 func (g *MetagameServer) CreatePlayerCheat(ctx context.Context, args *CreatePlayerCheatArgs) (*CreatePlayerCheatResponse, error) {
+	logger := pitaya.GetDefaultLoggerFromCtx(ctx) // The default logger contains a requestId, the route being executed and the sessionId
+	logger.Info("CreatePlayerChest called")
 	// Do nothing. This is just an example of how pipelines can be helpful
 	return &CreatePlayerCheatResponse{
 		Msg: "ok",
@@ -56,20 +54,22 @@ func (g *MetagameServer) CreatePlayerCheat(ctx context.Context, args *CreatePlay
 // as a pipeline function executes for every handler and each of them
 // most probably have different parameter types.
 func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (interface{}, error) {
-	g.Logger.Info("Simple Before exec")
+	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
+	logger.Info("Simple Before exec")
 	createPlayerArgs := in.(*CreatePlayerCheatArgs)
 
-	g.Logger.Infof("Name: %s", createPlayerArgs.Name)
-	g.Logger.Infof("Email: %s", createPlayerArgs.Email)
-	g.Logger.Infof("SoftCurrency: %d", createPlayerArgs.SoftCurrency)
-	g.Logger.Infof("HardCurrency: %d", createPlayerArgs.HardCurrency)
+	logger.Infof("Name: %s", createPlayerArgs.Name)
+	logger.Infof("Email: %s", createPlayerArgs.Email)
+	logger.Infof("SoftCurrency: %d", createPlayerArgs.SoftCurrency)
+	logger.Infof("HardCurrency: %d", createPlayerArgs.HardCurrency)
 
 	return in, nil
 }
 
 // Simple example of an after pipeline. The 2nd argument is the handler response.
 func (g *MetagameServer) simpleAfter(ctx context.Context, resp interface{}) (interface{}, error) {
-	g.Logger.Info("Simple After exec - response:", resp)
+	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
+	logger.Info("Simple After exec - response:", resp)
 
 	return resp, nil
 }
