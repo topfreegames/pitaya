@@ -21,6 +21,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -305,6 +306,26 @@ func (c *Client) Disconnect() {
 	}
 }
 
+// ConnectToTLS connects to the server at addr using TLS, for now the only supported protocol is tcp
+// this methods blocks as it also handles the messages from the server
+func (c *Client) ConnectToTLS(addr string, skipVerify bool) error {
+	conn, err := tls.Dial("tcp", addr, &tls.Config{
+		InsecureSkipVerify: skipVerify,
+	})
+	if err != nil {
+		return err
+	}
+	c.conn = conn
+	c.IncomingMsgChan = make(chan *message.Message, 10)
+
+	if err = c.handleHandshake(); err != nil {
+		return err
+	}
+
+	c.closeChan = make(chan struct{})
+	return nil
+}
+
 // ConnectTo connects to the server at addr, for now the only supported protocol is tcp
 // this methods blocks as it also handles the messages from the server
 func (c *Client) ConnectTo(addr string) error {
@@ -315,18 +336,23 @@ func (c *Client) ConnectTo(addr string) error {
 	c.conn = conn
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
-	err = c.sendHandshakeRequest()
-	if err != nil {
-		return err
-	}
-
-	err = c.handleHandshakeResponse()
-	if err != nil {
+	if err = c.handleHandshake(); err != nil {
 		return err
 	}
 
 	c.closeChan = make(chan struct{})
 
+	return nil
+}
+
+func (c *Client) handleHandshake() error {
+	if err := c.sendHandshakeRequest(); err != nil {
+		return err
+	}
+
+	if err := c.handleHandshakeResponse(); err != nil {
+		return err
+	}
 	return nil
 }
 
