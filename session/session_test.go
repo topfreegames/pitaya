@@ -571,7 +571,7 @@ func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
 	ss := New(mockEntity, true)
 	assert.NotNil(t, ss)
-	ss.Subscription = subs
+	ss.Subscriptions = []*nats.Subscription{subs}
 
 	mockEntity.EXPECT().Close()
 	ss.Close()
