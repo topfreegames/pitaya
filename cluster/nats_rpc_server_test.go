@@ -127,10 +127,11 @@ func TestNatsRPCServerOnSessionBind(t *testing.T) {
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	sess := session.New(nil, true, "uid123")
-	assert.Nil(t, sess.Subscription)
+	assert.Nil(t, sess.Subscriptions)
 	err = rpcServer.onSessionBind(context.Background(), sess)
 	assert.NoError(t, err)
-	assert.NotNil(t, sess.Subscription)
+	assert.NotNil(t, sess.Subscriptions)
+	assert.Len(t, sess.Subscriptions, 2)
 	assert.NotNil(t, rpcServer.userKickCh)
 }
 
@@ -162,8 +163,9 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
-	err = rpcServer.subscribeToUserKickChannel("someuid", sv.Type)
+	sub, err := rpcServer.subscribeToUserKickChannel("someuid", sv.Type)
 	assert.NoError(t, err)
+	assert.NotNil(t, sub)
 	kick := &protos.KickMsg{UserId: "randomid"}
 	dt, err := proto.Marshal(kick)
 	assert.NoError(t, err)

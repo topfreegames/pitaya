@@ -91,7 +91,7 @@ type Session struct {
 	IsFrontend        bool                   // if session is a frontend session
 	frontendID        string                 // the id of the frontend that owns the session
 	frontendSessionID int64                  // the id of the session on the frontend server
-	Subscription      *nats.Subscription     // subscription created on bind when using nats rpc server
+	Subscriptions     []*nats.Subscription   // subscription created on bind when using nats rpc server
 }
 
 type sessionIDService struct {
@@ -329,13 +329,15 @@ func (s *Session) Close() {
 	sessionsByID.Delete(s.ID())
 	sessionsByUID.Delete(s.UID())
 	// TODO: this logic should be moved to nats rpc server
-	if s.IsFrontend && s.Subscription != nil {
+	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
-		err := s.Subscription.Unsubscribe()
-		if err != nil {
-			logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
-		} else {
-			logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+		for _, sub := range s.Subscriptions {
+			err := sub.Unsubscribe()
+			if err != nil {
+				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
+			} else {
+				logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+			}
 		}
 	}
 	s.entity.Close()

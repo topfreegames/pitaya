@@ -129,15 +129,15 @@ func GetBindBroadcastTopic(svType string) string {
 // onSessionBind should be called on each session bind
 func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s *session.Session) error {
 	if ns.server.Frontend {
-		subs, err := ns.subscribeToUserMessages(s.UID(), ns.server.Type)
+		subu, err := ns.subscribeToUserMessages(s.UID(), ns.server.Type)
 		if err != nil {
 			return err
 		}
-		err = ns.subscribeToUserKickChannel(s.UID(), ns.server.Type)
+		subk, err := ns.subscribeToUserKickChannel(s.UID(), ns.server.Type)
 		if err != nil {
 			return err
 		}
-		s.Subscription = subs
+		s.Subscriptions = []*nats.Subscription{subu, subk}
 	}
 	return nil
 }
@@ -152,8 +152,8 @@ func (ns *NatsRPCServer) subscribeToBindingsChannel() error {
 	return err
 }
 
-func (ns *NatsRPCServer) subscribeToUserKickChannel(uid string, svType string) error {
-	_, err := ns.conn.Subscribe(GetUserKickTopic(uid, svType), func(msg *nats.Msg) {
+func (ns *NatsRPCServer) subscribeToUserKickChannel(uid string, svType string) (*nats.Subscription, error) {
+	sub, err := ns.conn.Subscribe(GetUserKickTopic(uid, svType), func(msg *nats.Msg) {
 		kick := &protos.KickMsg{}
 		err := proto.Unmarshal(msg.Data, kick)
 		if err != nil {
@@ -161,11 +161,11 @@ func (ns *NatsRPCServer) subscribeToUserKickChannel(uid string, svType string) e
 		}
 		ns.userKickCh <- kick
 	})
-	return err
+	return sub, err
 }
 
 func (ns *NatsRPCServer) subscribeToUserMessages(uid string, svType string) (*nats.Subscription, error) {
-	subs, err := ns.conn.Subscribe(GetUserMessagesTopic(uid, svType), func(msg *nats.Msg) {
+	sub, err := ns.conn.Subscribe(GetUserMessagesTopic(uid, svType), func(msg *nats.Msg) {
 		push := &protos.Push{}
 		err := proto.Unmarshal(msg.Data, push)
 		if err != nil {
@@ -176,7 +176,7 @@ func (ns *NatsRPCServer) subscribeToUserMessages(uid string, svType string) (*na
 	if err != nil {
 		return nil, err
 	}
-	return subs, nil
+	return sub, nil
 }
 
 func (ns *NatsRPCServer) handleMessages() {
