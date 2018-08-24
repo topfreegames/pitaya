@@ -447,9 +447,9 @@ func (r *RemoteService) DumpServices() {
 }
 
 // Docs returns documentation for remotes
-func (r *RemoteService) Docs() (map[string]interface{}, error) {
+func (r *RemoteService) Docs(getPtrNames bool) (map[string]interface{}, error) {
 	if r == nil {
 		return map[string]interface{}{}, nil
 	}
-	return docgenerator.RemotesDocs(r.server.Type, r.services)
+	return docgenerator.RemotesDocs(r.server.Type, r.services, getPtrNames)
 }

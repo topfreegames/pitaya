@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/topfreegames/pitaya"
@@ -72,4 +73,19 @@ func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*
 	return &protos.RPCRes{
 		Msg: msg.GetMsg(),
 	}, nil
+}
+
+// Docs returns documentation
+func (c *ConnectorRemote) Docs(ctx context.Context, ddd *protos.Doc) (*protos.Doc, error) {
+	d, err := pitaya.Documentation(true)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := json.Marshal(d)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.Doc{Doc: string(doc)}, nil
 }

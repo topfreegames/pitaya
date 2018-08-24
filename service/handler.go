@@ -319,9 +319,9 @@ func (h *HandlerService) DumpServices() {
 }
 
 // Docs returns documentation for handlers
-func (h *HandlerService) Docs() (map[string]interface{}, error) {
+func (h *HandlerService) Docs(getPtrNames bool) (map[string]interface{}, error) {
 	if h == nil {
 		return map[string]interface{}{}, nil
 	}
-	return docgenerator.HandlersDocs(h.server.Type, h.services)
+	return docgenerator.HandlersDocs(h.server.Type, h.services, getPtrNames)
 }
