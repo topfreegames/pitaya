@@ -483,7 +483,7 @@ func TestExtractSpan(t *testing.T) {
 }
 
 func TestDocumentation(t *testing.T) {
-	doc, err := Documentation()
+	doc, err := Documentation(false)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"handlers": map[string]interface{}{},
@@ -536,5 +536,75 @@ func TestDocumentation(t *testing.T) {
 				},
 			},
 		},
+	}, doc)
+}
+
+func TestDocumentationTrue(t *testing.T) {
+	doc, err := Documentation(true)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"remotes": map[string]interface{}{
+			"testtype.sys.bindsession": map[string]interface{}{
+				"input": map[string]interface{}{
+					"*protos.Session": map[string]interface{}{
+						"data": "[]byte",
+						"id":   "int64",
+						"uid":  "string",
+					},
+				},
+				"output": []interface{}{map[string]interface{}{
+					"*protos.Response": map[string]interface{}{
+						"data": "[]byte",
+						"error": map[string]interface{}{
+							"*protos.Error": map[string]interface{}{
+								"code":     "string",
+								"metadata": "map[string]string",
+								"msg":      "string",
+							},
+						},
+					},
+				},
+					"error",
+				},
+			},
+			"testtype.sys.kick": map[string]interface{}{
+				"input": map[string]interface{}{
+					"*protos.KickMsg": map[string]interface{}{
+						"userId": "string",
+					},
+				},
+				"output": []interface{}{map[string]interface{}{
+					"*protos.KickAnswer": map[string]interface{}{
+						"kicked": "bool",
+					},
+				},
+					"error",
+				},
+			},
+			"testtype.sys.pushsession": map[string]interface{}{
+				"input": map[string]interface{}{
+					"*protos.Session": map[string]interface{}{
+						"data": "[]byte",
+						"id":   "int64",
+						"uid":  "string",
+					},
+				},
+				"output": []interface{}{map[string]interface{}{
+					"*protos.Response": map[string]interface{}{
+						"data": "[]byte",
+						"error": map[string]interface{}{
+							"*protos.Error": map[string]interface{}{
+								"code":     "string",
+								"metadata": "map[string]string",
+								"msg":      "string",
+							},
+						},
+					},
+				},
+					"error",
+				},
+			},
+		},
+		"handlers": map[string]interface{}{},
 	}, doc)
 }

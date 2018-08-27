@@ -86,7 +86,7 @@ func TestHandlersDoc(t *testing.T) {
 	assert.NoError(t, err)
 	handlerServices[s.Name] = s
 
-	doc, err := HandlersDocs("metagame", handlerServices)
+	doc, err := HandlersDocs("metagame", handlerServices, false)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"metagame.MyComp.HandlerEmpty": map[string]interface{}{
@@ -164,6 +164,92 @@ func TestHandlersDoc(t *testing.T) {
 	}, doc)
 }
 
+func TestHandlersDocTrue(t *testing.T) {
+	t.Parallel()
+
+	handlerServices := map[string]*component.Service{}
+	s := component.NewService(&MyComp{}, []component.Option{})
+	err := s.ExtractHandler()
+	assert.NoError(t, err)
+	handlerServices[s.Name] = s
+
+	doc, err := HandlersDocs("metagame", handlerServices, false)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"metagame.MyComp.HandlerOrRemoteStruct": map[string]interface{}{
+			"input": map[string]interface{}{
+				"time":  "time.Time",
+				"bytes": "[]byte",
+				"int":   "int",
+				"notPointer": map[string]interface{}{
+					"int": "int",
+					"str": "string",
+				},
+				"slice": []interface{}{map[string]interface{}{
+					"int": "int",
+					"str": "string",
+				},
+				},
+				"str": "string",
+				"struct": map[string]interface{}{
+					"int": "int",
+					"notPointer": map[string]interface{}{
+						"int": "int",
+						"str": "string",
+					},
+				},
+			},
+			"output": []interface{}{map[string]interface{}{
+				"Str":   "string",
+				"bytes": "[]byte",
+				"int":   "int",
+				"notPointer": map[string]interface{}{
+					"Int": "int",
+					"str": "string",
+				},
+				"slice": []interface{}{map[string]interface{}{
+					"Str": "string",
+					"int": "int",
+				},
+				},
+				"struct": map[string]interface{}{
+					"int": "int",
+					"notPointer": map[string]interface{}{
+						"Int": "int",
+						"str": "string",
+					},
+				},
+				"time": "time.Time",
+			},
+				"error",
+			},
+		},
+		"metagame.MyComp.HandlerRaw": map[string]interface{}{
+			"input": "[]byte",
+			"output": []interface{}{
+				"[]byte",
+				"error",
+			},
+		},
+		"metagame.MyComp.RemoteStruct": map[string]interface{}{
+			"input": map[string]interface{}{
+				"A": "int32",
+				"B": "string",
+			},
+			"output": []interface{}{map[string]interface{}{
+				"A": "int32",
+				"B": "string",
+			},
+				"error",
+			},
+		},
+		"metagame.MyComp.HandlerEmpty": map[string]interface{}{
+			"output": []interface{}{},
+			"input":  interface{}(nil),
+		},
+	}, doc)
+}
+
 func TestRemotesDoc(t *testing.T) {
 	t.Parallel()
 
@@ -173,7 +259,7 @@ func TestRemotesDoc(t *testing.T) {
 	assert.NoError(t, err)
 	remoteServices[s.Name] = s
 
-	doc, err := RemotesDocs("metagame", remoteServices)
+	doc, err := RemotesDocs("metagame", remoteServices, false)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"metagame.MyComp.RemoteStruct": map[string]interface{}{
@@ -186,6 +272,36 @@ func TestRemotesDoc(t *testing.T) {
 					"A": "int32",
 					"B": "string",
 				},
+				"error",
+			},
+		},
+	}, doc)
+}
+
+func TestRemotesDocTrue(t *testing.T) {
+	t.Parallel()
+	remoteServices := map[string]*component.Service{}
+	s := component.NewService(&MyComp{}, []component.Option{})
+	err := s.ExtractRemote()
+	assert.NoError(t, err)
+	remoteServices[s.Name] = s
+	doc, err := RemotesDocs("metagame", remoteServices, true)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"metagame.MyComp.RemoteStruct": map[string]interface{}{
+			"input": map[string]interface{}{
+				"*test.SomeStruct": map[string]interface{}{
+
+					"A": "int32",
+					"B": "string",
+				},
+			},
+			"output": []interface{}{
+				map[string]interface{}{
+					"*test.SomeStruct": map[string]interface{}{
+						"A": "int32",
+						"B": "string",
+					}},
 				"error",
 			},
 		},

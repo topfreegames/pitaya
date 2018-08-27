@@ -11,3 +11,7 @@ message RPCMsg {
 message RPCRes {
   string Msg = 1;
 }
+
+message Doc {
+  string doc = 1;
+}

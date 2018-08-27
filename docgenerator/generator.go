@@ -43,7 +43,7 @@ type doc struct {
 }
 
 // HandlersDocs returns a map from route to input and output
-func HandlersDocs(serverType string, services map[string]*component.Service) (map[string]interface{}, error) {
+func HandlersDocs(serverType string, services map[string]*component.Service, getPtrNames bool) (map[string]interface{}, error) {
 	docs := &docs{
 		Handlers: map[string]*doc{},
 	}
@@ -51,7 +51,7 @@ func HandlersDocs(serverType string, services map[string]*component.Service) (ma
 	for serviceName, service := range services {
 		for name, handler := range service.Handlers {
 			routeName := route.NewRoute(serverType, serviceName, name)
-			docs.Handlers[routeName.String()] = docForMethod(handler.Method)
+			docs.Handlers[routeName.String()] = docForMethod(handler.Method, getPtrNames)
 		}
 	}
 
@@ -59,7 +59,7 @@ func HandlersDocs(serverType string, services map[string]*component.Service) (ma
 }
 
 // RemotesDocs returns a map from route to input and output
-func RemotesDocs(serverType string, services map[string]*component.Service) (map[string]interface{}, error) {
+func RemotesDocs(serverType string, services map[string]*component.Service, getPtrNames bool) (map[string]interface{}, error) {
 	docs := &docs{
 		Remotes: map[string]*doc{},
 	}
@@ -67,7 +67,7 @@ func RemotesDocs(serverType string, services map[string]*component.Service) (map
 	for serviceName, service := range services {
 		for name, remote := range service.Remotes {
 			routeName := route.NewRoute(serverType, serviceName, name)
-			docs.Remotes[routeName.String()] = docForMethod(remote.Method)
+			docs.Remotes[routeName.String()] = docForMethod(remote.Method, getPtrNames)
 		}
 	}
 
@@ -87,19 +87,19 @@ func (d docMap) toMap() (map[string]interface{}, error) {
 	return m, nil
 }
 
-func docForMethod(method reflect.Method) *doc {
+func docForMethod(method reflect.Method, getPtrNames bool) *doc {
 	doc := &doc{
 		Output: []interface{}{},
 	}
 
 	if method.Type.NumIn() > 2 {
 		isOutput := false
-		doc.Input = docForType(method.Type.In(2), isOutput)
+		doc.Input = docForType(method.Type.In(2), isOutput, getPtrNames)
 	}
 
 	for i := 0; i < method.Type.NumOut(); i++ {
 		isOutput := true
-		doc.Output = append(doc.Output, docForType(method.Type.Out(i), isOutput))
+		doc.Output = append(doc.Output, docForType(method.Type.Out(i), isOutput, getPtrNames))
 	}
 
 	return doc
@@ -114,19 +114,24 @@ func parseStruct(typ reflect.Type) reflect.Type {
 	}
 }
 
-func docForType(typ reflect.Type, isOutput bool) interface{} {
+func docForType(typ reflect.Type, isOutput bool, getPtrNames bool) interface{} {
 	if typ.Kind() == reflect.Ptr {
 		fields := map[string]interface{}{}
 		elm := typ.Elem()
 		for i := 0; i < elm.NumField(); i++ {
 			if name, valid := getName(elm.Field(i), isOutput); valid {
-				fields[name] = parseType(elm.Field(i).Type, isOutput)
+				fields[name] = parseType(elm.Field(i).Type, isOutput, getPtrNames)
 			}
+		}
+		if getPtrNames {
+			composite := map[string]interface{}{}
+			composite[typ.String()] = fields
+			return composite
 		}
 		return fields
 	}
 
-	return parseType(typ, isOutput)
+	return parseType(typ, isOutput, getPtrNames)
 }
 
 func validName(field reflect.StructField) bool {
@@ -170,7 +175,7 @@ func getName(field reflect.StructField, isOutput bool) (name string, valid bool)
 	return strings.Split(name, ",")[0], true
 }
 
-func parseType(typ reflect.Type, isOutput bool) interface{} {
+func parseType(typ reflect.Type, isOutput bool, getPtrNames bool) interface{} {
 	var elm reflect.Type
 
 	switch typ.Kind() {
@@ -182,7 +187,7 @@ func parseType(typ reflect.Type, isOutput bool) interface{} {
 			return typ.String()
 		}
 	case reflect.Slice:
-		parsed := parseType(typ.Elem(), isOutput)
+		parsed := parseType(typ.Elem(), isOutput, getPtrNames)
 		if parsed == "uint8" {
 			return "[]byte"
 		}
@@ -194,8 +199,13 @@ func parseType(typ reflect.Type, isOutput bool) interface{} {
 	fields := map[string]interface{}{}
 	for i := 0; i < elm.NumField(); i++ {
 		if name, valid := getName(elm.Field(i), isOutput); valid {
-			fields[name] = parseType(elm.Field(i).Type, isOutput)
+			fields[name] = parseType(elm.Field(i).Type, isOutput, getPtrNames)
 		}
+	}
+	if getPtrNames {
+		composite := map[string]interface{}{}
+		composite[typ.String()] = fields
+		return composite
 	}
 	return fields
 }

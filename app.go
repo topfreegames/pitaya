@@ -524,12 +524,12 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 }
 
 // Documentation returns handler and remotes documentacion
-func Documentation() (map[string]interface{}, error) {
-	handlerDocs, err := handlerService.Docs()
+func Documentation(getPtrNames bool) (map[string]interface{}, error) {
+	handlerDocs, err := handlerService.Docs(getPtrNames)
 	if err != nil {
 		return nil, err
 	}
-	remoteDocs, err := remoteService.Docs()
+	remoteDocs, err := remoteService.Docs(getPtrNames)
 	if err != nil {
 		return nil, err
 	}
