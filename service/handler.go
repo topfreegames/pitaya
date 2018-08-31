@@ -49,7 +49,8 @@ import (
 )
 
 var (
-	handlers = make(map[string]*component.Handler) // all handler method
+	handlers    = make(map[string]*component.Handler) // all handler method
+	handlerType = "handler"
 )
 
 type (
@@ -307,6 +308,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 			a.Session.ResponseMID(ctx, mid, ret)
 		}
 	} else {
+		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, false)
 		tracing.FinishSpan(ctx, err)
 	}
 }

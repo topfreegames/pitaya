@@ -727,6 +727,7 @@
     "github.com/coreos/etcd/integration",
     "github.com/gogo/protobuf/proto",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
     "github.com/gorilla/websocket",
     "github.com/nats-io/gnatsd/server",
