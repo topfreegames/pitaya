@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
@@ -42,7 +43,6 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 		err          error
 	}{
 		{"success", uuid.New().String(), uuid.New().String(), "connector", nil},
-		{"fail", uuid.New().String(), uuid.New().String(), "connector", nil},
 	}
 
 	for _, table := range tables {
@@ -63,9 +63,42 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 			if table.err == nil {
 				mockNetworkEntity.EXPECT().Close().Times(2)
 			}
-			err = SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
 
+			failedUids, err := SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
+			assert.Nil(t, failedUids)
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestSendKickToUsersFail(t *testing.T) {
+	tables := []struct {
+		name         string
+		uid1         string
+		uid2         string
+		frontendType string
+		err          error
+	}{
+		{"fail for one user", uuid.New().String(), uuid.New().String(), "connector", constants.ErrKickingUsers},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+
+			s1 := session.New(mockNetworkEntity, true)
+			err := s1.Bind(context.Background(), table.uid1)
+			assert.NoError(t, err)
+
+			mockNetworkEntity.EXPECT().Kick(context.Background()).Times(1)
+			mockNetworkEntity.EXPECT().Close()
+			failedUids, err := SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
+			assert.Len(t, failedUids, 1)
+			assert.Equal(t, failedUids[0], table.uid2)
+			assert.Equal(t, err, table.err)
+
 		})
 	}
 }
@@ -91,8 +124,9 @@ func TestSendKickToUsersRemoteSession(t *testing.T) {
 				mockRPCClient.EXPECT().SendKick(uid, gomock.Any(), expectedKick)
 			}
 
-			err := SendKickToUsers(table.uids, table.frontendType)
+			failedUids, err := SendKickToUsers(table.uids, table.frontendType)
 			assert.NoError(t, err)
+			assert.Nil(t, failedUids)
 		})
 	}
 }
