@@ -315,6 +315,11 @@ func initSysRemotes() {
 	)
 }
 
+func periodicMetrics() {
+	period := app.config.GetDuration("pitaya.metrics.periodicMetrics.period")
+	go metrics.ReportSysMetrics(app.metricsReporters, period)
+}
+
 // Start starts the app
 func Start() {
 	if !app.configured {
@@ -395,6 +400,8 @@ func Start() {
 		app.messageEncoder,
 		app.metricsReporters,
 	)
+
+	periodicMetrics()
 
 	listen()
 

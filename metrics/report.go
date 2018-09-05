@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/topfreegames/pitaya/constants"
@@ -69,5 +70,22 @@ func ReportMessageProcessDelayFromCtx(ctx context.Context, reporters []Reporter,
 func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
 	for _, r := range reporters {
 		r.ReportGauge(ConnectedClients, map[string]string{}, float64(number))
+	}
+}
+
+// ReportSysMetrics reports sys metrics
+func ReportSysMetrics(reporters []Reporter, period time.Duration) {
+	for {
+		for _, r := range reporters {
+			num := runtime.NumGoroutine()
+			m := &runtime.MemStats{}
+			runtime.ReadMemStats(m)
+
+			r.ReportGauge(Goroutines, map[string]string{}, float64(num))
+			r.ReportGauge(HeapSize, map[string]string{}, float64(m.Alloc))
+			r.ReportGauge(HeapObjects, map[string]string{}, float64(m.HeapObjects))
+		}
+
+		time.Sleep(period)
 	}
 }

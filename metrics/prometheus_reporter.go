@@ -119,6 +119,39 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 		[]string{},
 	)
 
+	p.gaugeReportersMap[Goroutines] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "sys",
+			Name:        Goroutines,
+			Help:        "the current number of goroutines",
+			ConstLabels: constLabels,
+		},
+		[]string{},
+	)
+
+	p.gaugeReportersMap[HeapSize] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "sys",
+			Name:        HeapSize,
+			Help:        "the current heap size",
+			ConstLabels: constLabels,
+		},
+		[]string{},
+	)
+
+	p.gaugeReportersMap[HeapObjects] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "sys",
+			Name:        HeapObjects,
+			Help:        "the current number of allocated heap objects",
+			ConstLabels: constLabels,
+		},
+		[]string{},
+	)
+
 	toRegister := make([]prometheus.Collector, 0)
 	for _, c := range p.countReportersMap {
 		toRegister = append(toRegister, c)
