@@ -48,6 +48,18 @@ func (g *MetagameServer) CreatePlayerCheat(ctx context.Context, args *CreatePlay
 	}, nil
 }
 
+// HandlerNoArgResponse ...
+type HandlerNoArgResponse struct {
+	Msg string `json:"msg"`
+}
+
+// HandlerNoArg is a simple handler that do not have any arguments
+func (g *MetagameServer) HandlerNoArg(ctx context.Context) (*HandlerNoArgResponse, error) {
+	return &HandlerNoArgResponse{
+		Msg: "ok",
+	}, nil
+}
+
 // Simple example of a before pipeline that actually asserts the type of the
 // in parameter.
 // IMPORTANT: that this kind of pipeline will be hard to exist in real code
@@ -56,13 +68,15 @@ func (g *MetagameServer) CreatePlayerCheat(ctx context.Context, args *CreatePlay
 func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (interface{}, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
 	logger.Info("Simple Before exec")
-	createPlayerArgs := in.(*CreatePlayerCheatArgs)
 
-	logger.Infof("Name: %s", createPlayerArgs.Name)
-	logger.Infof("Email: %s", createPlayerArgs.Email)
-	logger.Infof("SoftCurrency: %d", createPlayerArgs.SoftCurrency)
-	logger.Infof("HardCurrency: %d", createPlayerArgs.HardCurrency)
+	if in != nil {
+		createPlayerArgs := in.(*CreatePlayerCheatArgs)
 
+		logger.Infof("Name: %s", createPlayerArgs.Name)
+		logger.Infof("Email: %s", createPlayerArgs.Email)
+		logger.Infof("SoftCurrency: %d", createPlayerArgs.SoftCurrency)
+		logger.Infof("HardCurrency: %d", createPlayerArgs.HardCurrency)
+	}
 	return in, nil
 }
 

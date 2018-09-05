@@ -19,6 +19,10 @@ type DefaultValidator struct {
 // This function has the pipeline.Handler signature so
 // it is possible to use it as a pipeline function
 func (v *DefaultValidator) Validate(ctx context.Context, in interface{}) (interface{}, error) {
+	if in == nil {
+		return in, nil
+	}
+
 	v.lazyinit()
 	if err := v.validate.Struct(in); err != nil {
 		return nil, err
