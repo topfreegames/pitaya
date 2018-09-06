@@ -180,6 +180,10 @@ Metrics Reporting
     - map[string]string{}
     - map[string]string
     - Tags to be added to reported metrics
+  * - pitaya.metrics.periodicMetrics.period
+    - 15s
+    - string
+    - Period that system metrics will be reported
 
 Concurrency
 ===========

@@ -13,4 +13,10 @@ var (
 	DroppedMessages = "dropped_messages"
 	// ProcessDelay reports the message processing delay to handle the messages at the handler service
 	ProcessDelay = "handler_delay_ns"
+	// Goroutines reports the number of goroutines
+	Goroutines = "goroutines"
+	// HeapSize reports the size of heap
+	HeapSize = "heapsize"
+	// HeapObjects reports the number of allocated heap objects
+	HeapObjects = "heapobjects"
 )
