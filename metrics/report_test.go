@@ -34,23 +34,103 @@ import (
 )
 
 func TestReportTimingFromCtx(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockMetricsReporter := mocks.NewMockReporter(ctrl)
+	t.Run("test-duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
 
-	originalTs := time.Now().UnixNano()
-	expectedRoute := uuid.New().String()
-	expectedType := uuid.New().String()
-	expectedErrored := true
-	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		expectedErrored := true
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
 
-	time.Sleep(200 * time.Millisecond) // to test duration report
-	mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, gomock.Any(), gomock.Any()).Do(
-		func(metric string, tags map[string]string, duration float64) {
-			assert.InDelta(t, duration, time.Now().UnixNano()-originalTs, 10e6)
-		},
-	)
+		time.Sleep(200 * time.Millisecond) // to test duration report
+		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, gomock.Any(), gomock.Any()).Do(
+			func(metric string, tags map[string]string, duration float64) {
+				assert.InDelta(t, duration, time.Now().UnixNano()-originalTs, 10e6)
+			},
+		)
 
-	ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+	})
+
+	t.Run("test-tags", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
+
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		expectedErrored := false
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, map[string]string{
+			"key": "value",
+		})
+
+		expectedTags := map[string]string{
+			"route":  expectedRoute,
+			"status": "ok",
+			"type":   expectedType,
+			"key":    "value",
+		}
+
+		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, expectedTags, gomock.Any())
+
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+	})
+
+	t.Run("test-tags-not-correct-type", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
+
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		expectedErrored := false
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, "not-map")
+
+		expectedTags := map[string]string{
+			"route":  expectedRoute,
+			"status": "ok",
+			"type":   expectedType,
+		}
+
+		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, expectedTags, gomock.Any())
+
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+	})
+}
+
+func TestReportMessageProcessDelayFromCtx(t *testing.T) {
+	t.Run("test-tags", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
+
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, map[string]string{
+			"key": "value",
+		})
+
+		expectedTags := map[string]string{
+			"route": expectedRoute,
+			"type":  expectedType,
+			"key":   "value",
+		}
+
+		mockMetricsReporter.EXPECT().ReportSummary(ProcessDelay, expectedTags, gomock.Any())
+
+		ReportMessageProcessDelayFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType)
+	})
 }

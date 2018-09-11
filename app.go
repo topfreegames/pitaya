@@ -514,6 +514,15 @@ func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
 	return ctx.Value(constants.LoggerCtxKey).(logger.Logger)
 }
 
+// AddMetricTagsToPropagateCtx adds a key and metric tags that will
+// be propagated through RPC calls
+func AddMetricTagsToPropagateCtx(
+	ctx context.Context,
+	tags map[string]string,
+) context.Context {
+	return pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, tags)
+}
+
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls
 func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context.Context {
 	return pcontext.AddToPropagateCtx(ctx, key, val)

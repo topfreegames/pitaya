@@ -462,6 +462,18 @@ func TestGetSessionFromCtx(t *testing.T) {
 	assert.Equal(t, ss, s)
 }
 
+func TestAddMetricTagsToPropagateCtx(t *testing.T) {
+	ctx := AddMetricTagsToPropagateCtx(context.Background(), map[string]string{
+		"key": "value",
+	})
+	val := ctx.Value(constants.PropagateCtxKey)
+	assert.Equal(t, map[string]interface{}{
+		constants.MetricTagsKey: map[string]string{
+			"key": "value",
+		},
+	}, val)
+}
+
 func TestAddToPropagateCtx(t *testing.T) {
 	ctx := AddToPropagateCtx(context.Background(), "key", "val")
 	val := ctx.Value(constants.PropagateCtxKey)
