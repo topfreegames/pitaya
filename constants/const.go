@@ -70,3 +70,7 @@ var StartTimeKey = "req-start-time"
 
 // RouteKey is the key holding the request route to be sent over the context
 var RouteKey = "req-route"
+
+// MetricTagsKey is the key holding request tags to be sent over the context
+// to be reported
+var MetricTagsKey = "metric-tags"
