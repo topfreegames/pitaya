@@ -285,19 +285,19 @@ func TestAddRoute(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 	app.router = nil
-	err := AddRoute("somesv", func(session *session.Session, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
+	err := AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
 		return nil, nil
 	})
 	assert.EqualError(t, constants.ErrRouterNotInitialized, err.Error())
 
 	app.router = router.New()
-	err = AddRoute("somesv", func(session *session.Session, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
+	err = AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
 		return nil, nil
 	})
 	assert.NoError(t, err)
 
 	app.running = true
-	err = AddRoute("somesv", func(session *session.Session, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
+	err = AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
 		return nil, nil
 	})
 	assert.EqualError(t, constants.ErrChangeRouteWhileRunning, err.Error())

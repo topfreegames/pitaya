@@ -21,6 +21,7 @@
 package router
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
@@ -30,7 +31,6 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/session"
 )
 
 // Router struct
@@ -41,7 +41,7 @@ type Router struct {
 
 // RoutingFunc defines a routing function
 type RoutingFunc func(
-	session *session.Session,
+	ctx context.Context,
 	route *route.Route,
 	payload []byte,
 	servers map[string]*cluster.Server,
@@ -74,9 +74,9 @@ func (r *Router) defaultRoute(
 
 // Route gets the right server to use in the call
 func (r *Router) Route(
+	ctx context.Context,
 	rpcType protos.RPCType,
 	svType string,
-	session *session.Session,
 	route *route.Route,
 	msg *message.Message,
 ) (*cluster.Server, error) {
@@ -97,7 +97,7 @@ func (r *Router) Route(
 		server := r.defaultRoute(serversOfType)
 		return server, nil
 	}
-	return routeFunc(session, route, msg.Data, serversOfType)
+	return routeFunc(ctx, route, msg.Data, serversOfType)
 }
 
 // AddRoute adds a routing function to a server type
