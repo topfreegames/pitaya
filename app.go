@@ -145,17 +145,32 @@ func Configure(
 func configureMetrics(serverType string) {
 	app.metricsReporters = make([]metrics.Reporter, 0)
 
-	defaultTags := app.config.GetStringMapString("pitaya.metrics.tags")
+	constTags := app.config.GetStringMapString("pitaya.metrics.constTags")
 	if app.config.GetBool("pitaya.metrics.prometheus.enabled") {
-		logger.Log.Infof("prometheus is enabled, configuring the metrics reporter on port %d", app.config.GetInt("pitaya.metrics.prometheus.port"))
-		AddMetricsReporter(metrics.GetPrometheusReporter(serverType, app.config.GetString("pitaya.game"), app.config.GetInt("pitaya.metrics.prometheus.port"), defaultTags))
+		port := app.config.GetInt("pitaya.metrics.prometheus.port")
+		game := app.config.GetString("pitaya.game")
+		logger.Log.Infof(
+			"prometheus is enabled, configuring the metrics reporter on port %d", port,
+		)
+
+		additionalTags := app.config.GetStringMapString("pitaya.metrics.additionalTags")
+		prometheus := metrics.GetPrometheusReporter(serverType, game, port,
+			constTags, additionalTags)
+		AddMetricsReporter(prometheus)
 	} else {
 		logger.Log.Info("prometheus is disabled, the metrics reporter will not be enabled")
 	}
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
-		logger.Log.Infof("statsd is enabled, configuring the metrics reporter with host: %s", app.config.Get("pitaya.metrics.statsd.host"))
-		metricsReporter, err := metrics.NewStatsdReporter(app.config, serverType, defaultTags)
+		logger.Log.Infof(
+			"statsd is enabled, configuring the metrics reporter with host: %s",
+			app.config.Get("pitaya.metrics.statsd.host"),
+		)
+		metricsReporter, err := metrics.NewStatsdReporter(
+			app.config,
+			serverType,
+			constTags,
+		)
 		if err != nil {
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {
@@ -515,7 +530,8 @@ func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
 }
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will
-// be propagated through RPC calls
+// be propagated through RPC calls. Use the same tags that are at
+// 'pitaya.metrics.additionalTags' config
 func AddMetricTagsToPropagateCtx(
 	ctx context.Context,
 	tags map[string]string,

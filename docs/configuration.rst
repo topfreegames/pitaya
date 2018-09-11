@@ -176,10 +176,14 @@ Metrics Reporting
     - 9090
     - int
     - Port to expose prometheus metrics
-  * - pitaya.metrics.tags
+  * - pitaya.metrics.constTags
     - map[string]string{}
     - map[string]string
-    - Tags to be added to reported metrics
+    - Constant tags to be added to reported metrics
+  * - pitaya.metrics.additionalTags
+    - map[string]string{}
+    - map[string]string
+    - Additional tags to reported metrics, the map is from tag to default value
   * - pitaya.metrics.periodicMetrics.period
     - 15s
     - string
