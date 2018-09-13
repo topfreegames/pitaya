@@ -233,7 +233,7 @@ func (p *PrometheusReporter) ReportGauge(metric string, labels map[string]string
 	return constants.ErrMetricNotKnown
 }
 
-// ensureLabels check if labels contains the additionalLabels values,
+// ensureLabels checks if labels contains the additionalLabels values,
 // otherwise adds them with the default values
 func (p *PrometheusReporter) ensureLabels(labels map[string]string) map[string]string {
 	for key, defaultVal := range p.additionalLabels {
