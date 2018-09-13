@@ -42,11 +42,20 @@ type PrometheusReporter struct {
 	countReportersMap   map[string]*prometheus.CounterVec
 	summaryReportersMap map[string]*prometheus.SummaryVec
 	gaugeReportersMap   map[string]*prometheus.GaugeVec
+	additionalLabels    map[string]string
 }
 
-func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
+func (p *PrometheusReporter) registerMetrics(
+	constLabels, additionalLabels map[string]string,
+) {
 	constLabels["game"] = p.game
 	constLabels["serverType"] = p.serverType
+
+	p.additionalLabels = additionalLabels
+	additionalLabelsKeys := make([]string, 0, len(additionalLabels))
+	for key := range additionalLabels {
+		additionalLabelsKeys = append(additionalLabelsKeys, key)
+	}
 
 	// HandlerResponseTimeMs summary
 	p.summaryReportersMap[ResponseTime] = prometheus.NewSummaryVec(
@@ -58,7 +67,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
 			ConstLabels: constLabels,
 		},
-		[]string{"route", "status", "type"},
+		append([]string{"route", "status", "type"}, additionalLabelsKeys...),
 	)
 
 	// ProcessDelay summary
@@ -71,7 +80,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
 			ConstLabels: constLabels,
 		},
-		[]string{"route", "type"},
+		append([]string{"route", "type"}, additionalLabelsKeys...),
 	)
 
 	// ConnectedClients gauge
@@ -83,7 +92,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the number of clients connected right now",
 			ConstLabels: constLabels,
 		},
-		[]string{},
+		additionalLabelsKeys,
 	)
 
 	p.gaugeReportersMap[CountServers] = prometheus.NewGaugeVec(
@@ -94,7 +103,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the number of discovered servers by service discovery",
 			ConstLabels: constLabels,
 		},
-		[]string{"type"},
+		append([]string{"type"}, additionalLabelsKeys...),
 	)
 
 	p.gaugeReportersMap[ChannelCapacity] = prometheus.NewGaugeVec(
@@ -105,7 +114,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the available capacity of the channel",
 			ConstLabels: constLabels,
 		},
-		[]string{"channel"},
+		append([]string{"channel"}, additionalLabelsKeys...),
 	)
 
 	p.gaugeReportersMap[DroppedMessages] = prometheus.NewGaugeVec(
@@ -116,7 +125,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the number of rpc server dropped messages (messages that are not handled)",
 			ConstLabels: constLabels,
 		},
-		[]string{},
+		additionalLabelsKeys,
 	)
 
 	p.gaugeReportersMap[Goroutines] = prometheus.NewGaugeVec(
@@ -127,7 +136,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the current number of goroutines",
 			ConstLabels: constLabels,
 		},
-		[]string{},
+		additionalLabelsKeys,
 	)
 
 	p.gaugeReportersMap[HeapSize] = prometheus.NewGaugeVec(
@@ -138,7 +147,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the current heap size",
 			ConstLabels: constLabels,
 		},
-		[]string{},
+		additionalLabelsKeys,
 	)
 
 	p.gaugeReportersMap[HeapObjects] = prometheus.NewGaugeVec(
@@ -149,7 +158,7 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 			Help:        "the current number of allocated heap objects",
 			ConstLabels: constLabels,
 		},
-		[]string{},
+		additionalLabelsKeys,
 	)
 
 	toRegister := make([]prometheus.Collector, 0)
@@ -169,7 +178,11 @@ func (p *PrometheusReporter) registerMetrics(constLabels map[string]string) {
 }
 
 // GetPrometheusReporter gets the prometheus reporter singleton
-func GetPrometheusReporter(serverType string, game string, port int, constLabels map[string]string) *PrometheusReporter {
+func GetPrometheusReporter(
+	serverType, game string,
+	port int,
+	constLabels, additionalLabels map[string]string,
+) *PrometheusReporter {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:          serverType,
@@ -178,7 +191,7 @@ func GetPrometheusReporter(serverType string, game string, port int, constLabels
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(constLabels)
+		prometheusReporter.registerMetrics(constLabels, additionalLabels)
 		http.Handle("/metrics", prometheus.Handler())
 		go (func() {
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
@@ -191,6 +204,7 @@ func GetPrometheusReporter(serverType string, game string, port int, constLabels
 func (p *PrometheusReporter) ReportSummary(metric string, labels map[string]string, value float64) error {
 	sum := p.summaryReportersMap[metric]
 	if sum != nil {
+		labels = p.ensureLabels(labels)
 		sum.With(labels).Observe(value)
 		return nil
 	}
@@ -201,6 +215,7 @@ func (p *PrometheusReporter) ReportSummary(metric string, labels map[string]stri
 func (p *PrometheusReporter) ReportCount(metric string, labels map[string]string, count float64) error {
 	cnt := p.countReportersMap[metric]
 	if cnt != nil {
+		labels = p.ensureLabels(labels)
 		cnt.With(labels).Add(count)
 		return nil
 	}
@@ -211,8 +226,21 @@ func (p *PrometheusReporter) ReportCount(metric string, labels map[string]string
 func (p *PrometheusReporter) ReportGauge(metric string, labels map[string]string, value float64) error {
 	g := p.gaugeReportersMap[metric]
 	if g != nil {
+		labels = p.ensureLabels(labels)
 		g.With(labels).Set(value)
 		return nil
 	}
 	return constants.ErrMetricNotKnown
+}
+
+// ensureLabels checks if labels contains the additionalLabels values,
+// otherwise adds them with the default values
+func (p *PrometheusReporter) ensureLabels(labels map[string]string) map[string]string {
+	for key, defaultVal := range p.additionalLabels {
+		if _, ok := labels[key]; !ok {
+			labels[key] = defaultVal
+		}
+	}
+
+	return labels
 }

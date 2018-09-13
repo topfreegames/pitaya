@@ -261,6 +261,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		"msg.type":  strings.ToLower(msg.Type.String()),
 	}
 	ctx = tracing.StartSpan(ctx, msg.Route, tags)
+	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.Session)
 
 	r, err := route.Decode(msg.Route)
 	if err != nil {

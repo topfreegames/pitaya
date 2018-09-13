@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/session"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	}
 
 	routingFunction = func(
-		session *session.Session,
+		ctx context.Context,
 		route *route.Route,
 		payload []byte,
 		servers map[string]*cluster.Server,
@@ -70,7 +70,7 @@ func TestDefaultRoute(t *testing.T) {
 func TestRoute(t *testing.T) {
 	t.Parallel()
 
-	session := &session.Session{}
+	ctx := context.Background()
 	route := route.NewRoute(serverType, "service", "method")
 
 	for name, table := range routerTables {
@@ -86,7 +86,7 @@ func TestRoute(t *testing.T) {
 			router.AddRoute(serverType, routingFunction)
 			router.SetServiceDiscovery(mockServiceDiscovery)
 
-			retServer, err := router.Route(table.rpcType, table.serverType, session, route, &message.Message{
+			retServer, err := router.Route(ctx, table.rpcType, table.serverType, route, &message.Message{
 				Data: []byte{0x01},
 			})
 			assert.Equal(t, table.server, retServer)
