@@ -31,7 +31,7 @@ import (
 // SendKickToUsers sends kick to an user array
 func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	if !app.server.Frontend && frontendType == "" {
-		return nil, constants.ErrFrontendTypeNotSpecified
+		return uids, constants.ErrFrontendTypeNotSpecified
 	}
 
 	var notKickedUids []string
