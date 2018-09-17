@@ -61,6 +61,13 @@ type RemoteBindingListener interface {
 	OnUserBind(uid, fid string)
 }
 
+// InfoRetriever gets cluster info
+// It can be implemented, for exemple, by reading
+// env var, config or by accessing the cluster API
+type InfoRetriever interface {
+	Region() string
+}
+
 // Action type for enum
 type Action int
 
