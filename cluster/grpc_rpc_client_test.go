@@ -24,7 +24,7 @@ import (
 
 func getRPCClient(c *config.Config) (*GRPCClient, error) {
 	sv := getServer()
-	return NewGRPCClient(c, sv, []metrics.Reporter{})
+	return NewGRPCClient(c, sv, []metrics.Reporter{}, nil, nil)
 }
 
 func TestNewGRPCClient(t *testing.T) {
@@ -269,8 +269,8 @@ func TestAddServer(t *testing.T) {
 		ID:   "someid",
 		Type: "sometype",
 		Metadata: map[string]string{
-			"grpc-host": "localhost",
-			"grpc-port": fmt.Sprintf("%d", port),
+			constants.GRPCHostKey: "localhost",
+			constants.GRPCPortKey: fmt.Sprintf("%d", port),
 		},
 		Frontend: false,
 	}
@@ -298,7 +298,7 @@ func TestRemoveServer(t *testing.T) {
 
 	server := getServer()
 	conf := getConfig()
-	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{})
+	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{}, nil, nil)
 	assert.NoError(t, err)
 	gc.clientMap.Store(server.ID, mockPitayaClient)
 

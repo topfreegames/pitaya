@@ -80,6 +80,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
 		"pitaya.cluster.sd.etcd.heartbeat.log":                  false,
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
+		"pitaya.cluster.info.region":                            "",
 		"pitaya.modules.bindingstorage.etcd.endpoints":          "localhost:2379",
 		"pitaya.modules.bindingstorage.etcd.prefix":             "pitaya/",
 		"pitaya.modules.bindingstorage.etcd.dialtimeout":        "5s",
