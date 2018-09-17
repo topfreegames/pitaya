@@ -68,7 +68,7 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 
 // SendPushToUser sends a push to a user
 func (c *Connector) SendPushToUser(ctx context.Context, msg *UserMessage) (*Response, error) {
-	err := pitaya.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
+	_, err := pitaya.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
 	if err != nil {
 		return nil, err
 	}
