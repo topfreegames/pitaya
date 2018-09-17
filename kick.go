@@ -28,24 +28,35 @@ import (
 	"github.com/topfreegames/pitaya/session"
 )
 
-// SendKickToUsers sends kick to an user
-func SendKickToUsers(uids []string, frontendType string) error {
+// SendKickToUsers sends kick to an user array
+func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	if !app.server.Frontend && frontendType == "" {
-		return constants.ErrFrontendTypeNotSpecified
+		return uids, constants.ErrFrontendTypeNotSpecified
 	}
+
+	var notKickedUids []string
 
 	for _, uid := range uids {
 		if s := session.GetSessionByUID(uid); s != nil {
 			if err := s.Kick(context.Background()); err != nil {
+				notKickedUids = append(notKickedUids, uid)
 				logger.Log.Errorf("Session kick error, ID=%d, UID=%d, ERROR=%s", s.ID(), s.UID(), err.Error())
 			}
 		} else if app.rpcClient != nil {
 			kick := &protos.KickMsg{UserId: uid}
 			if err := app.rpcClient.SendKick(uid, frontendType, kick); err != nil {
+				notKickedUids = append(notKickedUids, uid)
 				logger.Log.Errorf("RPCClient send kick error, UID=%d, SvType=%s, Error=%s", uid, frontendType, err.Error())
 			}
+		} else {
+			notKickedUids = append(notKickedUids, uid)
 		}
 
 	}
-	return nil
+
+	if len(notKickedUids) != 0 {
+		return notKickedUids, constants.ErrKickingUsers
+	}
+
+	return nil, nil
 }

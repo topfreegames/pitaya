@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/protos"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/session"
@@ -50,8 +51,10 @@ func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	expectedErr := errors.New("serialize error")
 	mockSerializer.EXPECT().Marshal(data).Return(nil, expectedErr)
 
-	err := SendPushToUsers(route, data, []string{uid}, "test")
+	errArr, err := SendPushToUsers(route, data, []string{uid}, "test")
 	assert.Equal(t, expectedErr, err)
+	assert.Len(t, errArr, 1)
+	assert.Equal(t, errArr[0], uid)
 }
 
 func TestSendToUsersLocalSession(t *testing.T) {
@@ -60,7 +63,7 @@ func TestSendToUsersLocalSession(t *testing.T) {
 		err  error
 	}{
 		{"successful_request", nil},
-		{"failed_request", errors.New("failed push")},
+		{"failed_request", constants.ErrPushingToUsers},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
@@ -81,8 +84,16 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)
-			err = SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
-			assert.NoError(t, err)
+			errArr, err := SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
+
+			if table.err != nil {
+				assert.Equal(t, err, table.err)
+				assert.Len(t, errArr, 2)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, errArr, 0)
+			}
+
 		})
 	}
 }
@@ -93,7 +104,7 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 		err  error
 	}{
 		{"successful_request", nil},
-		{"failed_request", errors.New("failed send")},
+		{"failed_request", constants.ErrPushingToUsers},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
@@ -120,11 +131,13 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			}
 			mockRPCClient.EXPECT().SendPush(uid1, gomock.Any(), expectedMsg1).Return(table.err)
 			mockRPCClient.EXPECT().SendPush(uid2, gomock.Any(), expectedMsg2).Return(table.err)
-			err := SendPushToUsers(route, data, []string{uid1, uid2}, svType)
+			errArr, err := SendPushToUsers(route, data, []string{uid1, uid2}, svType)
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())
+				assert.Len(t, errArr, 2)
 			} else {
 				assert.NoError(t, err)
+				assert.Nil(t, errArr)
 			}
 		})
 	}

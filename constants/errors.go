@@ -38,6 +38,8 @@ var (
 	ErrEtcdGrantLeaseTimeout          = errors.New("timed out waiting for etcd lease grant")
 	ErrFrontSessionCantPushToFront    = errors.New("frontend session can't push to front")
 	ErrIllegalUID                     = errors.New("illegal uid")
+	ErrKickingUsers                   = errors.New("failed to kick users, check array with failed uids")
+	ErrPushingToUsers                 = errors.New("failed to push message to users, check array with failed uids")
 	ErrMemberNotFound                 = errors.New("member not found in the group")
 	ErrNatsMessagesBufferSizeZero     = errors.New("pitaya.buffer.cluster.rpc.server.nats.messages cant be zero")
 	ErrNatsNoRequestTimeout           = errors.New("pitaya.cluster.rpc.client.nats.requesttimeout cant be empty")

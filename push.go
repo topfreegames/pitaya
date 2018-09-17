@@ -30,21 +30,24 @@ import (
 )
 
 // SendPushToUsers sends a message to the given list of users
-func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) error {
+func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error) {
 	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
-		return err
+		return uids, err
 	}
 
 	if !app.server.Frontend && frontendType == "" {
-		return constants.ErrFrontendTypeNotSpecified
+		return uids, constants.ErrFrontendTypeNotSpecified
 	}
+
+	var notPushedUids []string
 
 	logger.Log.Debugf("Type=PushToUsers Route=%s, Data=%+v, SvType=%s, #Users=%d", route, v, frontendType, len(uids))
 
 	for _, uid := range uids {
 		if s := session.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
 			if err := s.Push(route, data); err != nil {
+				notPushedUids = append(notPushedUids, uid)
 				logger.Log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s",
 					s.ID(), s.UID(), err.Error())
 			}
@@ -55,10 +58,17 @@ func SendPushToUsers(route string, v interface{}, uids []string, frontendType st
 				Data:  data,
 			}
 			if err = app.rpcClient.SendPush(uid, &cluster.Server{Type: frontendType}, push); err != nil {
+				notPushedUids = append(notPushedUids, uid)
 				logger.Log.Errorf("RPCClient send message error, UID=%d, SvType=%s, Error=%s", uid, frontendType, err.Error())
 			}
+		} else {
+			notPushedUids = append(notPushedUids, uid)
 		}
 	}
 
-	return err
+	if len(notPushedUids) != 0 {
+		return notPushedUids, constants.ErrPushingToUsers
+	}
+
+	return nil, nil
 }
