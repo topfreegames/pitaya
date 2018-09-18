@@ -257,6 +257,9 @@ func (gs *GRPCClient) getServerHost(sv *Server) string {
 		internalHost, _           = sv.Metadata[constants.GRPCHostKey]
 	)
 
+	hasRegion = hasRegion && serverRegion != ""
+	hasExternal = hasExternal && externalHost != ""
+
 	if !hasRegion {
 		if hasExternal {
 			msg := "server %s has no region specified in metadata, using external host"
