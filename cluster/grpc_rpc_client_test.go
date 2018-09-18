@@ -276,6 +276,7 @@ func TestAddServer(t *testing.T) {
 			Frontend: false,
 		}
 		gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+		assert.NoError(t, err)
 
 		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
 		gs.SetPitayaServer(mockPitayaServer)
