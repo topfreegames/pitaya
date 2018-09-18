@@ -15,7 +15,7 @@ func NewConfigInfoRetriever(c *config.Config) *ConfigInfoRetriever {
 	}
 }
 
-// Region gets server info from env var
+// Region gets server's region from config
 func (c *ConfigInfoRetriever) Region() string {
 	return c.region
 }
