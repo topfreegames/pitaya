@@ -630,7 +630,7 @@ func TestAddGRPCInfoToMetadata(t *testing.T) {
 		"key3": "value3",
 	}
 
-	metadata = AddGRPCInfoToMetadata(metadata, "host", "external-host", "port")
+	metadata = AddGRPCInfoToMetadata(metadata, "region", "host", "external-host", "port")
 
 	assert.Equal(t, map[string]string{
 		"key1":                        "value1",
@@ -639,5 +639,6 @@ func TestAddGRPCInfoToMetadata(t *testing.T) {
 		constants.GRPCHostKey:         "host",
 		constants.GRPCExternalHostKey: "external-host",
 		constants.GRPCPortKey:         "port",
+		constants.RegionKey:           "region",
 	}, metadata)
 }
