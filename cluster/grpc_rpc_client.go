@@ -203,17 +203,17 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 
 // AddServer is called when a new server is discovered
 func (gs *GRPCClient) AddServer(sv *Server) {
-	var host, port string
+	var host, port, portKey string
 	var ok bool
 
-	host = gs.getServerHost(sv)
+	host, portKey = gs.getServerHost(sv)
 	if host == "" {
 		logger.Log.Errorf("server %s has no grpc-host specified in metadata", sv.ID)
 		return
 	}
 
-	if port, ok = sv.Metadata[constants.GRPCPortKey]; !ok {
-		logger.Log.Errorf("server %s has no grpc-port specified in metadata", sv.ID)
+	if port, ok = sv.Metadata[portKey]; !ok {
+		logger.Log.Errorf("server %s has no %s specified in metadata", sv.ID, portKey)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (gs *GRPCClient) Shutdown() error {
 	return nil
 }
 
-func (gs *GRPCClient) getServerHost(sv *Server) string {
+func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
 	var (
 		serverRegion, hasRegion   = sv.Metadata[constants.RegionKey]
 		externalHost, hasExternal = sv.Metadata[constants.GRPCExternalHostKey]
@@ -264,18 +264,18 @@ func (gs *GRPCClient) getServerHost(sv *Server) string {
 		if hasExternal {
 			msg := "server %s has no region specified in metadata, using external host"
 			logger.Log.Warnf(msg, sv.ID)
-			return externalHost
+			return externalHost, constants.GRPCExternalPortKey
 		}
 
 		logger.Log.Warnf("server %s has no region nor external host specified in metadata, using internal host", sv.ID)
-		return internalHost
+		return internalHost, constants.GRPCPortKey
 	}
 
 	if gs.infoRetriever.Region() == serverRegion {
 		logger.Log.Warnf("server %s is in same region, using internal host", sv.ID)
-		return internalHost
+		return internalHost, constants.GRPCPortKey
 	}
 
 	logger.Log.Warnf("server %s is in other region, using external host", sv.ID)
-	return externalHost
+	return externalHost, constants.GRPCExternalPortKey
 }

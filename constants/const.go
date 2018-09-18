@@ -84,5 +84,8 @@ var GRPCExternalHostKey = "grpc-external-host"
 // GRPCPortKey is the key for grpc port on server metadata
 var GRPCPortKey = "grpc-port"
 
+// GRPCExternalPortKey is the key for grpc external port on server metadata
+var GRPCExternalPortKey = "grpc-external-port"
+
 // RegionKey is the key to save the region server is on
 var RegionKey = "region"

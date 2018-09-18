@@ -70,6 +70,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.connect":                "nats://localhost:4222",
 		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": 15,
 		"pitaya.cluster.rpc.server.grpc.port":                   3434,
+		"pitaya.cluster.rpc.server.grpc.externalport":           3434,
 		"pitaya.cluster.sd.etcd.dialtimeout":                    "5s",
 		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
 		"pitaya.cluster.sd.etcd.prefix":                         "pitaya/",
