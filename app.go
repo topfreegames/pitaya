@@ -570,3 +570,18 @@ func Documentation(getPtrNames bool) (map[string]interface{}, error) {
 		"remotes":  remoteDocs,
 	}, nil
 }
+
+// AddGRPCInfoToMetadata adds host, external host and
+// port into metadata
+func AddGRPCInfoToMetadata(
+	metadata map[string]string,
+	region, host, externalHost, port string,
+) map[string]string {
+	// TODO: should I get all this information here? Or just
+	// receive them as argument
+	metadata[constants.GRPCHostKey] = host
+	metadata[constants.GRPCExternalHostKey] = externalHost
+	metadata[constants.GRPCPortKey] = port
+	metadata[constants.RegionKey] = region
+	return metadata
+}

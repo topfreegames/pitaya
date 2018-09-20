@@ -76,6 +76,9 @@ func (gs *GRPCServer) BeforeShutdown() {}
 
 // Shutdown stops grpc rpc server
 func (gs *GRPCServer) Shutdown() error {
-	gs.grpcSv.Stop()
+	// graceful: stops the server from accepting new connections and RPCs and
+	// blocks until all the pending RPCs are finished.
+	// source: https://godoc.org/google.golang.org/grpc#Server.GracefulStop
+	gs.grpcSv.GracefulStop()
 	return nil
 }

@@ -48,21 +48,25 @@ type GRPCClient struct {
 	metricsReporters []metrics.Reporter
 	clientMap        sync.Map
 	bindingStorage   interfaces.BindingStorage
+	infoRetriever    InfoRetriever
 	reqTimeout       time.Duration
 	dialTimeout      time.Duration
 }
 
 // NewGRPCClient returns a new instance of GRPCClient
-func NewGRPCClient(config *config.Config, server *Server, metricsReporters []metrics.Reporter, bindingStorage ...interfaces.BindingStorage) (*GRPCClient, error) {
-	var bs interfaces.BindingStorage
-	if len(bindingStorage) > 0 {
-		bs = bindingStorage[0]
-	}
+func NewGRPCClient(
+	config *config.Config,
+	server *Server,
+	metricsReporters []metrics.Reporter,
+	bindingStorage interfaces.BindingStorage,
+	infoRetriever InfoRetriever,
+) (*GRPCClient, error) {
 	gs := &GRPCClient{
 		config:           config,
 		server:           server,
 		metricsReporters: metricsReporters,
-		bindingStorage:   bs,
+		bindingStorage:   bindingStorage,
+		infoRetriever:    infoRetriever,
 	}
 
 	gs.configure()
@@ -199,16 +203,20 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 
 // AddServer is called when a new server is discovered
 func (gs *GRPCClient) AddServer(sv *Server) {
-	var host, port string
+	var host, port, portKey string
 	var ok bool
-	if host, ok = sv.Metadata["grpc-host"]; !ok {
-		logger.Log.Errorf("server %s doesn't have a grpc-host specified in metadata", sv.ID)
+
+	host, portKey = gs.getServerHost(sv)
+	if host == "" {
+		logger.Log.Errorf("server %s has no grpc-host specified in metadata", sv.ID)
 		return
 	}
-	if port, ok = sv.Metadata["grpc-port"]; !ok {
-		logger.Log.Errorf("server %s doesn't have a grpc-port specified in metadata", sv.ID)
+
+	if port, ok = sv.Metadata[portKey]; !ok {
+		logger.Log.Errorf("server %s has no %s specified in metadata", sv.ID, portKey)
 		return
 	}
+
 	address := fmt.Sprintf("%s:%s", host, port)
 	ctxT, done := context.WithTimeout(context.Background(), gs.dialTimeout)
 	defer done()
@@ -240,4 +248,34 @@ func (gs *GRPCClient) BeforeShutdown() {}
 // Shutdown stops grpc rpc server
 func (gs *GRPCClient) Shutdown() error {
 	return nil
+}
+
+func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
+	var (
+		serverRegion, hasRegion   = sv.Metadata[constants.RegionKey]
+		externalHost, hasExternal = sv.Metadata[constants.GRPCExternalHostKey]
+		internalHost, _           = sv.Metadata[constants.GRPCHostKey]
+	)
+
+	hasRegion = hasRegion && serverRegion != ""
+	hasExternal = hasExternal && externalHost != ""
+
+	if !hasRegion {
+		if hasExternal {
+			msg := "server %s has no region specified in metadata, using external host"
+			logger.Log.Warnf(msg, sv.ID)
+			return externalHost, constants.GRPCExternalPortKey
+		}
+
+		logger.Log.Warnf("server %s has no region nor external host specified in metadata, using internal host", sv.ID)
+		return internalHost, constants.GRPCPortKey
+	}
+
+	if gs.infoRetriever.Region() == serverRegion {
+		logger.Log.Infof("server %s is in same region, using internal host", sv.ID)
+		return internalHost, constants.GRPCPortKey
+	}
+
+	logger.Log.Infof("server %s is in other region, using external host", sv.ID)
+	return externalHost, constants.GRPCExternalPortKey
 }

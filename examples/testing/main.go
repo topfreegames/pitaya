@@ -288,7 +288,10 @@ func main() {
 	cfg.Set("pitaya.cluster.sd.etcd.prefix", *sdPrefix)
 	cfg.Set("pitaya.cluster.rpc.server.grpc.port", *grpcPort)
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{"grpc-host": "127.0.0.1", "grpc-port": fmt.Sprintf("%d", *grpcPort)}, cfg)
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{
+		constants.GRPCHostKey: "127.0.0.1",
+		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
+	}, cfg)
 	if *grpc {
 		gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
 		if err != nil {
@@ -298,7 +301,13 @@ func main() {
 		bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
 		pitaya.RegisterModule(bs, "bindingsStorage")
 
-		gc, err := cluster.NewGRPCClient(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters(), bs)
+		gc, err := cluster.NewGRPCClient(
+			pitaya.GetConfig(),
+			pitaya.GetServer(),
+			pitaya.GetMetricsReporters(),
+			bs,
+			cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
+		)
 		if err != nil {
 			panic(err)
 		}

@@ -13,6 +13,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/route"
@@ -98,8 +99,8 @@ func main() {
 	confs.Set("pitaya.cluster.rpc.server.grpc.port", *rpcServerPort)
 
 	meta := map[string]string{
-		"grpc-host": "127.0.0.1",
-		"grpc-port": *rpcServerPort,
+		constants.GRPCHostKey: "127.0.0.1",
+		constants.GRPCPortKey: *rpcServerPort,
 	}
 
 	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, meta, confs)
@@ -111,7 +112,13 @@ func main() {
 	bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
 	pitaya.RegisterModule(bs, "bindingsStorage")
 
-	gc, err := cluster.NewGRPCClient(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters(), bs)
+	gc, err := cluster.NewGRPCClient(
+		pitaya.GetConfig(),
+		pitaya.GetServer(),
+		pitaya.GetMetricsReporters(),
+		bs,
+		cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
+	)
 	if err != nil {
 		panic(err)
 	}

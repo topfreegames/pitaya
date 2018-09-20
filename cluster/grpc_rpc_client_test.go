@@ -24,7 +24,7 @@ import (
 
 func getRPCClient(c *config.Config) (*GRPCClient, error) {
 	sv := getServer()
-	return NewGRPCClient(c, sv, []metrics.Reporter{})
+	return NewGRPCClient(c, sv, []metrics.Reporter{}, nil, nil)
 }
 
 func TestNewGRPCClient(t *testing.T) {
@@ -257,38 +257,108 @@ func TestSendPush(t *testing.T) {
 }
 
 func TestAddServer(t *testing.T) {
-	// listen
-	c := viper.New()
-	port := helpers.GetFreePort(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("try-connect", func(t *testing.T) {
+		// listen
+		c := viper.New()
+		port := helpers.GetFreePort(t)
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
-	c.Set("pitaya.cluster.rpc.server.grpc.port", port)
-	conf := getConfig(c)
-	server := &Server{
-		ID:   "someid",
-		Type: "sometype",
-		Metadata: map[string]string{
-			"grpc-host": "localhost",
-			"grpc-port": fmt.Sprintf("%d", port),
+		c.Set("pitaya.cluster.rpc.server.grpc.port", port)
+		conf := getConfig(c)
+		server := &Server{
+			ID:   "someid",
+			Type: "sometype",
+			Metadata: map[string]string{
+				constants.GRPCHostKey: "localhost",
+				constants.GRPCPortKey: fmt.Sprintf("%d", port),
+			},
+			Frontend: false,
+		}
+		gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+		assert.NoError(t, err)
+
+		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
+		gs.SetPitayaServer(mockPitayaServer)
+
+		err = gs.Init()
+		assert.NoError(t, err)
+		// --- should connect to the server and add it to the client map
+		g, err := getRPCClient(conf)
+		assert.NoError(t, err)
+		g.AddServer(server)
+
+		sv, ok := g.clientMap.Load(server.ID)
+		assert.NotNil(t, sv)
+		assert.True(t, ok)
+	})
+}
+
+func TestGetServerHost(t *testing.T) {
+	t.Parallel()
+
+	var (
+		host         = "host"
+		externalHost = "externalHost"
+		region       = "region"
+	)
+
+	tables := map[string]struct {
+		metadata        map[string]string
+		clientRegion    string
+		expectedHost    string
+		expectedPortKey string
+	}{
+		"test_has_no_region_and_no_external_host": {
+			metadata: map[string]string{
+				constants.GRPCHostKey: host,
+			},
+			expectedHost:    host,
+			expectedPortKey: constants.GRPCPortKey,
 		},
-		Frontend: false,
+		"test_has_no_region_and_external_host": {
+			metadata: map[string]string{
+				constants.GRPCExternalHostKey: externalHost,
+			},
+			expectedHost:    externalHost,
+			expectedPortKey: constants.GRPCExternalPortKey,
+		},
+		"test_has_region_and_same_region": {
+			metadata: map[string]string{
+				constants.GRPCHostKey: host,
+				constants.RegionKey:   region,
+			},
+			clientRegion:    region,
+			expectedHost:    host,
+			expectedPortKey: constants.GRPCPortKey,
+		},
+		"test_has_region_and_other_region": {
+			metadata: map[string]string{
+				constants.GRPCExternalHostKey: externalHost,
+				constants.RegionKey:           region,
+			},
+			clientRegion:    "other-region",
+			expectedHost:    externalHost,
+			expectedPortKey: constants.GRPCExternalPortKey,
+		},
 	}
-	gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
 
-	mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
-	gs.SetPitayaServer(mockPitayaServer)
+	for name, table := range tables {
+		t.Run(name, func(t *testing.T) {
+			viperConfig := viper.New()
+			viperConfig.Set("pitaya.cluster.info.region", table.clientRegion)
+			config := config.NewConfig(viperConfig)
+			infoRetriever := NewConfigInfoRetriever(config)
+			gs := &GRPCClient{infoRetriever: infoRetriever}
 
-	err = gs.Init()
-	assert.NoError(t, err)
-	// --- should connect to the server and add it to the client map
-	g, err := getRPCClient(conf)
-	assert.NoError(t, err)
-	g.AddServer(server)
+			host, portKey := gs.getServerHost(&Server{
+				Metadata: table.metadata,
+			})
 
-	sv, ok := g.clientMap.Load(server.ID)
-	assert.NotNil(t, sv)
-	assert.True(t, ok)
+			assert.Equal(t, table.expectedHost, host)
+			assert.Equal(t, table.expectedPortKey, portKey)
+		})
+	}
 }
 
 func TestRemoveServer(t *testing.T) {
@@ -298,7 +368,7 @@ func TestRemoveServer(t *testing.T) {
 
 	server := getServer()
 	conf := getConfig()
-	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{})
+	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{}, nil, nil)
 	assert.NoError(t, err)
 	gc.clientMap.Store(server.ID, mockPitayaClient)
 
