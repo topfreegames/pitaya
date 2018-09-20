@@ -272,10 +272,10 @@ func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
 	}
 
 	if gs.infoRetriever.Region() == serverRegion {
-		logger.Log.Warnf("server %s is in same region, using internal host", sv.ID)
+		logger.Log.Infof("server %s is in same region, using internal host", sv.ID)
 		return internalHost, constants.GRPCPortKey
 	}
 
-	logger.Log.Warnf("server %s is in other region, using external host", sv.ID)
+	logger.Log.Infof("server %s is in other region, using external host", sv.ID)
 	return externalHost, constants.GRPCExternalPortKey
 }
