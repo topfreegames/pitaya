@@ -40,6 +40,7 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/defaultpipelines"
+	"github.com/topfreegames/pitaya/docgenerator"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -584,4 +585,9 @@ func AddGRPCInfoToMetadata(
 	metadata[constants.GRPCPortKey] = port
 	metadata[constants.RegionKey] = region
 	return metadata
+}
+
+// Descriptor returns the protobuf message descriptor for a given message name
+func Descriptor(protoName string) ([]byte, error) {
+	return docgenerator.ProtoDescriptors(protoName)
 }
