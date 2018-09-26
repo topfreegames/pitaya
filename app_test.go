@@ -494,6 +494,16 @@ func TestExtractSpan(t *testing.T) {
 	assert.Equal(t, span.Context(), spanCtx)
 }
 
+func TestDescriptor(t *testing.T) {
+	bts, err := Descriptor("kick.proto")
+	assert.NoError(t, err)
+	assert.NotNil(t, bts)
+
+	bts, err = Descriptor("not_exists.proto")
+	assert.Nil(t, bts)
+	assert.EqualError(t, constants.ErrProtodescriptor, err.Error())
+}
+
 func TestDocumentation(t *testing.T) {
 	doc, err := Documentation(false)
 	assert.NoError(t, err)

@@ -54,6 +54,7 @@ var (
 	ErrNonsenseRPC                    = errors.New("you are making a rpc that may be processed locally, either specify a different server type or specify a server id")
 	ErrNotifyOnRequest                = errors.New("tried to notify a request route")
 	ErrOnCloseBackend                 = errors.New("onclose callbacks are not allowed on backend servers")
+	ErrProtodescriptor                = errors.New("failed to get protobuf message descriptor")
 	ErrRPCClientNotInitialized        = errors.New("RPC client is not running")
 	ErrRPCLocal                       = errors.New("RPC must be to a different server type")
 	ErrRPCServerNotInitialized        = errors.New("RPC server is not running")
