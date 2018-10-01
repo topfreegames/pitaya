@@ -161,6 +161,39 @@ func (p *PrometheusReporter) registerMetrics(
 		additionalLabelsKeys,
 	)
 
+	p.gaugeReportersMap[WorkerJobsRetry] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "worker",
+			Name:        WorkerJobsRetry,
+			Help:        "the current number of job retries",
+			ConstLabels: constLabels,
+		},
+		additionalLabelsKeys,
+	)
+
+	p.gaugeReportersMap[WorkerQueueSize] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "worker",
+			Name:        WorkerQueueSize,
+			Help:        "the current queue size",
+			ConstLabels: constLabels,
+		},
+		append([]string{"queue"}, additionalLabelsKeys...),
+	)
+
+	p.countReportersMap[WorkerJobsTotal] = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "worker",
+			Name:        WorkerJobsTotal,
+			Help:        "the total executed jobs",
+			ConstLabels: constLabels,
+		},
+		append([]string{"status"}, additionalLabelsKeys...),
+	)
+
 	toRegister := make([]prometheus.Collector, 0)
 	for _, c := range p.countReportersMap {
 		toRegister = append(toRegister, c)

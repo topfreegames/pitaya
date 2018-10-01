@@ -8,3 +8,7 @@ services:
     image: appcelerator/etcd
     ports:
       - 2379:2379
+  redis:
+    image: redis
+    ports:
+      - 6379:6379

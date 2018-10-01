@@ -27,6 +27,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/route"
+	"github.com/topfreegames/pitaya/worker"
 )
 
 // RPC calls a method in a different server
@@ -37,6 +38,27 @@ func RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Me
 // RPCTo send a rpc to a specific server
 func RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
 	return doSendRPC(ctx, serverID, routeStr, reply, arg)
+}
+
+// ReliableRPC enqueues RPC to worker so it's executed asynchronously
+// Default enqueue options are used
+func ReliableRPC(
+	routeStr string,
+	metadata map[string]interface{},
+	reply, arg proto.Message,
+) (jid string, err error) {
+	return app.worker.EnqueueRPC(routeStr, metadata, reply, arg)
+}
+
+// ReliableRPCWithOptions enqueues RPC to worker
+// Receive worker options for this specific RPC
+func ReliableRPCWithOptions(
+	routeStr string,
+	metadata map[string]interface{},
+	reply, arg proto.Message,
+	opts *worker.EnqueueOpts,
+) (jid string, err error) {
+	return app.worker.EnqueueRPCWithOptions(routeStr, metadata, reply, arg, opts)
 }
 
 func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {

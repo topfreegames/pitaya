@@ -37,6 +37,15 @@ run-cluster-grpc-example-connector:
 run-cluster-grpc-example-room:
 	@cd examples/demo/cluster_grpc && go run main.go --port 3251 --rpcsvport 3435 --type room --frontend=false
 
+run-cluster-worker-example-room:
+	@cd examples/demo/worker && go run main.go --type room --frontend=true
+
+run-cluster-worker-example-metagame:
+	@cd examples/demo/worker && go run main.go --type metagame --frontend=false
+
+run-cluster-worker-example-worker:
+	@cd examples/demo/worker && go run main.go --type worker --frontend=false
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --gogofaster_out=plugins=grpc:protos

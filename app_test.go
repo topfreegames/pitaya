@@ -652,3 +652,40 @@ func TestAddGRPCInfoToMetadata(t *testing.T) {
 		constants.RegionKey:           "region",
 	}, metadata)
 }
+
+func TestStartWorker(t *testing.T) {
+	cfg := viper.New()
+	initApp()
+	Configure(true, "testtype", Cluster, map[string]string{}, cfg)
+
+	err := StartWorker(GetConfig())
+	assert.NoError(t, err)
+	assert.True(t, app.worker.Started())
+}
+
+func TestRegisterRPCJob(t *testing.T) {
+	t.Run("register_once", func(t *testing.T) {
+		cfg := viper.New()
+		initApp()
+		Configure(true, "testtype", Cluster, map[string]string{}, cfg)
+		err := StartWorker(GetConfig())
+		assert.NoError(t, err)
+
+		err = RegisterRPCJob(nil)
+		assert.NoError(t, err)
+	})
+
+	t.Run("register_twice", func(t *testing.T) {
+		cfg := viper.New()
+		initApp()
+		Configure(true, "testtype", Cluster, map[string]string{}, cfg)
+		err := StartWorker(GetConfig())
+		assert.NoError(t, err)
+
+		err = RegisterRPCJob(nil)
+		assert.NoError(t, err)
+
+		err = RegisterRPCJob(nil)
+		assert.Equal(t, constants.ErrRPCJobAlreadyRegistered, err)
+	})
+}

@@ -74,6 +74,12 @@ These are the RPCs done by the servers when forwarding handler messages to the a
 
 User RPCs are done when the application actively calls a remote method in another server. The call can specify the ID of the target server or let Pitaya choose one according to the routing logic.
 
+### User Reliable RPCs
+
+These are done when the application calls a remote using workers, that is, Pitaya retries the RPC if any error occurrs.
+
+**Important**: the remote that is being called must be idempotent; also the ReliableRPC will not return the remote's reply since it is asynchronous, it only returns the job id (jid) if success.
+
 ## Server operation mode
 
 Pitaya has two types of operation: standalone and cluster mode.
