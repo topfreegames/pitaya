@@ -22,6 +22,7 @@ package cluster
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/topfreegames/pitaya/logger"
 )
@@ -32,11 +33,16 @@ type Server struct {
 	Type     string            `json:"type"`
 	Metadata map[string]string `json:"metadata"`
 	Frontend bool              `json:"frontend"`
+	Hostname string            `json:"hostname"`
 }
 
 // NewServer ctor
 func NewServer(id, serverType string, frontend bool, metadata ...map[string]string) *Server {
 	d := make(map[string]string)
+	h, err := os.Hostname()
+	if err != nil {
+		logger.Log.Errorf("failed to get hostname: %s", err.Error())
+	}
 	if len(metadata) > 0 {
 		d = metadata[0]
 	}
@@ -45,6 +51,7 @@ func NewServer(id, serverType string, frontend bool, metadata ...map[string]stri
 		Type:     serverType,
 		Metadata: d,
 		Frontend: frontend,
+		Hostname: h,
 	}
 }
 
