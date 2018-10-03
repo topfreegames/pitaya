@@ -94,12 +94,7 @@ type App struct {
 
 var (
 	app = &App{
-		server: &cluster.Server{
-			ID:       uuid.New().String(),
-			Type:     "game",
-			Metadata: map[string]string{},
-			Frontend: true,
-		},
+		server:           cluster.NewServer(uuid.New().String(), "game", true, map[string]string{}),
 		debug:            false,
 		startAt:          time.Now(),
 		dieChan:          make(chan bool),

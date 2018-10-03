@@ -47,6 +47,7 @@ func TestNewServer(t *testing.T) {
 			assert.Equal(t, table.id, s.ID)
 			assert.Equal(t, table.metadata, s.Metadata)
 			assert.Equal(t, table.frontend, s.Frontend)
+			assert.NotNil(t, s.Hostname)
 		})
 	}
 }
