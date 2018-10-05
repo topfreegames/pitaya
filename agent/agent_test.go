@@ -920,3 +920,34 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(-1)) // because buffersize is 0 and chan sz is 1
 	ag.reportChannelSize()
 }
+
+type customMockAddr struct{ network, str string }
+
+func (m *customMockAddr) Network() string { return m.network }
+func (m *customMockAddr) String() string  { return m.str }
+
+func TestIPVersion(t *testing.T) {
+	tables := []struct {
+		addr      string
+		ipVersion string
+	}{
+		{"127.0.0.1:80", constants.IPv4},
+		{"1.2.3.4:3333", constants.IPv4},
+		{"::1:3333", constants.IPv6},
+		{"2001:db8:0000:1:1:1:1:1:3333", constants.IPv6},
+	}
+
+	for _, table := range tables {
+		t.Run("test_"+table.addr, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockConn := mocks.NewMockConn(ctrl)
+			mockAddr := &customMockAddr{str: table.addr}
+
+			mockConn.EXPECT().RemoteAddr().Return(mockAddr)
+			a := &Agent{conn: mockConn}
+
+			assert.Equal(t, table.ipVersion, a.IPVersion())
+		})
+	}
+}

@@ -89,3 +89,10 @@ var GRPCExternalPortKey = "grpc-external-port"
 
 // RegionKey is the key to save the region server is on
 var RegionKey = "region"
+
+// IP constants
+const (
+	IPVersionKey = "ipversion"
+	IPv4         = "ipv4"
+	IPv6         = "ipv6"
+)
