@@ -118,6 +118,42 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 30
     - int
     - Number of goroutines processing messages at the remote service for the nats RPC service
+  * - pitaya.worker.redis.url
+    - localhost:6379
+    - string
+    - Redis url pitaya workers use to register jobs
+  * - pitaya.worker.redis.pool
+    - 10
+    - string
+    - Number of connections to keep with Redis
+  * - pitaya.worker.concurrency
+    - 1
+    - int
+    - Number of workers to execute job
+  * - pitaya.worker.retry.enabled
+    - true
+    - bool
+    - If true, retry job if errored for max times
+  * - pitaya.worker.retry.max
+    - 5
+    - int
+    - Max number of job retries
+  * - pitaya.worker.retry.exponential
+    - 2
+    - int
+    - Retry job after backoff of nRetry**2
+  * - pitaya.worker.retry.minDelay
+    - 0
+    - int
+    - Min time to wait on backoff to retry job
+  * - pitaya.worker.retry.maxDelay
+    - 10
+    - int
+    - Max time to wait on backoff to retry job
+  * - pitaya.worker.retry.maxRandom
+    - 10
+    - int
+    - Random time to wait during backoff
 
 Connection
 ==========

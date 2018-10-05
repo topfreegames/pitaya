@@ -26,6 +26,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:b520b55fc1146c5b0eea03b07233f7a3d4a9be985c037c91ea6b82ecb81bd521"
+  name = "github.com/bitly/go-simplejson"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "aabad6e819789e569bd6aabf444c935aa9ba1e44"
+  version = "v0.5.0"
+
+[[projects]]
   branch = "master"
   digest = "1:4c4c33075b704791d6a7f09dfb55c66769e8a1dc6adf87026292d274fe8ad113"
   name = "github.com/codahale/hdrhistogram"
@@ -170,6 +178,17 @@
   pruneopts = "UT"
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
+
+[[projects]]
+  digest = "1:0594af97b2f4cec6554086eeace6597e20a4b69466eb4ada25adf9f4300dddd2"
+  name = "github.com/garyburd/redigo"
+  packages = [
+    "internal",
+    "redis",
+  ]
+  pruneopts = "UT"
+  revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
@@ -538,6 +557,14 @@
   revision = "830351dc03c6f07d625727d5f993a463babb20e1"
 
 [[projects]]
+  digest = "1:a35142e7dae983dc77f9822b754f1d9e41bfe9767d11585ab24dcd2ec871be0f"
+  name = "github.com/topfreegames/go-workers"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "debd68e29f6123083fb906c7a6352c748203538a"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:a157dc7b8f23c258b204ff81469c91136a45fd90284fbb6387fea23bd3e48607"
   name = "github.com/topfreegames/viaproxy"
   packages = ["."]
@@ -748,6 +775,7 @@
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "github.com/topfreegames/go-workers",
     "github.com/topfreegames/viaproxy",
     "github.com/uber/jaeger-client-go",
     "github.com/uber/jaeger-client-go/config",

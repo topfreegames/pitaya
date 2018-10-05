@@ -73,4 +73,5 @@ var (
 	ErrTimeoutTerminatingBinaryModule = errors.New("timeout waiting to binary module to die")
 	ErrFrontendTypeNotSpecified       = errors.New("for using SendPushToUsers from a backend server you have to specify a valid frontendType")
 	ErrMetricNotKnown                 = errors.New("the provided metric does not exist")
+	ErrRPCJobAlreadyRegistered        = errors.New("rpc job was already registered")
 )

@@ -99,6 +99,15 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.additionalTags":                         map[string]string{},
 		"pitaya.metrics.periodicMetrics.period":                 "15s",
 		"pitaya.defaultpipelines.structvalidation.enabled":      false,
+		"pitaya.worker.redis.url":                               "localhost:6379",
+		"pitaya.worker.redis.pool":                              "10",
+		"pitaya.worker.concurrency":                             1,
+		"pitaya.worker.retry.enabled":                           true,
+		"pitaya.worker.retry.max":                               5,
+		"pitaya.worker.retry.exponential":                       2,
+		"pitaya.worker.retry.minDelay":                          0,
+		"pitaya.worker.retry.maxDelay":                          10,
+		"pitaya.worker.retry.maxRandom":                         10,
 	}
 
 	for param := range defaultsMap {

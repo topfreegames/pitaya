@@ -55,6 +55,7 @@ import (
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/timer"
 	"github.com/topfreegames/pitaya/tracing"
+	"github.com/topfreegames/pitaya/worker"
 )
 
 // ServerMode represents a server mode
@@ -90,6 +91,7 @@ type App struct {
 	serverMode       ServerMode
 	serviceDiscovery cluster.ServiceDiscovery
 	startAt          time.Time
+	worker           *worker.Worker
 }
 
 var (
@@ -329,6 +331,10 @@ func initSysRemotes() {
 func periodicMetrics() {
 	period := app.config.GetDuration("pitaya.metrics.periodicMetrics.period")
 	go metrics.ReportSysMetrics(app.metricsReporters, period)
+
+	if app.worker.Started() {
+		go worker.Report(app.metricsReporters, period)
+	}
 }
 
 // Start starts the app
@@ -573,8 +579,6 @@ func AddGRPCInfoToMetadata(
 	metadata map[string]string,
 	region, host, externalHost, port string,
 ) map[string]string {
-	// TODO: should I get all this information here? Or just
-	// receive them as argument
 	metadata[constants.GRPCHostKey] = host
 	metadata[constants.GRPCExternalHostKey] = externalHost
 	metadata[constants.GRPCPortKey] = port
@@ -585,4 +589,23 @@ func AddGRPCInfoToMetadata(
 // Descriptor returns the protobuf message descriptor for a given message name
 func Descriptor(protoName string) ([]byte, error) {
 	return docgenerator.ProtoDescriptors(protoName)
+}
+
+// StartWorker configures, starts and returns pitaya worker
+func StartWorker(config *config.Config) error {
+	var err error
+	app.worker, err = worker.NewWorker(config)
+	if err != nil {
+		return err
+	}
+
+	app.worker.Start()
+
+	return nil
+}
+
+// RegisterRPCJob registers rpc job to execute jobs with retries
+func RegisterRPCJob(rpcJob worker.RPCJob) error {
+	err := app.worker.RegisterRPCJob(rpcJob)
+	return err
 }

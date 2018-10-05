@@ -19,4 +19,10 @@ var (
 	HeapSize = "heapsize"
 	// HeapObjects reports the number of allocated heap objects
 	HeapObjects = "heapobjects"
+	// WorkerJobsTotal reports the number of executed jobs
+	WorkerJobsTotal = "worker_jobs_total"
+	// WorkerJobsRetry reports the number of retried jobs
+	WorkerJobsRetry = "worker_jobs_retry_total"
+	// WorkerQueueSize reports the queue size on worker
+	WorkerQueueSize = "worker_queue_size"
 )
