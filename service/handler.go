@@ -219,7 +219,6 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		// Parse the json sent with the handshake by the client
 		handshakeData := &session.HandshakeData{}
 		err := json.Unmarshal(p.Data, handshakeData)
-
 		if err != nil {
 			a.SetStatus(constants.StatusClosed)
 			return fmt.Errorf("Invalid handshake data. Id=%d", a.Session.ID())
@@ -227,6 +226,10 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 
 		a.Session.SetHandshakeData(handshakeData)
 		a.SetStatus(constants.StatusHandshake)
+		err = a.Session.Set(constants.IPVersionKey, a.IPVersion())
+		if err != nil {
+			logger.Log.Warnf("failed to save ip version on session: %q\n", err)
+		}
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)

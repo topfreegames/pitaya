@@ -270,6 +270,9 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 			mockConn.EXPECT().Write(gomock.Any()).Do(func(d []byte) {
 				assert.Contains(t, string(d), "heartbeat")
 			})
+			if table.errStr == "" {
+				mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
+			}
 
 			ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 

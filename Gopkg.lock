@@ -538,6 +538,14 @@
   revision = "830351dc03c6f07d625727d5f993a463babb20e1"
 
 [[projects]]
+  digest = "1:a157dc7b8f23c258b204ff81469c91136a45fd90284fbb6387fea23bd3e48607"
+  name = "github.com/topfreegames/viaproxy"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8724385082be8dce5bbd2c1c00cf80e2a71075bf"
+  version = "v0.1.1"
+
+[[projects]]
   digest = "1:a65ad5ffa268f4591efad04749e128bde6a80cbbc128688b6327fec461a61a38"
   name = "github.com/uber/jaeger-client-go"
   packages = [
@@ -740,6 +748,7 @@
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "github.com/topfreegames/viaproxy",
     "github.com/uber/jaeger-client-go",
     "github.com/uber/jaeger-client-go/config",
     "golang.org/x/net/context",
