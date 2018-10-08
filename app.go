@@ -435,7 +435,7 @@ func Start() {
 	case <-app.dieChan:
 		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
-		logger.Log.Warn("got signal", s, "shutting down...")
+		logger.Log.Warn("got signal: ", s, ", shutting down...")
 		close(app.dieChan)
 	}
 
