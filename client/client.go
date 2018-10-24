@@ -288,7 +288,7 @@ func (c *Client) sendHeartbeats(interval int) {
 			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
 			_, err := c.conn.Write(p)
 			if err != nil {
-				logger.Log.Errorf("error sending heartbeat to sv: %s", err.Error())
+				logger.Log.Errorf("error sending heartbeat to server: %s", err.Error())
 				return
 			}
 		case <-c.closeChan:
