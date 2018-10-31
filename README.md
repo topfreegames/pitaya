@@ -69,9 +69,6 @@ make test
 ```
 This command will run both unit and e2e tests.
 
-## Deployment
-#TODO
-
 ## Contributing
 #TODO
 
@@ -90,6 +87,7 @@ This command will run both unit and e2e tests.
 - Other pitaya-related projects
   + [libpitaya](https://github.com/topfreegames/libpitaya)
   + [libpitaya-cluster](https://github.com/topfreegames/libpitaya-cluster)
+  + [pitaya-admin](https://github.com/topfreegames/pitaya-admin)
   + [pitaya-cli](https://github.com/topfreegames/pitaya-cli)
   + [pitaya-protos](https://github.com/topfreegames/pitaya-protos)
 
