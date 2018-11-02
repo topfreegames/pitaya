@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 )
 
@@ -45,9 +46,57 @@ type PrometheusReporter struct {
 	additionalLabels    map[string]string
 }
 
+func (p *PrometheusReporter) registerCustomMetrics(
+	constLabels map[string]string,
+	additionalLabelsKeys []string,
+	spec *CustomMetricsSpec,
+) {
+	for _, summary := range spec.Summaries {
+		p.summaryReportersMap[summary.Name] = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:   "pitaya",
+				Subsystem:   summary.Subsystem,
+				Name:        summary.Name,
+				Help:        summary.Help,
+				Objectives:  summary.Objectives,
+				ConstLabels: constLabels,
+			},
+			append(additionalLabelsKeys, summary.Labels...),
+		)
+	}
+
+	for _, gauge := range spec.Gauges {
+		p.gaugeReportersMap[gauge.Name] = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace:   "pitaya",
+				Subsystem:   gauge.Subsystem,
+				Name:        gauge.Name,
+				Help:        gauge.Help,
+				ConstLabels: constLabels,
+			},
+			append(additionalLabelsKeys, gauge.Labels...),
+		)
+	}
+
+	for _, counter := range spec.Counters {
+		p.countReportersMap[counter.Name] = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   "pitaya",
+				Subsystem:   counter.Subsystem,
+				Name:        counter.Name,
+				Help:        counter.Help,
+				ConstLabels: constLabels,
+			},
+			append(additionalLabelsKeys, counter.Labels...),
+		)
+	}
+}
+
 func (p *PrometheusReporter) registerMetrics(
 	constLabels, additionalLabels map[string]string,
+	spec *CustomMetricsSpec,
 ) {
+
 	constLabels["game"] = p.game
 	constLabels["serverType"] = p.serverType
 
@@ -56,6 +105,8 @@ func (p *PrometheusReporter) registerMetrics(
 	for key := range additionalLabels {
 		additionalLabelsKeys = append(additionalLabelsKeys, key)
 	}
+
+	p.registerCustomMetrics(constLabels, additionalLabelsKeys, spec)
 
 	// HandlerResponseTimeMs summary
 	p.summaryReportersMap[ResponseTime] = prometheus.NewSummaryVec(
@@ -212,10 +263,21 @@ func (p *PrometheusReporter) registerMetrics(
 
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
-	serverType, game string,
-	port int,
-	constLabels, additionalLabels map[string]string,
-) *PrometheusReporter {
+	serverType string,
+	config *config.Config,
+	constLabels map[string]string,
+) (*PrometheusReporter, error) {
+	var (
+		port             = config.GetInt("pitaya.metrics.prometheus.port")
+		game             = config.GetString("pitaya.game")
+		additionalLabels = config.GetStringMapString("pitaya.metrics.additionalTags")
+	)
+
+	spec, err := NewCustomMetricsSpec(config)
+	if err != nil {
+		return nil, err
+	}
+
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:          serverType,
@@ -224,13 +286,14 @@ func GetPrometheusReporter(
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(constLabels, additionalLabels)
+		prometheusReporter.registerMetrics(constLabels, additionalLabels, spec)
 		http.Handle("/metrics", prometheus.Handler())
 		go (func() {
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 		})()
 	})
-	return prometheusReporter
+
+	return prometheusReporter, nil
 }
 
 // ReportSummary reports a summary metric

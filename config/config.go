@@ -98,6 +98,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.constTags":                              map[string]string{},
 		"pitaya.metrics.additionalTags":                         map[string]string{},
 		"pitaya.metrics.periodicMetrics.period":                 "15s",
+		"pitaya.metrics.custom":                                 map[string]interface{}{},
 		"pitaya.defaultpipelines.structvalidation.enabled":      false,
 		"pitaya.worker.redis.url":                               "localhost:6379",
 		"pitaya.worker.redis.pool":                              "10",
@@ -150,4 +151,9 @@ func (c *Config) Get(s string) interface{} {
 // GetStringMapString returns a string map string from the inner config
 func (c *Config) GetStringMapString(s string) map[string]string {
 	return c.config.GetStringMapString(s)
+}
+
+// UnmarshalKey unmarshals key into v
+func (c *Config) UnmarshalKey(s string, v interface{}) error {
+	return c.config.UnmarshalKey(s, v)
 }
