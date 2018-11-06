@@ -46,6 +46,9 @@ run-cluster-worker-example-metagame:
 run-cluster-worker-example-worker:
 	@cd examples/demo/worker && go run main.go --type worker --frontend=false
 
+run-custom-metrics-example:
+	@cd examples/demo/custom_metrics && go run main.go --port 3250
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --gogofaster_out=plugins=grpc:protos

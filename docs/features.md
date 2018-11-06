@@ -50,11 +50,16 @@ This module adds a callback for `OnSessionBind` that checks if the id being boun
 ### Binding storage
 
 This module implements functionality needed by the gRPC RPC implementation to enable the functionality of broadcasting session binds and pushes to users without knowledge of the servers the users are connected to.
+
 ## Monitoring
 
 Pitaya has support for metrics reporting, it comes with Prometheus and Statsd support already implemented and has support for custom reporters that implement the `Reporter` interface. Pitaya also comes with support for open tracing compatible frameworks, allowing the easy integration of Jaeger and others.
 
 Some of the reported metrics reported by the `Reporter` include: number of connected clients, request duration and dropped messages.
+
+## Custom Metrics
+
+Besides pitaya default monitoring, it is possible to create new metrics. If using only Statsd reporter, no configuration is needed. If using Prometheus, it is necessary do add a configuration specifying the metrics parameters. More details on [doc](configuration.html#metrics-reporting) and this [example](https://github.com/topfreegames/pitaya/tree/master/examples/demo/custom_metrics).
 
 ## Pipelines
 

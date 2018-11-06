@@ -224,6 +224,70 @@ Metrics Reporting
     - 15s
     - string
     - Period that system metrics will be reported
+  * - pitaya.metrics.custom.counters
+    - []map[string]interface{}
+    - []map[string]interface
+    - Custom metrics counter
+  * - pitaya.metrics.custom.counters[].Subsystem
+    - ""
+    - string
+    - Custom counter subsystem name
+  * - pitaya.metrics.custom.counters[].Name
+    - ""
+    - string
+    - Custom counter name, must not be empty
+  * - pitaya.metrics.custom.counters[].Help
+    - ""
+    - string
+    - Custom counter help which explain what is the metric, must not be empty
+  * - pitaya.metrics.custom.counters[].Labels
+    - []string{}
+    - []string
+    - Custom counter labels the metric will carry
+  * - pitaya.metrics.custom.gauges
+    - []map[string]interface{}
+    - []map[string]interface
+    - Custom metrics gauge 
+  * - pitaya.metrics.custom.gauges[].Subsystem
+    - ""
+    - string
+    - Custom gauge subsystem name
+  * - pitaya.metrics.custom.gauges[].Name
+    - ""
+    - string
+    - Custom gauge name, must not be empty
+  * - pitaya.metrics.custom.gauges[].Help
+    - ""
+    - string
+    - Custom gauge help which explain what is the metric, must not be empty
+  * - pitaya.metrics.custom.gauges[].Labels
+    - []string{}
+    - []string
+    - Custom gauge labels the metric will carry
+  * - pitaya.metrics.custom.summaries
+    - []map[string]interface{}
+    - []map[string]interface
+    - Custom metrics summary 
+  * - pitaya.metrics.custom.summaries[].Subsystem
+    - ""
+    - string
+    - Custom summary subsystem name
+  * - pitaya.metrics.custom.summaries[].Name
+    - ""
+    - string
+    - Custom summary name, must not be empty
+  * - pitaya.metrics.custom.summaries[].Help
+    - ""
+    - string
+    - Custom summary help which explain what is the metric, must not be empty
+  * - pitaya.metrics.custom.summaries[].Labels
+    - []string{}
+    - []string
+    - Custom summary labels the metric will carry
+  * - pitaya.metrics.custom.summaries[].Objectives
+    - map[float64]float64
+    - map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
+    - Custom summary objectives with quantiles 
 
 Concurrency
 ===========
