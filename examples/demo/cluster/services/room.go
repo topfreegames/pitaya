@@ -8,6 +8,7 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/protos"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -65,7 +66,7 @@ type (
 // NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
-		group: pitaya.NewGroup("room"),
+		group: pitaya.NewGroup("room", groups.NewMemoryGroupService()),
 		Stats: &Stats{},
 	}
 }
