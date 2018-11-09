@@ -17,7 +17,7 @@ setup-protobuf-macos:
 	@go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
 
 run-chat-example:
-	@cd examples/demo/chat/ && go run main.go
+	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
 
 run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
