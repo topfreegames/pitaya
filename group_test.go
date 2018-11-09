@@ -21,24 +21,29 @@
 package pitaya
 
 import (
+	"context"
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
 func getGroup(n string) *Group {
-	return NewGroup(n)
+	gs, _ := groups.NewEtcdGroupService(config.NewConfig(), nil)
+	return NewGroup(n, gs)
 }
 
 func TestNewGroup(t *testing.T) {
 	t.Parallel()
-	g := getGroup("hello")
+	g := getGroup("testNewGroup")
 	assert.NotNil(t, g)
-	assert.Equal(t, "hello", g.name)
+	assert.Equal(t, "testNewGroup", g.name)
 }
 
 func TestAdd(t *testing.T) {
@@ -47,26 +52,28 @@ func TestAdd(t *testing.T) {
 		name     string
 		frontend bool
 		UID      string
+		payload  *groups.Payload
 		err      error
 	}{
-		{"frontend_uid", true, "someuid1", nil},
-		{"frontend_nouid", true, "", constants.ErrNoUIDBind},
-		{"backend_nouid", false, "", constants.ErrNoUIDBind},
-		{"backend_uid", false, "ola1", nil},
+		{"frontend_uid", true, "someuid1", &groups.Payload{Metadata: "leader"}, nil},
+		{"frontend_nouid", true, "", nil, constants.ErrNoUIDBind},
+		{"backend_nouid", false, "", nil, constants.ErrNoUIDBind},
+		{"backend_uid", false, "ola1", &groups.Payload{Metadata: "betatester"}, nil},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup")
+			g := getGroup("testAdd")
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err := g.Add(s)
+			err := g.Add(s.UID(), table.payload)
 			assert.Equal(t, table.err, err)
 			if err == nil {
-				assert.True(t, g.Contains(table.UID))
+				res, _ := g.Member(table.UID)
+				assert.Equal(t, table.payload, res)
 			}
 		})
 	}
@@ -87,18 +94,48 @@ func TestContains(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup")
+			g := getGroup("testContains")
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s)
-			b := g.Contains(s.UID())
+			g.Add(s.UID(), nil)
+			b, _ := g.Contains(table.UID)
 			if table.err == nil {
 				assert.True(t, b)
 			} else {
 				assert.False(t, b)
+			}
+		})
+	}
+}
+
+func TestMemberGroups(t *testing.T) {
+	t.Parallel()
+	tables := []struct {
+		name string
+		UID  string
+		err  error
+	}{
+		{"frontend_uid", "uniqueMember1", nil},
+		{"backend_uid", "uniqueMember2", nil},
+		{"backend_nouid", "", constants.ErrNoUIDBind},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g1 := getGroup("memberGroups1")
+			g2 := getGroup("memberGroups2")
+			defer g1.Close()
+			defer g2.Close()
+			g1.Add(table.UID, nil)
+			g2.Add(table.UID, nil)
+			res, err := g1.MemberGroups(table.UID)
+			if table.err == nil {
+				assert.ElementsMatch(t, []string{"memberGroups1", "memberGroups2"}, res)
+			} else {
+				assert.Error(t, err)
 			}
 		})
 	}
@@ -118,16 +155,17 @@ func TestLeave(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup")
+			g := getGroup("testLeave")
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s)
-			err := g.Leave(s)
+			g.Add(s.UID(), nil)
+			err := g.Leave(s.UID())
 			assert.NoError(t, err)
-			assert.False(t, g.Contains(table.UID))
+			res, _ := g.Contains(table.UID)
+			assert.False(t, res)
 		})
 	}
 }
@@ -146,16 +184,17 @@ func TestLeaveAll(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup")
+			g := getGroup("testLeaveAll")
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s)
+			g.Add(s.UID(), nil)
 			err := g.LeaveAll()
 			assert.NoError(t, err)
-			assert.False(t, g.Contains(table.UID))
+			res, _ := g.Contains(table.UID)
+			assert.False(t, res)
 		})
 	}
 }
@@ -174,14 +213,15 @@ func TestCount(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup")
+			g := getGroup("testCount")
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s)
-			assert.Equal(t, 1, g.Count())
+			g.Add(s.UID(), nil)
+			res, _ := g.Count()
+			assert.Equal(t, 1, res)
 		})
 	}
 }
@@ -200,7 +240,7 @@ func TestIsClosed(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testGroup55")
+			g := getGroup("testIsClosed")
 			assert.False(t, g.isClosed())
 			g.Close()
 			assert.True(t, g.isClosed())
@@ -210,61 +250,69 @@ func TestIsClosed(t *testing.T) {
 
 func TestMembers(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testGroup11")
+	g := getGroup("testMembers")
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 	s1 := session.New(mockNetworkEntity, true, "someid1")
 	s2 := session.New(mockNetworkEntity, true, "someid2")
-	g.Add(s1)
-	g.Add(s2)
-	assert.ElementsMatch(t, []string{"someid1", "someid2"}, g.Members())
+	g.Add(s1.UID(), nil)
+	g.Add(s2.UID(), nil)
+	res, err := g.Members()
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{"someid1", "someid2"}, res)
 }
 
 func TestBroadcast(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testGroup22")
+	g := getGroup("testBroadcast")
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-	s1 := session.New(mockNetworkEntity, true, "someid1")
-	s2 := session.New(mockNetworkEntity, true, "someid2")
-	g.Add(s1)
-	g.Add(s2)
+	s1 := session.New(mockNetworkEntity, true)
+	s2 := session.New(mockNetworkEntity, true)
+	err := s1.Bind(context.Background(), strconv.Itoa(int(s1.ID())))
+	assert.NoError(t, err)
+	err = s2.Bind(context.Background(), strconv.Itoa(int(s2.ID())))
+	assert.NoError(t, err)
+	g.Add(s1.UID(), nil)
+	g.Add(s2.UID(), nil)
 	route := "some.route.bla"
 	data := []byte("hellow")
 	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
-	err := g.Broadcast(route, data)
+	err = g.Broadcast("testtype", route, data)
 	assert.NoError(t, err)
 
 	g.Close()
-	err = g.Broadcast(route, data)
+	err = g.Broadcast("testtype", route, data)
 	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
 }
 
 func TestMulticast(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testGroup22")
+	g := getGroup("testMulticast")
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-	s1 := session.New(mockNetworkEntity, true, "someid1")
-	s2 := session.New(mockNetworkEntity, true, "someid2")
-	g.Add(s1)
-	g.Add(s2)
+	s1 := session.New(mockNetworkEntity, true)
+	s2 := session.New(mockNetworkEntity, true)
+	err := s1.Bind(context.Background(), strconv.Itoa(int(s1.ID())))
+	assert.NoError(t, err)
+	err = s2.Bind(context.Background(), strconv.Itoa(int(s2.ID())))
+	assert.NoError(t, err)
+	g.Add(s1.UID(), nil)
+	g.Add(s2.UID(), nil)
 	route := "some.route.bla"
 	data := []byte("hellow")
-	filter := func(s *session.Session) bool {
-		return s.UID() == "someid1"
-	}
-	mockNetworkEntity.EXPECT().Push(route, data).Times(1)
-	err := g.Multicast(route, data, filter)
+	uids := []string{s1.UID(), s2.UID()}
+	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
+	err = g.Multicast("testtype", route, data, uids)
 	assert.NoError(t, err)
 
 	g.Close()
-	err = g.Multicast(route, data, filter)
+	err = g.Multicast("testtype", route, data, uids)
 	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
 }

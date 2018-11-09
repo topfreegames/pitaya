@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coreos/etcd/integration"
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -37,8 +38,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -85,6 +88,10 @@ func setup() {
 
 	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
 	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
+
+	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
+	cli := c.RandClient()
+	groups.NewEtcdGroupService(config.NewConfig(), cli)
 }
 
 func initApp() {
