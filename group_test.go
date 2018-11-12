@@ -66,7 +66,6 @@ func TestAdd(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testAdd", t)
-			defer g.Close(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -75,6 +74,27 @@ func TestAdd(t *testing.T) {
 			assert.Equal(t, table.err, err)
 			if err == nil {
 				res, err := g.Member(ctx, table.UID)
+				if table.err == nil {
+					assert.NoError(t, err)
+				} else {
+					assert.Error(t, err)
+				}
+				assert.Equal(t, table.payload, res)
+			}
+		})
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g := getGroup("testSubgroupAdd", t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err := g.SubgroupAdd(ctx, "sub", s.UID(), table.payload)
+			assert.Equal(t, table.err, err)
+			if err == nil {
+				res, err := g.SubgroupMember(ctx, "sub", table.UID)
 				if table.err == nil {
 					assert.NoError(t, err)
 				} else {
@@ -103,7 +123,6 @@ func TestContains(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testContains", t)
-			defer g.Close(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -115,6 +134,30 @@ func TestContains(t *testing.T) {
 				assert.Error(t, err)
 			}
 			b, err := g.Contains(ctx, table.UID)
+			if table.err == nil {
+				assert.True(t, b)
+				assert.NoError(t, err)
+			} else {
+				assert.False(t, b)
+				assert.Error(t, err)
+			}
+		})
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g := getGroup("testSubgroupContains", t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err := g.SubgroupAdd(ctx, "sub", s.UID(), nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			b, err := g.SubgroupContains(ctx, "sub", table.UID)
 			if table.err == nil {
 				assert.True(t, b)
 				assert.NoError(t, err)
@@ -143,8 +186,6 @@ func TestMemberGroups(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			g1 := getGroup("memberGroups1", t)
 			g2 := getGroup("memberGroups2", t)
-			defer g1.Close(ctx)
-			defer g2.Close(ctx)
 			err := g1.Add(ctx, table.UID, nil)
 			if table.err == nil {
 				assert.NoError(t, err)
@@ -160,6 +201,30 @@ func TestMemberGroups(t *testing.T) {
 			res, err := g1.MemberGroups(ctx, table.UID)
 			if table.err == nil {
 				assert.ElementsMatch(t, []string{"memberGroups1", "memberGroups2"}, res)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g := getGroup("memberSubgroupTest", t)
+			err := g.SubgroupAdd(ctx, "sub1", table.UID, nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			err = g.SubgroupAdd(ctx, "sub2", table.UID, nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			res, err := g.MemberSubgroups(ctx, table.UID)
+			if table.err == nil {
+				assert.ElementsMatch(t, []string{"sub1", "sub2"}, res)
 			} else {
 				assert.Error(t, err)
 			}
@@ -183,7 +248,6 @@ func TestLeave(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testLeave", t)
-			defer g.Close(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -193,6 +257,23 @@ func TestLeave(t *testing.T) {
 			err = g.Leave(ctx, s.UID())
 			assert.NoError(t, err)
 			res, err := g.Contains(ctx, table.UID)
+			assert.NoError(t, err)
+			assert.False(t, res)
+		})
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g := getGroup("testSubgroupLeave", t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err := g.SubgroupAdd(ctx, "sub", s.UID(), nil)
+			assert.NoError(t, err)
+			err = g.SubgroupLeave(ctx, "sub", s.UID())
+			assert.NoError(t, err)
+			res, err := g.SubgroupContains(ctx, "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
 		})
@@ -215,7 +296,6 @@ func TestLeaveAll(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testLeaveAll", t)
-			defer g.Close(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -225,6 +305,23 @@ func TestLeaveAll(t *testing.T) {
 			err = g.LeaveAll(ctx)
 			assert.NoError(t, err)
 			res, err := g.Contains(ctx, table.UID)
+			assert.NoError(t, err)
+			assert.False(t, res)
+		})
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			g := getGroup("testSubgroupLeaveAll", t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err := g.SubgroupAdd(ctx, "sub", s.UID(), nil)
+			assert.NoError(t, err)
+			err = g.SubgroupLeaveAll(ctx, "sub")
+			assert.NoError(t, err)
+			res, err := g.SubgroupContains(ctx, "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
 		})
@@ -247,7 +344,6 @@ func TestCount(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testCount", t)
-			defer g.Close(ctx)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -257,30 +353,25 @@ func TestCount(t *testing.T) {
 			res, err := g.Count(ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, 1, res)
+			err = g.LeaveAll(ctx)
+			assert.NoError(t, err)
 		})
-	}
-}
-
-func TestIsClosed(t *testing.T) {
-	ctx := context.Background()
-	t.Parallel()
-	tables := []struct {
-		name     string
-		frontend bool
-		UID      string
-		err      error
-	}{
-		{"frontend_uid", true, "someuid2", nil},
-		{"backend_uid", false, "ola2", nil},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testIsClosed", t)
-			assert.False(t, g.isClosed())
-			err := g.Close(ctx)
+			g := getGroup("testSubgroupCount", t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err := g.SubgroupAdd(ctx, "sub", s.UID(), nil)
 			assert.NoError(t, err)
-			assert.True(t, g.isClosed())
+			res, err := g.SubgroupCount(ctx, "sub")
+			assert.NoError(t, err)
+			assert.Equal(t, 1, res)
+			err = g.LeaveAll(ctx)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -289,7 +380,6 @@ func TestMembers(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	g := getGroup("testMembers", t)
-	defer g.Close(ctx)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -308,11 +398,32 @@ func TestMembers(t *testing.T) {
 	assert.ElementsMatch(t, []string{"someid1", "someid2"}, uids)
 }
 
+func TestSubgroupMembers(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	g := getGroup("testSubgroupMembers", t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+	s1 := session.New(mockNetworkEntity, true, "someid1")
+	s2 := session.New(mockNetworkEntity, true, "someid2")
+	err := g.SubgroupAdd(ctx, "sub", s1.UID(), nil)
+	assert.NoError(t, err)
+	err = g.SubgroupAdd(ctx, "sub", s2.UID(), nil)
+	assert.NoError(t, err)
+	res, err := g.SubgroupMembers(ctx, "sub")
+	assert.NoError(t, err)
+	uids := make([]string, 0, len(res))
+	for uid := range res {
+		uids = append(uids, uid)
+	}
+	assert.ElementsMatch(t, []string{"someid1", "someid2"}, uids)
+}
+
 func TestBroadcast(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	g := getGroup("testBroadcast", t)
-	defer g.Close(ctx)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -331,18 +442,36 @@ func TestBroadcast(t *testing.T) {
 	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
 	err = g.Broadcast(ctx, "testtype", route, data)
 	assert.NoError(t, err)
+}
 
-	err = g.Close(ctx)
+func TestSubgroupBroadcast(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	g := getGroup("testSubgroupBroadcast", t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+	s1 := session.New(mockNetworkEntity, true)
+	s2 := session.New(mockNetworkEntity, true)
+	err := s1.Bind(ctx, strconv.Itoa(int(s1.ID())))
 	assert.NoError(t, err)
-	err = g.Broadcast(ctx, "testtype", route, data)
-	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
+	err = s2.Bind(ctx, strconv.Itoa(int(s2.ID())))
+	assert.NoError(t, err)
+	err = g.SubgroupAdd(ctx, "sub", s1.UID(), nil)
+	assert.NoError(t, err)
+	err = g.SubgroupAdd(ctx, "sub", s2.UID(), nil)
+	assert.NoError(t, err)
+	route := "some.route.bla"
+	data := []byte("hellow")
+	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
+	err = g.SubgroupBroadcast(ctx, "testtype", "sub", route, data)
+	assert.NoError(t, err)
 }
 
 func TestMulticast(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	g := getGroup("testMulticast", t)
-	defer g.Close(context.Background())
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -362,9 +491,4 @@ func TestMulticast(t *testing.T) {
 	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
 	err = g.Multicast(ctx, "testtype", route, data, uids)
 	assert.NoError(t, err)
-
-	err = g.Close(ctx)
-	assert.NoError(t, err)
-	err = g.Multicast(ctx, "testtype", route, data, uids)
-	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
 }
