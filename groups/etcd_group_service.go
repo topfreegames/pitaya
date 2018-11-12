@@ -114,9 +114,9 @@ func memberKey(groupName, uid string) string {
 }
 
 // MemberGroups returns all groups which member takes part
-func (c *EtcdGroupService) MemberGroups(uid string) ([]string, error) {
+func (c *EtcdGroupService) MemberGroups(ctx context.Context, uid string) ([]string, error) {
 	prefix := userGroupKey("", uid)
-	etcdRes, err := clientInstance.Get(context.Background(), prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
+	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +129,9 @@ func (c *EtcdGroupService) MemberGroups(uid string) ([]string, error) {
 }
 
 // Members returns all member's UID in current group
-func (c *EtcdGroupService) Members(groupName string) (map[string]*Payload, error) {
+func (c *EtcdGroupService) Members(ctx context.Context, groupName string) (map[string]*Payload, error) {
 	prefix := memberKey(groupName, "")
-	etcdRes, err := clientInstance.Get(context.Background(), prefix, clientv3.WithPrefix())
+	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (c *EtcdGroupService) Members(groupName string) (map[string]*Payload, error
 }
 
 // Member returns the Payload from User
-func (c *EtcdGroupService) Member(groupName, uid string) (*Payload, error) {
-	etcdRes, err := clientInstance.Get(context.Background(), memberKey(groupName, uid))
+func (c *EtcdGroupService) Member(ctx context.Context, groupName, uid string) (*Payload, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, uid))
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +161,8 @@ func (c *EtcdGroupService) Member(groupName, uid string) (*Payload, error) {
 }
 
 // Contains check whether a UID is contained in current group or not
-func (c *EtcdGroupService) Contains(groupName, uid string) (bool, error) {
-	etcdRes, err := clientInstance.Get(context.Background(), memberKey(groupName, uid), clientv3.WithCountOnly())
+func (c *EtcdGroupService) Contains(ctx context.Context, groupName, uid string) (bool, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, uid), clientv3.WithCountOnly())
 	if err != nil {
 		return false, err
 	}
@@ -170,37 +170,37 @@ func (c *EtcdGroupService) Contains(groupName, uid string) (bool, error) {
 }
 
 // Add adds UID and payload to group. If the group doesn't exist, it is created
-func (c *EtcdGroupService) Add(groupName, uid string, payload *Payload) error {
+func (c *EtcdGroupService) Add(ctx context.Context, groupName, uid string, payload *Payload) error {
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	_, err = clientInstance.Put(context.Background(), memberKey(groupName, uid), string(jsonPayload), clientv3.WithLease(leaseID))
+	_, err = clientInstance.Put(ctx, memberKey(groupName, uid), string(jsonPayload), clientv3.WithLease(leaseID))
 	if err != nil {
 		return err
 	}
-	_, err = clientInstance.Put(context.Background(), userGroupKey(groupName, uid), "", clientv3.WithLease(leaseID))
+	_, err = clientInstance.Put(ctx, userGroupKey(groupName, uid), "", clientv3.WithLease(leaseID))
 	return err
 }
 
 // Leave removes specified UID from group
-func (c *EtcdGroupService) Leave(groupName, uid string) error {
-	_, err := clientInstance.Delete(context.Background(), memberKey(groupName, uid))
+func (c *EtcdGroupService) Leave(ctx context.Context, groupName, uid string) error {
+	_, err := clientInstance.Delete(ctx, memberKey(groupName, uid))
 	if err != nil {
 		return err
 	}
-	_, err = clientInstance.Delete(context.Background(), userGroupKey(groupName, uid))
+	_, err = clientInstance.Delete(ctx, userGroupKey(groupName, uid))
 	return err
 }
 
 // LeaveAll clears all UIDs in the group
-func (c *EtcdGroupService) LeaveAll(groupName string) error {
-	dResp, err := clientInstance.Delete(context.Background(), memberKey(groupName, ""), clientv3.WithPrefix())
+func (c *EtcdGroupService) LeaveAll(ctx context.Context, groupName string) error {
+	dResp, err := clientInstance.Delete(ctx, memberKey(groupName, ""), clientv3.WithPrefix())
 	if err != nil {
 		return err
 	}
 	for _, kv := range dResp.PrevKvs {
-		_, err = clientInstance.Delete(context.Background(), string(kv.Key))
+		_, err = clientInstance.Delete(ctx, string(kv.Key))
 		if err != nil {
 			logger.Log.Warn("[groups] sd: error deleting key from etcd")
 		}
@@ -209,8 +209,8 @@ func (c *EtcdGroupService) LeaveAll(groupName string) error {
 }
 
 // Count get current member amount in the group
-func (c *EtcdGroupService) Count(groupName string) (int, error) {
-	etcdRes, err := clientInstance.Get(context.Background(), memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
+func (c *EtcdGroupService) Count(ctx context.Context, groupName string) (int, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
 	if err != nil {
 		return 0, err
 	}
@@ -218,6 +218,6 @@ func (c *EtcdGroupService) Count(groupName string) (int, error) {
 }
 
 // Close destroy group, which will release all resource in the group
-func (c *EtcdGroupService) Close(groupName string) error {
-	return c.LeaveAll(groupName)
+func (c *EtcdGroupService) Close(ctx context.Context, groupName string) error {
+	return c.LeaveAll(ctx, groupName)
 }

@@ -21,6 +21,7 @@
 package pitaya
 
 import (
+	"context"
 	"sync/atomic"
 
 	"github.com/topfreegames/pitaya/constants"
@@ -51,37 +52,37 @@ func NewGroup(n string, gs groups.GroupService) *Group {
 }
 
 // MemberGroups returns all groups that the member takes part
-func (c *Group) MemberGroups(uid string) ([]string, error) {
+func (c *Group) MemberGroups(ctx context.Context, uid string) ([]string, error) {
 	if c.isClosed() {
 		return nil, constants.ErrClosedGroup
 	}
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.MemberGroups(uid)
+	return c.groupService.MemberGroups(ctx, uid)
 }
 
 // Member returns member payload
-func (c *Group) Member(uid string) (*groups.Payload, error) {
+func (c *Group) Member(ctx context.Context, uid string) (*groups.Payload, error) {
 	if c.isClosed() {
 		return nil, constants.ErrClosedGroup
 	}
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.Member(c.name, uid)
+	return c.groupService.Member(ctx, c.name, uid)
 }
 
 // Members returns all member's UIDs in current group
-func (c *Group) Members() (map[string]*groups.Payload, error) {
+func (c *Group) Members(ctx context.Context) (map[string]*groups.Payload, error) {
 	if c.isClosed() {
 		return nil, constants.ErrClosedGroup
 	}
-	return c.groupService.Members(c.name)
+	return c.groupService.Members(ctx, c.name)
 }
 
 // Multicast  push  the message to the filtered clients
-func (c *Group) Multicast(frontendType, route string, v interface{}, uids []string) error {
+func (c *Group) Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
 	}
@@ -97,13 +98,13 @@ func (c *Group) Multicast(frontendType, route string, v interface{}, uids []stri
 }
 
 // Broadcast pushes the message to all members
-func (c *Group) Broadcast(frontendType, route string, v interface{}) error {
+func (c *Group) Broadcast(ctx context.Context, frontendType, route string, v interface{}) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
 	}
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	members, err := c.Members()
+	members, err := c.Members(ctx)
 	if err != nil {
 		return err
 	}
@@ -111,22 +112,22 @@ func (c *Group) Broadcast(frontendType, route string, v interface{}) error {
 	for uid := range members {
 		uids = append(uids, uid)
 	}
-	return c.Multicast(frontendType, route, v, uids)
+	return c.Multicast(ctx, frontendType, route, v, uids)
 }
 
 // Contains check whether a UID is contained in current group or not
-func (c *Group) Contains(uid string) (bool, error) {
+func (c *Group) Contains(ctx context.Context, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
 	}
 	if c.isClosed() {
 		return false, constants.ErrClosedGroup
 	}
-	return c.groupService.Contains(c.name, uid)
+	return c.groupService.Contains(ctx, c.name, uid)
 }
 
 // Add adds UID to group
-func (c *Group) Add(uid string, payload *groups.Payload) error {
+func (c *Group) Add(ctx context.Context, uid string, payload *groups.Payload) error {
 	if uid == "" {
 		return constants.ErrNoUIDBind
 	}
@@ -135,34 +136,34 @@ func (c *Group) Add(uid string, payload *groups.Payload) error {
 	}
 	logger.Log.Debugf("Add user to group %s, UID=%d", c.name, uid)
 
-	return c.groupService.Add(c.name, uid, payload)
+	return c.groupService.Add(ctx, c.name, uid, payload)
 }
 
 // Leave removes specified UID from group
-func (c *Group) Leave(uid string) error {
+func (c *Group) Leave(ctx context.Context, uid string) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
 	}
 	logger.Log.Debugf("Remove user from group %s, UID=%d", c.name, uid)
 
-	return c.groupService.Leave(c.name, uid)
+	return c.groupService.Leave(ctx, c.name, uid)
 }
 
 // LeaveAll clears all UIDs in the group
-func (c *Group) LeaveAll() error {
+func (c *Group) LeaveAll(ctx context.Context) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
 	}
 
-	return c.groupService.LeaveAll(c.name)
+	return c.groupService.LeaveAll(ctx, c.name)
 }
 
 // Count get current member amount in the group
-func (c *Group) Count() (int, error) {
+func (c *Group) Count(ctx context.Context) (int, error) {
 	if c.isClosed() {
 		return 0, constants.ErrClosedGroup
 	}
-	return c.groupService.Count(c.name)
+	return c.groupService.Count(ctx, c.name)
 }
 
 func (c *Group) isClosed() bool {
@@ -170,12 +171,12 @@ func (c *Group) isClosed() bool {
 }
 
 // Close destroy group, which will release all resource in the group
-func (c *Group) Close() error {
+func (c *Group) Close(ctx context.Context) error {
 	if c.isClosed() {
 		return constants.ErrCloseClosedGroup
 	}
 
-	err := c.groupService.Close(c.name)
+	err := c.groupService.Close(ctx, c.name)
 	if err != nil {
 		return err
 	}

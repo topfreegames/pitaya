@@ -184,7 +184,7 @@ func (t *TestSvc) TestBind(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = t.group.Add(s.UID(), nil)
+	err = t.group.Add(ctx, s.UID(), nil)
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
@@ -198,7 +198,7 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = t.group.Add(s.UID(), nil)
+	err = t.group.Add(ctx, s.UID(), nil)
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
@@ -207,12 +207,12 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 
 // TestSendGroupMsg handler for e2e tests
 func (t *TestSvc) TestSendGroupMsg(ctx context.Context, msg []byte) {
-	t.group.Broadcast("connector", "route.test", msg)
+	t.group.Broadcast(ctx, "connector", "route.test", msg)
 }
 
 // TestSendGroupMsgPtr handler for e2e tests
 func (t *TestSvc) TestSendGroupMsgPtr(ctx context.Context, msg *test.TestRequest) {
-	t.group.Broadcast("connector", "route.testptr", msg)
+	t.group.Broadcast(ctx, "connector", "route.testptr", msg)
 }
 
 // TestSendToUsers handler for e2e tests

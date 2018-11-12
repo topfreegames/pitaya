@@ -67,7 +67,7 @@ func NewRoom(conf *config.Config) *Room {
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := r.group.Count()
+		count, err := r.group.Count(context.Background())
 		logger.Log.Debugf("UserCount: Time=>", time.Now().String(), "Count=>", count, "error=>", err)
 	})
 }
@@ -82,7 +82,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
-	res, err := r.group.Members()
+	res, err := r.group.Members(ctx)
 	uids := make([]string, 0, len(res))
 	for uid := range res {
 		uids = append(uids, uid)
@@ -92,13 +92,13 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	}
 	s.Push("onMembers", &AllMembers{Members: uids})
 	// notify others
-	r.group.Broadcast("chat", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
+	r.group.Broadcast(ctx, "chat", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group
-	r.group.Add(s.UID(), nil) // add session to group
+	r.group.Add(ctx, s.UID(), nil) // add session to group
 
 	// on session close, remove it from group
 	s.OnClose(func() {
-		r.group.Leave(s.UID())
+		r.group.Leave(ctx, s.UID())
 	})
 
 	return &JoinResponse{Result: "success"}, nil
@@ -106,7 +106,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := r.group.Broadcast("chat", "onMessage", msg)
+	err := r.group.Broadcast(ctx, "chat", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
