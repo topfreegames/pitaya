@@ -3,6 +3,7 @@ package groups
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
@@ -105,17 +106,21 @@ func watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
 	}
 }
 
-func userGroupKey(groupName, uid string) string {
+func memberGroupKey(groupName, uid string) string {
 	return "uids/" + uid + "/groups/" + groupName
 }
 
+func groupPrefix(groupName string) string {
+	return "groups/" + groupName
+}
+
 func memberKey(groupName, uid string) string {
-	return "groups/" + groupName + "/uids/" + uid
+	return groupPrefix(groupName) + "/uids/" + uid
 }
 
 // MemberGroups returns all groups which member takes part
 func (c *EtcdGroupService) MemberGroups(ctx context.Context, uid string) ([]string, error) {
-	prefix := userGroupKey("", uid)
+	prefix := memberGroupKey("", uid)
 	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -179,7 +184,7 @@ func (c *EtcdGroupService) Add(ctx context.Context, groupName, uid string, paylo
 	if err != nil {
 		return err
 	}
-	_, err = clientInstance.Put(ctx, userGroupKey(groupName, uid), "", clientv3.WithLease(leaseID))
+	_, err = clientInstance.Put(ctx, memberGroupKey(groupName, uid), "", clientv3.WithLease(leaseID))
 	return err
 }
 
@@ -189,20 +194,24 @@ func (c *EtcdGroupService) Leave(ctx context.Context, groupName, uid string) err
 	if err != nil {
 		return err
 	}
-	_, err = clientInstance.Delete(ctx, userGroupKey(groupName, uid))
+	_, err = clientInstance.Delete(ctx, memberGroupKey(groupName, uid))
 	return err
 }
 
 // LeaveAll clears all UIDs in the group
 func (c *EtcdGroupService) LeaveAll(ctx context.Context, groupName string) error {
-	dResp, err := clientInstance.Delete(ctx, memberKey(groupName, ""), clientv3.WithPrefix())
+	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName), clientv3.WithPrefix())
 	if err != nil {
 		return err
 	}
+	prefix := memberKey(groupName, "")
 	for _, kv := range dResp.PrevKvs {
-		_, err = clientInstance.Delete(ctx, string(kv.Key))
-		if err != nil {
-			logger.Log.Warn("[groups] sd: error deleting key from etcd")
+		if strings.Contains(string(kv.Key), prefix) {
+			uid := string(kv.Key)[len(prefix):]
+			_, err = clientInstance.Delete(ctx, memberGroupKey(groupName, uid))
+			if err != nil {
+				logger.Log.Warn("[groups] sd: error deleting key from etcd")
+			}
 		}
 	}
 	return err
