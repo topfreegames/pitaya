@@ -26,6 +26,9 @@ type EtcdGroupService struct {
 // NewEtcdGroupService returns a new group instance
 func NewEtcdGroupService(conf *config.Config, clientOrNil *clientv3.Client) (*EtcdGroupService, error) {
 	err := initClientInstance(conf, clientOrNil)
+	if err != nil {
+		return nil, err
+	}
 	return &EtcdGroupService{}, err
 }
 

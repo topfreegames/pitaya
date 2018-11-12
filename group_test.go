@@ -34,14 +34,15 @@ import (
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
-func getGroup(n string) *Group {
-	gs, _ := groups.NewEtcdGroupService(config.NewConfig(), nil)
+func getGroup(n string, t *testing.T) *Group {
+	gs, err := groups.NewEtcdGroupService(config.NewConfig(), nil)
+	assert.NoError(t, err)
 	return NewGroup(n, gs)
 }
 
 func TestNewGroup(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testNewGroup")
+	g := getGroup("testNewGroup", t)
 	assert.NotNil(t, g)
 	assert.Equal(t, "testNewGroup", g.name)
 }
@@ -63,7 +64,7 @@ func TestAdd(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testAdd")
+			g := getGroup("testAdd", t)
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -72,7 +73,12 @@ func TestAdd(t *testing.T) {
 			err := g.Add(s.UID(), table.payload)
 			assert.Equal(t, table.err, err)
 			if err == nil {
-				res, _ := g.Member(table.UID)
+				res, err := g.Member(table.UID)
+				if table.err == nil {
+					assert.NoError(t, err)
+				} else {
+					assert.Error(t, err)
+				}
 				assert.Equal(t, table.payload, res)
 			}
 		})
@@ -94,18 +100,25 @@ func TestContains(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testContains")
+			g := getGroup("testContains", t)
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s.UID(), nil)
-			b, _ := g.Contains(table.UID)
+			err := g.Add(s.UID(), nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			b, err := g.Contains(table.UID)
 			if table.err == nil {
 				assert.True(t, b)
+				assert.NoError(t, err)
 			} else {
 				assert.False(t, b)
+				assert.Error(t, err)
 			}
 		})
 	}
@@ -125,12 +138,22 @@ func TestMemberGroups(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g1 := getGroup("memberGroups1")
-			g2 := getGroup("memberGroups2")
+			g1 := getGroup("memberGroups1", t)
+			g2 := getGroup("memberGroups2", t)
 			defer g1.Close()
 			defer g2.Close()
-			g1.Add(table.UID, nil)
-			g2.Add(table.UID, nil)
+			err := g1.Add(table.UID, nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			err = g2.Add(table.UID, nil)
+			if table.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
 			res, err := g1.MemberGroups(table.UID)
 			if table.err == nil {
 				assert.ElementsMatch(t, []string{"memberGroups1", "memberGroups2"}, res)
@@ -155,16 +178,18 @@ func TestLeave(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testLeave")
+			g := getGroup("testLeave", t)
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s.UID(), nil)
-			err := g.Leave(s.UID())
+			err := g.Add(s.UID(), nil)
 			assert.NoError(t, err)
-			res, _ := g.Contains(table.UID)
+			err = g.Leave(s.UID())
+			assert.NoError(t, err)
+			res, err := g.Contains(table.UID)
+			assert.NoError(t, err)
 			assert.False(t, res)
 		})
 	}
@@ -184,16 +209,18 @@ func TestLeaveAll(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testLeaveAll")
+			g := getGroup("testLeaveAll", t)
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			g.Add(s.UID(), nil)
-			err := g.LeaveAll()
+			err := g.Add(s.UID(), nil)
 			assert.NoError(t, err)
-			res, _ := g.Contains(table.UID)
+			err = g.LeaveAll()
+			assert.NoError(t, err)
+			res, err := g.Contains(table.UID)
+			assert.NoError(t, err)
 			assert.False(t, res)
 		})
 	}
@@ -213,14 +240,15 @@ func TestCount(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testCount")
+			g := getGroup("testCount", t)
 			defer g.Close()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			g.Add(s.UID(), nil)
-			res, _ := g.Count()
+			res, err := g.Count()
+			assert.NoError(t, err)
 			assert.Equal(t, 1, res)
 		})
 	}
@@ -240,7 +268,7 @@ func TestIsClosed(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g := getGroup("testIsClosed")
+			g := getGroup("testIsClosed", t)
 			assert.False(t, g.isClosed())
 			g.Close()
 			assert.True(t, g.isClosed())
@@ -250,7 +278,7 @@ func TestIsClosed(t *testing.T) {
 
 func TestMembers(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testMembers")
+	g := getGroup("testMembers", t)
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -266,7 +294,7 @@ func TestMembers(t *testing.T) {
 
 func TestBroadcast(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testBroadcast")
+	g := getGroup("testBroadcast", t)
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -292,7 +320,7 @@ func TestBroadcast(t *testing.T) {
 
 func TestMulticast(t *testing.T) {
 	t.Parallel()
-	g := getGroup("testMulticast")
+	g := getGroup("testMulticast", t)
 	defer g.Close()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

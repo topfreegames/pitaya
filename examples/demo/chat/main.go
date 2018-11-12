@@ -16,6 +16,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/groups"
+	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/timer"
 )
@@ -54,7 +55,10 @@ type (
 
 // NewRoom returns a new room
 func NewRoom(conf *config.Config) *Room {
-	gs, _ := groups.NewEtcdGroupService(conf, nil)
+	gs, err := groups.NewEtcdGroupService(conf, nil)
+	if err != nil {
+		logger.Log.Fatalf("Failed to create Room")
+	}
 	return &Room{
 		group: pitaya.NewGroup("room", gs),
 	}
@@ -64,7 +68,7 @@ func NewRoom(conf *config.Config) *Room {
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
 		count, err := r.group.Count()
-		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "error=>", err)
+		logger.Log.Debugf("UserCount: Time=>", time.Now().String(), "Count=>", count, "error=>", err)
 	})
 }
 
@@ -86,7 +90,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	// notify others
 	r.group.Broadcast("chat", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group
-	r.group.Add(s.UID()) // add session to group
+	r.group.Add(s.UID(), nil) // add session to group
 
 	// on session close, remove it from group
 	s.OnClose(func() {

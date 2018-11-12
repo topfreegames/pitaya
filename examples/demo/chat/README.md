@@ -9,9 +9,7 @@ refs: https://github.com/topfreegames/pitaya
 
 ## Run
 ```
-cd ../../testing
-docker-compose up -d etcd nats
-cd ../demo/chat/
+docker-compose -f ../../testing/docker-compose.yml up -d etcd nats
 go run main.go
 ```
 
