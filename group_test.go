@@ -321,8 +321,10 @@ func TestBroadcast(t *testing.T) {
 	assert.NoError(t, err)
 	err = s2.Bind(ctx, strconv.Itoa(int(s2.ID())))
 	assert.NoError(t, err)
-	g.Add(ctx, s1.UID(), nil)
-	g.Add(ctx, s2.UID(), nil)
+	err = g.Add(ctx, s1.UID(), nil)
+	assert.NoError(t, err)
+	err = g.Add(ctx, s2.UID(), nil)
+	assert.NoError(t, err)
 	route := "some.route.bla"
 	data := []byte("hellow")
 	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
@@ -348,8 +350,10 @@ func TestMulticast(t *testing.T) {
 	assert.NoError(t, err)
 	err = s2.Bind(context.Background(), strconv.Itoa(int(s2.ID())))
 	assert.NoError(t, err)
-	g.Add(ctx, s1.UID(), nil)
-	g.Add(ctx, s2.UID(), nil)
+	err = g.Add(ctx, s1.UID(), nil)
+	assert.NoError(t, err)
+	err = g.Add(ctx, s2.UID(), nil)
+	assert.NoError(t, err)
 	route := "some.route.bla"
 	data := []byte("hellow")
 	uids := []string{s1.UID(), s2.UID()}
