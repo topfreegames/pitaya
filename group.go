@@ -81,7 +81,7 @@ func (c *Group) Members(ctx context.Context) (map[string]*groups.Payload, error)
 	return c.groupService.Members(ctx, c.name)
 }
 
-// Multicast  push  the message to the filtered clients
+// Multicast  pushes  the message to the filtered clients
 func (c *Group) Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
 	if c.isClosed() {
 		return constants.ErrClosedGroup
@@ -115,7 +115,7 @@ func (c *Group) Broadcast(ctx context.Context, frontendType, route string, v int
 	return c.Multicast(ctx, frontendType, route, v, uids)
 }
 
-// Contains check whether a UID is contained in current group or not
+// Contains checks whether a UID is contained in current group or not
 func (c *Group) Contains(ctx context.Context, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
@@ -170,7 +170,7 @@ func (c *Group) isClosed() bool {
 	return atomic.LoadInt32(&c.status) == groupStatusClosed
 }
 
-// Close destroy group, which will release all resource in the group
+// Close destroy group, which will release all resources in the group
 func (c *Group) Close(ctx context.Context) error {
 	if c.isClosed() {
 		return constants.ErrCloseClosedGroup

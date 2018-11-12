@@ -307,3 +307,36 @@ These configurations control if the default pipelines should be enabled or not
     - false
     - bool
     - Whether Pitaya should enable the default struct validator for handler arguments
+
+Groups
+=================
+
+These configurations are only used if groups with ETCD implementation are used.
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.groups.etcd.endpoints
+    - localhost:2379
+    - string
+    - Comma separated list of etcd endpoints to be used by the binding storage module, should be the same as the service discovery etcd
+  * - pitaya.groups.etcd.prefix
+    - pitaya/
+    - string 
+    - Prefix used for etcd, should be the same as the service discovery
+  * - pitaya.groups.etcd.dialtimeout
+    - 5s
+    - time.Time
+    - Timeout to establish the etcd connection
+  * - pitaya.groups.etcd.leasettl
+    - 1h
+    - time.Time
+    - Duration of the etcd lease before automatic renewal
+
+ 
