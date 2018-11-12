@@ -80,18 +80,30 @@ func setup() {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 
-	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfetcdSD = reflect.TypeOf(etcdSD)
 
-	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
+	natsRPCServer, err := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfNatsRPCServer = reflect.TypeOf(natsRPCServer)
 
-	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
+	natsRPCClient, err := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
 
 	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
-	groups.NewEtcdGroupService(config.NewConfig(), cli)
+	_, err = groups.NewEtcdGroupService(config.NewConfig(), cli)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func initApp() {
