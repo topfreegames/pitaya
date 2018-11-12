@@ -129,16 +129,20 @@ func (c *EtcdGroupService) MemberGroups(uid string) ([]string, error) {
 }
 
 // Members returns all member's UID in current group
-func (c *EtcdGroupService) Members(groupName string) ([]string, error) {
+func (c *EtcdGroupService) Members(groupName string) (map[string]*Payload, error) {
 	prefix := memberKey(groupName, "")
-	etcdRes, err := clientInstance.Get(context.Background(), prefix, clientv3.WithPrefix(), clientv3.WithKeysOnly())
+	etcdRes, err := clientInstance.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
 
-	members := make([]string, etcdRes.Count)
-	for i, kv := range etcdRes.Kvs {
-		members[i] = string(kv.Key)[len(prefix):]
+	members := make(map[string]*Payload, etcdRes.Count)
+	for _, kv := range etcdRes.Kvs {
+		payload := &Payload{}
+		if err = json.Unmarshal(kv.Value, payload); err != nil {
+			return nil, err
+		}
+		members[string(kv.Key)[len(prefix):]] = payload
 	}
 	return members, nil
 }
@@ -165,15 +169,11 @@ func (c *EtcdGroupService) Contains(groupName, uid string) (bool, error) {
 	return etcdRes.Count > 0, nil
 }
 
-// Add adds UID and payload to group
+// Add adds UID and payload to group. If the group doesn't exist, it is created
 func (c *EtcdGroupService) Add(groupName, uid string, payload *Payload) error {
-	var jsonPayload []byte
-	var err error
-	if payload != nil {
-		jsonPayload, err = json.Marshal(payload)
-		if err != nil {
-			return err
-		}
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return err
 	}
 	_, err = clientInstance.Put(context.Background(), memberKey(groupName, uid), string(jsonPayload), clientv3.WithLease(leaseID))
 	if err != nil {

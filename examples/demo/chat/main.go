@@ -82,11 +82,15 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
-	members, err := r.group.Members()
+	res, err := r.group.Members()
+	uids := make([]string, 0, len(res))
+	for uid := range res {
+		uids = append(uids, uid)
+	}
 	if err != nil {
 		return nil, err
 	}
-	s.Push("onMembers", &AllMembers{Members: members})
+	s.Push("onMembers", &AllMembers{Members: uids})
 	// notify others
 	r.group.Broadcast("chat", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group

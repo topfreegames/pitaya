@@ -73,7 +73,7 @@ func (c *Group) Member(uid string) (*groups.Payload, error) {
 }
 
 // Members returns all member's UIDs in current group
-func (c *Group) Members() ([]string, error) {
+func (c *Group) Members() (map[string]*groups.Payload, error) {
 	if c.isClosed() {
 		return nil, constants.ErrClosedGroup
 	}
@@ -103,9 +103,13 @@ func (c *Group) Broadcast(frontendType, route string, v interface{}) error {
 	}
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	uids, err := c.Members()
+	members, err := c.Members()
 	if err != nil {
 		return err
+	}
+	uids := make([]string, 0, len(members))
+	for uid := range members {
+		uids = append(uids, uid)
 	}
 	return c.Multicast(frontendType, route, v, uids)
 }

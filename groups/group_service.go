@@ -9,7 +9,7 @@ type (
 	GroupService interface {
 		MemberGroups(uid string) ([]string, error)
 		Member(groupName, uid string) (*Payload, error)
-		Members(groupName string) ([]string, error)
+		Members(groupName string) (map[string]*Payload, error)
 		Contains(groupName, uid string) (bool, error)
 		Add(groupName, uid string, payload *Payload) error
 		Leave(groupName, uid string) error

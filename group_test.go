@@ -289,7 +289,11 @@ func TestMembers(t *testing.T) {
 	g.Add(s2.UID(), nil)
 	res, err := g.Members()
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, []string{"someid1", "someid2"}, res)
+	uids := make([]string, 0, len(res))
+	for uid := range res {
+		uids = append(uids, uid)
+	}
+	assert.ElementsMatch(t, []string{"someid1", "someid2"}, uids)
 }
 
 func TestBroadcast(t *testing.T) {
