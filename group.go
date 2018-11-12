@@ -85,7 +85,7 @@ func (c *Group) SubgroupMembers(ctx context.Context, subgroupName string) (map[s
 	return c.groupService.SubgroupMembers(ctx, c.name, subgroupName)
 }
 
-// Multicast  push  the message to the filtered clients
+// Multicast  pushes  the message to the filtered clients
 func (c *Group) Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
 	logger.Log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
 
@@ -128,7 +128,7 @@ func (c *Group) SubgroupBroadcast(ctx context.Context, frontendType, subgroupNam
 	return c.Multicast(ctx, frontendType, route, v, uids)
 }
 
-// Contains check whether a UID is contained in current group or not
+// Contains checks whether a UID is contained in current group or not
 func (c *Group) Contains(ctx context.Context, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
