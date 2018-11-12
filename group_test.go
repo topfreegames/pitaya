@@ -278,7 +278,8 @@ func TestIsClosed(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			g := getGroup("testIsClosed", t)
 			assert.False(t, g.isClosed())
-			g.Close(ctx)
+			err := g.Close(ctx)
+			assert.NoError(t, err)
 			assert.True(t, g.isClosed())
 		})
 	}
@@ -331,7 +332,8 @@ func TestBroadcast(t *testing.T) {
 	err = g.Broadcast(ctx, "testtype", route, data)
 	assert.NoError(t, err)
 
-	g.Close(ctx)
+	err = g.Close(ctx)
+	assert.NoError(t, err)
 	err = g.Broadcast(ctx, "testtype", route, data)
 	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
 }
@@ -361,7 +363,8 @@ func TestMulticast(t *testing.T) {
 	err = g.Multicast(ctx, "testtype", route, data, uids)
 	assert.NoError(t, err)
 
-	g.Close(ctx)
+	err = g.Close(ctx)
+	assert.NoError(t, err)
 	err = g.Multicast(ctx, "testtype", route, data, uids)
 	assert.EqualError(t, constants.ErrClosedGroup, err.Error())
 }
