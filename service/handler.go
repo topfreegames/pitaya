@@ -186,6 +186,13 @@ func (h *HandlerService) Handle(conn net.Conn) {
 			return
 		}
 
+		logger.Log.Debug("Received data on connection")
+		bufStr := string(buf)
+		bufStr = strings.Replace(bufStr, "\n", "", -1)
+		bufStr = strings.Replace(bufStr, " ", "", -1)
+		bufStr = strings.Replace(bufStr, "\t", " ", -1)
+		logger.Log.Debugf("Received data: %s", bufStr)
+
 		// (warning): decoder uses slice for performance, packet data should be copied before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
 		if err != nil {
@@ -211,6 +218,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
+		logger.Log.Debug("Received handshake packet")
 		if err := a.SendHandshakeResponse(); err != nil {
 			return err
 		}
@@ -230,6 +238,8 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		if err != nil {
 			logger.Log.Warnf("failed to save ip version on session: %q\n", err)
 		}
+
+		logger.Log.Debug("Successfully saved handshake data")
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
