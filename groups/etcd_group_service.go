@@ -280,7 +280,7 @@ func (c *EtcdGroupService) LeaveAll(ctx context.Context, groupName string) error
 			uid := string(kv.Key)[len(prefix):]
 			_, err = clientInstance.Delete(ctx, memberGroupKey(groupName, uid))
 			if err != nil {
-				logger.Log.Warn("[groups] sd: error deleting key from etcd")
+				logger.Log.Warnf("[groups] sd: error deleting key from etcd: %s", err.Error())
 			}
 		}
 	}

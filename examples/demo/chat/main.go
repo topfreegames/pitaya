@@ -57,7 +57,7 @@ type (
 func NewRoom(conf *config.Config) *Room {
 	gs, err := groups.NewEtcdGroupService(conf, nil)
 	if err != nil {
-		logger.Log.Fatalf("Failed to create Room")
+		logger.Log.Fatalf("Failed to create Room: %s", err.Error())
 	}
 	return &Room{
 		group: pitaya.NewGroup("room", gs),
@@ -68,7 +68,7 @@ func NewRoom(conf *config.Config) *Room {
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
 		count, err := r.group.Count(context.Background())
-		logger.Log.Debugf("UserCount: Time=>", time.Now().String(), "Count=>", count, "error=>", err)
+		logger.Log.Debugf("UserCount: Time=> %s, Count=> %d, Error=> %q", time.Now().String(), count, err)
 	})
 }
 
