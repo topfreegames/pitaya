@@ -389,7 +389,7 @@ These configurations are only used if groups with ETCD implementation are used.
   * - pitaya.groups.etcd.endpoints
     - localhost:2379
     - string
-    - Comma separated list of etcd endpoints to be used by the binding storage module, should be the same as the service discovery etcd
+    - Comma separated list of etcd endpoints to be used by the groups etcd service 
   * - pitaya.groups.etcd.prefix
     - pitaya/
     - string 
