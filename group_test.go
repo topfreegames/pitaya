@@ -218,7 +218,7 @@ func TestGroupMemberGroups(t *testing.T) {
 	}
 }
 
-func TestLeave(t *testing.T) {
+func TestRemove(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -237,16 +237,16 @@ func TestLeave(t *testing.T) {
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err := GroupAdd(ctx, "testLeave", s.UID(), nil)
+			err := GroupAdd(ctx, "testRemove", s.UID(), nil)
 			assert.NoError(t, err)
-			err = SubgroupAdd(ctx, "testLeave", "sub", s.UID(), nil)
+			err = SubgroupAdd(ctx, "testRemove", "sub", s.UID(), nil)
 			assert.NoError(t, err)
-			err = GroupLeave(ctx, "testLeave", s.UID())
+			err = GroupRemove(ctx, "testRemove", s.UID())
 			assert.NoError(t, err)
-			res, err := GroupContainsMember(ctx, "testLeave", table.UID)
+			res, err := GroupContainsMember(ctx, "testRemove", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
-			res, err = SubgroupContainsMember(ctx, "testLeave", "sub", table.UID)
+			res, err = SubgroupContainsMember(ctx, "testRemove", "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
 		})
@@ -258,18 +258,18 @@ func TestLeave(t *testing.T) {
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err := SubgroupAdd(ctx, "testSubgroupLeave", "sub", s.UID(), nil)
+			err := SubgroupAdd(ctx, "testSubgroupRemove", "sub", s.UID(), nil)
 			assert.NoError(t, err)
-			err = SubgroupLeave(ctx, "testSubgroupLeave", "sub", s.UID())
+			err = SubgroupRemove(ctx, "testSubgroupRemove", "sub", s.UID())
 			assert.NoError(t, err)
-			res, err := SubgroupContainsMember(ctx, "testSubgroupLeave", "sub", table.UID)
+			res, err := SubgroupContainsMember(ctx, "testSubgroupRemove", "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
 		})
 	}
 }
 
-func TestLeaveAll(t *testing.T) {
+func TestRemoveAll(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -288,17 +288,17 @@ func TestLeaveAll(t *testing.T) {
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err := GroupAdd(ctx, "testLeaveAll", s.UID(), nil)
+			err := GroupAdd(ctx, "testRemoveAll", s.UID(), nil)
 			assert.NoError(t, err)
-			err = SubgroupAdd(ctx, "testLeaveAll", "sub", s.UID(), nil)
+			err = SubgroupAdd(ctx, "testRemoveAll", "sub", s.UID(), nil)
 			assert.NoError(t, err)
-			err = GroupLeaveAll(ctx, "testLeaveAll")
+			err = GroupRemoveAll(ctx, "testRemoveAll")
 			assert.NoError(t, err)
 
-			res, err := GroupContainsMember(ctx, "testLeaveAll", table.UID)
+			res, err := GroupContainsMember(ctx, "testRemoveAll", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
-			res, err = SubgroupContainsMember(ctx, "testLeaveAll", "sub", table.UID)
+			res, err = SubgroupContainsMember(ctx, "testRemoveAll", "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
 			res1, err := PlayerGroups(ctx, table.UID)
@@ -313,20 +313,20 @@ func TestLeaveAll(t *testing.T) {
 			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err := GroupAdd(ctx, "testSubgroupLeaveAll", s.UID(), nil)
+			err := GroupAdd(ctx, "testSubgroupRemoveAll", s.UID(), nil)
 			assert.NoError(t, err)
-			err = SubgroupAdd(ctx, "testSubgroupLeaveAll", "sub", s.UID(), nil)
+			err = SubgroupAdd(ctx, "testSubgroupRemoveAll", "sub", s.UID(), nil)
 			assert.NoError(t, err)
-			err = SubgroupLeaveAll(ctx, "testSubgroupLeaveAll", "sub")
+			err = SubgroupRemoveAll(ctx, "testSubgroupRemoveAll", "sub")
 			assert.NoError(t, err)
 
-			res, err := SubgroupContainsMember(ctx, "testSubgroupLeaveAll", "sub", table.UID)
+			res, err := SubgroupContainsMember(ctx, "testSubgroupRemoveAll", "sub", table.UID)
 			assert.NoError(t, err)
 			assert.False(t, res)
-			res, err = GroupContainsMember(ctx, "testSubgroupLeaveAll", table.UID)
+			res, err = GroupContainsMember(ctx, "testSubgroupRemoveAll", table.UID)
 			assert.NoError(t, err)
 			assert.True(t, res)
-			res1, err := PlayerSubgroups(ctx, "testSubgroupLeaveAll", table.UID)
+			res1, err := PlayerSubgroups(ctx, "testSubgroupRemoveAll", table.UID)
 			assert.NoError(t, err)
 			assert.ElementsMatch(t, []string{}, res1)
 		})
@@ -363,7 +363,7 @@ func TestCount(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, 1, res)
 
-			err = GroupLeaveAll(ctx, "testCount")
+			err = GroupRemoveAll(ctx, "testCount")
 			assert.NoError(t, err)
 		})
 	}

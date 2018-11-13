@@ -20,10 +20,10 @@ type (
 		SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error)
 		GroupAdd(ctx context.Context, groupName, uid string, payload *Payload) error
 		SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *Payload) error
-		GroupLeave(ctx context.Context, groupName, uid string) error
-		SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error
-		GroupLeaveAll(ctx context.Context, groupName string) error
-		SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error
+		GroupRemove(ctx context.Context, groupName, uid string) error
+		SubgroupRemove(ctx context.Context, groupName, subgroupName, uid string) error
+		GroupRemoveAll(ctx context.Context, groupName string) error
+		SubgroupRemoveAll(ctx context.Context, groupName, subgroupName string) error
 		GroupCount(ctx context.Context, groupName string) (int, error)
 		SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error)
 	}

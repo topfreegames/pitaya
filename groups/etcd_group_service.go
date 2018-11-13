@@ -3,6 +3,7 @@ package groups
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -107,27 +108,27 @@ func watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
 }
 
 func groupPrefix(groupName string) string {
-	return "groups/" + groupName
+	return fmt.Sprintf("groups/%s", groupName)
 }
 
 func subGroupPrefix(groupName, subgroupName string) string {
-	return groupPrefix(groupName) + "/subgroups/" + subgroupName
+	return groupPrefix(groupName) + fmt.Sprintf("/subgroups/%s", subgroupName)
 }
 
 func memberGroupKey(groupName, uid string) string {
-	return "uids/" + uid + "/groups/" + groupName
+	return fmt.Sprintf("uids/%s/groups/%s", uid, groupName)
 }
 
 func memberSubgroupKey(groupName, subgroupName, uid string) string {
-	return groupPrefix(groupName) + "/uids/" + uid + "/subgroups/" + subgroupName
+	return groupPrefix(groupName) + fmt.Sprintf("/uids/%s/subgroups/%s", uid, subgroupName)
 }
 
 func memberKey(groupName, uid string) string {
-	return groupPrefix(groupName) + "/uids/" + uid
+	return groupPrefix(groupName) + fmt.Sprintf("/uids/%s", uid)
 }
 
 func memberSubKey(groupName, subgroupName, uid string) string {
-	return subGroupPrefix(groupName, subgroupName) + "/uids/" + uid
+	return subGroupPrefix(groupName, subgroupName) + fmt.Sprintf("/uids/%s", uid)
 }
 
 // Subgroups returns all subgroups that are contained inside given group
@@ -276,22 +277,22 @@ func add(ctx context.Context, kvs map[string]*Payload) error {
 	return nil
 }
 
-// GroupLeave removes specified UID from group
-func (c *EtcdGroupService) GroupLeave(ctx context.Context, groupName, uid string) error {
+// GroupRemove removes specified UID from group
+func (c *EtcdGroupService) GroupRemove(ctx context.Context, groupName, uid string) error {
 	subgroups, err := c.PlayerSubgroups(ctx, groupName, uid)
 	if err != nil {
 		return err
 	}
 	for _, subgroup := range subgroups {
-		if err = c.SubgroupLeave(ctx, groupName, subgroup, uid); err != nil {
+		if err = c.SubgroupRemove(ctx, groupName, subgroup, uid); err != nil {
 			return err
 		}
 	}
 	return leave(ctx, memberKey(groupName, uid), memberGroupKey(groupName, uid))
 }
 
-// SubgroupLeave removes specified UID from group
-func (c *EtcdGroupService) SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error {
+// SubgroupRemove removes specified UID from group
+func (c *EtcdGroupService) SubgroupRemove(ctx context.Context, groupName, subgroupName, uid string) error {
 	return leave(ctx, memberSubKey(groupName, subgroupName, uid), memberSubgroupKey(groupName, subgroupName, uid))
 }
 
@@ -305,9 +306,9 @@ func leave(ctx context.Context, memberKeys ...string) error {
 	return nil
 }
 
-// GroupLeaveAll clears all UIDs in the group and also subgroups contained
-func (c *EtcdGroupService) GroupLeaveAll(ctx context.Context, groupName string) error {
-	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName), clientv3.WithPrefix(), clientv3.WithPrevKV())
+// GroupRemoveAll clears all UIDs in the group and also subgroups contained
+func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
+	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName)+"/", clientv3.WithPrefix(), clientv3.WithPrevKV())
 	if err != nil {
 		return err
 	}
@@ -323,8 +324,8 @@ func (c *EtcdGroupService) GroupLeaveAll(ctx context.Context, groupName string) 
 	return err
 }
 
-// SubgroupLeaveAll clears all UIDs in the subgroup
-func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error {
+// SubgroupRemoveAll clears all UIDs in the subgroup
+func (c *EtcdGroupService) SubgroupRemoveAll(ctx context.Context, groupName, subgroupName string) error {
 	prefix := memberSubKey(groupName, subgroupName, "")
 	dResp, err := clientInstance.Delete(ctx, prefix, clientv3.WithPrefix(), clientv3.WithPrevKV())
 	if err != nil {

@@ -161,26 +161,26 @@ func GroupAdd(ctx context.Context, groupName, uid string, payload *groups.Payloa
 	return groupServiceInstance.GroupAdd(ctx, groupName, uid, payload)
 }
 
-// GroupLeave removes specified UID from group
-func GroupLeave(ctx context.Context, groupName, uid string) error {
+// GroupRemove removes specified UID from group
+func GroupRemove(ctx context.Context, groupName, uid string) error {
 	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
-	return groupServiceInstance.GroupLeave(ctx, groupName, uid)
+	return groupServiceInstance.GroupRemove(ctx, groupName, uid)
 }
 
-// SubgroupLeave removes specified UID from subgroup
-func SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error {
+// SubgroupRemove removes specified UID from subgroup
+func SubgroupRemove(ctx context.Context, groupName, subgroupName, uid string) error {
 	logger.Log.Debugf("Remove user from subgroup %s, UID=%d", groupName, uid)
-	return groupServiceInstance.SubgroupLeave(ctx, groupName, subgroupName, uid)
+	return groupServiceInstance.SubgroupRemove(ctx, groupName, subgroupName, uid)
 }
 
-// GroupLeaveAll clears all UIDs in the group and contained subgroups
-func GroupLeaveAll(ctx context.Context, groupName string) error {
-	return groupServiceInstance.GroupLeaveAll(ctx, groupName)
+// GroupRemoveAll clears all UIDs in the group and contained subgroups
+func GroupRemoveAll(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
 
-// SubgroupLeaveAll clears all UIDs in the subgroup
-func SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error {
-	return groupServiceInstance.SubgroupLeaveAll(ctx, groupName, subgroupName)
+// SubgroupRemoveAll clears all UIDs in the subgroup
+func SubgroupRemoveAll(ctx context.Context, groupName, subgroupName string) error {
+	return groupServiceInstance.SubgroupRemoveAll(ctx, groupName, subgroupName)
 }
 
 // GroupCount get current member amount in the group
