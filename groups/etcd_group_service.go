@@ -196,11 +196,14 @@ func getMembers(ctx context.Context, prefix string) (map[string]*Payload, error)
 
 	members := make(map[string]*Payload, etcdRes.Count)
 	for _, kv := range etcdRes.Kvs {
-		payload := &Payload{}
-		if err = json.Unmarshal(kv.Value, payload); err != nil {
-			return nil, err
+		uid := string(kv.Key)[len(prefix):]
+		if !strings.Contains(uid, "/subgroups/") {
+			payload := &Payload{}
+			if err = json.Unmarshal(kv.Value, payload); err != nil {
+				return nil, err
+			}
+			members[uid] = payload
 		}
-		members[string(kv.Key)[len(prefix):]] = payload
 	}
 	return members, nil
 }
@@ -300,13 +303,13 @@ func leave(ctx context.Context, memberKeys ...string) error {
 
 // GroupLeaveAll clears all UIDs in the group and also subgroups contained
 func (c *EtcdGroupService) GroupLeaveAll(ctx context.Context, groupName string) error {
-	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName), clientv3.WithPrefix())
+	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName), clientv3.WithPrefix(), clientv3.WithPrevKV())
 	if err != nil {
 		return err
 	}
 	prefix := memberKey(groupName, "")
 	for _, kv := range dResp.PrevKvs {
-		if strings.Contains(string(kv.Key), prefix) {
+		if strings.Contains(string(kv.Key), prefix) && !strings.Contains(string(kv.Key), "/subgroups/") {
 			uid := string(kv.Key)[len(prefix):]
 			if err = leave(ctx, memberGroupKey(groupName, uid)); err != nil {
 				logger.Log.Warnf("[groups] sd: error deleting key from etcd: %s", err.Error())
@@ -319,14 +322,14 @@ func (c *EtcdGroupService) GroupLeaveAll(ctx context.Context, groupName string) 
 // SubgroupLeaveAll clears all UIDs in the subgroup
 func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error {
 	prefix := memberSubKey(groupName, subgroupName, "")
-	dResp, err := clientInstance.Delete(ctx, prefix, clientv3.WithPrefix())
+	dResp, err := clientInstance.Delete(ctx, prefix, clientv3.WithPrefix(), clientv3.WithPrevKV())
 	if err != nil {
 		return err
 	}
 	for _, kv := range dResp.PrevKvs {
 		uid := string(kv.Key)[len(prefix):]
 		if err = leave(ctx, memberSubgroupKey(groupName, subgroupName, uid)); err != nil {
-			logger.Log.Warn("[subgroups] sd: error deleting key from etcd")
+			logger.Log.Warnf("[subgroups] sd: error deleting key from etcd: %s", err.Error())
 		}
 	}
 	return err

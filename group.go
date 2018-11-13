@@ -44,12 +44,12 @@ func InitGroups(config *config.Config, clientOrNil *clientv3.Client) {
 	groupServiceInstance = gsi
 }
 
-// Subgroups returns all subgroups that the group has
+// Subgroups returns all subgroups that the group contains
 func Subgroups(ctx context.Context, groupName string) ([]string, error) {
 	return groupServiceInstance.Subgroups(ctx, groupName)
 }
 
-// PlayerGroups returns all groups that the member takes part
+// PlayerGroups returns all groups that the player takes part
 func PlayerGroups(ctx context.Context, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
@@ -57,7 +57,7 @@ func PlayerGroups(ctx context.Context, uid string) ([]string, error) {
 	return groupServiceInstance.PlayerGroups(ctx, uid)
 }
 
-// PlayerSubgroups returns all subgroups from given group that the member takes part
+// PlayerSubgroups returns all subgroups from given group that the player takes part
 func PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
@@ -91,20 +91,7 @@ func SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[s
 	return groupServiceInstance.SubgroupMembers(ctx, groupName, subgroupName)
 }
 
-// Multicast  pushes  the message to the filtered clients
-func Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
-	logger.Log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
-
-	errUids, err := SendPushToUsers(route, v, uids, frontendType)
-	if err != nil {
-		for _, eUID := range errUids {
-			logger.Log.Errorf("Group push message error, UID=%d, Error=%s", eUID, err.Error())
-		}
-	}
-	return err
-}
-
-// GroupBroadcast pushes the message to all members
+// GroupBroadcast pushes the message to all members inside group
 func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
@@ -112,14 +99,10 @@ func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, 
 	if err != nil {
 		return err
 	}
-	uids := make([]string, 0, len(members))
-	for uid := range members {
-		uids = append(uids, uid)
-	}
-	return Multicast(ctx, frontendType, route, v, uids)
+	return sendDataToMembers(members, frontendType, route, v)
 }
 
-// SubgroupBroadcast pushes the message to all members
+// SubgroupBroadcast pushes the message to all member inside subgroup
 func SubgroupBroadcast(ctx context.Context, frontendType, groupName, subgroupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=SubgroupBroadcast Route=%s, Data=%+v", route, v)
 
@@ -127,14 +110,23 @@ func SubgroupBroadcast(ctx context.Context, frontendType, groupName, subgroupNam
 	if err != nil {
 		return err
 	}
+	return sendDataToMembers(members, frontendType, route, v)
+}
+
+func sendDataToMembers(members map[string]*groups.Payload, frontendType, route string, v interface{}) error {
 	uids := make([]string, 0, len(members))
 	for uid := range members {
 		uids = append(uids, uid)
 	}
-	return Multicast(ctx, frontendType, route, v, uids)
+	errUids, err := SendPushToUsers(route, v, uids, frontendType)
+	if err != nil {
+		logger.Log.Errorf("Group push message error, UID=%d, Error=%s", errUids, err.Error())
+		return err
+	}
+	return nil
 }
 
-// GroupContainsMember checks whether a UID is contained in current group or not
+// GroupContainsMember checks whether an UID is contained in group or not
 func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
@@ -142,7 +134,7 @@ func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, erro
 	return groupServiceInstance.GroupContainsMember(ctx, groupName, uid)
 }
 
-// SubgroupContainsMember check whether a UID is contained in current subgroup or not
+// SubgroupContainsMember check whether a UID is contained in subgroup or not
 func SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
