@@ -15,7 +15,6 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/timer"
@@ -26,7 +25,6 @@ type (
 	// like Join/Message
 	Room struct {
 		component.Base
-		group *pitaya.Group
 		timer *timer.Timer
 	}
 
@@ -53,21 +51,15 @@ type (
 	}
 )
 
-// NewRoom returns a new room
-func NewRoom(conf *config.Config) *Room {
-	gs, err := groups.NewEtcdGroupService(conf, nil)
-	if err != nil {
-		logger.Log.Fatalf("Failed to create Room: %s", err.Error())
-	}
-	return &Room{
-		group: pitaya.NewGroup("room", gs),
-	}
+// NewRoom returns a Handler Base implementation
+func NewRoom() *Room {
+	return &Room{}
 }
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := r.group.Count(context.Background())
+		count, err := pitaya.GroupCount(context.Background(), "room")
 		logger.Log.Debugf("UserCount: Time=> %s, Count=> %d, Error=> %q", time.Now().String(), count, err)
 	})
 }
@@ -82,7 +74,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
-	res, err := r.group.Members(ctx)
+	res, err := pitaya.GroupMembers(ctx, "room")
 	uids := make([]string, 0, len(res))
 	for uid := range res {
 		uids = append(uids, uid)
@@ -92,13 +84,13 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	}
 	s.Push("onMembers", &AllMembers{Members: uids})
 	// notify others
-	r.group.Broadcast(ctx, "chat", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
+	pitaya.GroupBroadcast(ctx, "chat", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group
-	r.group.Add(ctx, s.UID(), nil) // add session to group
+	pitaya.GroupAdd(ctx, "room", s.UID(), nil) // add session to group
 
 	// on session close, remove it from group
 	s.OnClose(func() {
-		r.group.Leave(ctx, s.UID())
+		pitaya.GroupLeave(ctx, "room", s.UID())
 	})
 
 	return &JoinResponse{Result: "success"}, nil
@@ -106,7 +98,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := r.group.Broadcast(ctx, "chat", "onMessage", msg)
+	err := pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
@@ -119,9 +111,10 @@ func main() {
 	conf := configApp()
 
 	pitaya.SetSerializer(s)
+	pitaya.InitGroups(config.NewConfig(conf), nil)
 
 	// rewrite component and handler name
-	room := NewRoom(config.NewConfig(conf))
+	room := NewRoom()
 	pitaya.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),

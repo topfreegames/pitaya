@@ -155,13 +155,13 @@ func takeSubgroupName(memberKey, subgroupPrefix string) string {
 	return strings.Split(memberKey, "/uids/")[0]
 }
 
-// MemberGroups returns all groups which member takes part
-func (c *EtcdGroupService) MemberGroups(ctx context.Context, uid string) ([]string, error) {
+// PlayerGroups returns all groups which member takes part
+func (c *EtcdGroupService) PlayerGroups(ctx context.Context, uid string) ([]string, error) {
 	return getGroupNames(ctx, memberGroupKey("", uid))
 }
 
-// MemberSubgroups returns all subgroups which member takes part
-func (c *EtcdGroupService) MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
+// PlayerSubgroups returns all subgroups which member takes part
+func (c *EtcdGroupService) PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
 	return getGroupNames(ctx, memberSubgroupKey(groupName, "", uid))
 }
 
@@ -178,8 +178,8 @@ func getGroupNames(ctx context.Context, prefix string) ([]string, error) {
 	return groups, nil
 }
 
-// Members returns all member's UID and payload in current group
-func (c *EtcdGroupService) Members(ctx context.Context, groupName string) (map[string]*Payload, error) {
+// GroupMembers returns all member's UID and payload in current group
+func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) (map[string]*Payload, error) {
 	return getMembers(ctx, memberKey(groupName, ""))
 }
 
@@ -205,8 +205,8 @@ func getMembers(ctx context.Context, prefix string) (map[string]*Payload, error)
 	return members, nil
 }
 
-// Member returns the Payload from User
-func (c *EtcdGroupService) Member(ctx context.Context, groupName, uid string) (*Payload, error) {
+// GroupMember returns the Payload from User
+func (c *EtcdGroupService) GroupMember(ctx context.Context, groupName, uid string) (*Payload, error) {
 	return getMember(ctx, memberKey(groupName, uid))
 }
 
@@ -227,17 +227,17 @@ func getMember(ctx context.Context, memberKey string) (*Payload, error) {
 	return payload, nil
 }
 
-// Contains check whether a UID is contained in current group or not
-func (c *EtcdGroupService) Contains(ctx context.Context, groupName, uid string) (bool, error) {
-	return contain(ctx, memberKey(groupName, uid))
+// GroupContainsMember check whether a UID is contained in current group or not
+func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
+	return containMember(ctx, memberKey(groupName, uid))
 }
 
-// SubgroupContains check whether a UID is contained in current group or not
-func (c *EtcdGroupService) SubgroupContains(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
-	return contain(ctx, memberSubKey(groupName, subgroupName, uid))
+// SubgroupContainsMember check whether a UID is contained in current group or not
+func (c *EtcdGroupService) SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
+	return containMember(ctx, memberSubKey(groupName, subgroupName, uid))
 }
 
-func contain(ctx context.Context, memberKey string) (bool, error) {
+func containMember(ctx context.Context, memberKey string) (bool, error) {
 	etcdRes, err := clientInstance.Get(ctx, memberKey, clientv3.WithCountOnly())
 	if err != nil {
 		return false, err
@@ -245,8 +245,8 @@ func contain(ctx context.Context, memberKey string) (bool, error) {
 	return etcdRes.Count > 0, nil
 }
 
-// Add adds UID and payload to group. If the group doesn't exist, it is created
-func (c *EtcdGroupService) Add(ctx context.Context, groupName, uid string, payload *Payload) error {
+// GroupAdd adds UID and payload to group. If the group doesn't exist, it is created
+func (c *EtcdGroupService) GroupAdd(ctx context.Context, groupName, uid string, payload *Payload) error {
 	return add(ctx, map[string]*Payload{memberKey(groupName, uid): payload, memberGroupKey(groupName, uid): nil})
 }
 
@@ -269,8 +269,15 @@ func add(ctx context.Context, kvs map[string]*Payload) error {
 	return nil
 }
 
-// Leave removes specified UID from group
-func (c *EtcdGroupService) Leave(ctx context.Context, groupName, uid string) error {
+// GroupLeave removes specified UID from group
+func (c *EtcdGroupService) GroupLeave(ctx context.Context, groupName, uid string) error {
+	subgroups, err := c.PlayerSubgroups(ctx, groupName, uid)
+	if err != nil {
+		return err
+	}
+	for _, subgroup := range subgroups {
+		c.SubgroupLeave(ctx, groupName, subgroup, uid)
+	}
 	return leave(ctx, memberKey(groupName, uid), memberGroupKey(groupName, uid))
 }
 
@@ -289,8 +296,8 @@ func leave(ctx context.Context, memberKeys ...string) error {
 	return nil
 }
 
-// LeaveAll clears all UIDs in the group
-func (c *EtcdGroupService) LeaveAll(ctx context.Context, groupName string) error {
+// GroupLeaveAll clears all UIDs in the group and also subgroups contained
+func (c *EtcdGroupService) GroupLeaveAll(ctx context.Context, groupName string) error {
 	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName), clientv3.WithPrefix())
 	if err != nil {
 		return err
@@ -323,8 +330,8 @@ func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subg
 	return err
 }
 
-// Count get current member amount in the group
-func (c *EtcdGroupService) Count(ctx context.Context, groupName string) (int, error) {
+// GroupCount get current member amount in the group
+func (c *EtcdGroupService) GroupCount(ctx context.Context, groupName string) (int, error) {
 	return count(ctx, memberKey(groupName, ""))
 }
 

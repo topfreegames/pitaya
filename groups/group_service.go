@@ -10,21 +10,21 @@ type (
 	// GroupService has ranking methods
 	GroupService interface {
 		Subgroups(ctx context.Context, groupName string) ([]string, error)
-		MemberGroups(ctx context.Context, uid string) ([]string, error)
-		MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error)
-		Member(ctx context.Context, groupName, uid string) (*Payload, error)
+		PlayerGroups(ctx context.Context, uid string) ([]string, error)
+		PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error)
+		GroupMember(ctx context.Context, groupName, uid string) (*Payload, error)
 		SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*Payload, error)
-		Members(ctx context.Context, groupName string) (map[string]*Payload, error)
+		GroupMembers(ctx context.Context, groupName string) (map[string]*Payload, error)
 		SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[string]*Payload, error)
-		Contains(ctx context.Context, groupName, uid string) (bool, error)
-		SubgroupContains(ctx context.Context, groupName, subgroupName, uid string) (bool, error)
-		Add(ctx context.Context, groupName, uid string, payload *Payload) error
+		GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error)
+		SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error)
+		GroupAdd(ctx context.Context, groupName, uid string, payload *Payload) error
 		SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *Payload) error
-		Leave(ctx context.Context, groupName, uid string) error
+		GroupLeave(ctx context.Context, groupName, uid string) error
 		SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error
-		LeaveAll(ctx context.Context, groupName string) error
+		GroupLeaveAll(ctx context.Context, groupName string) error
 		SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error
-		Count(ctx context.Context, groupName string) (int, error)
+		GroupCount(ctx context.Context, groupName string) (int, error)
 		SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error)
 	}
 )
