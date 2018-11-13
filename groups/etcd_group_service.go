@@ -332,16 +332,22 @@ func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subg
 
 // GroupCount get current member amount in the group
 func (c *EtcdGroupService) GroupCount(ctx context.Context, groupName string) (int, error) {
-	return count(ctx, memberKey(groupName, ""))
+	var count int
+	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithKeysOnly())
+	if err != nil {
+		return count, err
+	}
+	for _, kv := range etcdRes.Kvs {
+		if !strings.Contains(string(kv.Key), "/subgroups/") {
+			count++
+		}
+	}
+	return count, nil
 }
 
 // SubgroupCount get current member amount in the group
 func (c *EtcdGroupService) SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error) {
-	return count(ctx, memberSubKey(groupName, subgroupName, ""))
-}
-
-func count(ctx context.Context, memberKeyPrefix string) (int, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKeyPrefix, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	etcdRes, err := clientInstance.Get(ctx, memberSubKey(groupName, subgroupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
 	if err != nil {
 		return 0, err
 	}

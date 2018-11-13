@@ -329,6 +329,8 @@ func TestCount(t *testing.T) {
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			err := GroupAdd(ctx, "testCount", s.UID(), nil)
 			assert.NoError(t, err)
+			err = SubgroupAdd(ctx, "testCount", "sub", s.UID(), nil)
+			assert.NoError(t, err)
 			res, err := GroupCount(ctx, "testCount")
 			assert.NoError(t, err)
 			assert.Equal(t, 1, res)
