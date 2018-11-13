@@ -128,7 +128,15 @@ func memberSubKey(groupName, subgroupName, uid string) string {
 
 // MemberGroups returns all groups which member takes part
 func (c *EtcdGroupService) MemberGroups(ctx context.Context, uid string) ([]string, error) {
-	prefix := memberGroupKey("", uid)
+	return getGroupNames(ctx, memberGroupKey("", uid))
+}
+
+// MemberSubgroups returns all subgroups which member takes part
+func (c *EtcdGroupService) MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
+	return getGroupNames(ctx, memberSubgroupKey(groupName, "", uid))
+}
+
+func getGroupNames(ctx context.Context, prefix string) ([]string, error) {
 	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -141,43 +149,17 @@ func (c *EtcdGroupService) MemberGroups(ctx context.Context, uid string) ([]stri
 	return groups, nil
 }
 
-// MemberSubgroups returns all subgroups which member takes part
-func (c *EtcdGroupService) MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
-	prefix := memberSubgroupKey(groupName, "", uid)
-	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
-	}
-
-	subgroups := make([]string, etcdRes.Count)
-	for i, kv := range etcdRes.Kvs {
-		subgroups[i] = string(kv.Key)[len(prefix):]
-	}
-	return subgroups, nil
-}
-
 // Members returns all member's UID and payload in current group
 func (c *EtcdGroupService) Members(ctx context.Context, groupName string) (map[string]*Payload, error) {
-	prefix := memberKey(groupName, "")
-	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
-	}
-
-	members := make(map[string]*Payload, etcdRes.Count)
-	for _, kv := range etcdRes.Kvs {
-		payload := &Payload{}
-		if err = json.Unmarshal(kv.Value, payload); err != nil {
-			return nil, err
-		}
-		members[string(kv.Key)[len(prefix):]] = payload
-	}
-	return members, nil
+	return getMembers(ctx, memberKey(groupName, ""))
 }
 
 // SubgroupMembers returns all member's UID and payload in current subgroup
 func (c *EtcdGroupService) SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[string]*Payload, error) {
-	prefix := memberSubKey(groupName, subgroupName, "")
+	return getMembers(ctx, memberSubKey(groupName, subgroupName, ""))
+}
+
+func getMembers(ctx context.Context, prefix string) (map[string]*Payload, error) {
 	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
