@@ -43,6 +43,11 @@ func NewGroup(n string, gs groups.GroupService) *Group {
 	}
 }
 
+// Subgroups returns all subgroups that the group has
+func (c *Group) Subgroups(ctx context.Context) ([]string, error) {
+	return c.groupService.Subgroups(ctx, c.name)
+}
+
 // MemberGroups returns all groups that the member takes part
 func (c *Group) MemberGroups(ctx context.Context, uid string) ([]string, error) {
 	if uid == "" {

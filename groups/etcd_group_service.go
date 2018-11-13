@@ -110,6 +110,10 @@ func groupPrefix(groupName string) string {
 	return "groups/" + groupName
 }
 
+func subGroupPrefix(groupName, subgroupName string) string {
+	return groupPrefix(groupName) + "/subgroups/" + subgroupName
+}
+
 func memberGroupKey(groupName, uid string) string {
 	return "uids/" + uid + "/groups/" + groupName
 }
@@ -123,7 +127,32 @@ func memberKey(groupName, uid string) string {
 }
 
 func memberSubKey(groupName, subgroupName, uid string) string {
-	return groupPrefix(groupName) + "/subgroups/" + subgroupName + "/uids/" + uid
+	return subGroupPrefix(groupName, subgroupName) + "/uids/" + uid
+}
+
+// Subgroups returns all subgroups that are contained inside given group
+func (c *EtcdGroupService) Subgroups(ctx context.Context, groupName string) ([]string, error) {
+	subgroupPrefix := subGroupPrefix(groupName, "")
+	etcdRes, err := clientInstance.Get(ctx, subgroupPrefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	subMap := make(map[string]bool)
+	subgroups := make([]string, 0, len(etcdRes.Kvs))
+	for _, kv := range etcdRes.Kvs {
+		subgroupName := takeSubgroupName(string(kv.Key), subgroupPrefix)
+		if _, ok := subMap[subgroupName]; !ok {
+			subMap[subgroupName] = true
+			subgroups = append(subgroups, subgroupName)
+		}
+	}
+	return subgroups, nil
+}
+
+func takeSubgroupName(memberKey, subgroupPrefix string) string {
+	memberKey = memberKey[len(subgroupPrefix):]
+	return strings.Split(memberKey, "/uids/")[0]
 }
 
 // MemberGroups returns all groups which member takes part

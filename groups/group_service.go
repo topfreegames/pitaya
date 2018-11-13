@@ -5,10 +5,11 @@ import "context"
 type (
 	//Payload is the information that will be mantained inside each user in ETCD
 	Payload struct {
-		Metadata interface{}
+		Metadata interface{} `json:"metadata"`
 	}
 	// GroupService has ranking methods
 	GroupService interface {
+		Subgroups(ctx context.Context, groupName string) ([]string, error)
 		MemberGroups(ctx context.Context, uid string) ([]string, error)
 		MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error)
 		Member(ctx context.Context, groupName, uid string) (*Payload, error)

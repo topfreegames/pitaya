@@ -376,6 +376,38 @@ func TestCount(t *testing.T) {
 	}
 }
 
+func TestMember(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	g := getGroup("testMember", t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+	s := session.New(mockNetworkEntity, true, "someid1")
+	err := g.Add(ctx, s.UID(), nil)
+	assert.NoError(t, err)
+	res, err := g.Member(ctx, s.UID())
+	assert.NoError(t, err)
+	assert.Equal(t, &groups.Payload{}, res)
+}
+
+func TestSubgroups(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	g := getGroup("testSubgroups", t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+	s := session.New(mockNetworkEntity, true, "someid1")
+	err := g.SubgroupAdd(ctx, "sub1", s.UID(), nil)
+	assert.NoError(t, err)
+	err = g.SubgroupAdd(ctx, "sub2", s.UID(), nil)
+	assert.NoError(t, err)
+	res, err := g.Subgroups(ctx)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{"sub1", "sub2"}, res)
+}
+
 func TestMembers(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
