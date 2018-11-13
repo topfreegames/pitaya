@@ -23,6 +23,8 @@ package pitaya
 import (
 	"context"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
@@ -30,68 +32,67 @@ import (
 
 // Group represents an agglomeration of UIDs which is used to manage
 // users. Data sent to the group will be sent to all users in it.
-type Group struct {
-	groupService groups.GroupService
-	name         string // channel name
-}
 
-// NewGroup returns a new group instance
-func NewGroup(n string, gs groups.GroupService) *Group {
-	return &Group{
-		name:         n,
-		groupService: gs,
+var groupServiceInstance groups.GroupService
+
+// InitGroups should be called ONCE in the beginning of the application, if it is intended to use groups functionality
+func InitGroups(config *config.Config, clientOrNil *clientv3.Client) {
+	gsi, err := groups.NewEtcdGroupService(config, clientOrNil)
+	if err != nil {
+		logger.Log.Fatalf("error initializing groupServiceInstance in groups: %s", err.Error())
 	}
+	groupServiceInstance = gsi
 }
 
 // Subgroups returns all subgroups that the group has
-func (c *Group) Subgroups(ctx context.Context) ([]string, error) {
-	return c.groupService.Subgroups(ctx, c.name)
+func Subgroups(ctx context.Context, groupName string) ([]string, error) {
+	return groupServiceInstance.Subgroups(ctx, groupName)
 }
 
 // MemberGroups returns all groups that the member takes part
-func (c *Group) MemberGroups(ctx context.Context, uid string) ([]string, error) {
+func MemberGroups(ctx context.Context, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.MemberGroups(ctx, uid)
+	return groupServiceInstance.MemberGroups(ctx, uid)
 }
 
 // MemberSubgroups returns all subgroups from given group that the member takes part
-func (c *Group) MemberSubgroups(ctx context.Context, uid string) ([]string, error) {
+func MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.MemberSubgroups(ctx, c.name, uid)
+	return groupServiceInstance.MemberSubgroups(ctx, groupName, uid)
 }
 
 // Member returns member payload
-func (c *Group) Member(ctx context.Context, uid string) (*groups.Payload, error) {
+func Member(ctx context.Context, groupName, uid string) (*groups.Payload, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.Member(ctx, c.name, uid)
+	return groupServiceInstance.Member(ctx, groupName, uid)
 }
 
 // SubgroupMember returns member payload from subgroup
-func (c *Group) SubgroupMember(ctx context.Context, subgroupName, uid string) (*groups.Payload, error) {
+func SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*groups.Payload, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
-	return c.groupService.SubgroupMember(ctx, c.name, subgroupName, uid)
+	return groupServiceInstance.SubgroupMember(ctx, groupName, subgroupName, uid)
 }
 
 // Members returns all member's UIDs and payload in current group
-func (c *Group) Members(ctx context.Context) (map[string]*groups.Payload, error) {
-	return c.groupService.Members(ctx, c.name)
+func Members(ctx context.Context, groupName string) (map[string]*groups.Payload, error) {
+	return groupServiceInstance.Members(ctx, groupName)
 }
 
 // SubgroupMembers returns all member's UIDs and payload in current subgroup
-func (c *Group) SubgroupMembers(ctx context.Context, subgroupName string) (map[string]*groups.Payload, error) {
-	return c.groupService.SubgroupMembers(ctx, c.name, subgroupName)
+func SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[string]*groups.Payload, error) {
+	return groupServiceInstance.SubgroupMembers(ctx, groupName, subgroupName)
 }
 
 // Multicast  pushes  the message to the filtered clients
-func (c *Group) Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
+func Multicast(ctx context.Context, frontendType, route string, v interface{}, uids []string) error {
 	logger.Log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
 
 	errUids, err := SendPushToUsers(route, v, uids, frontendType)
@@ -104,10 +105,10 @@ func (c *Group) Multicast(ctx context.Context, frontendType, route string, v int
 }
 
 // Broadcast pushes the message to all members
-func (c *Group) Broadcast(ctx context.Context, frontendType, route string, v interface{}) error {
+func Broadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	members, err := c.Members(ctx)
+	members, err := Members(ctx, groupName)
 	if err != nil {
 		return err
 	}
@@ -115,14 +116,14 @@ func (c *Group) Broadcast(ctx context.Context, frontendType, route string, v int
 	for uid := range members {
 		uids = append(uids, uid)
 	}
-	return c.Multicast(ctx, frontendType, route, v, uids)
+	return Multicast(ctx, frontendType, route, v, uids)
 }
 
 // SubgroupBroadcast pushes the message to all members
-func (c *Group) SubgroupBroadcast(ctx context.Context, frontendType, subgroupName, route string, v interface{}) error {
+func SubgroupBroadcast(ctx context.Context, frontendType, groupName, subgroupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=SubgroupBroadcast Route=%s, Data=%+v", route, v)
 
-	members, err := c.SubgroupMembers(ctx, subgroupName)
+	members, err := SubgroupMembers(ctx, groupName, subgroupName)
 	if err != nil {
 		return err
 	}
@@ -130,72 +131,72 @@ func (c *Group) SubgroupBroadcast(ctx context.Context, frontendType, subgroupNam
 	for uid := range members {
 		uids = append(uids, uid)
 	}
-	return c.Multicast(ctx, frontendType, route, v, uids)
+	return Multicast(ctx, frontendType, route, v, uids)
 }
 
 // Contains checks whether a UID is contained in current group or not
-func (c *Group) Contains(ctx context.Context, uid string) (bool, error) {
+func Contains(ctx context.Context, groupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
 	}
-	return c.groupService.Contains(ctx, c.name, uid)
+	return groupServiceInstance.Contains(ctx, groupName, uid)
 }
 
 // SubgroupContains check whether a UID is contained in current subgroup or not
-func (c *Group) SubgroupContains(ctx context.Context, subgroupName, uid string) (bool, error) {
+func SubgroupContains(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
 	}
-	return c.groupService.SubgroupContains(ctx, c.name, subgroupName, uid)
+	return groupServiceInstance.SubgroupContains(ctx, groupName, subgroupName, uid)
 }
 
 // SubgroupAdd adds UID to subgroup
-func (c *Group) SubgroupAdd(ctx context.Context, subgroupName, uid string, payload *groups.Payload) error {
+func SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *groups.Payload) error {
 	if uid == "" {
 		return constants.ErrNoUIDBind
 	}
-	logger.Log.Debugf("Add user to subgroup %s, UID=%d", c.name, uid)
+	logger.Log.Debugf("Add user to subgroup %s, UID=%d", groupName, uid)
 
-	return c.groupService.SubgroupAdd(ctx, c.name, subgroupName, uid, payload)
+	return groupServiceInstance.SubgroupAdd(ctx, groupName, subgroupName, uid, payload)
 }
 
 // Add adds UID to group
-func (c *Group) Add(ctx context.Context, uid string, payload *groups.Payload) error {
+func Add(ctx context.Context, groupName, uid string, payload *groups.Payload) error {
 	if uid == "" {
 		return constants.ErrNoUIDBind
 	}
-	logger.Log.Debugf("Add user to group %s, UID=%d", c.name, uid)
-	return c.groupService.Add(ctx, c.name, uid, payload)
+	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
+	return groupServiceInstance.Add(ctx, groupName, uid, payload)
 }
 
 // Leave removes specified UID from group
-func (c *Group) Leave(ctx context.Context, uid string) error {
-	logger.Log.Debugf("Remove user from group %s, UID=%d", c.name, uid)
-	return c.groupService.Leave(ctx, c.name, uid)
+func Leave(ctx context.Context, groupName, uid string) error {
+	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
+	return groupServiceInstance.Leave(ctx, groupName, uid)
 }
 
 // SubgroupLeave removes specified UID from subgroup
-func (c *Group) SubgroupLeave(ctx context.Context, subgroupName, uid string) error {
-	logger.Log.Debugf("Remove user from subgroup %s, UID=%d", c.name, uid)
-	return c.groupService.SubgroupLeave(ctx, c.name, subgroupName, uid)
+func SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error {
+	logger.Log.Debugf("Remove user from subgroup %s, UID=%d", groupName, uid)
+	return groupServiceInstance.SubgroupLeave(ctx, groupName, subgroupName, uid)
 }
 
 // LeaveAll clears all UIDs in the group and contained subgroups
-func (c *Group) LeaveAll(ctx context.Context) error {
-	return c.groupService.LeaveAll(ctx, c.name)
+func LeaveAll(ctx context.Context, groupName string) error {
+	return groupServiceInstance.LeaveAll(ctx, groupName)
 }
 
 // SubgroupLeaveAll clears all UIDs in the subgroup
-func (c *Group) SubgroupLeaveAll(ctx context.Context, subgroupName string) error {
-	return c.groupService.SubgroupLeaveAll(ctx, c.name, subgroupName)
+func SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error {
+	return groupServiceInstance.SubgroupLeaveAll(ctx, groupName, subgroupName)
 }
 
 // Count get current member amount in the group
-func (c *Group) Count(ctx context.Context) (int, error) {
-	return c.groupService.Count(ctx, c.name)
+func Count(ctx context.Context, groupName string) (int, error) {
+	return groupServiceInstance.Count(ctx, groupName)
 }
 
 // SubgroupCount get current member amount in the subgroup
-func (c *Group) SubgroupCount(ctx context.Context, subgroupName string) (int, error) {
-	return c.groupService.SubgroupCount(ctx, c.name, subgroupName)
+func SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error) {
+	return groupServiceInstance.SubgroupCount(ctx, groupName, subgroupName)
 }

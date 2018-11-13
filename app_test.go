@@ -38,10 +38,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
-	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/internal/codec"
 	"github.com/topfreegames/pitaya/internal/message"
@@ -100,10 +98,7 @@ func setup() {
 
 	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
-	_, err = groups.NewEtcdGroupService(config.NewConfig(), cli)
-	if err != nil {
-		panic(err)
-	}
+	InitGroups(app.config, cli)
 }
 
 func initApp() {
