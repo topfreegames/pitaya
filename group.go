@@ -49,24 +49,24 @@ func Subgroups(ctx context.Context, groupName string) ([]string, error) {
 	return groupServiceInstance.Subgroups(ctx, groupName)
 }
 
-// MemberGroups returns all groups that the member takes part
-func MemberGroups(ctx context.Context, uid string) ([]string, error) {
+// PlayerGroups returns all groups that the member takes part
+func PlayerGroups(ctx context.Context, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
 	return groupServiceInstance.MemberGroups(ctx, uid)
 }
 
-// MemberSubgroups returns all subgroups from given group that the member takes part
-func MemberSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
+// PlayerSubgroups returns all subgroups from given group that the member takes part
+func PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
 	return groupServiceInstance.MemberSubgroups(ctx, groupName, uid)
 }
 
-// Member returns member payload
-func Member(ctx context.Context, groupName, uid string) (*groups.Payload, error) {
+// GroupMember returns member payload
+func GroupMember(ctx context.Context, groupName, uid string) (*groups.Payload, error) {
 	if uid == "" {
 		return nil, constants.ErrNoUIDBind
 	}
@@ -81,8 +81,8 @@ func SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*
 	return groupServiceInstance.SubgroupMember(ctx, groupName, subgroupName, uid)
 }
 
-// Members returns all member's UIDs and payload in current group
-func Members(ctx context.Context, groupName string) (map[string]*groups.Payload, error) {
+// GroupMembers returns all member's UIDs and payload in current group
+func GroupMembers(ctx context.Context, groupName string) (map[string]*groups.Payload, error) {
 	return groupServiceInstance.Members(ctx, groupName)
 }
 
@@ -104,11 +104,11 @@ func Multicast(ctx context.Context, frontendType, route string, v interface{}, u
 	return err
 }
 
-// Broadcast pushes the message to all members
-func Broadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
+// GroupBroadcast pushes the message to all members
+func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	members, err := Members(ctx, groupName)
+	members, err := GroupMembers(ctx, groupName)
 	if err != nil {
 		return err
 	}
@@ -134,16 +134,16 @@ func SubgroupBroadcast(ctx context.Context, frontendType, groupName, subgroupNam
 	return Multicast(ctx, frontendType, route, v, uids)
 }
 
-// Contains checks whether a UID is contained in current group or not
-func Contains(ctx context.Context, groupName, uid string) (bool, error) {
+// GroupContainsMember checks whether a UID is contained in current group or not
+func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
 	}
 	return groupServiceInstance.Contains(ctx, groupName, uid)
 }
 
-// SubgroupContains check whether a UID is contained in current subgroup or not
-func SubgroupContains(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
+// SubgroupContainsMember check whether a UID is contained in current subgroup or not
+func SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrNoUIDBind
 	}
@@ -160,8 +160,8 @@ func SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, paylo
 	return groupServiceInstance.SubgroupAdd(ctx, groupName, subgroupName, uid, payload)
 }
 
-// Add adds UID to group
-func Add(ctx context.Context, groupName, uid string, payload *groups.Payload) error {
+// GroupAdd adds UID to group
+func GroupAdd(ctx context.Context, groupName, uid string, payload *groups.Payload) error {
 	if uid == "" {
 		return constants.ErrNoUIDBind
 	}
@@ -169,8 +169,8 @@ func Add(ctx context.Context, groupName, uid string, payload *groups.Payload) er
 	return groupServiceInstance.Add(ctx, groupName, uid, payload)
 }
 
-// Leave removes specified UID from group
-func Leave(ctx context.Context, groupName, uid string) error {
+// GroupLeave removes specified UID from group
+func GroupLeave(ctx context.Context, groupName, uid string) error {
 	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
 	return groupServiceInstance.Leave(ctx, groupName, uid)
 }
@@ -181,8 +181,8 @@ func SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) err
 	return groupServiceInstance.SubgroupLeave(ctx, groupName, subgroupName, uid)
 }
 
-// LeaveAll clears all UIDs in the group and contained subgroups
-func LeaveAll(ctx context.Context, groupName string) error {
+// GroupLeaveAll clears all UIDs in the group and contained subgroups
+func GroupLeaveAll(ctx context.Context, groupName string) error {
 	return groupServiceInstance.LeaveAll(ctx, groupName)
 }
 
@@ -191,8 +191,8 @@ func SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error
 	return groupServiceInstance.SubgroupLeaveAll(ctx, groupName, subgroupName)
 }
 
-// Count get current member amount in the group
-func Count(ctx context.Context, groupName string) (int, error) {
+// GroupCount get current member amount in the group
+func GroupCount(ctx context.Context, groupName string) (int, error) {
 	return groupServiceInstance.Count(ctx, groupName)
 }
 
