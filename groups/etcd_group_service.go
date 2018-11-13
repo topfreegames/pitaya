@@ -276,7 +276,9 @@ func (c *EtcdGroupService) GroupLeave(ctx context.Context, groupName, uid string
 		return err
 	}
 	for _, subgroup := range subgroups {
-		c.SubgroupLeave(ctx, groupName, subgroup, uid)
+		if err = c.SubgroupLeave(ctx, groupName, subgroup, uid); err != nil {
+			return err
+		}
 	}
 	return leave(ctx, memberKey(groupName, uid), memberGroupKey(groupName, uid))
 }
