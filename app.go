@@ -142,21 +142,19 @@ func Configure(
 
 func configureMetrics(serverType string) {
 	app.metricsReporters = make([]metrics.Reporter, 0)
-
 	constTags := app.config.GetStringMapString("pitaya.metrics.constTags")
+
 	if app.config.GetBool("pitaya.metrics.prometheus.enabled") {
 		port := app.config.GetInt("pitaya.metrics.prometheus.port")
-		game := app.config.GetString("pitaya.game")
-		logger.Log.Infof(
-			"prometheus is enabled, configuring the metrics reporter on port %d", port,
-		)
-
-		additionalTags := app.config.GetStringMapString("pitaya.metrics.additionalTags")
-		prometheus := metrics.GetPrometheusReporter(serverType, game, port,
-			constTags, additionalTags)
-		AddMetricsReporter(prometheus)
+		logger.Log.Infof("prometheus is enabled, configuring reporter on port %d", port)
+		prometheus, err := metrics.GetPrometheusReporter(serverType, app.config, constTags)
+		if err != nil {
+			logger.Log.Errorf("failed to start prometheus metrics reporter, skipping %v", err)
+		} else {
+			AddMetricsReporter(prometheus)
+		}
 	} else {
-		logger.Log.Info("prometheus is disabled, the metrics reporter will not be enabled")
+		logger.Log.Info("prometheus is disabled, reporter will not be enabled")
 	}
 
 	if app.config.GetBool("pitaya.metrics.statsd.enabled") {
