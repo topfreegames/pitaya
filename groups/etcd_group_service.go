@@ -178,20 +178,16 @@ func getMembers(ctx context.Context, prefix string) (map[string]*Payload, error)
 
 // Member returns the Payload from User
 func (c *EtcdGroupService) Member(ctx context.Context, groupName, uid string) (*Payload, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, uid))
-	if err != nil {
-		return nil, err
-	}
-	payload := &Payload{}
-	if err = json.Unmarshal(etcdRes.Kvs[0].Value, payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
+	return getMember(ctx, memberKey(groupName, uid))
 }
 
 // SubgroupMember returns the Payload from User
 func (c *EtcdGroupService) SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*Payload, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberSubKey(groupName, subgroupName, uid))
+	return getMember(ctx, memberSubKey(groupName, subgroupName, uid))
+}
+
+func getMember(ctx context.Context, memberKey string) (*Payload, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKey)
 	if err != nil {
 		return nil, err
 	}
@@ -204,16 +200,16 @@ func (c *EtcdGroupService) SubgroupMember(ctx context.Context, groupName, subgro
 
 // Contains check whether a UID is contained in current group or not
 func (c *EtcdGroupService) Contains(ctx context.Context, groupName, uid string) (bool, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, uid), clientv3.WithCountOnly())
-	if err != nil {
-		return false, err
-	}
-	return etcdRes.Count > 0, nil
+	return contain(ctx, memberKey(groupName, uid))
 }
 
 // SubgroupContains check whether a UID is contained in current group or not
 func (c *EtcdGroupService) SubgroupContains(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberSubKey(groupName, subgroupName, uid), clientv3.WithCountOnly())
+	return contain(ctx, memberSubKey(groupName, subgroupName, uid))
+}
+
+func contain(ctx context.Context, memberKey string) (bool, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKey, clientv3.WithCountOnly())
 	if err != nil {
 		return false, err
 	}
@@ -222,50 +218,46 @@ func (c *EtcdGroupService) SubgroupContains(ctx context.Context, groupName, subg
 
 // Add adds UID and payload to group. If the group doesn't exist, it is created
 func (c *EtcdGroupService) Add(ctx context.Context, groupName, uid string, payload *Payload) error {
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	_, err = clientInstance.Put(ctx, memberKey(groupName, uid), string(jsonPayload), clientv3.WithLease(leaseID))
-	if err != nil {
-		return err
-	}
-	_, err = clientInstance.Put(ctx, memberGroupKey(groupName, uid), "", clientv3.WithLease(leaseID))
-	return err
+	return add(ctx, map[string]*Payload{memberKey(groupName, uid): payload, memberGroupKey(groupName, uid): nil})
 }
 
 // SubgroupAdd adds UID and payload to subgroup. If the subgroup doesn't exist, it is created
 func (c *EtcdGroupService) SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *Payload) error {
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
+	return add(ctx, map[string]*Payload{memberSubKey(groupName, subgroupName, uid): payload, memberSubgroupKey(groupName, subgroupName, uid): nil})
+}
+
+func add(ctx context.Context, kvs map[string]*Payload) error {
+	for k, v := range kvs {
+		jsonPayload, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		_, err = clientInstance.Put(ctx, k, string(jsonPayload), clientv3.WithLease(leaseID))
+		if err != nil {
+			return err
+		}
 	}
-	_, err = clientInstance.Put(ctx, memberSubKey(groupName, subgroupName, uid), string(jsonPayload), clientv3.WithLease(leaseID))
-	if err != nil {
-		return err
-	}
-	_, err = clientInstance.Put(ctx, memberSubgroupKey(groupName, subgroupName, uid), "", clientv3.WithLease(leaseID))
-	return err
+	return nil
 }
 
 // Leave removes specified UID from group
 func (c *EtcdGroupService) Leave(ctx context.Context, groupName, uid string) error {
-	_, err := clientInstance.Delete(ctx, memberKey(groupName, uid))
-	if err != nil {
-		return err
-	}
-	_, err = clientInstance.Delete(ctx, memberGroupKey(groupName, uid))
-	return err
+	return leave(ctx, memberKey(groupName, uid), memberGroupKey(groupName, uid))
 }
 
 // SubgroupLeave removes specified UID from group
 func (c *EtcdGroupService) SubgroupLeave(ctx context.Context, groupName, subgroupName, uid string) error {
-	_, err := clientInstance.Delete(ctx, memberSubKey(groupName, subgroupName, uid))
-	if err != nil {
-		return err
+	return leave(ctx, memberSubKey(groupName, subgroupName, uid), memberSubgroupKey(groupName, subgroupName, uid))
+}
+
+func leave(ctx context.Context, memberKeys ...string) error {
+	for _, memberKey := range memberKeys {
+		_, err := clientInstance.Delete(ctx, memberKey)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = clientInstance.Delete(ctx, memberSubgroupKey(groupName, subgroupName, uid))
-	return err
+	return nil
 }
 
 // LeaveAll clears all UIDs in the group
@@ -278,8 +270,7 @@ func (c *EtcdGroupService) LeaveAll(ctx context.Context, groupName string) error
 	for _, kv := range dResp.PrevKvs {
 		if strings.Contains(string(kv.Key), prefix) {
 			uid := string(kv.Key)[len(prefix):]
-			_, err = clientInstance.Delete(ctx, memberGroupKey(groupName, uid))
-			if err != nil {
+			if err = leave(ctx, memberGroupKey(groupName, uid)); err != nil {
 				logger.Log.Warnf("[groups] sd: error deleting key from etcd: %s", err.Error())
 			}
 		}
@@ -296,8 +287,7 @@ func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subg
 	}
 	for _, kv := range dResp.PrevKvs {
 		uid := string(kv.Key)[len(prefix):]
-		_, err = clientInstance.Delete(ctx, memberSubgroupKey(groupName, subgroupName, uid))
-		if err != nil {
+		if err = leave(ctx, memberSubgroupKey(groupName, subgroupName, uid)); err != nil {
 			logger.Log.Warn("[subgroups] sd: error deleting key from etcd")
 		}
 	}
@@ -306,23 +296,18 @@ func (c *EtcdGroupService) SubgroupLeaveAll(ctx context.Context, groupName, subg
 
 // Count get current member amount in the group
 func (c *EtcdGroupService) Count(ctx context.Context, groupName string) (int, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
-	if err != nil {
-		return 0, err
-	}
-	return int(etcdRes.Count), nil
+	return count(ctx, memberKey(groupName, ""))
 }
 
 // SubgroupCount get current member amount in the group
 func (c *EtcdGroupService) SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberSubKey(groupName, subgroupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
+	return count(ctx, memberSubKey(groupName, subgroupName, ""))
+}
+
+func count(ctx context.Context, memberKeyPrefix string) (int, error) {
+	etcdRes, err := clientInstance.Get(ctx, memberKeyPrefix, clientv3.WithPrefix(), clientv3.WithCountOnly())
 	if err != nil {
 		return 0, err
 	}
 	return int(etcdRes.Count), nil
-}
-
-// Close destroy group, which will release all resource in the group
-func (c *EtcdGroupService) Close(ctx context.Context, groupName string) error {
-	return c.LeaveAll(ctx, groupName)
 }

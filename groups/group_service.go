@@ -25,6 +25,5 @@ type (
 		SubgroupLeaveAll(ctx context.Context, groupName, subgroupName string) error
 		Count(ctx context.Context, groupName string) (int, error)
 		SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error)
-		Close(ctx context.Context, groupName string) error
 	}
 )
