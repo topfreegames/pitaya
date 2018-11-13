@@ -85,6 +85,13 @@ func TestGroupAdd(t *testing.T) {
 					assert.Error(t, err)
 				}
 				assert.Equal(t, table.payload, res)
+				res, err = GroupMember(ctx, "testSubgroupAdd", table.UID)
+				if table.err == nil {
+					assert.NoError(t, err)
+				} else {
+					assert.Error(t, err)
+				}
+				assert.Equal(t, table.payload, res)
 			}
 		})
 	}

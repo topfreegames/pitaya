@@ -255,6 +255,10 @@ func (c *EtcdGroupService) GroupAdd(ctx context.Context, groupName, uid string, 
 
 // SubgroupAdd adds UID and payload to subgroup. If the subgroup doesn't exist, it is created
 func (c *EtcdGroupService) SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *Payload) error {
+	err := c.GroupAdd(ctx, groupName, uid, payload)
+	if err != nil {
+		return err
+	}
 	return add(ctx, map[string]*Payload{memberSubKey(groupName, subgroupName, uid): payload, memberSubgroupKey(groupName, subgroupName, uid): nil})
 }
 
