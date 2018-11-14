@@ -13,8 +13,8 @@
 [11]: https://readthedocs.org/projects/pitaya/badge/?version=latest
 [12]: https://pitaya.readthedocs.io/en/latest/?badge=latest
 
-Pitaya is an easy to use, fast and lightweight game server framework with clustering support and client libraries for iOS, Android, Unity and others through the [C SDK](https://github.com/topfreegames/libpitaya).
-The goal of pitaya is to provide a basic development framework for distributed multiplayer games and server-side applications.
+Pitaya is an simple, fast and lightweight game server framework with clustering support and client libraries for iOS, Android, Unity and others through the [C SDK](https://github.com/topfreegames/libpitaya).
+It provides a basic development framework for distributed multiplayer games and server-side applications.
 
 ## Getting Started
 
@@ -22,8 +22,8 @@ The goal of pitaya is to provide a basic development framework for distributed m
 
 * [Go](https://golang.org/) >= 1.10
 * [etcd](https://github.com/coreos/etcd) (used for service discovery)
-* [nats](https://github.com/nats-io/go-nats) (optional, it's used for sending and receiving rpc, you can use grpc implementations too if you prefer)
-* [docker](https://www.docker.com) (optional: for running etcd and nats dependencies on containers)
+* [nats](https://github.com/nats-io/go-nats) (optional, used for sending and receiving rpc, grpc implementations can be used too if prefered)
+* [docker](https://www.docker.com) (optional: used for running etcd and nats dependencies on containers)
 
 ### Installing
 clone the repo
@@ -37,9 +37,9 @@ make setup
 
 ### Hacking pitaya
 
-Here's how to run one of the examples:
+Here's one example of running Pitaya:
 
-Start etcd (this command requires docker-compose and will run an etcd container locally, you may run an etcd without docker if you prefer)
+Start etcd (This command requires docker-compose and will run an etcd container locally. An etcd may be run without docker if prefered.)
 ```
 cd ./examples/testing && docker-compose up -d etcd
 ```
@@ -52,8 +52,8 @@ run the room backend server from the cluster_grpc example
 make run-cluster-grpc-example-room
 ```
 
-You should now have 2 pitaya servers running, a frontend connector and a backend room.
-You can then use [pitaya-cli](https://github.com/topfreegames/pitaya-cli) a REPL client for pitaya for sending some requests:
+Now there should be 2 pitaya servers running, a frontend connector and a backend room. To send requests, use a REPL client for pitaya [pitaya-cli](https://github.com/topfreegames/pitaya-cli). 
+
 ```
 $ pitaya-cli
 Pitaya REPL Client
