@@ -103,6 +103,10 @@ func (t *TestSvc) Init() {
 		panic(err)
 	}
 	pitaya.InitGroups(gsi)
+	err = pitaya.GroupCreate(context.Background(), "g1")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // TestRequestKickUser handler for e2e tests
@@ -186,7 +190,7 @@ func (t *TestSvc) TestBind(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = pitaya.GroupAdd(ctx, "g1", s.UID(), nil)
+	err = pitaya.GroupAddMember(ctx, "g1", s.UID())
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
@@ -200,7 +204,7 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = pitaya.GroupAdd(ctx, "g1", s.UID(), nil)
+	err = pitaya.GroupAddMember(ctx, "g1", s.UID())
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}

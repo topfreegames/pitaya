@@ -22,6 +22,7 @@ package pitaya
 
 import (
 	"context"
+	"time"
 
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/groups"
@@ -38,51 +39,19 @@ func InitGroups(groupService groups.GroupService) {
 	groupServiceInstance = groupService
 }
 
-// Subgroups returns all subgroups that the group contains
-func Subgroups(ctx context.Context, groupName string) ([]string, error) {
-	return groupServiceInstance.Subgroups(ctx, groupName)
+// GroupCreate creates a group
+func GroupCreate(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupCreate(ctx, groupName)
 }
 
-// PlayerGroups returns all groups that the player takes part
-func PlayerGroups(ctx context.Context, uid string) ([]string, error) {
-	if uid == "" {
-		return nil, constants.ErrNoUIDBind
-	}
-	return groupServiceInstance.PlayerGroups(ctx, uid)
-}
-
-// PlayerSubgroups returns all subgroups from given group that the player takes part
-func PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
-	if uid == "" {
-		return nil, constants.ErrNoUIDBind
-	}
-	return groupServiceInstance.PlayerSubgroups(ctx, groupName, uid)
-}
-
-// GroupMember returns member payload
-func GroupMember(ctx context.Context, groupName, uid string) (*groups.Payload, error) {
-	if uid == "" {
-		return nil, constants.ErrNoUIDBind
-	}
-	return groupServiceInstance.GroupMember(ctx, groupName, uid)
-}
-
-// SubgroupMember returns member payload from subgroup
-func SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*groups.Payload, error) {
-	if uid == "" {
-		return nil, constants.ErrNoUIDBind
-	}
-	return groupServiceInstance.SubgroupMember(ctx, groupName, subgroupName, uid)
+// GroupCreateWithTTL returns all member's UIDs and payload in current group
+func GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
+	return groupServiceInstance.GroupCreateWithTTL(ctx, groupName, ttlTime)
 }
 
 // GroupMembers returns all member's UIDs and payload in current group
-func GroupMembers(ctx context.Context, groupName string) (map[string]*groups.Payload, error) {
+func GroupMembers(ctx context.Context, groupName string) ([]string, error) {
 	return groupServiceInstance.GroupMembers(ctx, groupName)
-}
-
-// SubgroupMembers returns all member's UIDs and payload in current subgroup
-func SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[string]*groups.Payload, error) {
-	return groupServiceInstance.SubgroupMembers(ctx, groupName, subgroupName)
 }
 
 // GroupBroadcast pushes the message to all members inside group
@@ -96,22 +65,7 @@ func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, 
 	return sendDataToMembers(members, frontendType, route, v)
 }
 
-// SubgroupBroadcast pushes the message to all member inside subgroup
-func SubgroupBroadcast(ctx context.Context, frontendType, groupName, subgroupName, route string, v interface{}) error {
-	logger.Log.Debugf("Type=SubgroupBroadcast Route=%s, Data=%+v", route, v)
-
-	members, err := SubgroupMembers(ctx, groupName, subgroupName)
-	if err != nil {
-		return err
-	}
-	return sendDataToMembers(members, frontendType, route, v)
-}
-
-func sendDataToMembers(members map[string]*groups.Payload, frontendType, route string, v interface{}) error {
-	uids := make([]string, 0, len(members))
-	for uid := range members {
-		uids = append(uids, uid)
-	}
+func sendDataToMembers(uids []string, frontendType, route string, v interface{}) error {
 	errUids, err := SendPushToUsers(route, v, uids, frontendType)
 	if err != nil {
 		logger.Log.Errorf("Group push message error, UID=%d, Error=%s", errUids, err.Error())
@@ -128,43 +82,19 @@ func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, erro
 	return groupServiceInstance.GroupContainsMember(ctx, groupName, uid)
 }
 
-// SubgroupContainsMember check whether a UID is contained in subgroup or not
-func SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
-	if uid == "" {
-		return false, constants.ErrNoUIDBind
-	}
-	return groupServiceInstance.SubgroupContainsMember(ctx, groupName, subgroupName, uid)
-}
-
-// SubgroupAdd adds UID to subgroup
-func SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *groups.Payload) error {
-	if uid == "" {
-		return constants.ErrNoUIDBind
-	}
-	logger.Log.Debugf("Add user to subgroup %s, UID=%d", groupName, uid)
-
-	return groupServiceInstance.SubgroupAdd(ctx, groupName, subgroupName, uid, payload)
-}
-
-// GroupAdd adds UID to group
-func GroupAdd(ctx context.Context, groupName, uid string, payload *groups.Payload) error {
+// GroupAddMember adds UID to group
+func GroupAddMember(ctx context.Context, groupName, uid string) error {
 	if uid == "" {
 		return constants.ErrNoUIDBind
 	}
 	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
-	return groupServiceInstance.GroupAdd(ctx, groupName, uid, payload)
+	return groupServiceInstance.GroupAddMember(ctx, groupName, uid)
 }
 
-// GroupRemove removes specified UID from group
-func GroupRemove(ctx context.Context, groupName, uid string) error {
+// GroupRemoveMember removes specified UID from group
+func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
-	return groupServiceInstance.GroupRemove(ctx, groupName, uid)
-}
-
-// SubgroupRemove removes specified UID from subgroup
-func SubgroupRemove(ctx context.Context, groupName, subgroupName, uid string) error {
-	logger.Log.Debugf("Remove user from subgroup %s, UID=%d", groupName, uid)
-	return groupServiceInstance.SubgroupRemove(ctx, groupName, subgroupName, uid)
+	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
 // GroupRemoveAll clears all UIDs in the group and contained subgroups
@@ -172,17 +102,12 @@ func GroupRemoveAll(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
 
-// SubgroupRemoveAll clears all UIDs in the subgroup
-func SubgroupRemoveAll(ctx context.Context, groupName, subgroupName string) error {
-	return groupServiceInstance.SubgroupRemoveAll(ctx, groupName, subgroupName)
+// GroupCountMembers get current member amount in the group
+func GroupCountMembers(ctx context.Context, groupName string) (int, error) {
+	return groupServiceInstance.GroupCountMembers(ctx, groupName)
 }
 
-// GroupCount get current member amount in the group
-func GroupCount(ctx context.Context, groupName string) (int, error) {
-	return groupServiceInstance.GroupCount(ctx, groupName)
-}
-
-// SubgroupCount get current member amount in the subgroup
-func SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error) {
-	return groupServiceInstance.SubgroupCount(ctx, groupName, subgroupName)
+// GroupRenewTTL renews the group key with the initial TTL
+func GroupRenewTTL(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
 }

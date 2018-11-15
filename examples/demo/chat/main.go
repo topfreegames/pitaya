@@ -60,7 +60,7 @@ func NewRoom() *Room {
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := pitaya.GroupCount(context.Background(), "room")
+		count, err := pitaya.GroupCountMembers(context.Background(), "room")
 		logger.Log.Debugf("UserCount: Time=> %s, Count=> %d, Error=> %q", time.Now().String(), count, err)
 	})
 }
@@ -75,11 +75,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
-	res, err := pitaya.GroupMembers(ctx, "room")
-	uids := make([]string, 0, len(res))
-	for uid := range res {
-		uids = append(uids, uid)
-	}
+	uids, err := pitaya.GroupMembers(ctx, "room")
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +83,11 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	// notify others
 	pitaya.GroupBroadcast(ctx, "chat", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group
-	pitaya.GroupAdd(ctx, "room", s.UID(), nil) // add session to group
+	pitaya.GroupAddMember(ctx, "room", s.UID()) // add session to group
 
 	// on session close, remove it from group
 	s.OnClose(func() {
-		pitaya.GroupRemove(ctx, "room", s.UID())
+		pitaya.GroupRemoveMember(ctx, "room", s.UID())
 	})
 
 	return &JoinResponse{Result: "success"}, nil
@@ -99,7 +95,11 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
+	err := pitaya.GroupRenewTTL(ctx, "room")
+	if err != nil {
+		fmt.Println("error renewing TTL", err)
+	}
+	err = pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
@@ -117,6 +117,10 @@ func main() {
 		panic(err)
 	}
 	pitaya.InitGroups(gsi)
+	err = pitaya.GroupCreate(context.Background(), "room")
+	if err != nil {
+		panic(err)
+	}
 
 	// rewrite component and handler name
 	room := NewRoom()

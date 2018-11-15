@@ -4,25 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 )
 
 var (
 	clientInstance *clientv3.Client
-	leaseTTL       time.Duration
 	once           sync.Once
-	leaseID        clientv3.LeaseID
 )
 
 // EtcdGroupService base ETCD struct solution
 type EtcdGroupService struct {
+}
+
+// EtcdGroupPayload is the payload stored in each Etcd group key
+type EtcdGroupPayload struct {
+	Uids    []string         `json:"uids"`
+	LeaseID clientv3.LeaseID `json:"leaseID"`
 }
 
 // NewEtcdGroupService returns a new group instance
@@ -37,7 +41,6 @@ func NewEtcdGroupService(conf *config.Config, clientOrNil *clientv3.Client) (*Et
 func initClientInstance(config *config.Config, clientOrNil *clientv3.Client) error {
 	var err error
 	once.Do(func() {
-		leaseTTL = config.GetDuration("pitaya.groups.etcd.leasettl")
 		if clientOrNil != nil {
 			clientInstance = clientOrNil
 		} else {
@@ -45,11 +48,6 @@ func initClientInstance(config *config.Config, clientOrNil *clientv3.Client) err
 		}
 		if err != nil {
 			logger.Log.Fatalf("error initializing singleton etcd client in groups: %s", err.Error())
-			return
-		}
-		err = bootstrapLease()
-		if err != nil {
-			logger.Log.Fatalf("error initializing bootstrap lease in groups: %s", err.Error())
 			return
 		}
 	})
@@ -68,298 +66,138 @@ func createBaseClient(config *config.Config) (*clientv3.Client, error) {
 	return cli, nil
 }
 
-func bootstrapLease() error {
-	// grab lease
-	l, err := clientInstance.Grant(context.TODO(), int64(leaseTTL.Seconds()))
-	if err != nil {
-		return err
-	}
-	leaseID = l.ID
-	logger.Log.Debugf("[groups] sd: got leaseID: %x", l.ID)
-	// this will keep alive forever, when channel c is closed
-	// it means we probably have to rebootstrap the lease
-	c, err := clientInstance.KeepAlive(context.TODO(), leaseID)
-	if err != nil {
-		return err
-	}
-	// need to receive here as per etcd docs
-	<-c
-	go watchLeaseChan(c)
-	return nil
-}
-
-func watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
-	for {
-		kaRes := <-c
-		if kaRes == nil {
-			logger.Log.Warn("[groups] sd: error renewing etcd lease, rebootstrapping")
-			for {
-				err := bootstrapLease()
-				if err != nil {
-					logger.Log.Warn("[groups] sd: error rebootstrapping lease, will retry in 5 seconds")
-					time.Sleep(5 * time.Second)
-					continue
-				} else {
-					return
-				}
-			}
-		}
-	}
-}
-
-func groupPrefix(groupName string) string {
+func groupKey(groupName string) string {
 	return fmt.Sprintf("groups/%s", groupName)
 }
 
-func subGroupPrefix(groupName, subgroupName string) string {
-	return groupPrefix(groupName) + fmt.Sprintf("/subgroups/%s", subgroupName)
-}
-
-func memberGroupKey(groupName, uid string) string {
-	return fmt.Sprintf("uids/%s/groups/%s", uid, groupName)
-}
-
-func memberSubgroupKey(groupName, subgroupName, uid string) string {
-	return groupPrefix(groupName) + fmt.Sprintf("/uids/%s/subgroups/%s", uid, subgroupName)
-}
-
-func memberKey(groupName, uid string) string {
-	return groupPrefix(groupName) + fmt.Sprintf("/uids/%s", uid)
-}
-
-func memberSubKey(groupName, subgroupName, uid string) string {
-	return subGroupPrefix(groupName, subgroupName) + fmt.Sprintf("/uids/%s", uid)
-}
-
-// Subgroups returns all subgroups that are contained inside given group
-func (c *EtcdGroupService) Subgroups(ctx context.Context, groupName string) ([]string, error) {
-	subgroupPrefix := subGroupPrefix(groupName, "")
-	etcdRes, err := clientInstance.Get(ctx, subgroupPrefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
+func getGroupPayload(ctx context.Context, groupName string) (*EtcdGroupPayload, error) {
+	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName))
 	if err != nil {
 		return nil, err
 	}
-
-	subMap := make(map[string]bool)
-	subgroups := make([]string, 0, len(etcdRes.Kvs))
-	for _, kv := range etcdRes.Kvs {
-		subgroupName := takeSubgroupName(string(kv.Key), subgroupPrefix)
-		if _, ok := subMap[subgroupName]; !ok {
-			subMap[subgroupName] = true
-			subgroups = append(subgroups, subgroupName)
-		}
-	}
-	return subgroups, nil
-}
-
-func takeSubgroupName(memberKey, subgroupPrefix string) string {
-	memberKey = memberKey[len(subgroupPrefix):]
-	return strings.Split(memberKey, "/uids/")[0]
-}
-
-// PlayerGroups returns all groups which member takes part
-func (c *EtcdGroupService) PlayerGroups(ctx context.Context, uid string) ([]string, error) {
-	return getGroupNames(ctx, memberGroupKey("", uid))
-}
-
-// PlayerSubgroups returns all subgroups which member takes part
-func (c *EtcdGroupService) PlayerSubgroups(ctx context.Context, groupName, uid string) ([]string, error) {
-	return getGroupNames(ctx, memberSubgroupKey(groupName, "", uid))
-}
-
-func getGroupNames(ctx context.Context, prefix string) ([]string, error) {
-	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithKeysOnly(), clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
+	if etcdRes.Count == 0 {
+		return nil, constants.ErrGroupNotFound
 	}
 
-	groups := make([]string, etcdRes.Count)
-	for i, kv := range etcdRes.Kvs {
-		groups[i] = string(kv.Key)[len(prefix):]
-	}
-	return groups, nil
-}
-
-// GroupMembers returns all member's UID and payload in current group
-func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) (map[string]*Payload, error) {
-	return getMembers(ctx, memberKey(groupName, ""))
-}
-
-// SubgroupMembers returns all member's UID and payload in current subgroup
-func (c *EtcdGroupService) SubgroupMembers(ctx context.Context, groupName, subgroupName string) (map[string]*Payload, error) {
-	return getMembers(ctx, memberSubKey(groupName, subgroupName, ""))
-}
-
-func getMembers(ctx context.Context, prefix string) (map[string]*Payload, error) {
-	etcdRes, err := clientInstance.Get(ctx, prefix, clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
-	}
-
-	members := make(map[string]*Payload, etcdRes.Count)
-	for _, kv := range etcdRes.Kvs {
-		uid := string(kv.Key)[len(prefix):]
-		if !strings.Contains(uid, "/subgroups/") {
-			payload := &Payload{}
-			if err = json.Unmarshal(kv.Value, payload); err != nil {
-				return nil, err
-			}
-			members[uid] = payload
-		}
-	}
-	return members, nil
-}
-
-// GroupMember returns the Payload from User
-func (c *EtcdGroupService) GroupMember(ctx context.Context, groupName, uid string) (*Payload, error) {
-	return getMember(ctx, memberKey(groupName, uid))
-}
-
-// SubgroupMember returns the Payload from User
-func (c *EtcdGroupService) SubgroupMember(ctx context.Context, groupName, subgroupName, uid string) (*Payload, error) {
-	return getMember(ctx, memberSubKey(groupName, subgroupName, uid))
-}
-
-func getMember(ctx context.Context, memberKey string) (*Payload, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKey)
-	if err != nil {
-		return nil, err
-	}
-	payload := &Payload{}
+	payload := &EtcdGroupPayload{}
 	if err = json.Unmarshal(etcdRes.Kvs[0].Value, payload); err != nil {
 		return nil, err
 	}
 	return payload, nil
 }
 
+func putGroupPayload(ctx context.Context, groupName string, payload *EtcdGroupPayload) error {
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	if payload.LeaseID != 0 {
+		_, err = clientInstance.Put(ctx, groupKey(groupName), string(jsonPayload), clientv3.WithLease(payload.LeaseID))
+	} else {
+		_, err = clientInstance.Put(ctx, groupKey(groupName), string(jsonPayload))
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func elementIndex(slice []string, element string) (int, bool) {
+	for i, sliceElement := range slice {
+		if element == sliceElement {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// GroupCreate returns all member's UID and payload in current group
+func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) error {
+	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{})
+}
+
+// GroupCreateWithTTL returns all member's UID and payload in current group
+func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
+	lease, err := clientInstance.Grant(ctx, int64(ttlTime.Seconds()))
+	if err != nil {
+		return err
+	}
+	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{LeaseID: lease.ID})
+}
+
+// GroupMembers returns all member's UID and payload in current group
+func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
+	payload, err := getGroupPayload(ctx, groupName)
+	if err != nil {
+		return nil, err
+	}
+	return payload.Uids, nil
+}
+
 // GroupContainsMember check whether a UID is contained in current group or not
 func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
-	return containMember(ctx, memberKey(groupName, uid))
-}
-
-// SubgroupContainsMember check whether a UID is contained in current group or not
-func (c *EtcdGroupService) SubgroupContainsMember(ctx context.Context, groupName, subgroupName, uid string) (bool, error) {
-	return containMember(ctx, memberSubKey(groupName, subgroupName, uid))
-}
-
-func containMember(ctx context.Context, memberKey string) (bool, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberKey, clientv3.WithCountOnly())
+	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
 		return false, err
 	}
-	return etcdRes.Count > 0, nil
+
+	_, contains := elementIndex(payload.Uids, uid)
+
+	return contains, nil
 }
 
-// GroupAdd adds UID and payload to group. If the group doesn't exist, it is created
-func (c *EtcdGroupService) GroupAdd(ctx context.Context, groupName, uid string, payload *Payload) error {
-	return add(ctx, map[string]*Payload{memberKey(groupName, uid): payload, memberGroupKey(groupName, uid): nil})
-}
-
-// SubgroupAdd adds UID and payload to subgroup. If the subgroup doesn't exist, it is created
-func (c *EtcdGroupService) SubgroupAdd(ctx context.Context, groupName, subgroupName, uid string, payload *Payload) error {
-	err := c.GroupAdd(ctx, groupName, uid, payload)
+// GroupAddMember adds UID and payload to group. If the group doesn't exist, it is created
+func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid string) error {
+	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
 		return err
 	}
-	return add(ctx, map[string]*Payload{memberSubKey(groupName, subgroupName, uid): payload, memberSubgroupKey(groupName, subgroupName, uid): nil})
+	payload.Uids = append(payload.Uids, uid)
+	return putGroupPayload(ctx, groupName, payload)
 }
 
-func add(ctx context.Context, kvs map[string]*Payload) error {
-	for k, v := range kvs {
-		jsonPayload, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		_, err = clientInstance.Put(ctx, k, string(jsonPayload), clientv3.WithLease(leaseID))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// GroupRemove removes specified UID from group
-func (c *EtcdGroupService) GroupRemove(ctx context.Context, groupName, uid string) error {
-	subgroups, err := c.PlayerSubgroups(ctx, groupName, uid)
+// GroupRemoveMember removes specified UID from group
+func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid string) error {
+	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
 		return err
 	}
-	for _, subgroup := range subgroups {
-		if err = c.SubgroupRemove(ctx, groupName, subgroup, uid); err != nil {
-			return err
-		}
+	index, contains := elementIndex(payload.Uids, uid)
+	if contains {
+		payload.Uids[index] = payload.Uids[len(payload.Uids)-1]
+		payload.Uids = payload.Uids[:len(payload.Uids)-1]
+		return putGroupPayload(ctx, groupName, payload)
 	}
-	return leave(ctx, memberKey(groupName, uid), memberGroupKey(groupName, uid))
-}
 
-// SubgroupRemove removes specified UID from group
-func (c *EtcdGroupService) SubgroupRemove(ctx context.Context, groupName, subgroupName, uid string) error {
-	return leave(ctx, memberSubKey(groupName, subgroupName, uid), memberSubgroupKey(groupName, subgroupName, uid))
-}
-
-func leave(ctx context.Context, memberKeys ...string) error {
-	for _, memberKey := range memberKeys {
-		_, err := clientInstance.Delete(ctx, memberKey)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return constants.ErrMemberNotFound
 }
 
 // GroupRemoveAll clears all UIDs in the group and also subgroups contained
 func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
-	dResp, err := clientInstance.Delete(ctx, groupPrefix(groupName)+"/", clientv3.WithPrefix(), clientv3.WithPrevKV())
-	if err != nil {
-		return err
-	}
-	prefix := memberKey(groupName, "")
-	for _, kv := range dResp.PrevKvs {
-		if strings.Contains(string(kv.Key), prefix) && !strings.Contains(string(kv.Key), "/subgroups/") {
-			uid := string(kv.Key)[len(prefix):]
-			if err = leave(ctx, memberGroupKey(groupName, uid)); err != nil {
-				logger.Log.Warnf("[groups] sd: error deleting key from etcd: %s", err.Error())
-			}
-		}
-	}
+	_, err := clientInstance.Delete(ctx, groupKey(groupName))
 	return err
 }
 
-// SubgroupRemoveAll clears all UIDs in the subgroup
-func (c *EtcdGroupService) SubgroupRemoveAll(ctx context.Context, groupName, subgroupName string) error {
-	prefix := memberSubKey(groupName, subgroupName, "")
-	dResp, err := clientInstance.Delete(ctx, prefix, clientv3.WithPrefix(), clientv3.WithPrevKV())
-	if err != nil {
-		return err
-	}
-	for _, kv := range dResp.PrevKvs {
-		uid := string(kv.Key)[len(prefix):]
-		if err = leave(ctx, memberSubgroupKey(groupName, subgroupName, uid)); err != nil {
-			logger.Log.Warnf("[subgroups] sd: error deleting key from etcd: %s", err.Error())
-		}
-	}
-	return err
-}
-
-// GroupCount get current member amount in the group
-func (c *EtcdGroupService) GroupCount(ctx context.Context, groupName string) (int, error) {
-	var count int
-	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithKeysOnly())
-	if err != nil {
-		return count, err
-	}
-	for _, kv := range etcdRes.Kvs {
-		if !strings.Contains(string(kv.Key), "/subgroups/") {
-			count++
-		}
-	}
-	return count, nil
-}
-
-// SubgroupCount get current member amount in the group
-func (c *EtcdGroupService) SubgroupCount(ctx context.Context, groupName, subgroupName string) (int, error) {
-	etcdRes, err := clientInstance.Get(ctx, memberSubKey(groupName, subgroupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
+// GroupCountMembers get current member amount in the group
+func (c *EtcdGroupService) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
+	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
 		return 0, err
 	}
-	return int(etcdRes.Count), nil
+	return len(payload.Uids), nil
+}
+
+// GroupRenewTTL will create/renew lease TTL
+func (c *EtcdGroupService) GroupRenewTTL(ctx context.Context, groupName string) error {
+	payload, err := getGroupPayload(ctx, groupName)
+	if err != nil {
+		return err
+	}
+	if payload.LeaseID != 0 {
+		_, err = clientInstance.KeepAliveOnce(ctx, payload.LeaseID)
+		return err
+	}
+	return constants.ErrEtcdLeaseNotFound
 }
