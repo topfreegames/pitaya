@@ -393,7 +393,7 @@ These configurations are only used if groups with ETCD implementation are used.
   * - pitaya.groups.etcd.prefix
     - pitaya/
     - string 
-    - Prefix used for etcd, should be the same as the service discovery
+    - Prefix used for every group key in etcd
   * - pitaya.groups.etcd.dialtimeout
     - 5s
     - time.Time
@@ -401,6 +401,6 @@ These configurations are only used if groups with ETCD implementation are used.
   * - pitaya.groups.etcd.leasettl
     - 1h
     - time.Time
-    - Duration of the etcd lease before automatic renewal
+    - Duration of the etcd lease before removal of group
 
  

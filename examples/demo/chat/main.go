@@ -15,6 +15,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/timer"
@@ -90,7 +91,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 	// on session close, remove it from group
 	s.OnClose(func() {
-		pitaya.GroupLeave(ctx, "room", s.UID())
+		pitaya.GroupRemove(ctx, "room", s.UID())
 	})
 
 	return &JoinResponse{Result: "success"}, nil
@@ -111,7 +112,11 @@ func main() {
 	conf := configApp()
 
 	pitaya.SetSerializer(s)
-	pitaya.InitGroups(config.NewConfig(conf), nil)
+	gsi, err := groups.NewEtcdGroupService(config.NewConfig(conf), nil)
+	if err != nil {
+		panic(err)
+	}
+	pitaya.InitGroups(gsi)
 
 	// rewrite component and handler name
 	room := NewRoom()

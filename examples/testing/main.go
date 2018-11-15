@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/testing/protos"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -97,7 +98,11 @@ func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*test.TestResponse,
 
 // Init inits testsvc
 func (t *TestSvc) Init() {
-	pitaya.InitGroups(config.NewConfig(), nil)
+	gsi, err := groups.NewEtcdGroupService(config.NewConfig(), nil)
+	if err != nil {
+		panic(err)
+	}
+	pitaya.InitGroups(gsi)
 }
 
 // TestRequestKickUser handler for e2e tests

@@ -23,8 +23,6 @@ package pitaya
 import (
 	"context"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
@@ -36,12 +34,8 @@ import (
 var groupServiceInstance groups.GroupService
 
 // InitGroups should be called ONCE in the beginning of the application, if it is intended to use groups functionality
-func InitGroups(config *config.Config, clientOrNil *clientv3.Client) {
-	gsi, err := groups.NewEtcdGroupService(config, clientOrNil)
-	if err != nil {
-		logger.Log.Fatalf("error initializing groupServiceInstance in groups: %s", err.Error())
-	}
-	groupServiceInstance = gsi
+func InitGroups(groupService groups.GroupService) {
+	groupServiceInstance = groupService
 }
 
 // Subgroups returns all subgroups that the group contains
