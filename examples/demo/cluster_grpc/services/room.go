@@ -19,7 +19,6 @@ type (
 	// like Join/Message
 	Room struct {
 		component.Base
-		group *pitaya.Group
 		timer *timer.Timer
 		Stats *Stats
 	}
@@ -75,13 +74,15 @@ func (Stats *Stats) Inbound(ctx context.Context, in []byte) ([]byte, error) {
 // NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
-		group: pitaya.NewGroup("room", groups.NewMemoryGroupService()),
 		Stats: &Stats{},
 	}
 }
 
 // Init runs on service initialization
 func (r *Room) Init() {
+	gsi := groups.NewMemoryGroupService()
+	pitaya.InitGroups(gsi)
+	pitaya.GroupCreate(context.Background(), "room")
 	// It is necessary to register all structs that will be used in RPC calls
 	// This must be done both in the caller and callee servers
 	gob.Register(&UserMessage{})
@@ -90,7 +91,8 @@ func (r *Room) Init() {
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
+		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "Error=>", err)
 		println("OutboundBytes", r.Stats.outboundBytes)
 		println("InboundBytes", r.Stats.outboundBytes)
 	})
@@ -131,14 +133,18 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 // Join room
 func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
-	err := r.group.Add(s)
+	err := pitaya.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		return nil, err
 	}
-	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	members, err := pitaya.GroupMembers(ctx, "room")
+	if err != nil {
+		return nil, err
+	}
+	s.Push("onMembers", &AllMembers{Members: members})
+	pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	err = s.OnClose(func() {
-		r.group.Leave(s)
+		pitaya.GroupRemoveMember(ctx, "room", s.UID())
 	})
 	if err != nil {
 		return nil, err
@@ -148,7 +154,7 @@ func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := r.group.Broadcast("onMessage", msg)
+	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
