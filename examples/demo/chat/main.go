@@ -14,7 +14,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -112,12 +111,9 @@ func main() {
 	conf := configApp()
 
 	pitaya.SetSerializer(s)
-	gsi, err := groups.NewEtcdGroupService(config.NewConfig(conf), nil)
-	if err != nil {
-		panic(err)
-	}
+	gsi := groups.NewMemoryGroupService()
 	pitaya.InitGroups(gsi)
-	err = pitaya.GroupCreate(context.Background(), "room")
+	err := pitaya.GroupCreate(context.Background(), "room")
 	if err != nil {
 		panic(err)
 	}
