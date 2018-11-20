@@ -32,6 +32,16 @@ import (
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
+func TestCreateDuplicatedGroup(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	err := GroupCreate(ctx, "testCreateDuplicatedGroup")
+	assert.NoError(t, err)
+	err = GroupCreate(ctx, "testCreateDuplicatedGroup")
+	assert.Error(t, err)
+	assert.Equal(t, constants.ErrGroupDuplication, err)
+}
+
 func TestCreateGroup(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
@@ -42,7 +52,6 @@ func TestCreateGroup(t *testing.T) {
 	assert.Equal(t, 0, count)
 	err = GroupRenewTTL(ctx, "testCreateGroup")
 	assert.Error(t, err)
-	assert.Equal(t, constants.ErrEtcdLeaseNotFound, err)
 }
 
 func TestCreateGroupWithTTL(t *testing.T) {
@@ -72,12 +81,13 @@ func TestGroupAddMember(t *testing.T) {
 		{"backend_uid", false, "ola1", nil},
 	}
 
+	err := GroupCreate(ctx, "testGroupAddMember")
+	assert.NoError(t, err)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err := GroupCreate(ctx, "testGroupAddMember")
-			assert.NoError(t, err)
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			err = GroupAddMember(ctx, "testGroupAddMember", s.UID())
@@ -94,6 +104,18 @@ func TestGroupAddMember(t *testing.T) {
 	}
 }
 
+func TestGroupAddDuplicatedMember(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	err := GroupCreate(ctx, "testGroupAddDuplicatedMember")
+	assert.NoError(t, err)
+	err = GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
+	assert.NoError(t, err)
+	err = GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
+	assert.Error(t, err)
+	assert.Equal(t, constants.ErrMemberDuplication, err)
+}
+
 func TestGroupContainsMember(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
@@ -108,12 +130,13 @@ func TestGroupContainsMember(t *testing.T) {
 		{"backend_nouid", false, "", constants.ErrNoUIDBind},
 	}
 
+	err := GroupCreate(ctx, "testGroupContainsMember")
+	assert.NoError(t, err)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err := GroupCreate(ctx, "testGroupContainsMember")
-			assert.NoError(t, err)
 
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
@@ -148,12 +171,13 @@ func TestRemove(t *testing.T) {
 		{"backend_uid", false, "ola2", nil},
 	}
 
+	err := GroupCreate(ctx, "testRemove")
+	assert.NoError(t, err)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err := GroupCreate(ctx, "testRemove")
-			assert.NoError(t, err)
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			err = GroupAddMember(ctx, "testRemove", s.UID())
@@ -180,13 +204,14 @@ func TestRemoveAll(t *testing.T) {
 		{"backend_uid", false, "leaveOla2", nil},
 	}
 
+	err := GroupCreate(ctx, "testRemoveAllSufix")
+	assert.NoError(t, err)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err := GroupCreate(ctx, "testRemoveAll")
-			assert.NoError(t, err)
-			err = GroupCreate(ctx, "testRemoveAllSufix")
+			err = GroupCreate(ctx, "testRemoveAll")
 			assert.NoError(t, err)
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)

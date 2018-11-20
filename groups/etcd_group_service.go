@@ -16,7 +16,7 @@ import (
 
 var (
 	clientInstance *clientv3.Client
-	once           sync.Once
+	etcdOnce       sync.Once
 )
 
 // EtcdGroupService base ETCD struct solution
@@ -40,7 +40,7 @@ func NewEtcdGroupService(conf *config.Config, clientOrNil *clientv3.Client) (*Et
 
 func initClientInstance(config *config.Config, clientOrNil *clientv3.Client) error {
 	var err error
-	once.Do(func() {
+	etcdOnce.Do(func() {
 		if clientOrNil != nil {
 			clientInstance = clientOrNil
 		} else {
@@ -104,22 +104,28 @@ func putGroupPayload(ctx context.Context, groupName string, payload *EtcdGroupPa
 	return nil
 }
 
-func elementIndex(slice []string, element string) (int, bool) {
-	for i, sliceElement := range slice {
-		if element == sliceElement {
-			return i, true
-		}
-	}
-	return 0, false
-}
-
 // GroupCreate returns all member's UID and payload in current group
 func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) error {
+	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if etcdRes.Count != 0 {
+		return constants.ErrGroupDuplication
+	}
 	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{})
 }
 
 // GroupCreateWithTTL returns all member's UID and payload in current group
 func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
+	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if etcdRes.Count != 0 {
+		return constants.ErrGroupDuplication
+	}
+
 	lease, err := clientInstance.Grant(ctx, int64(ttlTime.Seconds()))
 	if err != nil {
 		return err
@@ -154,6 +160,12 @@ func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid st
 	if err != nil {
 		return err
 	}
+
+	_, contains := elementIndex(payload.Uids, uid)
+	if contains {
+		return constants.ErrMemberDuplication
+	}
+
 	payload.Uids = append(payload.Uids, uid)
 	return putGroupPayload(ctx, groupName, payload)
 }

@@ -19,3 +19,12 @@ type (
 		GroupRenewTTL(ctx context.Context, groupName string) error
 	}
 )
+
+func elementIndex(slice []string, element string) (int, bool) {
+	for i, sliceElement := range slice {
+		if element == sliceElement {
+			return i, true
+		}
+	}
+	return 0, false
+}
