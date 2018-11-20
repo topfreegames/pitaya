@@ -34,7 +34,7 @@ import (
 
 var groupServiceInstance groups.GroupService
 
-// InitGroups should be called ONCE in the beginning of the application, if it is intended to use groups functionality
+// InitGroups should be called once at the beginning of the application to setup the service type that will manage the groups
 func InitGroups(groupService groups.GroupService) {
 	groupServiceInstance = groupService
 }
@@ -44,12 +44,12 @@ func GroupCreate(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupCreate(ctx, groupName)
 }
 
-// GroupCreateWithTTL returns all member's UIDs and payload in current group
+// GroupCreateWithTTL creates a group with given TTL
 func GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
 	return groupServiceInstance.GroupCreateWithTTL(ctx, groupName, ttlTime)
 }
 
-// GroupMembers returns all member's UIDs and payload in current group
+// GroupMembers returns all member's UIDs
 func GroupMembers(ctx context.Context, groupName string) ([]string, error) {
 	return groupServiceInstance.GroupMembers(ctx, groupName)
 }
@@ -97,17 +97,17 @@ func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
-// GroupRemoveAll clears all UIDs in the group and contained subgroups
+// GroupRemoveAll clears all UIDs and the group itself
 func GroupRemoveAll(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
 
-// GroupCountMembers get current member amount in the group
+// GroupCountMembers get current member amount in group
 func GroupCountMembers(ctx context.Context, groupName string) (int, error) {
 	return groupServiceInstance.GroupCountMembers(ctx, groupName)
 }
 
-// GroupRenewTTL renews the group key with the initial TTL
+// GroupRenewTTL renews group with the initial TTL
 func GroupRenewTTL(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
 }

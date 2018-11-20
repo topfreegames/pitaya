@@ -94,11 +94,7 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := pitaya.GroupRenewTTL(ctx, "room")
-	if err != nil {
-		fmt.Println("error renewing TTL", err)
-	}
-	err = pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
+	err := pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
