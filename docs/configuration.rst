@@ -397,6 +397,6 @@ These configurations are only used if groups with ETCD implementation are used.
   * - pitaya.groups.etcd.dialtimeout
     - 5s
     - time.Time
-    - Timeout to establish the etcd connection
+    - Timeout to establish the etcd group connection
 
  
