@@ -398,9 +398,5 @@ These configurations are only used if groups with ETCD implementation are used.
     - 5s
     - time.Time
     - Timeout to establish the etcd connection
-  * - pitaya.groups.etcd.leasettl
-    - 1h
-    - time.Time
-    - Duration of the etcd lease before removal of group
 
  

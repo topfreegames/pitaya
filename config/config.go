@@ -89,7 +89,6 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.groups.etcd.endpoints":                          "localhost:2379",
 		"pitaya.groups.etcd.prefix":                             "pitaya/",
 		"pitaya.groups.etcd.dialtimeout":                        "5s",
-		"pitaya.groups.etcd.leasettl":                           "1h",
 		"pitaya.handler.messages.compression":                   true,
 		"pitaya.heartbeat.interval":                             "30s",
 		"pitaya.session.unique":                                 true,
