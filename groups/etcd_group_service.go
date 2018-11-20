@@ -104,7 +104,7 @@ func putGroupPayload(ctx context.Context, groupName string, payload *EtcdGroupPa
 	return nil
 }
 
-// GroupCreate returns all member's UID and payload in current group
+// GroupCreate creates a group struct inside ETCD, without TTL
 func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) error {
 	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) er
 	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{})
 }
 
-// GroupCreateWithTTL returns all member's UID and payload in current group
+// GroupCreateWithTTL creates a group struct inside ETCD, with TTL, using leaseID
 func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
 	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
 	if err != nil {
@@ -133,7 +133,7 @@ func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName str
 	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{LeaseID: lease.ID})
 }
 
-// GroupMembers returns all member's UID and payload in current group
+// GroupMembers returns all member's UIDs
 func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
 	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
@@ -154,7 +154,7 @@ func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, u
 	return contains, nil
 }
 
-// GroupAddMember adds UID and payload to group. If the group doesn't exist, it is created
+// GroupAddMember adds UID to group
 func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid string) error {
 	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
@@ -186,13 +186,13 @@ func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid
 	return constants.ErrMemberNotFound
 }
 
-// GroupRemoveAll clears all UIDs in the group and also subgroups contained
+// GroupRemoveAll clears all UIDs in the group and also removes group
 func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
 	_, err := clientInstance.Delete(ctx, groupKey(groupName))
 	return err
 }
 
-// GroupCountMembers get current member amount in the group
+// GroupCountMembers get current member amount in group
 func (c *EtcdGroupService) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
 	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {
@@ -201,7 +201,7 @@ func (c *EtcdGroupService) GroupCountMembers(ctx context.Context, groupName stri
 	return len(payload.Uids), nil
 }
 
-// GroupRenewTTL will create/renew lease TTL
+// GroupRenewTTL will renew ETCD lease TTL
 func (c *EtcdGroupService) GroupRenewTTL(ctx context.Context, groupName string) error {
 	payload, err := getGroupPayload(ctx, groupName)
 	if err != nil {

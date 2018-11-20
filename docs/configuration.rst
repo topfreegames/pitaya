@@ -375,7 +375,7 @@ These configurations control if the default pipelines should be enabled or not
 Groups
 =================
 
-These configurations are only used if groups with ETCD implementation are used.
+These configurations are used for group services implementations.
 
 .. list-table::
   :widths: 15 10 10 50
@@ -398,5 +398,8 @@ These configurations are only used if groups with ETCD implementation are used.
     - 5s
     - time.Time
     - Timeout to establish the etcd group connection
-
+  * - pitaya.groups.memory.tickduration
+    - 30s
+    - time.Duration
+    - Duration time of tick that will check if should delete group or not
  

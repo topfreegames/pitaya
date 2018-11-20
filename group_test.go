@@ -225,7 +225,7 @@ func TestRemoveAll(t *testing.T) {
 			res, err := GroupContainsMember(ctx, "testRemoveAllSufix", table.UID)
 			assert.NoError(t, err)
 			assert.True(t, res)
-			res, err = GroupContainsMember(ctx, "testRemoveAll", table.UID)
+			_, err = GroupContainsMember(ctx, "testRemoveAll", table.UID)
 			assert.Error(t, err)
 			assert.Equal(t, constants.ErrGroupNotFound, err)
 		})
