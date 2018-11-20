@@ -111,7 +111,7 @@ func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) er
 		return err
 	}
 	if etcdRes.Count != 0 {
-		return constants.ErrGroupDuplication
+		return constants.ErrGroupAlreadyExists
 	}
 	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{})
 }
@@ -123,7 +123,7 @@ func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName str
 		return err
 	}
 	if etcdRes.Count != 0 {
-		return constants.ErrGroupDuplication
+		return constants.ErrGroupAlreadyExists
 	}
 
 	lease, err := clientInstance.Grant(ctx, int64(ttlTime.Seconds()))
@@ -163,7 +163,7 @@ func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid st
 
 	_, contains := elementIndex(payload.Uids, uid)
 	if contains {
-		return constants.ErrMemberDuplication
+		return constants.ErrMemberAlreadyExists
 	}
 
 	payload.Uids = append(payload.Uids, uid)

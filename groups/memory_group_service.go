@@ -62,7 +62,7 @@ func (c *MemoryGroupService) GroupCreate(ctx context.Context, groupName string) 
 	defer memoryGroupsMu.Unlock()
 
 	if _, ok := memoryGroups[groupName]; ok {
-		return constants.ErrGroupDuplication
+		return constants.ErrGroupAlreadyExists
 	}
 
 	memoryGroups[groupName] = &MemoryGroup{}
@@ -75,7 +75,7 @@ func (c *MemoryGroupService) GroupCreateWithTTL(ctx context.Context, groupName s
 	defer memoryGroupsMu.Unlock()
 
 	if _, ok := memoryGroups[groupName]; ok {
-		return constants.ErrGroupDuplication
+		return constants.ErrGroupAlreadyExists
 	}
 
 	memoryGroups[groupName] = &MemoryGroup{LastRefresh: time.Now().UnixNano(), TTL: ttlTime.Nanoseconds()}
@@ -115,7 +115,7 @@ func (c *MemoryGroupService) GroupAddMember(ctx context.Context, groupName, uid 
 
 	_, contains := elementIndex(mg.Uids, uid)
 	if contains {
-		return constants.ErrMemberDuplication
+		return constants.ErrMemberAlreadyExists
 	}
 
 	mg.Uids = append(mg.Uids, uid)

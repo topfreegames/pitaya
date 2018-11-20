@@ -39,7 +39,7 @@ func TestCreateDuplicatedGroup(t *testing.T) {
 	assert.NoError(t, err)
 	err = GroupCreate(ctx, "testCreateDuplicatedGroup")
 	assert.Error(t, err)
-	assert.Equal(t, constants.ErrGroupDuplication, err)
+	assert.Equal(t, constants.ErrGroupAlreadyExists, err)
 }
 
 func TestCreateGroup(t *testing.T) {
@@ -113,7 +113,7 @@ func TestGroupAddDuplicatedMember(t *testing.T) {
 	assert.NoError(t, err)
 	err = GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
 	assert.Error(t, err)
-	assert.Equal(t, constants.ErrMemberDuplication, err)
+	assert.Equal(t, constants.ErrMemberAlreadyExists, err)
 }
 
 func TestGroupContainsMember(t *testing.T) {
