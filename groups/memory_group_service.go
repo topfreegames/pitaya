@@ -141,8 +141,22 @@ func (c *MemoryGroupService) GroupRemoveMember(ctx context.Context, groupName, u
 	return constants.ErrMemberNotFound
 }
 
-// GroupRemoveAll clears all UIDs from group and also removes group
+// GroupRemoveAll clears all UIDs from group
 func (c *MemoryGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
+	memoryGroupsMu.Lock()
+	defer memoryGroupsMu.Unlock()
+
+	mg, ok := memoryGroups[groupName]
+	if !ok {
+		return constants.ErrGroupNotFound
+	}
+
+	mg.Uids = []string{}
+	return nil
+}
+
+// GroupDelete deletes the whole group, including members and base group
+func (c *MemoryGroupService) GroupDelete(ctx context.Context, groupName string) error {
 	memoryGroupsMu.Lock()
 	defer memoryGroupsMu.Unlock()
 

@@ -191,7 +191,7 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-func TestRemoveAll(t *testing.T) {
+func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -204,15 +204,56 @@ func TestRemoveAll(t *testing.T) {
 		{"backend_uid", false, "leaveOla2", nil},
 	}
 
-	err := GroupCreate(ctx, "testRemoveAllSufix")
+	err := GroupCreate(ctx, "testDeleteSufix")
 	assert.NoError(t, err)
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err = GroupCreate(ctx, "testRemoveAll")
+			err = GroupCreate(ctx, "testDelete")
 			assert.NoError(t, err)
+			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
+			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			err = GroupAddMember(ctx, "testDeleteSufix", s.UID())
+			assert.NoError(t, err)
+			err = GroupAddMember(ctx, "testDelete", s.UID())
+			assert.NoError(t, err)
+			err = GroupDelete(ctx, "testDelete")
+			assert.NoError(t, err)
+
+			res, err := GroupContainsMember(ctx, "testDeleteSufix", table.UID)
+			assert.NoError(t, err)
+			assert.True(t, res)
+			_, err = GroupContainsMember(ctx, "testDelete", table.UID)
+			assert.Error(t, err)
+			assert.Equal(t, constants.ErrGroupNotFound, err)
+		})
+	}
+}
+
+func TestRemoveAll(t *testing.T) {
+	ctx := context.Background()
+	t.Parallel()
+	tables := []struct {
+		name     string
+		frontend bool
+		UID      string
+		err      error
+	}{
+		{"frontend_uid", true, "removeSomeuid2", nil},
+		{"backend_uid", false, "removeOla2", nil},
+	}
+
+	err := GroupCreate(ctx, "testRemoveAllSufix")
+	assert.NoError(t, err)
+	err = GroupCreate(ctx, "testRemoveAll")
+	assert.NoError(t, err)
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			err = GroupAddMember(ctx, "testRemoveAllSufix", s.UID())
@@ -225,9 +266,9 @@ func TestRemoveAll(t *testing.T) {
 			res, err := GroupContainsMember(ctx, "testRemoveAllSufix", table.UID)
 			assert.NoError(t, err)
 			assert.True(t, res)
-			_, err = GroupContainsMember(ctx, "testRemoveAll", table.UID)
-			assert.Error(t, err)
-			assert.Equal(t, constants.ErrGroupNotFound, err)
+			res, err = GroupContainsMember(ctx, "testRemoveAll", table.UID)
+			assert.NoError(t, err)
+			assert.False(t, res)
 		})
 	}
 }
@@ -245,12 +286,13 @@ func TestCount(t *testing.T) {
 		{"backend_uid", false, "ola2", nil},
 	}
 
+	err := GroupCreate(ctx, "testCount")
+	assert.NoError(t, err)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			err := GroupCreate(ctx, "testCount")
-			assert.NoError(t, err)
 			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 			s := session.New(mockNetworkEntity, table.frontend, table.UID)
 			err = GroupAddMember(ctx, "testCount", s.UID())

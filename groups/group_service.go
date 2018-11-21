@@ -10,6 +10,7 @@ type (
 	GroupService interface {
 		GroupCreate(ctx context.Context, groupName string) error
 		GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error
+		GroupDelete(ctx context.Context, groupName string) error
 		GroupMembers(ctx context.Context, groupName string) ([]string, error)
 		GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error)
 		GroupAddMember(ctx context.Context, groupName, uid string) error

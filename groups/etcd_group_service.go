@@ -200,8 +200,23 @@ func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid
 	return nil
 }
 
-// GroupRemoveAll clears all UIDs in the group and also removes group
+// GroupRemoveAll clears all UIDs in the group
 func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
+	etcdRes, err := clientInstance.Txn(ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
+		Then(clientv3.OpDelete(memberKey(groupName, ""), clientv3.WithPrefix())).
+		Commit()
+	if err != nil {
+		return err
+	}
+	if !etcdRes.Succeeded {
+		return constants.ErrGroupNotFound
+	}
+	return nil
+}
+
+// GroupDelete deletes the whole group, including members and base group
+func (c *EtcdGroupService) GroupDelete(ctx context.Context, groupName string) error {
 	etcdRes, err := clientInstance.Txn(ctx).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
 		Then(clientv3.OpDelete(memberKey(groupName, ""), clientv3.WithPrefix()),

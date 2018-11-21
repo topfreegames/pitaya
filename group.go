@@ -97,7 +97,7 @@ func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
-// GroupRemoveAll clears all UIDs and the group itself
+// GroupRemoveAll clears all UIDs
 func GroupRemoveAll(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
@@ -110,4 +110,9 @@ func GroupCountMembers(ctx context.Context, groupName string) (int, error) {
 // GroupRenewTTL renews group with the initial TTL
 func GroupRenewTTL(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
+}
+
+// GroupDelete deletes whole group, including UIDs and base group
+func GroupDelete(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupDelete(ctx, groupName)
 }
