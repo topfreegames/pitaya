@@ -34,6 +34,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/testing/protos"
 	"github.com/topfreegames/pitaya/groups"
@@ -97,7 +98,7 @@ func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*test.TestResponse,
 
 // Init inits testsvc
 func (t *TestSvc) Init() {
-	gsi := groups.NewMemoryGroupService()
+	gsi := groups.NewMemoryGroupService(config.NewConfig())
 	pitaya.InitGroups(gsi)
 	err := pitaya.GroupCreate(context.Background(), "g1")
 	if err != nil {
