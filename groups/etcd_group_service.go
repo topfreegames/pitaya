@@ -65,7 +65,7 @@ func groupKey(groupName string) string {
 }
 
 func memberKey(groupName, uid string) string {
-	return groupKey(groupName) + fmt.Sprintf("/uids/%s", uid)
+	return fmt.Sprintf("%s/uids/%s", groupKey(groupName), uid)
 }
 
 func getGroupKV(ctx context.Context, groupName string) (*mvccpb.KeyValue, error) {
@@ -140,7 +140,7 @@ func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) (
 	return members, nil
 }
 
-// GroupContainsMember check whether a UID is contained in current group or not
+// GroupContainsMember checks whether a UID is contained in current group or not
 func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	etcdRes, err := clientInstance.Txn(ctx).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
