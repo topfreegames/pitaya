@@ -2,13 +2,13 @@ package groups
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
@@ -21,12 +21,6 @@ var (
 
 // EtcdGroupService base ETCD struct solution
 type EtcdGroupService struct {
-}
-
-// EtcdGroupPayload is the payload stored in each Etcd group key
-type EtcdGroupPayload struct {
-	Uids    []string         `json:"uids"`
-	LeaseID clientv3.LeaseID `json:"leaseID"`
 }
 
 // NewEtcdGroupService returns a new group instance
@@ -70,7 +64,11 @@ func groupKey(groupName string) string {
 	return fmt.Sprintf("groups/%s", groupName)
 }
 
-func getGroupPayload(ctx context.Context, groupName string) (*EtcdGroupPayload, error) {
+func memberKey(groupName, uid string) string {
+	return groupKey(groupName) + fmt.Sprintf("/uids/%s", uid)
+}
+
+func getGroupKV(ctx context.Context, groupName string) (*mvccpb.KeyValue, error) {
 	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName))
 	if err != nil {
 		return nil, err
@@ -78,137 +76,163 @@ func getGroupPayload(ctx context.Context, groupName string) (*EtcdGroupPayload, 
 	if etcdRes.Count == 0 {
 		return nil, constants.ErrGroupNotFound
 	}
-
-	payload := &EtcdGroupPayload{}
-	if err = json.Unmarshal(etcdRes.Kvs[0].Value, payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
+	return etcdRes.Kvs[0], nil
 }
 
-func putGroupPayload(ctx context.Context, groupName string, payload *EtcdGroupPayload) error {
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
+func (c *EtcdGroupService) createGroup(ctx context.Context, groupName string, leaseID clientv3.LeaseID) error {
+	var etcdRes *clientv3.TxnResponse
+	var err error
 
-	if payload.LeaseID != 0 {
-		_, err = clientInstance.Put(ctx, groupKey(groupName), string(jsonPayload), clientv3.WithLease(payload.LeaseID))
+	if leaseID != 0 {
+		etcdRes, err = clientInstance.Txn(ctx).
+			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), "=", 0)).
+			Then(clientv3.OpPut(groupKey(groupName), "", clientv3.WithLease(leaseID))).
+			Commit()
 	} else {
-		_, err = clientInstance.Put(ctx, groupKey(groupName), string(jsonPayload))
+		etcdRes, err = clientInstance.Txn(ctx).
+			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), "=", 0)).
+			Then(clientv3.OpPut(groupKey(groupName), "")).
+			Commit()
 	}
+
 	if err != nil {
 		return err
 	}
-
+	if !etcdRes.Succeeded {
+		return constants.ErrGroupAlreadyExists
+	}
 	return nil
 }
 
 // GroupCreate creates a group struct inside ETCD, without TTL
 func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) error {
-	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
-	if err != nil {
-		return err
-	}
-	if etcdRes.Count != 0 {
-		return constants.ErrGroupAlreadyExists
-	}
-	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{})
+	return c.createGroup(ctx, groupName, 0)
 }
 
 // GroupCreateWithTTL creates a group struct inside ETCD, with TTL, using leaseID
 func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
-	etcdRes, err := clientInstance.Get(ctx, groupKey(groupName), clientv3.WithCountOnly())
-	if err != nil {
-		return err
-	}
-	if etcdRes.Count != 0 {
-		return constants.ErrGroupAlreadyExists
-	}
-
 	lease, err := clientInstance.Grant(ctx, int64(ttlTime.Seconds()))
 	if err != nil {
 		return err
 	}
-	return putGroupPayload(ctx, groupName, &EtcdGroupPayload{LeaseID: lease.ID})
+	return c.createGroup(ctx, groupName, lease.ID)
 }
 
 // GroupMembers returns all member's UIDs
 func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
-	payload, err := getGroupPayload(ctx, groupName)
+	prefix := memberKey(groupName, "")
+	etcdRes, err := clientInstance.Txn(ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
+		Then(clientv3.OpGet(prefix, clientv3.WithPrefix(), clientv3.WithKeysOnly())).
+		Commit()
 	if err != nil {
 		return nil, err
 	}
-	return payload.Uids, nil
+	if !etcdRes.Succeeded {
+		return nil, constants.ErrGroupNotFound
+	}
+
+	getRes := etcdRes.Responses[0].GetResponseRange()
+	members := make([]string, getRes.GetCount())
+	for i, kv := range getRes.GetKvs() {
+		members[i] = string(kv.Key)[len(prefix):]
+	}
+	return members, nil
 }
 
 // GroupContainsMember check whether a UID is contained in current group or not
 func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
-	payload, err := getGroupPayload(ctx, groupName)
+	etcdRes, err := clientInstance.Txn(ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
+		Then(clientv3.OpGet(memberKey(groupName, uid), clientv3.WithCountOnly())).
+		Commit()
 	if err != nil {
 		return false, err
 	}
-
-	_, contains := elementIndex(payload.Uids, uid)
-
-	return contains, nil
+	if !etcdRes.Succeeded {
+		return false, constants.ErrGroupNotFound
+	}
+	return etcdRes.Responses[0].GetResponseRange().GetCount() > 0, nil
 }
 
 // GroupAddMember adds UID to group
 func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid string) error {
-	payload, err := getGroupPayload(ctx, groupName)
+	var etcdRes *clientv3.TxnResponse
+	kv, err := getGroupKV(ctx, groupName)
 	if err != nil {
 		return err
 	}
 
-	_, contains := elementIndex(payload.Uids, uid)
-	if contains {
+	if kv.Lease != 0 {
+		etcdRes, err = clientInstance.Txn(ctx).
+			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0),
+				clientv3.Compare(clientv3.CreateRevision(memberKey(groupName, uid)), "=", 0)).
+			Then(clientv3.OpPut(memberKey(groupName, uid), "", clientv3.WithLease(clientv3.LeaseID(kv.Lease)))).
+			Commit()
+	} else {
+		etcdRes, err = clientInstance.Txn(ctx).
+			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0),
+				clientv3.Compare(clientv3.CreateRevision(memberKey(groupName, uid)), "=", 0)).
+			Then(clientv3.OpPut(memberKey(groupName, uid), "")).
+			Commit()
+	}
+	if err != nil {
+		return err
+	}
+	if !etcdRes.Succeeded {
 		return constants.ErrMemberAlreadyExists
 	}
-
-	payload.Uids = append(payload.Uids, uid)
-	return putGroupPayload(ctx, groupName, payload)
+	return nil
 }
 
 // GroupRemoveMember removes specified UID from group
 func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid string) error {
-	payload, err := getGroupPayload(ctx, groupName)
+	etcdRes, err := clientInstance.Txn(ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(memberKey(groupName, uid)), ">", 0)).
+		Then(clientv3.OpDelete(memberKey(groupName, uid))).
+		Commit()
 	if err != nil {
 		return err
 	}
-	index, contains := elementIndex(payload.Uids, uid)
-	if contains {
-		payload.Uids[index] = payload.Uids[len(payload.Uids)-1]
-		payload.Uids = payload.Uids[:len(payload.Uids)-1]
-		return putGroupPayload(ctx, groupName, payload)
+	if !etcdRes.Succeeded {
+		return constants.ErrMemberNotFound
 	}
-
-	return constants.ErrMemberNotFound
+	return nil
 }
 
 // GroupRemoveAll clears all UIDs in the group and also removes group
 func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
-	_, err := clientInstance.Delete(ctx, groupKey(groupName))
-	return err
+	etcdRes, err := clientInstance.Txn(ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
+		Then(clientv3.OpDelete(memberKey(groupName, ""), clientv3.WithPrefix()),
+			clientv3.OpDelete(groupKey(groupName))).
+		Commit()
+	if err != nil {
+		return err
+	}
+	if !etcdRes.Succeeded {
+		return constants.ErrGroupNotFound
+	}
+	return nil
 }
 
 // GroupCountMembers get current member amount in group
 func (c *EtcdGroupService) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
-	payload, err := getGroupPayload(ctx, groupName)
+	etcdRes, err := clientInstance.Get(ctx, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
 	if err != nil {
 		return 0, err
 	}
-	return len(payload.Uids), nil
+	return int(etcdRes.Count), nil
 }
 
 // GroupRenewTTL will renew ETCD lease TTL
 func (c *EtcdGroupService) GroupRenewTTL(ctx context.Context, groupName string) error {
-	payload, err := getGroupPayload(ctx, groupName)
+	kv, err := getGroupKV(ctx, groupName)
 	if err != nil {
 		return err
 	}
-	if payload.LeaseID != 0 {
-		_, err = clientInstance.KeepAliveOnce(ctx, payload.LeaseID)
+	if kv.Lease != 0 {
+		_, err = clientInstance.KeepAliveOnce(ctx, clientv3.LeaseID(kv.Lease))
 		return err
 	}
 	return constants.ErrEtcdLeaseNotFound
