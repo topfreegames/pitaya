@@ -45,18 +45,6 @@ func NewMemoryGroupService(conf *config.Config) *MemoryGroupService {
 	return &MemoryGroupService{}
 }
 
-func getMemoryGroup(groupName string) (*MemoryGroup, error) {
-	memoryGroupsMu.Lock()
-	defer memoryGroupsMu.Unlock()
-
-	mg, ok := memoryGroups[groupName]
-	if !ok {
-		return nil, constants.ErrGroupNotFound
-	}
-
-	return mg, nil
-}
-
 // GroupCreate creates a group without TTL
 func (c *MemoryGroupService) GroupCreate(ctx context.Context, groupName string) error {
 	memoryGroupsMu.Lock()
@@ -85,19 +73,28 @@ func (c *MemoryGroupService) GroupCreateWithTTL(ctx context.Context, groupName s
 
 // GroupMembers returns all member's UID in given group
 func (c *MemoryGroupService) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
-	mg, err := getMemoryGroup(groupName)
-	if err != nil {
-		return nil, err
+	memoryGroupsMu.Lock()
+	defer memoryGroupsMu.Unlock()
+
+	mg, ok := memoryGroups[groupName]
+	if !ok {
+		return nil, constants.ErrGroupNotFound
 	}
 
-	return mg.Uids, nil
+	uids := make([]string, len(mg.Uids))
+	copy(uids, mg.Uids)
+
+	return uids, nil
 }
 
 // GroupContainsMember check whether an UID is contained in given group or not
 func (c *MemoryGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
-	mg, err := getMemoryGroup(groupName)
-	if err != nil {
-		return false, err
+	memoryGroupsMu.Lock()
+	defer memoryGroupsMu.Unlock()
+
+	mg, ok := memoryGroups[groupName]
+	if !ok {
+		return false, constants.ErrGroupNotFound
 	}
 
 	_, contains := elementIndex(mg.Uids, uid)
@@ -160,10 +157,14 @@ func (c *MemoryGroupService) GroupRemoveAll(ctx context.Context, groupName strin
 
 // GroupCountMembers get current member amount in group
 func (c *MemoryGroupService) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
-	mg, err := getMemoryGroup(groupName)
-	if err != nil {
-		return 0, err
+	memoryGroupsMu.Lock()
+	defer memoryGroupsMu.Unlock()
+
+	mg, ok := memoryGroups[groupName]
+	if !ok {
+		return 0, constants.ErrGroupNotFound
 	}
+
 	return len(mg.Uids), nil
 }
 
