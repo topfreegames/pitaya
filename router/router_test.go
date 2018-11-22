@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/cluster/mocks"
-	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 )

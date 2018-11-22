@@ -28,9 +28,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
-	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"

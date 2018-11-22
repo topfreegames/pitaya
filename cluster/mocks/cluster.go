@@ -8,7 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	cluster "github.com/topfreegames/pitaya/cluster"
-	message "github.com/topfreegames/pitaya/internal/message"
+	message "github.com/topfreegames/pitaya/conn/message"
 	protos "github.com/topfreegames/pitaya/protos"
 	route "github.com/topfreegames/pitaya/route"
 	session "github.com/topfreegames/pitaya/session"
