@@ -398,8 +398,11 @@ These configurations are used for group services implementations.
     - 5s
     - time.Time
     - Timeout to establish the etcd group connection
+  * - pitaya.groups.etcd.transactiontimeout
+    - 5s
+    - time.Duration
+    - Timeout to finish group request to Etcd
   * - pitaya.groups.memory.tickduration
     - 30s
     - time.Duration
     - Duration time of tick that will check if should delete group or not
- 
