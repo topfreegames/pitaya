@@ -72,8 +72,8 @@ func memberKey(groupName, uid string) string {
 
 func getGroupKV(ctx context.Context, groupName string) (*mvccpb.KeyValue, error) {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Get(ctxT, groupKey(groupName))
-	cancel()
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +88,7 @@ func (c *EtcdGroupService) createGroup(ctx context.Context, groupName string, le
 	var err error
 
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	if leaseID != 0 {
 		etcdRes, err = clientInstance.Txn(ctxT).
 			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), "=", 0)).
@@ -99,7 +100,6 @@ func (c *EtcdGroupService) createGroup(ctx context.Context, groupName string, le
 			Then(clientv3.OpPut(groupKey(groupName), "")).
 			Commit()
 	}
-	cancel()
 
 	if err != nil {
 		return err
@@ -118,8 +118,8 @@ func (c *EtcdGroupService) GroupCreate(ctx context.Context, groupName string) er
 // GroupCreateWithTTL creates a group struct inside ETCD, with TTL, using leaseID
 func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	lease, err := clientInstance.Grant(ctxT, int64(ttlTime.Seconds()))
-	cancel()
 	if err != nil {
 		return err
 	}
@@ -130,11 +130,11 @@ func (c *EtcdGroupService) GroupCreateWithTTL(ctx context.Context, groupName str
 func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
 	prefix := memberKey(groupName, "")
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Txn(ctxT).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
 		Then(clientv3.OpGet(prefix, clientv3.WithPrefix(), clientv3.WithKeysOnly())).
 		Commit()
-	cancel()
 
 	if err != nil {
 		return nil, err
@@ -154,11 +154,11 @@ func (c *EtcdGroupService) GroupMembers(ctx context.Context, groupName string) (
 // GroupContainsMember checks whether a UID is contained in current group or not
 func (c *EtcdGroupService) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Txn(ctxT).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
 		Then(clientv3.OpGet(memberKey(groupName, uid), clientv3.WithCountOnly())).
 		Commit()
-	cancel()
 
 	if err != nil {
 		return false, err
@@ -178,6 +178,7 @@ func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid st
 	}
 
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	if kv.Lease != 0 {
 		etcdRes, err = clientInstance.Txn(ctxT).
 			If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0),
@@ -191,7 +192,6 @@ func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid st
 			Then(clientv3.OpPut(memberKey(groupName, uid), "")).
 			Commit()
 	}
-	cancel()
 
 	if err != nil {
 		return err
@@ -205,11 +205,11 @@ func (c *EtcdGroupService) GroupAddMember(ctx context.Context, groupName, uid st
 // GroupRemoveMember removes specified UID from group
 func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Txn(ctxT).
 		If(clientv3.Compare(clientv3.CreateRevision(memberKey(groupName, uid)), ">", 0)).
 		Then(clientv3.OpDelete(memberKey(groupName, uid))).
 		Commit()
-	cancel()
 
 	if err != nil {
 		return err
@@ -223,11 +223,11 @@ func (c *EtcdGroupService) GroupRemoveMember(ctx context.Context, groupName, uid
 // GroupRemoveAll clears all UIDs in the group
 func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string) error {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Txn(ctxT).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
 		Then(clientv3.OpDelete(memberKey(groupName, ""), clientv3.WithPrefix())).
 		Commit()
-	cancel()
 
 	if err != nil {
 		return err
@@ -241,12 +241,12 @@ func (c *EtcdGroupService) GroupRemoveAll(ctx context.Context, groupName string)
 // GroupDelete deletes the whole group, including members and base group
 func (c *EtcdGroupService) GroupDelete(ctx context.Context, groupName string) error {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Txn(ctxT).
 		If(clientv3.Compare(clientv3.CreateRevision(groupKey(groupName)), ">", 0)).
 		Then(clientv3.OpDelete(memberKey(groupName, ""), clientv3.WithPrefix()),
 			clientv3.OpDelete(groupKey(groupName))).
 		Commit()
-	cancel()
 
 	if err != nil {
 		return err
@@ -260,8 +260,8 @@ func (c *EtcdGroupService) GroupDelete(ctx context.Context, groupName string) er
 // GroupCountMembers get current member amount in group
 func (c *EtcdGroupService) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
 	ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
 	etcdRes, err := clientInstance.Get(ctxT, memberKey(groupName, ""), clientv3.WithPrefix(), clientv3.WithCountOnly())
-	cancel()
 	if err != nil {
 		return 0, err
 	}
@@ -276,8 +276,8 @@ func (c *EtcdGroupService) GroupRenewTTL(ctx context.Context, groupName string) 
 	}
 	if kv.Lease != 0 {
 		ctxT, cancel := context.WithTimeout(ctx, transactionTimeout)
+		defer cancel()
 		_, err = clientInstance.KeepAliveOnce(ctxT, clientv3.LeaseID(kv.Lease))
-		cancel()
 		return err
 	}
 	return constants.ErrEtcdLeaseNotFound
