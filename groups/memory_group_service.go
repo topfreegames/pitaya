@@ -30,19 +30,23 @@ type MemoryGroup struct {
 func NewMemoryGroupService(conf *config.Config) *MemoryGroupService {
 	memoryOnce.Do(func() {
 		memoryGroups = make(map[string]*MemoryGroup)
-		go func() {
-			for now := range time.Tick(conf.GetDuration("pitaya.groups.memory.tickduration")) {
-				memoryGroupsMu.Lock()
-				for groupName, mg := range memoryGroups {
-					if mg.TTL != 0 && now.UnixNano()-mg.LastRefresh > mg.TTL {
-						delete(memoryGroups, groupName)
-					}
-				}
-				memoryGroupsMu.Unlock()
-			}
-		}()
+		groupTTLCleanup(conf)
 	})
 	return &MemoryGroupService{}
+}
+
+func groupTTLCleanup(conf *config.Config) {
+	go func() {
+		for now := range time.Tick(conf.GetDuration("pitaya.groups.memory.tickduration")) {
+			memoryGroupsMu.Lock()
+			for groupName, mg := range memoryGroups {
+				if mg.TTL != 0 && now.UnixNano()-mg.LastRefresh > mg.TTL {
+					delete(memoryGroups, groupName)
+				}
+			}
+			memoryGroupsMu.Unlock()
+		}
+	}()
 }
 
 // GroupCreate creates a group without TTL
