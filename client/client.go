@@ -32,9 +32,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/internal/codec"
-	"github.com/topfreegames/pitaya/internal/message"
-	"github.com/topfreegames/pitaya/internal/packet"
+	"github.com/topfreegames/pitaya/conn/codec"
+	"github.com/topfreegames/pitaya/conn/message"
+	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/util/compression"
 )

@@ -27,7 +27,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/topfreegames/pitaya/internal/message"
+	"github.com/topfreegames/pitaya/conn/message"
 )
 
 var (

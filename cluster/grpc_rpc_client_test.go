@@ -9,11 +9,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/interfaces"
 	"github.com/topfreegames/pitaya/interfaces/mocks"
-	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
 	protosmocks "github.com/topfreegames/pitaya/protos/mocks"
@@ -129,7 +129,7 @@ func TestSendKick(t *testing.T) {
 	mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
 	tables := []struct {
 		name           string
-		userId         string
+		userID         string
 		bindingStorage interfaces.BindingStorage
 		sv             *Server
 		err            error
@@ -157,22 +157,22 @@ func TestSendKick(t *testing.T) {
 			if table.bindingStorage != nil {
 				g.clientMap.Store(table.sv.ID, mockPitayaClient)
 				g.bindingStorage = table.bindingStorage
-				mockBindingStorage.EXPECT().GetUserFrontendID(table.userId, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
-					assert.Equal(t, table.userId, u)
+				mockBindingStorage.EXPECT().GetUserFrontendID(table.userID, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
+					assert.Equal(t, table.userID, u)
 					assert.Equal(t, table.sv.Type, svType)
 					return table.sv.ID, nil
 				})
 
 				mockPitayaClient.EXPECT().KickUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.KickMsg) {
-					assert.Equal(t, table.userId, msg.UserId)
+					assert.Equal(t, table.userID, msg.UserId)
 				})
 			}
 
 			kick := &protos.KickMsg{
-				UserId: table.userId,
+				UserId: table.userID,
 			}
 
-			err = g.SendKick(table.userId, table.sv.Type, kick)
+			err = g.SendKick(table.userID, table.sv.Type, kick)
 			if table.err != nil {
 				assert.Equal(t, err, table.err)
 			} else {

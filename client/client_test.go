@@ -7,8 +7,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/internal/message"
 	"github.com/topfreegames/pitaya/mocks"
 )
 
