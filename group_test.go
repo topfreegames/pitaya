@@ -76,8 +76,8 @@ func TestGroupAddMember(t *testing.T) {
 		err      error
 	}{
 		{"frontend_uid", true, "someuid1", nil},
-		{"frontend_nouid", true, "", constants.ErrNoUIDBind},
-		{"backend_nouid", false, "", constants.ErrNoUIDBind},
+		{"frontend_nouid", true, "", constants.ErrEmptyUID},
+		{"backend_nouid", false, "", constants.ErrEmptyUID},
 		{"backend_uid", false, "ola1", nil},
 	}
 
@@ -127,7 +127,7 @@ func TestGroupContainsMember(t *testing.T) {
 	}{
 		{"frontend_uid", true, "someuid2", nil},
 		{"backend_uid", false, "ola2", nil},
-		{"backend_nouid", false, "", constants.ErrNoUIDBind},
+		{"backend_nouid", false, "", constants.ErrEmptyUID},
 	}
 
 	err := GroupCreate(ctx, "testGroupContainsMember")

@@ -83,7 +83,7 @@ func sendDataToMembers(uids []string, frontendType, route string, v interface{})
 // GroupContainsMember checks whether an UID is contained in group or not
 func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	if uid == "" {
-		return false, constants.ErrNoUIDBind
+		return false, constants.ErrEmptyUID
 	}
 	return groupServiceInstance.GroupContainsMember(ctx, groupName, uid)
 }
@@ -91,7 +91,7 @@ func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, erro
 // GroupAddMember adds UID to group
 func GroupAddMember(ctx context.Context, groupName, uid string) error {
 	if uid == "" {
-		return constants.ErrNoUIDBind
+		return constants.ErrEmptyUID
 	}
 	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
 	return groupServiceInstance.GroupAddMember(ctx, groupName, uid)
