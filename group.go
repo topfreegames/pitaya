@@ -22,6 +22,7 @@ package pitaya
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/topfreegames/pitaya/constants"
@@ -32,11 +33,16 @@ import (
 // Group represents an agglomeration of UIDs which is used to manage
 // users. Data sent to the group will be sent to all users in it.
 
-var groupServiceInstance groups.GroupService
+var (
+	groupServiceInstance groups.GroupService
+	groupsOnce           sync.Once
+)
 
 // InitGroups should be called once at the beginning of the application to setup the service type that will manage the groups
 func InitGroups(groupService groups.GroupService) {
-	groupServiceInstance = groupService
+	groupsOnce.Do(func() {
+		groupServiceInstance = groupService
+	})
 }
 
 // GroupCreate creates a group
