@@ -34,8 +34,10 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/testing/protos"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -46,7 +48,6 @@ import (
 // TestSvc service for e2e tests
 type TestSvc struct {
 	component.Base
-	group *pitaya.Group
 }
 
 // TestRemoteSvc remote service for e2e tests
@@ -97,7 +98,12 @@ func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*test.TestResponse,
 
 // Init inits testsvc
 func (t *TestSvc) Init() {
-	t.group = pitaya.NewGroup("g1")
+	gsi := groups.NewMemoryGroupService(config.NewConfig())
+	pitaya.InitGroups(gsi)
+	err := pitaya.GroupCreate(context.Background(), "g1")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // TestRequestKickUser handler for e2e tests
@@ -181,7 +187,7 @@ func (t *TestSvc) TestBind(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = t.group.Add(s)
+	err = pitaya.GroupAddMember(ctx, "g1", s.UID())
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
@@ -195,7 +201,7 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
 	}
-	err = t.group.Add(s)
+	err = pitaya.GroupAddMember(ctx, "g1", s.UID())
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-441")
 	}
@@ -204,12 +210,12 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 
 // TestSendGroupMsg handler for e2e tests
 func (t *TestSvc) TestSendGroupMsg(ctx context.Context, msg []byte) {
-	t.group.Broadcast("route.test", msg)
+	pitaya.GroupBroadcast(ctx, "connector", "g1", "route.test", msg)
 }
 
 // TestSendGroupMsgPtr handler for e2e tests
 func (t *TestSvc) TestSendGroupMsgPtr(ctx context.Context, msg *test.TestRequest) {
-	t.group.Broadcast("route.testptr", msg)
+	pitaya.GroupBroadcast(ctx, "connector", "g1", "route.testptr", msg)
 }
 
 // TestSendToUsers handler for e2e tests

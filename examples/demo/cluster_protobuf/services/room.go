@@ -8,7 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -17,7 +19,6 @@ type (
 	// like Join/Message
 	Room struct {
 		component.Base
-		group *pitaya.Group
 		timer *timer.Timer
 		Stats *Stats
 	}
@@ -44,18 +45,22 @@ func (Stats *Stats) Inbound(ctx context.Context, in []byte) ([]byte, error) {
 // NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
-		group: pitaya.NewGroup("room"),
 		Stats: &Stats{},
 	}
 }
 
 // Init runs on service initialization
-func (r *Room) Init() {}
+func (r *Room) Init() {
+	gsi := groups.NewMemoryGroupService(config.NewConfig())
+	pitaya.InitGroups(gsi)
+	pitaya.GroupCreate(context.Background(), "room")
+}
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
+		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "Error=>", err)
 		println("OutboundBytes", r.Stats.outboundBytes)
 		println("InboundBytes", r.Stats.outboundBytes)
 	})
@@ -82,18 +87,22 @@ func (r *Room) Entry(ctx context.Context) (*protos.Response, error) {
 // Join room
 func (r *Room) Join(ctx context.Context) (*protos.Response, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
-	s.Push("onMembers", &protos.AllMembers{Members: r.group.Members()})
-	r.group.Broadcast("onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
-	r.group.Add(s)
+	members, err := pitaya.GroupMembers(ctx, "room")
+	if err != nil {
+		return nil, err
+	}
+	s.Push("onMembers", &protos.AllMembers{Members: members})
+	pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	pitaya.GroupAddMember(ctx, "room", s.UID())
 	s.OnClose(func() {
-		r.group.Leave(s)
+		pitaya.GroupRemoveMember(ctx, "room", s.UID())
 	})
 	return &protos.Response{Msg: "success"}, nil
 }
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *protos.UserMessage) {
-	err := r.group.Broadcast("onMessage", msg)
+	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}

@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coreos/etcd/integration"
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,7 @@ import (
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/helpers"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
@@ -77,14 +79,31 @@ func setup() {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 
-	etcdSD, _ := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfetcdSD = reflect.TypeOf(etcdSD)
 
-	natsRPCServer, _ := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
+	natsRPCServer, err := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfNatsRPCServer = reflect.TypeOf(natsRPCServer)
 
-	natsRPCClient, _ := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
+	natsRPCClient, err := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
+	if err != nil {
+		panic(err)
+	}
 	typeOfNatsRPCClient = reflect.TypeOf(natsRPCClient)
+
+	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
+	cli := c.RandClient()
+	gsi, err := groups.NewEtcdGroupService(app.config, cli)
+	if err != nil {
+		panic(err)
+	}
+	InitGroups(gsi)
 }
 
 func initApp() {

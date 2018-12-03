@@ -371,3 +371,38 @@ These configurations control if the default pipelines should be enabled or not
     - false
     - bool
     - Whether Pitaya should enable the default struct validator for handler arguments
+
+Groups
+=================
+
+These configurations are used for group services implementations.
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.groups.etcd.endpoints
+    - localhost:2379
+    - string
+    - Comma separated list of etcd endpoints to be used by the groups etcd service 
+  * - pitaya.groups.etcd.prefix
+    - pitaya/
+    - string 
+    - Prefix used for every group key in etcd
+  * - pitaya.groups.etcd.dialtimeout
+    - 5s
+    - time.Time
+    - Timeout to establish the etcd group connection
+  * - pitaya.groups.etcd.transactiontimeout
+    - 5s
+    - time.Duration
+    - Timeout to finish group request to Etcd
+  * - pitaya.groups.memory.tickduration
+    - 30s
+    - time.Duration
+    - Duration time of tick that will check if should delete group or not

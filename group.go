@@ -21,202 +21,104 @@
 package pitaya
 
 import (
+	"context"
 	"sync"
-	"sync/atomic"
+	"time"
 
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/util"
 )
 
-const (
-	groupStatusWorking = 0
-	groupStatusClosed  = 1
+// Group represents an agglomeration of UIDs which is used to manage
+// users. Data sent to the group will be sent to all users in it.
+
+var (
+	groupServiceInstance groups.GroupService
+	groupsOnce           sync.Once
 )
 
-// SessionFilter represents a filter which is used to filter sessions when Multicast,
-// the session will receive the message when the filter returns true.
-type SessionFilter func(*session.Session) bool
-
-// Group represents a session group which is used to manage a number of
-// sessions, data sent to the group will be sent to all sessions in it.
-type Group struct {
-	mu       sync.RWMutex
-	status   int32                       // channel current status
-	name     string                      // channel name
-	sessions map[string]*session.Session // session id map to session instance
+// InitGroups should be called once at the beginning of the application to setup the service type that will manage the groups
+func InitGroups(groupService groups.GroupService) {
+	groupsOnce.Do(func() {
+		groupServiceInstance = groupService
+	})
 }
 
-// NewGroup returns a new group instance
-func NewGroup(n string) *Group {
-	return &Group{
-		status:   groupStatusWorking,
-		name:     n,
-		sessions: make(map[string]*session.Session),
-	}
+// GroupCreate creates a group
+func GroupCreate(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupCreate(ctx, groupName)
 }
 
-// Member returns specified UID's session
-func (c *Group) Member(uid string) (*session.Session, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	s, ok := c.sessions[uid]
-	if ok {
-		return s, nil
-	}
-	return nil, constants.ErrMemberNotFound
+// GroupCreateWithTTL creates a group with given TTL
+func GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
+	return groupServiceInstance.GroupCreateWithTTL(ctx, groupName, ttlTime)
 }
 
-// Members returns all member's UID in current group
-func (c *Group) Members() []string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	members := []string{}
-	for _, s := range c.sessions {
-		members = append(members, s.UID())
-	}
-
-	return members
+// GroupMembers returns all member's UIDs
+func GroupMembers(ctx context.Context, groupName string) ([]string, error) {
+	return groupServiceInstance.GroupMembers(ctx, groupName)
 }
 
-// Multicast  push  the message to the filtered clients
-func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) error {
-	if c.isClosed() {
-		return constants.ErrClosedGroup
-	}
-
-	data, err := util.SerializeOrRaw(app.serializer, v)
-	if err != nil {
-		return err
-	}
-
-	logger.Log.Debugf("Type=Multicast Route=%s, Data=%+v", route, v)
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	for _, s := range c.sessions {
-		if !filter(s) {
-			continue
-		}
-		if err = s.Push(route, data); err != nil {
-			logger.Log.Error(err.Error())
-		}
-	}
-
-	return nil
-}
-
-// Broadcast pushes the message to all members
-func (c *Group) Broadcast(route string, v interface{}) error {
-	if c.isClosed() {
-		return constants.ErrClosedGroup
-	}
-
-	data, err := util.SerializeOrRaw(app.serializer, v)
-	if err != nil {
-		return err
-	}
-
+// GroupBroadcast pushes the message to all members inside group
+func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	for _, s := range c.sessions {
-		if err = s.Push(route, data); err != nil {
-			logger.Log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error())
-		}
+	members, err := GroupMembers(ctx, groupName)
+	if err != nil {
+		return err
 	}
-
-	return err
+	return sendDataToMembers(members, frontendType, route, v)
 }
 
-// Contains check whether a UID is contained in current group or not
-func (c *Group) Contains(uid string) bool {
-	_, err := c.Member(uid)
-	return err == nil
-}
-
-// Add adds session to group
-func (c *Group) Add(session *session.Session) error {
-	if session.UID() == "" {
-		return constants.ErrNoUIDBind
+func sendDataToMembers(uids []string, frontendType, route string, v interface{}) error {
+	errUids, err := SendPushToUsers(route, v, uids, frontendType)
+	if err != nil {
+		logger.Log.Errorf("Group push message error, UID=%d, Error=%s", errUids, err.Error())
+		return err
 	}
-	if c.isClosed() {
-		return constants.ErrClosedGroup
-	}
-
-	logger.Log.Debugf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID())
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	id := session.UID()
-	_, ok := c.sessions[id]
-	if ok {
-		return constants.ErrSessionDuplication
-	}
-
-	c.sessions[id] = session
 	return nil
 }
 
-// Leave removes specified UID related session from group
-func (c *Group) Leave(s *session.Session) error {
-	if c.isClosed() {
-		return constants.ErrClosedGroup
+// GroupContainsMember checks whether an UID is contained in group or not
+func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
+	if uid == "" {
+		return false, constants.ErrEmptyUID
 	}
-
-	logger.Log.Debugf("Remove session from group %s, UID=%d", c.name, s.UID())
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.sessions, s.UID())
-	return nil
+	return groupServiceInstance.GroupContainsMember(ctx, groupName, uid)
 }
 
-// LeaveAll clears all sessions in the group
-func (c *Group) LeaveAll() error {
-	if c.isClosed() {
-		return constants.ErrClosedGroup
+// GroupAddMember adds UID to group
+func GroupAddMember(ctx context.Context, groupName, uid string) error {
+	if uid == "" {
+		return constants.ErrEmptyUID
 	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.sessions = make(map[string]*session.Session)
-	return nil
+	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
+	return groupServiceInstance.GroupAddMember(ctx, groupName, uid)
 }
 
-// Count get current member amount in the group
-func (c *Group) Count() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	return len(c.sessions)
+// GroupRemoveMember removes specified UID from group
+func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
+	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
+	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
-func (c *Group) isClosed() bool {
-	if atomic.LoadInt32(&c.status) == groupStatusClosed {
-		return true
-	}
-	return false
+// GroupRemoveAll clears all UIDs
+func GroupRemoveAll(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
 
-// Close destroy group, which will release all resource in the group
-func (c *Group) Close() error {
-	if c.isClosed() {
-		return constants.ErrCloseClosedGroup
-	}
+// GroupCountMembers get current member amount in group
+func GroupCountMembers(ctx context.Context, groupName string) (int, error) {
+	return groupServiceInstance.GroupCountMembers(ctx, groupName)
+}
 
-	atomic.StoreInt32(&c.status, groupStatusClosed)
+// GroupRenewTTL renews group with the initial TTL
+func GroupRenewTTL(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
+}
 
-	// release all references
-	c.sessions = make(map[string]*session.Session)
-	return nil
+// GroupDelete deletes whole group, including UIDs and base group
+func GroupDelete(ctx context.Context, groupName string) error {
+	return groupServiceInstance.GroupDelete(ctx, groupName)
 }
