@@ -187,11 +187,6 @@ func (h *HandlerService) Handle(conn net.Conn) {
 		}
 
 		logger.Log.Debug("Received data on connection")
-		bufStr := string(buf)
-		bufStr = strings.Replace(bufStr, "\n", "", -1)
-		bufStr = strings.Replace(bufStr, " ", "", -1)
-		bufStr = strings.Replace(bufStr, "\t", " ", -1)
-		logger.Log.Debugf("Received data: %s", bufStr)
 
 		// (warning): decoder uses slice for performance, packet data should be copied before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
