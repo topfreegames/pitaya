@@ -19,6 +19,7 @@ The goal of pitaya is to provide a basic, robust development framework for distr
 * **Custom serializers** - Pitaya natively supports JSON and Protobuf messages and it is possible to add other custom serializers as needed
 * **Write compatible servers in other languages** - Using [libpitaya-cluster](https://github.com/topfreegames/libpitaya-cluster) its possible to write pitaya-compatible servers in other languages that are able to register in the cluster and handle RPCs, there's already a csharp library that's compatible with unity and a WIP of a python library in the repo.
 * **REPL Client for development/debugging** - [Pitaya-cli](https://github.com/topfreegames/pitaya-cli) is a REPL client that can be used for making development and debugging of pitaya servers easier.
+* **Bots for integration/stress tests** - [Pitaya-bot](https://github.com/topfreegames/pitaya-bot) is a server test framework that can easily copy users behaviour to test corner case scenarios, which can validate the responses received, or make massive accesses into pitaya servers. 
 
 ## Architecture
 
