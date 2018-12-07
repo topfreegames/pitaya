@@ -31,6 +31,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
@@ -166,20 +167,12 @@ func (ns *NatsRPCClient) Call(
 
 	if ns.metricsReporters != nil {
 		startTime := time.Now()
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.StartTimeKey, startTime.UnixNano())
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, route.String())
 		defer func() {
-			status := "ok"
-			elapsed := time.Since(startTime)
-			if err != nil {
-				status = "failed"
-			}
-			tags := map[string]string{
-				"route":  route.String(),
-				"type":   "rpc",
-				"status": status,
-			}
-			for _, mr := range ns.metricsReporters {
-				mr.ReportSummary(metrics.ResponseTime, tags, float64(elapsed))
-			}
+			typ := "rpc"
+			errored := err != nil
+			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, errored)
 		}()
 	}
 	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
