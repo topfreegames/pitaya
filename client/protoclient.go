@@ -46,7 +46,7 @@ type ClientInterface interface {
 	SendNotify(route string, data []byte) error
 	SendRequest(route string, data []byte) (uint, error)
 	ConnectedStatus() bool
-	MsgChannel() *chan *message.Message
+	MsgChannel() chan *message.Message
 }
 
 type Command struct {
@@ -72,8 +72,8 @@ type ProtoClient struct {
 	closeChan        chan bool
 }
 
-func (pc *ProtoClient) MsgChannel() *chan *message.Message {
-	return &pc.IncomingMsgChan
+func (pc *ProtoClient) MsgChannel() chan *message.Message {
+	return pc.IncomingMsgChan
 }
 
 func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProto, error) {
@@ -476,7 +476,10 @@ func (pc *ProtoClient) SendRequest(route string, data []byte) (uint, error) {
 func (pc *ProtoClient) SendNotify(route string, data []byte) error {
 
 	if cmd, ok := pc.info.Commands[route]; ok {
-		cmd.inputMsg.UnmarshalJSON(data)
+		err := cmd.inputMsg.UnmarshalJSON(data)
+		if err != nil {
+			return err
+		}
 		realdata, err := cmd.inputMsg.Marshal()
 		if err != nil {
 			return err

@@ -90,8 +90,8 @@ type Client struct {
 	messageEncoder  message.Encoder
 }
 
-func (c *Client) MsgChannel() *chan *message.Message {
-	return &c.IncomingMsgChan
+func (c *Client) MsgChannel() chan *message.Message {
+	return c.IncomingMsgChan
 }
 
 func (c *Client) ConnectedStatus() bool {
