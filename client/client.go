@@ -90,6 +90,16 @@ type Client struct {
 	messageEncoder  message.Encoder
 }
 
+// MsgChannel return the incoming message channel
+func (c *Client) MsgChannel() chan *message.Message {
+	return c.IncomingMsgChan
+}
+
+// ConnectedStatus return the connection status
+func (c *Client) ConnectedStatus() bool {
+	return c.Connected
+}
+
 // New returns a new client
 func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l := logrus.New()

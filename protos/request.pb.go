@@ -40,24 +40,22 @@ func (x RPCType) String() string {
 	return proto.EnumName(RPCType_name, int32(x))
 }
 func (RPCType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_request_a2f5d4b72cadfadc, []int{0}
+	return fileDescriptor_request_7ef2a48bbcc1e903, []int{0}
 }
 
 type Request struct {
-	Type                 RPCType  `protobuf:"varint,1,opt,name=type,proto3,enum=protos.RPCType" json:"type,omitempty"`
-	Session              *Session `protobuf:"bytes,2,opt,name=session" json:"session,omitempty"`
-	Msg                  *Msg     `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`
-	FrontendID           string   `protobuf:"bytes,4,opt,name=frontendID,proto3" json:"frontendID,omitempty"`
-	Metadata             []byte   `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Type       RPCType  `protobuf:"varint,1,opt,name=type,proto3,enum=protos.RPCType" json:"type,omitempty"`
+	Session    *Session `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
+	Msg        *Msg     `protobuf:"bytes,3,opt,name=msg,proto3" json:"msg,omitempty"`
+	FrontendID string   `protobuf:"bytes,4,opt,name=frontendID,proto3" json:"frontendID,omitempty"`
+	Metadata   []byte   `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
 
 func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_a2f5d4b72cadfadc, []int{0}
+	return fileDescriptor_request_7ef2a48bbcc1e903, []int{0}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -190,6 +188,9 @@ func encodeVarintRequest(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *Request) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Type != 0 {
@@ -527,10 +528,10 @@ var (
 	ErrIntOverflowRequest   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("request.proto", fileDescriptor_request_a2f5d4b72cadfadc) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_request_7ef2a48bbcc1e903) }
 
-var fileDescriptor_request_a2f5d4b72cadfadc = []byte{
-	// 231 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_request_7ef2a48bbcc1e903 = []byte{
+	// 240 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4a, 0x2d, 0x2c,
 	0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x52, 0xbc,
 	0xc5, 0xa9, 0xc5, 0xc5, 0x99, 0xf9, 0x79, 0x10, 0x61, 0x29, 0xce, 0xdc, 0xe2, 0x74, 0x08, 0x53,
@@ -543,7 +544,7 @@ var fileDescriptor_request_a2f5d4b72cadfadc = []byte{
 	0xe0, 0x0c, 0x42, 0x12, 0x11, 0x92, 0xe2, 0xe2, 0xc8, 0x4d, 0x2d, 0x49, 0x4c, 0x49, 0x2c, 0x49,
 	0x94, 0x60, 0x55, 0x60, 0xd4, 0xe0, 0x09, 0x82, 0xf3, 0xb5, 0x64, 0xb8, 0xd8, 0xa1, 0xce, 0x12,
 	0x62, 0xe7, 0x62, 0x0e, 0xae, 0x2c, 0x16, 0x60, 0x10, 0xe2, 0xe0, 0x62, 0x09, 0x2d, 0x4e, 0x2d,
-	0x12, 0x60, 0x74, 0x12, 0x38, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4,
-	0x18, 0x27, 0x3c, 0x96, 0x63, 0x48, 0x82, 0x04, 0x84, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xcc,
-	0xc4, 0xe6, 0x25, 0x20, 0x01, 0x00, 0x00,
+	0x12, 0x60, 0x74, 0x92, 0x38, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4,
+	0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x24, 0x48,
+	0x80, 0x18, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x42, 0x21, 0x7e, 0xb7, 0x28, 0x01, 0x00, 0x00,
 }
