@@ -39,6 +39,8 @@ import (
 	"github.com/topfreegames/pitaya/protos"
 )
 
+// Command struct. Save the input and output type and proto descriptor for each
+// one.
 type Command struct {
 	input     string // input command name
 	output    string // output command name
@@ -46,10 +48,12 @@ type Command struct {
 	outputMsg *dynamic.Message
 }
 
+// ProtoBufferInfo save all commands from a server.
 type ProtoBufferInfo struct {
 	Commands map[string]*Command
 }
 
+// ProtoClient struct
 type ProtoClient struct {
 	Client
 	descriptorsNames map[string]bool
@@ -62,7 +66,7 @@ type ProtoClient struct {
 	closeChan        chan bool
 }
 
-// Return the incoming message channel
+// MsgChannel return the incoming message channel
 func (pc *ProtoClient) MsgChannel() chan *message.Message {
 	return pc.IncomingMsgChan
 }
@@ -299,15 +303,15 @@ func newProto(docslogLevel logrus.Level, requestTimeout ...time.Duration) *Proto
 	}
 }
 
-// Returns a new protoclient with the auto documentation route.
+// NewProto returns a new protoclient with the auto documentation route.
 func NewProto(docsRoute string, docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
 	newclient := newProto(docslogLevel, requestTimeout...)
 	newclient.docsRoute = docsRoute
 	return newclient
 }
 
-// Returns a new protoclient with the descriptors route and auto documentation
-// route.
+// NewWithDescriptor returns a new protoclient with the descriptors route and
+// auto documentation route.
 func NewWithDescriptor(descriptorsRoute string, docsRoute string, docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
 	newclient := newProto(docslogLevel, requestTimeout...)
 	newclient.docsRoute = docsRoute
@@ -315,7 +319,8 @@ func NewWithDescriptor(descriptorsRoute string, docsRoute string, docslogLevel l
 	return newclient
 }
 
-// Load commands information from the server. Addr is ther server address.
+// LoadServerInfo load commands information from the server. Addr is ther
+// server address.
 func (pc *ProtoClient) LoadServerInfo(addr string) error {
 	pc.ready = false
 
@@ -443,7 +448,7 @@ func (pc *ProtoClient) ConnectTo(addr string) error {
 	return nil
 }
 
-// Export supported commands information
+// ExportInformation export supported server commands information
 func (pc *ProtoClient) ExportInformation() *ProtoBufferInfo {
 	if !pc.ready {
 		return nil
@@ -451,17 +456,17 @@ func (pc *ProtoClient) ExportInformation() *ProtoBufferInfo {
 	return &pc.info
 }
 
-// Load commands information form ProtoBufferInfo
+// LoadInfo load commands information form ProtoBufferInfo
 func (pc *ProtoClient) LoadInfo(info *ProtoBufferInfo) error {
 	if info == nil {
-		return errors.New("Protobuffer information invalid.")
+		return errors.New("protobuffer information invalid")
 	}
 	pc.info = *info
 	pc.ready = true
 	return nil
 }
 
-// Add a push response. Must be ladded before LoadInfo.
+// AddPushResponse add a push response. Must be ladded before LoadInfo.
 func (pc *ProtoClient) AddPushResponse(route string, protoName string) {
 	if route != "" && protoName != "" {
 		var command Command
@@ -514,5 +519,5 @@ func (pc *ProtoClient) SendNotify(route string, data []byte) error {
 		return pc.Client.SendNotify(route, realdata)
 	}
 
-	return errors.New("Invalid Route.")
+	return errors.New("invalid route")
 }
