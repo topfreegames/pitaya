@@ -21,16 +21,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type KickMsg struct {
-	UserId               string   `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	UserId string `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
 }
 
 func (m *KickMsg) Reset()         { *m = KickMsg{} }
 func (m *KickMsg) String() string { return proto.CompactTextString(m) }
 func (*KickMsg) ProtoMessage()    {}
 func (*KickMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_kick_86dda695c270ad80, []int{0}
+	return fileDescriptor_kick_b2c303947e349fb0, []int{0}
 }
 func (m *KickMsg) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -67,16 +65,14 @@ func (m *KickMsg) GetUserId() string {
 }
 
 type KickAnswer struct {
-	Kicked               bool     `protobuf:"varint,1,opt,name=kicked,proto3" json:"kicked,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Kicked bool `protobuf:"varint,1,opt,name=kicked,proto3" json:"kicked,omitempty"`
 }
 
 func (m *KickAnswer) Reset()         { *m = KickAnswer{} }
 func (m *KickAnswer) String() string { return proto.CompactTextString(m) }
 func (*KickAnswer) ProtoMessage()    {}
 func (*KickAnswer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_kick_86dda695c270ad80, []int{1}
+	return fileDescriptor_kick_b2c303947e349fb0, []int{1}
 }
 func (m *KickAnswer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -178,6 +174,9 @@ func encodeVarintKick(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *KickMsg) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.UserId)
@@ -188,6 +187,9 @@ func (m *KickMsg) Size() (n int) {
 }
 
 func (m *KickAnswer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Kicked {
@@ -463,16 +465,16 @@ var (
 	ErrIntOverflowKick   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("kick.proto", fileDescriptor_kick_86dda695c270ad80) }
+func init() { proto.RegisterFile("kick.proto", fileDescriptor_kick_b2c303947e349fb0) }
 
-var fileDescriptor_kick_86dda695c270ad80 = []byte{
-	// 116 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_kick_b2c303947e349fb0 = []byte{
+	// 125 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xce, 0x4c, 0xce,
 	0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x8a, 0x5c, 0xec, 0xde,
 	0x99, 0xc9, 0xd9, 0xbe, 0xc5, 0xe9, 0x42, 0x62, 0x5c, 0x6c, 0xa5, 0xc5, 0xa9, 0x45, 0x9e, 0x29,
 	0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x9c, 0x41, 0x50, 0x9e, 0x92, 0x0a, 0x17, 0x17, 0x48, 0x89, 0x63,
 	0x5e, 0x71, 0x79, 0x6a, 0x11, 0x48, 0x15, 0xc8, 0x98, 0x54, 0x88, 0x2a, 0x8e, 0x20, 0x28, 0xcf,
-	0x49, 0xe0, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c, 0x92, 0x63, 0x9c, 0xf0,
-	0x58, 0x8e, 0x21, 0x09, 0x62, 0x85, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xb4, 0x2a, 0x12, 0xa5,
-	0x77, 0x00, 0x00, 0x00,
+	0x49, 0xe2, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c, 0x92, 0x63, 0x9c, 0xf0,
+	0x58, 0x8e, 0xe1, 0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18, 0x92, 0x20, 0x56, 0x19, 0x03,
+	0x02, 0x00, 0x00, 0xff, 0xff, 0xb0, 0x9d, 0xb1, 0xa4, 0x7f, 0x00, 0x00, 0x00,
 }

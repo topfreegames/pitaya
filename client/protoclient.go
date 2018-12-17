@@ -39,16 +39,6 @@ import (
 	"github.com/topfreegames/pitaya/protos"
 )
 
-type ClientInterface interface {
-	ConnectTo(addr string) error
-	ConnectToTLS(addr string, skipVerify bool) error
-	Disconnect()
-	SendNotify(route string, data []byte) error
-	SendRequest(route string, data []byte) (uint, error)
-	ConnectedStatus() bool
-	MsgChannel() chan *message.Message
-}
-
 type Command struct {
 	input     string // input command name
 	output    string // output command name
@@ -72,10 +62,12 @@ type ProtoClient struct {
 	closeChan        chan bool
 }
 
+// Return the incoming message channel
 func (pc *ProtoClient) MsgChannel() chan *message.Message {
 	return pc.IncomingMsgChan
 }
 
+// Receive a compressed byte slice and unpack it to a FileDescriptorProto
 func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProto, error) {
 	r, err := gzip.NewReader(bytes.NewReader(compressedDescriptor))
 	if err != nil {
@@ -97,6 +89,8 @@ func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProt
 	return &fileDescriptorProto, nil
 }
 
+// Receive an array of descriptors in binary format. The function creates the
+// protobuffer from this data and associates it to the message.
 func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.FileDescriptorProto) error {
 
 	descriptorsMap := make(map[string]*dynamic.Message)
@@ -105,7 +99,6 @@ func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.Fil
 	if err != nil {
 		return err
 	}
-	// log
 
 	for name := range pc.descriptorsNames {
 		for _, v := range desc {
@@ -128,6 +121,8 @@ func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.Fil
 	return nil
 }
 
+// Receives each entry from the Unmarshal json from the Docs and read the inputs and
+// outputs associated with it. Return the output type, the input and the error.
 func getOutputInputNames(command map[string]interface{}) (string, string, error) {
 	outputName := ""
 	inputName := ""
@@ -156,7 +151,7 @@ func getOutputInputNames(command map[string]interface{}) (string, string, error)
 	return inputName, outputName, nil
 }
 
-// get recursivily all protos needed in a Unmarshal json
+// Get recursively all protos needed in a Unmarshal json.
 func getKeys(info map[string]interface{}, keysSet map[string]bool) {
 	for k, v := range info {
 		if strings.Contains(k, "*proto") {
@@ -183,6 +178,10 @@ func getKeys(info map[string]interface{}, keysSet map[string]bool) {
 	}
 }
 
+// Receives one json string from the auto documentation, decode it and request
+// to the server the protobuf descriptors. If the the  descriptors route are
+// not set, this function identify the route responsible for providing the
+// protobuf descriptors.
 func (pc *ProtoClient) getDescriptors(data string) error {
 	d := []byte(data)
 	var jsonmap interface{}
@@ -217,10 +216,9 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 		command.output = out
 
 		pc.info.Commands[k] = &command
-		if pc.descriptorsRoute == "" && in == "protos.ProtoName" && out == "protos.ProtoDescriptor" {
+		if pc.descriptorsRoute == "" && in == "protos.ProtoNames" && out == "protos.ProtoDescriptors" {
 			pc.descriptorsRoute = k
 		}
-		// c.Println(k);
 	}
 
 	remotes := m["remotes"].(map[string]interface{})
@@ -236,43 +234,49 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 		command.output = out
 
 		pc.info.Commands[k] = &command
-		// c.Println(k);
 	}
 
 	// get all proto types
 	descriptorArray := make([]*protobuf.FileDescriptorProto, 0)
 
+	var names []string
+
 	for key := range keysSet {
-		protname := &protos.ProtoName{
-			Name: key,
-		}
-		data, err := proto.Marshal(protname)
-		if err != nil {
-			return err
-		}
-		_, err = pc.SendRequest(pc.descriptorsRoute, data)
-		if err != nil {
-			return err
-		}
+		names = append(names, key)
+	}
 
-		response := <-pc.Client.IncomingMsgChan
+	protname := &protos.ProtoNames{
+		Name: names,
+	}
 
-		protodecrip := &protos.ProtoDescriptor{}
+	encodedNames, err := proto.Marshal(protname)
+	if err != nil {
+		return err
+	}
+	_, err = pc.SendRequest(pc.descriptorsRoute, encodedNames)
+	if err != nil {
+		return err
+	}
 
-		if err := proto.Unmarshal(response.Data, protodecrip); err != nil {
-			return err
-		}
+	response := <-pc.Client.IncomingMsgChan
 
-		fileDescriptorProto, err := unpackDescriptor(protodecrip.Desc)
+	descriptors := &protos.ProtoDescriptors{}
+
+	if err := proto.Unmarshal(response.Data, descriptors); err != nil {
+		return err
+	}
+
+	for i := range descriptors.Desc {
+		fileDescriptorProto, err := unpackDescriptor(descriptors.Desc[i])
 		if err != nil {
 			return err
 		}
 
 		descriptorArray = append(descriptorArray, fileDescriptorProto)
-		pc.descriptorsNames[key] = true
+		pc.descriptorsNames[names[i]] = true
 	}
 
-	err := pc.buildProtosFromDescriptor(descriptorArray)
+	err = pc.buildProtosFromDescriptor(descriptorArray)
 	if err != nil {
 		return err
 	}
@@ -280,7 +284,8 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 	return nil
 }
 
-func new(docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
+// Return the basic structure for the ProtoClient struct.
+func newProto(docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
 	return &ProtoClient{
 		Client:           *New(docslogLevel, requestTimeout...),
 		descriptorsNames: make(map[string]bool),
@@ -294,26 +299,29 @@ func new(docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClien
 	}
 }
 
+// Returns a new protoclient with the auto documentation route.
 func NewProto(docsRoute string, docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
-	newclient := new(docslogLevel, requestTimeout...)
+	newclient := newProto(docslogLevel, requestTimeout...)
 	newclient.docsRoute = docsRoute
 	return newclient
 }
 
+// Returns a new protoclient with the descriptors route and auto documentation
+// route.
 func NewWithDescriptor(descriptorsRoute string, docsRoute string, docslogLevel logrus.Level, requestTimeout ...time.Duration) *ProtoClient {
-	newclient := new(docslogLevel, requestTimeout...)
+	newclient := newProto(docslogLevel, requestTimeout...)
 	newclient.docsRoute = docsRoute
 	newclient.descriptorsRoute = descriptorsRoute
 	return newclient
 }
 
-// Load commands information form the server. Names is a list of protos names.
-func (pc *ProtoClient) LoadServoInfo(addr string) error {
+// Load commands information from the server. Addr is ther server address.
+func (pc *ProtoClient) LoadServerInfo(addr string) error {
 	pc.ready = false
 
-	if err := pc.ConnectToTLS(addr, true); err != nil {
+	if err := pc.Client.ConnectToTLS(addr, true); err != nil {
 		if err.Error() == "EOF" {
-			if err := pc.ConnectTo(addr); err != nil {
+			if err := pc.Client.ConnectTo(addr); err != nil {
 				return err
 			}
 		} else {
@@ -351,10 +359,10 @@ func (pc *ProtoClient) Disconnect() {
 	}
 }
 
+// Wait for new messages from the server or the connection end. If the menssage
+// has a response.Route, it decodes based on it. If not, it will try to decode
+// the menssage using the last expected response.
 func (pc *ProtoClient) waitForData() {
-	if !pc.ready {
-		return
-	}
 	for {
 		select {
 		case response := <-pc.Client.IncomingMsgChan:
@@ -364,7 +372,6 @@ func (pc *ProtoClient) waitForData() {
 			msg, ok := pc.info.Commands[response.Route]
 			if ok {
 				inputMsg = msg.outputMsg
-				// fmt.Println(msg)
 			} else {
 				pc.expectedInput = nil
 			}
@@ -401,7 +408,17 @@ func (pc *ProtoClient) ConnectToTLS(addr string, skipVerify bool) error {
 	if err != nil {
 		return err
 	}
-	go pc.waitForData()
+
+	if !pc.ready {
+		err = pc.LoadServerInfo(addr)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pc.ready {
+		go pc.waitForData()
+	}
 	return nil
 }
 
@@ -412,11 +429,21 @@ func (pc *ProtoClient) ConnectTo(addr string) error {
 	if err != nil {
 		return err
 	}
-	go pc.waitForData()
+
+	if !pc.ready {
+		err = pc.LoadServerInfo(addr)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pc.ready {
+		go pc.waitForData()
+	}
 	return nil
 }
 
-// Export sup[orted commands information
+// Export supported commands information
 func (pc *ProtoClient) ExportInformation() *ProtoBufferInfo {
 	if !pc.ready {
 		return nil

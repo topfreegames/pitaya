@@ -21,16 +21,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type Ping struct {
-	Content              string   `protobuf:"bytes,1,opt,name=Content,proto3" json:"Content,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Content string `protobuf:"bytes,1,opt,name=Content,proto3" json:"Content,omitempty"`
 }
 
 func (m *Ping) Reset()         { *m = Ping{} }
 func (m *Ping) String() string { return proto.CompactTextString(m) }
 func (*Ping) ProtoMessage()    {}
 func (*Ping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_test_8c388c521b408919, []int{0}
+	return fileDescriptor_test_8c7810998b5d6d3a, []int{0}
 }
 func (m *Ping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -67,16 +65,14 @@ func (m *Ping) GetContent() string {
 }
 
 type Pong struct {
-	Content              string   `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Content string `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
 }
 
 func (m *Pong) Reset()         { *m = Pong{} }
 func (m *Pong) String() string { return proto.CompactTextString(m) }
 func (*Pong) ProtoMessage()    {}
 func (*Pong) Descriptor() ([]byte, []int) {
-	return fileDescriptor_test_8c388c521b408919, []int{1}
+	return fileDescriptor_test_8c7810998b5d6d3a, []int{1}
 }
 func (m *Pong) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -174,6 +170,9 @@ func encodeVarintTest(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *Ping) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Content)
@@ -184,6 +183,9 @@ func (m *Ping) Size() (n int) {
 }
 
 func (m *Pong) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Content)
@@ -469,15 +471,15 @@ var (
 	ErrIntOverflowTest   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("test.proto", fileDescriptor_test_8c388c521b408919) }
+func init() { proto.RegisterFile("test.proto", fileDescriptor_test_8c7810998b5d6d3a) }
 
-var fileDescriptor_test_8c388c521b408919 = []byte{
-	// 104 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_test_8c7810998b5d6d3a = []byte{
+	// 112 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2a, 0x49, 0x2d, 0x2e,
 	0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x00, 0xb1, 0x53, 0x12, 0x4b, 0x12, 0x95, 0x14,
 	0xb8, 0x58, 0x02, 0x32, 0xf3, 0xd2, 0x85, 0x24, 0xb8, 0xd8, 0x9d, 0xf3, 0xf3, 0x4a, 0x52, 0xf3,
 	0x4a, 0x24, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0x60, 0x5c, 0xb0, 0x8a, 0x7c, 0x54, 0x15, 0x4c,
-	0x28, 0x2a, 0x9c, 0x04, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39,
-	0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x92, 0xd8, 0xc0, 0xd6, 0x18, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff,
-	0xc2, 0x27, 0x42, 0xb0, 0x74, 0x00, 0x00, 0x00,
+	0x28, 0x2a, 0x9c, 0x24, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39,
+	0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x89, 0x0d,
+	0x6c, 0x9d, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x62, 0x74, 0xd7, 0x0b, 0x7c, 0x00, 0x00, 0x00,
 }
