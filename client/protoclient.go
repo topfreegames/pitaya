@@ -298,7 +298,7 @@ func newProto(docslogLevel logrus.Level, requestTimeout ...time.Duration) *Proto
 		},
 		docsRoute:        "",
 		descriptorsRoute: "",
-		IncomingMsgChan:  make(chan *message.Message, 3),
+		IncomingMsgChan:  make(chan *message.Message, 10),
 		closeChan:        make(chan bool),
 	}
 }
@@ -319,7 +319,7 @@ func NewWithDescriptor(descriptorsRoute string, docsRoute string, docslogLevel l
 	return newclient
 }
 
-// LoadServerInfo load commands information from the server. Addr is ther
+// LoadServerInfo load commands information from the server. Addr is the
 // server address.
 func (pc *ProtoClient) LoadServerInfo(addr string) error {
 	pc.ready = false
