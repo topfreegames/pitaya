@@ -99,16 +99,16 @@ func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.Fil
 
 	descriptorsMap := make(map[string]*dynamic.Message)
 
-	desc, err := desc.CreateFileDescriptors(descriptorArray)
+	descriptors, err := desc.CreateFileDescriptors(descriptorArray)
 	if err != nil {
 		return err
 	}
 
 	for name := range pc.descriptorsNames {
-		for _, v := range desc {
-			menssage := v.FindMessage(name)
-			if menssage != nil {
-				descriptorsMap[name] = dynamic.NewMessage(menssage)
+		for _, v := range descriptors {
+			message := v.FindMessage(name)
+			if message != nil {
+				descriptorsMap[name] = dynamic.NewMessage(message)
 			}
 		}
 	}
@@ -158,7 +158,7 @@ func getOutputInputNames(command map[string]interface{}) (string, string, error)
 // Get recursively all protos needed in a Unmarshal json.
 func getKeys(info map[string]interface{}, keysSet map[string]bool) {
 	for k, v := range info {
-		if strings.Contains(k, "*proto") {
+		if strings.Contains(k, "*") {
 			kew := strings.Replace(k, "*", "", 1)
 			keysSet[kew] = true
 		}
@@ -174,11 +174,9 @@ func getKeys(info map[string]interface{}, keysSet map[string]bool) {
 			}
 		}
 
-		aux, ok := v.(map[string]interface{})
-		if !ok {
-			continue
+		if aux, ok := v.(map[string]interface{}); ok {
+			getKeys(aux, keysSet)
 		}
-		getKeys(aux, keysSet)
 	}
 }
 
@@ -240,11 +238,7 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 		pc.info.Commands[k] = &command
 	}
 
-	// get all proto types
-	descriptorArray := make([]*protobuf.FileDescriptorProto, 0)
-
-	var names []string
-
+	names := make([]string, 0, len(keysSet))
 	for key := range keysSet {
 		names = append(names, key)
 	}
@@ -263,13 +257,13 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 	}
 
 	response := <-pc.Client.IncomingMsgChan
-
 	descriptors := &protos.ProtoDescriptors{}
-
 	if err := proto.Unmarshal(response.Data, descriptors); err != nil {
 		return err
 	}
 
+	// get all proto types
+	descriptorArray := make([]*protobuf.FileDescriptorProto, 0)
 	for i := range descriptors.Desc {
 		fileDescriptorProto, err := unpackDescriptor(descriptors.Desc[i])
 		if err != nil {
@@ -280,8 +274,7 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 		pc.descriptorsNames[names[i]] = true
 	}
 
-	err = pc.buildProtosFromDescriptor(descriptorArray)
-	if err != nil {
+	if err = pc.buildProtosFromDescriptor(descriptorArray); err != nil {
 		return err
 	}
 

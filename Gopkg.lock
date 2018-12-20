@@ -246,16 +246,19 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:69d5e4ea47a10826ceeacc88f99b1f3e509b07690cee667d70e13b5dd505bdcc"
+  digest = "1:a900f61eec53062419a966d0cf0f4afdce2eefdf39d976fe2fc7b7289b99c038"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
@@ -322,6 +325,19 @@
   ]
   pruneopts = "UT"
   revision = "f40e974e75af4e271d97ce0fc917af5898ae7bda"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b8483882847c4b7d3e3d8469213e1675e0bea3396e55abaa8bed87aacf29de8e"
+  name = "github.com/jhump/protoreflect"
+  packages = [
+    "desc",
+    "desc/internal",
+    "dynamic",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "b5ebaabe89bfb1233c6ddf3db25536f0f3176960"
 
 [[projects]]
   digest = "1:75ab90ae3f5d876167e60f493beadfe66f0ed861a710f283fb06c86437a09538"
@@ -760,11 +776,15 @@
     "github.com/coreos/etcd/clientv3",
     "github.com/coreos/etcd/clientv3/namespace",
     "github.com/coreos/etcd/integration",
+    "github.com/coreos/etcd/mvcc/mvccpb",
     "github.com/gogo/protobuf/proto",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/google/uuid",
     "github.com/gorilla/websocket",
+    "github.com/jhump/protoreflect/desc",
+    "github.com/jhump/protoreflect/dynamic",
     "github.com/nats-io/gnatsd/server",
     "github.com/nats-io/gnatsd/test",
     "github.com/nats-io/go-nats",

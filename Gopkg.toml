@@ -75,6 +75,10 @@
   name = "github.com/prometheus/client_golang"
   version = "0.8.0"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/jhump/protoreflect"
+
 [[override]]
   name = "github.com/topfreegames/go-workers"
   version = "v0.0.1"

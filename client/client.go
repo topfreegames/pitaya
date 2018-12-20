@@ -257,11 +257,17 @@ func (c *Client) handlePackets() {
 
 func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
 	// listen for sv messages
-	n, err := c.conn.Read(buf)
-	if err != nil {
-		return nil, err
+	n := len(buf)
+	var err error
+
+	data := make([]byte, 0)
+	for n == len(buf) {
+		n, err = c.conn.Read(buf)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, buf[:n]...)
 	}
-	data := buf[:n]
 	packets, err := c.packetDecoder.Decode(data)
 	if err != nil {
 		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
@@ -271,7 +277,7 @@ func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
 }
 
 func (c *Client) handleServerMessages() {
-	buf := make([]byte, 2048)
+	buf := make([]byte, 1024)
 	defer c.Disconnect()
 	for c.Connected {
 		packets, err := c.readPackets(buf)
