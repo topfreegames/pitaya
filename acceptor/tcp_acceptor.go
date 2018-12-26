@@ -26,7 +26,6 @@ import (
 
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/viaproxy"
 )
 
 // TCPAcceptor struct
@@ -122,12 +121,6 @@ func (a *TCPAcceptor) serve() {
 			continue
 		}
 
-		pcn, err := viaproxy.Wrap(conn)
-		if err != nil {
-			logger.Log.Errorf("conn wrap error: %q\n", err)
-			continue
-		}
-
-		a.connChan <- pcn
+		a.connChan <- conn
 	}
 }
