@@ -82,6 +82,10 @@ This command will run both unit and e2e tests.
 * [nano](https://github.com/lonnng/nano) authors for building the framework pitaya is based on.
 * [pomelo](https://github.com/NetEase/pomelo) authors for the inspiration on the distributed design and protocol
 
+## Security
+
+If you have found a security vulnerability, please email security@tfgco.com
+
 ## Resources
 
 - Other pitaya-related projects
