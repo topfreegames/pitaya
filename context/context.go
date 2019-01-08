@@ -34,7 +34,7 @@ func AddToPropagateCtx(ctx context.Context, key string, val interface{}) context
 	return context.WithValue(ctx, constants.PropagateCtxKey, propagate)
 }
 
-// GetFromPropagateCtx adds a key and value to the propagate
+// GetFromPropagateCtx get a value from the propagate
 func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 	propagate := ToMap(ctx)
 	if val, ok := propagate[key]; ok {
