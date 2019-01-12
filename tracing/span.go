@@ -26,6 +26,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/logger"
 )
 
 func castValueToCarrier(val interface{}) (opentracing.TextMapCarrier, error) {
@@ -37,6 +38,8 @@ func castValueToCarrier(val interface{}) (opentracing.TextMapCarrier, error) {
 		for k, v := range m {
 			if s, ok := v.(string); ok {
 				carrier[k] = s
+			} else {
+				logger.Log.Warnf("value from span carrier cannot be cast to string: %+v", v)
 			}
 		}
 		return opentracing.TextMapCarrier(carrier), nil
