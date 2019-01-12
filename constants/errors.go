@@ -41,6 +41,7 @@ var (
 	ErrGroupNotFound                  = errors.New("group not found")
 	ErrIllegalUID                     = errors.New("illegal uid")
 	ErrInvalidCertificates            = errors.New("certificates must be exactly two")
+	ErrInvalidSpanCarrier             = errors.New("tracing: invalid span carrier")
 	ErrKickingUsers                   = errors.New("failed to kick users, check array with failed uids")
 	ErrMemberAlreadyExists            = errors.New("member already exists in group")
 	ErrMemberNotFound                 = errors.New("member not found in the group")

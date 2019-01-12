@@ -21,7 +21,6 @@
 package tracing
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -62,10 +61,11 @@ func TestExtractSpan(t *testing.T) {
 
 func TestExtractSpanInjectedSpan(t *testing.T) {
 	span := opentracing.StartSpan("op", opentracing.ChildOf(nil))
-	spanData := new(bytes.Buffer)
+	spanData := opentracing.TextMapCarrier{}
 	tracer := opentracing.GlobalTracer()
-	err := tracer.Inject(span.Context(), opentracing.Binary, spanData)
-	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.SpanPropagateCtxKey, spanData.Bytes())
+	err := tracer.Inject(span.Context(), opentracing.TextMap, spanData)
+	assert.NoError(t, err)
+	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.SpanPropagateCtxKey, spanData)
 
 	spanCtx, err := ExtractSpan(ctx)
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestExtractSpanNoSpan(t *testing.T) {
 func TestExtractSpanBadInjected(t *testing.T) {
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.SpanPropagateCtxKey, []byte("nope"))
 	spanCtx, err := ExtractSpan(ctx)
-	assert.Equal(t, errors.New("opentracing: SpanContext data corrupted in Extract carrier"), err)
+	assert.Equal(t, constants.ErrInvalidSpanCarrier, err)
 	assert.Nil(t, spanCtx)
 }
 

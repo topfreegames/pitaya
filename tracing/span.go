@@ -21,14 +21,31 @@
 package tracing
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	"github.com/topfreegames/pitaya/logger"
 )
+
+func castValueToCarrier(val interface{}) (opentracing.TextMapCarrier, error) {
+	if v, ok := val.(opentracing.TextMapCarrier); ok {
+		return v, nil
+	}
+	if m, ok := val.(map[string]interface{}); ok {
+		carrier := map[string]string{}
+		for k, v := range m {
+			if s, ok := v.(string); ok {
+				carrier[k] = s
+			} else {
+				logger.Log.Warnf("value from span carrier cannot be cast to string: %+v", v)
+			}
+		}
+		return opentracing.TextMapCarrier(carrier), nil
+	}
+	return nil, constants.ErrInvalidSpanCarrier
+}
 
 // ExtractSpan retrieves an opentracing span context from the given context.Context
 // The span context can be received directly (inside the context) or via an RPC call
@@ -38,18 +55,13 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	span := opentracing.SpanFromContext(ctx)
 	if span == nil {
 		if s := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey); s != nil {
-			var data []byte
 			var err error
-			if dataString, ok := s.(string); ok {
-				data, err = base64.StdEncoding.DecodeString(dataString)
-				if err != nil {
-					return nil, err
-				}
-			} else if sData, ok := s.([]byte); ok {
-				data = sData
+			carrier, err := castValueToCarrier(s)
+			if err != nil {
+				return nil, err
 			}
 			tracer := opentracing.GlobalTracer()
-			spanCtx, err = tracer.Extract(opentracing.Binary, bytes.NewBuffer(data))
+			spanCtx, err = tracer.Extract(opentracing.TextMap, carrier)
 			if err != nil {
 				return nil, err
 			}
@@ -69,13 +81,13 @@ func InjectSpan(ctx context.Context) (context.Context, error) {
 	if span == nil {
 		return ctx, nil
 	}
-	spanData := new(bytes.Buffer)
+	spanData := opentracing.TextMapCarrier{}
 	tracer := opentracing.GlobalTracer()
-	err := tracer.Inject(span.Context(), opentracing.Binary, spanData)
+	err := tracer.Inject(span.Context(), opentracing.TextMap, spanData)
 	if err != nil {
 		return nil, err
 	}
-	return pcontext.AddToPropagateCtx(ctx, constants.SpanPropagateCtxKey, spanData.Bytes()), nil
+	return pcontext.AddToPropagateCtx(ctx, constants.SpanPropagateCtxKey, spanData), nil
 }
 
 // StartSpan starts a new span with a given parent context, operation name, tags and
