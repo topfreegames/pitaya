@@ -575,11 +575,14 @@ func Documentation(getPtrNames bool) (map[string]interface{}, error) {
 // port into metadata
 func AddGRPCInfoToMetadata(
 	metadata map[string]string,
-	region, host, externalHost, port string,
+	region string,
+	host, port string,
+	externalHost, externalPort string,
 ) map[string]string {
 	metadata[constants.GRPCHostKey] = host
-	metadata[constants.GRPCExternalHostKey] = externalHost
 	metadata[constants.GRPCPortKey] = port
+	metadata[constants.GRPCExternalHostKey] = externalHost
+	metadata[constants.GRPCExternalPortKey] = externalPort
 	metadata[constants.RegionKey] = region
 	return metadata
 }
