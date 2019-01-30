@@ -30,6 +30,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
+	pcontext "github.com/topfreegames/pitaya/context"
 	pitErrors "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/interfaces"
 	"github.com/topfreegames/pitaya/logger"
@@ -105,7 +106,18 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 	}
 	if c, ok := gs.clientMap.Load(server.ID); ok {
 		ctxT, done := context.WithTimeout(ctx, gs.reqTimeout)
-		defer done()
+
+		defer func() {
+			if gs.metricsReporters != nil {
+				startTime := time.Now()
+				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
+				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
+				errored := err != nil
+				metrics.ReportTimingFromCtx(ctx, gs.metricsReporters, "rpc", errored)
+			}
+			done()
+		}()
+
 		res, err := c.(protos.PitayaClient).Call(ctxT, &req)
 		if err != nil {
 			return nil, err
