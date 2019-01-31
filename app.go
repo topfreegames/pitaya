@@ -462,10 +462,12 @@ func listen() {
 		}()
 
 		go func() {
+			go func() {
+				time.Sleep(1 * time.Second)
+				logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
+			}()
 			a.ListenAndServe()
 		}()
-
-		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 
 	if app.serverMode == Cluster && app.server.Frontend && app.config.GetBool("pitaya.session.unique") {
