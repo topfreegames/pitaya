@@ -24,8 +24,10 @@ import (
 	"github.com/topfreegames/pitaya/conn/message"
 )
 
+// PitayaClient interface
 type PitayaClient interface {
 	ConnectTo(addr string) error
+	ConnectKCP(addr string) error
 	ConnectToTLS(addr string, skipVerify bool) error
 	Disconnect()
 	SendNotify(route string, data []byte) error

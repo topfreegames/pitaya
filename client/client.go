@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/util/compression"
+	kcp "github.com/xtaci/kcp-go"
 )
 
 var (
@@ -339,6 +340,25 @@ func (c *Client) ConnectToTLS(addr string, skipVerify bool) error {
 	}
 
 	c.closeChan = make(chan struct{})
+	return nil
+}
+
+// ConnectKCP connects to the server at addr using kcp protocol
+// this methods blocks as it also handles the messages from the server
+func (c *Client) ConnectKCP(addr string) error {
+	conn, err := kcp.Dial(addr)
+	if err != nil {
+		return err
+	}
+	c.conn = conn
+	c.IncomingMsgChan = make(chan *message.Message, 10)
+
+	if err = c.handleHandshake(); err != nil {
+		return err
+	}
+
+	c.closeChan = make(chan struct{})
+
 	return nil
 }
 

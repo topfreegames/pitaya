@@ -31,6 +31,7 @@ func configureBackend() {
 
 func configureFrontend(port int) {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+	kcp := acceptor.NewKCPAcceptor(fmt.Sprintf(":%d", port+1))
 
 	pitaya.Register(&services.Connector{},
 		component.WithName("connector"),
@@ -71,6 +72,7 @@ func configureFrontend(port int) {
 	}
 
 	pitaya.AddAcceptor(tcp)
+	pitaya.AddAcceptor(kcp)
 }
 
 func main() {
