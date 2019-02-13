@@ -374,6 +374,22 @@ func (pc *ProtoClient) waitForData() {
 				pc.expectedInput = nil
 			}
 
+			if response.Err {
+				errMsg := &protos.Error{}
+				err := proto.Unmarshal(response.Data, errMsg)
+				if err != nil {
+					logger.Log.Errorf("Erro decode error data: %s", string(response.Data))
+					continue
+				}
+				response.Data, err = json.Marshal(errMsg)
+				if err != nil {
+					logger.Log.Errorf("Erro encode error to json: %s", string(response.Data))
+					continue
+				}
+				pc.IncomingMsgChan <- response
+				continue
+			}
+
 			if inputMsg == nil {
 				logger.Log.Errorf("Not expected data: %s", string(response.Data))
 				continue
