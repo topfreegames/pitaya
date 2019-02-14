@@ -42,10 +42,10 @@ import (
 // Command struct. Save the input and output type and proto descriptor for each
 // one.
 type Command struct {
-	input     string // input command name
-	output    string // output command name
-	inputMsg  *dynamic.Message
-	outputMsg *dynamic.Message
+	input               string // input command name
+	output              string // output command name
+	inputMsgDescriptor  *desc.MessageDescriptor
+	outputMsgDescriptor *desc.MessageDescriptor
 }
 
 // ProtoBufferInfo save all commands from a server.
@@ -56,14 +56,14 @@ type ProtoBufferInfo struct {
 // ProtoClient struct
 type ProtoClient struct {
 	Client
-	descriptorsNames map[string]bool
-	info             ProtoBufferInfo
-	docsRoute        string
-	descriptorsRoute string
-	IncomingMsgChan  chan *message.Message
-	expectedInput    *dynamic.Message
-	ready            bool
-	closeChan        chan bool
+	descriptorsNames        map[string]bool
+	info                    ProtoBufferInfo
+	docsRoute               string
+	descriptorsRoute        string
+	IncomingMsgChan         chan *message.Message
+	expectedInputDescriptor *desc.MessageDescriptor
+	ready                   bool
+	closeChan               chan bool
 }
 
 // MsgChannel return the incoming message channel
@@ -97,7 +97,7 @@ func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProt
 // protobuffer from this data and associates it to the message.
 func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.FileDescriptorProto) error {
 
-	descriptorsMap := make(map[string]*dynamic.Message)
+	descriptorsMap := make(map[string]*desc.MessageDescriptor)
 
 	descriptors, err := desc.CreateFileDescriptors(descriptorArray)
 	if err != nil {
@@ -108,17 +108,17 @@ func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.Fil
 		for _, v := range descriptors {
 			message := v.FindMessage(name)
 			if message != nil {
-				descriptorsMap[name] = dynamic.NewMessage(message)
+				descriptorsMap[name] = message
 			}
 		}
 	}
 
 	for name, cmd := range pc.info.Commands {
 		if msg, ok := descriptorsMap[cmd.input]; ok {
-			pc.info.Commands[name].inputMsg = msg
+			pc.info.Commands[name].inputMsgDescriptor = msg
 		}
 		if msg, ok := descriptorsMap[cmd.output]; ok {
-			pc.info.Commands[name].outputMsg = msg
+			pc.info.Commands[name].outputMsgDescriptor = msg
 		}
 	}
 
@@ -365,13 +365,13 @@ func (pc *ProtoClient) waitForData() {
 		select {
 		case response := <-pc.Client.IncomingMsgChan:
 
-			inputMsg := pc.expectedInput
+			inputMsg := dynamic.NewMessage(pc.expectedInputDescriptor)
 
 			msg, ok := pc.info.Commands[response.Route]
 			if ok {
-				inputMsg = msg.outputMsg
+				inputMsg = dynamic.NewMessage(msg.outputMsgDescriptor)
 			} else {
-				pc.expectedInput = nil
+				pc.expectedInputDescriptor = nil
 			}
 
 			if response.Err {
@@ -494,19 +494,20 @@ func (pc *ProtoClient) SendRequest(route string, data []byte) (uint, error) {
 	}
 
 	if cmd, ok := pc.info.Commands[route]; ok {
-		if len(data) < 0 || string(data) == "{}" || cmd.inputMsg == nil {
-			pc.expectedInput = cmd.outputMsg
+		if len(data) < 0 || string(data) == "{}" || cmd.inputMsgDescriptor == nil {
+			pc.expectedInputDescriptor = cmd.outputMsgDescriptor
 			data = data[:0]
 			return pc.Client.SendRequest(route, data)
 		}
-		if err := cmd.inputMsg.UnmarshalJSON(data); err != nil {
+		inputMsg := dynamic.NewMessage(cmd.inputMsgDescriptor)
+		if err := inputMsg.UnmarshalJSON(data); err != nil {
 			return 0, err
 		}
-		realdata, err := cmd.inputMsg.Marshal()
+		realdata, err := inputMsg.Marshal()
 		if err != nil {
 			return 0, err
 		}
-		pc.expectedInput = cmd.outputMsg
+		pc.expectedInputDescriptor = cmd.outputMsgDescriptor
 		return pc.Client.SendRequest(route, realdata)
 	}
 
@@ -517,11 +518,12 @@ func (pc *ProtoClient) SendRequest(route string, data []byte) (uint, error) {
 func (pc *ProtoClient) SendNotify(route string, data []byte) error {
 
 	if cmd, ok := pc.info.Commands[route]; ok {
-		err := cmd.inputMsg.UnmarshalJSON(data)
+		inputMsg := dynamic.NewMessage(cmd.inputMsgDescriptor)
+		err := inputMsg.UnmarshalJSON(data)
 		if err != nil {
 			return err
 		}
-		realdata, err := cmd.inputMsg.Marshal()
+		realdata, err := inputMsg.Marshal()
 		if err != nil {
 			return err
 		}
