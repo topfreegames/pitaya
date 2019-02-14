@@ -521,7 +521,12 @@ func Error(err error, code string, metadata ...map[string]string) *errors.Error 
 
 // GetSessionFromCtx retrieves a session from a given context
 func GetSessionFromCtx(ctx context.Context) *session.Session {
-	return ctx.Value(constants.SessionCtxKey).(*session.Session)
+	sessionVal := ctx.Value(constants.SessionCtxKey)
+	if sessionVal == nil {
+		logger.Log.Warn("ctx doesn't contain a session, are you calling GetSessionFromCtx from inside a remote?")
+		return nil
+	}
+	return sessionVal.(*session.Session)
 }
 
 // GetDefaultLoggerFromCtx returns the default logger from the given context
