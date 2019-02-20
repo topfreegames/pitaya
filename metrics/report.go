@@ -26,13 +26,16 @@ import (
 	"time"
 
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/errors"
+
 	pcontext "github.com/topfreegames/pitaya/context"
 )
 
 // ReportTimingFromCtx reports the latency from the context
-func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, errored bool) {
+func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, err error) {
+	code := errors.CodeFromError(err)
 	status := "ok"
-	if errored {
+	if err != nil {
 		status = "failed"
 	}
 	if len(reporters) > 0 {
@@ -43,6 +46,7 @@ func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, 
 			"route":  route.(string),
 			"status": status,
 			"type":   typ,
+			"code":   code,
 		})
 		for _, r := range reporters {
 			r.ReportSummary(ResponseTime, tags, float64(elapsed.Nanoseconds()))

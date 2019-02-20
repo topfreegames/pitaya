@@ -318,7 +318,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 			a.Session.ResponseMID(ctx, mid, ret)
 		}
 	} else {
-		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, false)
+		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, nil)
 		tracing.FinishSpan(ctx, err)
 	}
 }

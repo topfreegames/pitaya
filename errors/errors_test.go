@@ -106,3 +106,42 @@ func TestErrorError(t *testing.T) {
 	errStr := err.Error()
 	assert.Equal(t, sourceErr.Error(), errStr)
 }
+
+func TestCodeFromError(t *testing.T) {
+	t.Parallel()
+
+	errTest := errors.New("error")
+	codeNotFound := "GAME-404"
+
+	tables := map[string]struct {
+		err  error
+		code string
+	}{
+		"test_not_error": {
+			err:  nil,
+			code: "",
+		},
+
+		"test_not_pitaya_error": {
+			err:  errTest,
+			code: ErrUnknownCode,
+		},
+
+		"test_nil_pitaya_error": {
+			err:  func() *Error { var err *Error; return err }(),
+			code: "",
+		},
+
+		"test_pitaya_error": {
+			err:  NewError(errTest, codeNotFound),
+			code: codeNotFound,
+		},
+	}
+
+	for name, table := range tables {
+		t.Run(name, func(t *testing.T) {
+			code := CodeFromError(table.err)
+			assert.Equal(t, table.code, code)
+		})
+	}
+}

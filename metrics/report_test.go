@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
+	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/metrics/mocks"
 )
 
@@ -42,7 +44,7 @@ func TestReportTimingFromCtx(t *testing.T) {
 		originalTs := time.Now().UnixNano()
 		expectedRoute := uuid.New().String()
 		expectedType := uuid.New().String()
-		expectedErrored := true
+		expectedErr := errors.New(uuid.New().String())
 		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
 
@@ -53,7 +55,7 @@ func TestReportTimingFromCtx(t *testing.T) {
 			},
 		)
 
-		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErr)
 	})
 
 	t.Run("test-tags", func(t *testing.T) {
@@ -64,7 +66,7 @@ func TestReportTimingFromCtx(t *testing.T) {
 		originalTs := time.Now().UnixNano()
 		expectedRoute := uuid.New().String()
 		expectedType := uuid.New().String()
-		expectedErrored := false
+		var expectedErr error
 		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, map[string]string{
@@ -76,11 +78,12 @@ func TestReportTimingFromCtx(t *testing.T) {
 			"status": "ok",
 			"type":   expectedType,
 			"key":    "value",
+			"code":   "",
 		}
 
 		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, expectedTags, gomock.Any())
 
-		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErr)
 	})
 
 	t.Run("test-tags-not-correct-type", func(t *testing.T) {
@@ -91,7 +94,7 @@ func TestReportTimingFromCtx(t *testing.T) {
 		originalTs := time.Now().UnixNano()
 		expectedRoute := uuid.New().String()
 		expectedType := uuid.New().String()
-		expectedErrored := false
+		var expectedErr error
 		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.MetricTagsKey, "not-map")
@@ -100,11 +103,57 @@ func TestReportTimingFromCtx(t *testing.T) {
 			"route":  expectedRoute,
 			"status": "ok",
 			"type":   expectedType,
+			"code":   "",
 		}
 
 		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, expectedTags, gomock.Any())
 
-		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErrored)
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErr)
+	})
+
+	t.Run("test-failed-route-with-pitaya-error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
+
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		code := "GAME-404"
+		expectedErr := e.NewError(errors.New("error"), code)
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+
+		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, map[string]string{
+			"route":  expectedRoute,
+			"status": "failed",
+			"type":   expectedType,
+			"code":   code,
+		}, gomock.Any())
+
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErr)
+	})
+
+	t.Run("test-failed-route", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockMetricsReporter := mocks.NewMockReporter(ctrl)
+
+		originalTs := time.Now().UnixNano()
+		expectedRoute := uuid.New().String()
+		expectedType := uuid.New().String()
+		expectedErr := errors.New("error")
+		ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, originalTs)
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, expectedRoute)
+
+		mockMetricsReporter.EXPECT().ReportSummary(ResponseTime, map[string]string{
+			"route":  expectedRoute,
+			"status": "failed",
+			"type":   expectedType,
+			"code":   e.ErrUnknownCode,
+		}, gomock.Any())
+
+		ReportTimingFromCtx(ctx, []Reporter{mockMetricsReporter}, expectedType, expectedErr)
 	})
 }
 
