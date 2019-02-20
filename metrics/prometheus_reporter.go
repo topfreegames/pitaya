@@ -118,7 +118,7 @@ func (p *PrometheusReporter) registerMetrics(
 			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
 			ConstLabels: constLabels,
 		},
-		append([]string{"route", "status", "type"}, additionalLabelsKeys...),
+		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
 	)
 
 	// ProcessDelay summary

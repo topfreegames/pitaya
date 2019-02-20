@@ -74,3 +74,23 @@ func mergeMetadatas(pitayaErr *Error, metadata map[string]string) {
 		pitayaErr.Metadata[key] = value
 	}
 }
+
+// CodeFromError returns the code of error.
+// If error is nil, return empty string.
+// If error is not a pitaya error, returns unkown code
+func CodeFromError(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	pitayaErr, ok := err.(*Error)
+	if !ok {
+		return ErrUnknownCode
+	}
+
+	if pitayaErr == nil {
+		return ""
+	}
+
+	return pitayaErr.Code
+}

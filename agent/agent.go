@@ -23,7 +23,7 @@ package agent
 import (
 	"context"
 	gojson "encoding/json"
-	"errors"
+	e "errors"
 	"fmt"
 	"net"
 	"strings"
@@ -36,6 +36,7 @@ import (
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/protos"
@@ -168,14 +169,14 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 	if a.GetStatus() == constants.StatusClosed {
 		err := constants.ErrBrokenPipe
 		tracing.FinishSpan(ctx, err)
-		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, true)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		return err
 	}
 
 	if mid <= 0 {
 		err := constants.ErrSessionOnNotify
 		tracing.FinishSpan(ctx, err)
-		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, true)
+		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		return err
 	}
 
@@ -355,7 +356,7 @@ func (a *Agent) write() {
 				if err != nil {
 					tracing.FinishSpan(data.ctx, err)
 					if data.typ == message.Response {
-						metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
+						metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 					}
 					logger.Log.Error("cannot serialize message and respond to the client ", err.Error())
 					break
@@ -374,7 +375,7 @@ func (a *Agent) write() {
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
 				logger.Log.Error(err.Error())
 				break
@@ -385,7 +386,7 @@ func (a *Agent) write() {
 			if err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
 				logger.Log.Error(err)
 				break
@@ -394,7 +395,7 @@ func (a *Agent) write() {
 			if _, err := a.conn.Write(p); err != nil {
 				tracing.FinishSpan(data.ctx, err)
 				if data.typ == message.Response {
-					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, true)
+					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
 				logger.Log.Error(err.Error())
 				return
@@ -402,7 +403,15 @@ func (a *Agent) write() {
 			var e error
 			tracing.FinishSpan(data.ctx, e)
 			if data.typ == message.Response {
-				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, m.Err)
+				var rErr error
+
+				if m.Err {
+					// default code is overwritten, if any
+					rErr = &errors.Error{Code: errors.ErrUnknownCode}
+					_ = a.serializer.Unmarshal(m.Data, rErr)
+				}
+
+				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, rErr)
 			}
 		case <-a.chStopWrite:
 			return
@@ -412,7 +421,7 @@ func (a *Agent) write() {
 
 // SendRequest sends a request to a server
 func (a *Agent) SendRequest(ctx context.Context, serverID, route string, v interface{}) (*protos.Response, error) {
-	return nil, errors.New("not implemented")
+	return nil, e.New("not implemented")
 }
 
 // AnswerWithError answers with an error

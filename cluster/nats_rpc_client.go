@@ -171,8 +171,7 @@ func (ns *NatsRPCClient) Call(
 		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, route.String())
 		defer func() {
 			typ := "rpc"
-			errored := err != nil
-			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, errored)
+			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, err)
 		}()
 	}
 	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)

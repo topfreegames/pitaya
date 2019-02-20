@@ -112,8 +112,7 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 				startTime := time.Now()
 				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
 				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
-				errored := err != nil
-				metrics.ReportTimingFromCtx(ctx, gs.metricsReporters, "rpc", errored)
+				metrics.ReportTimingFromCtx(ctx, gs.metricsReporters, "rpc", err)
 			}
 			done()
 		}()
