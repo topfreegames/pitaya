@@ -190,12 +190,12 @@ func (ns *NatsRPCClient) Call(
 		if res.Error.Code == "" {
 			res.Error.Code = errors.ErrUnknownCode
 		}
-		e := &errors.Error{
+		err = &errors.Error{
 			Code:     res.Error.Code,
 			Message:  res.Error.Msg,
 			Metadata: res.Error.Metadata,
 		}
-		return nil, e
+		return nil, err
 	}
 	return res, nil
 }
