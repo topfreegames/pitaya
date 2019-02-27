@@ -81,4 +81,4 @@
 
 [[override]]
   name = "github.com/topfreegames/go-workers"
-  version = "v0.0.1"
+  version = "v1.0.0"

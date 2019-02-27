@@ -64,7 +64,7 @@ func NewWorker(config *config.Config) (*Worker, error) {
 }
 
 // SetLogger overwrites worker logger
-func (w *Worker) SetLogger(logger Logger) {
+func (w *Worker) SetLogger(logger logger.Logger) {
 	workers.Logger = logger
 }
 

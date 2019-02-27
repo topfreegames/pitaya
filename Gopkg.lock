@@ -573,12 +573,12 @@
   revision = "830351dc03c6f07d625727d5f993a463babb20e1"
 
 [[projects]]
-  digest = "1:a35142e7dae983dc77f9822b754f1d9e41bfe9767d11585ab24dcd2ec871be0f"
+  digest = "1:04e729cc283db01695b1df9e036ecf1feb06988ec9e4ca5f6406a3f374967ea5"
   name = "github.com/topfreegames/go-workers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "debd68e29f6123083fb906c7a6352c748203538a"
-  version = "v0.0.1"
+  revision = "d1be24994f2aef33257256035eaba70a112bf57f"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:a65ad5ffa268f4591efad04749e128bde6a80cbbc128688b6327fec461a61a38"

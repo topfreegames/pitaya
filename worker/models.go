@@ -32,9 +32,3 @@ type rpcInfo struct {
 type rpcRoute struct {
 	Route string
 }
-
-// Logger defines methods for worker's logger
-type Logger interface {
-	Println(...interface{})
-	Printf(string, ...interface{})
-}
