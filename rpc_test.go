@@ -24,8 +24,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/cluster"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"

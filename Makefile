@@ -14,7 +14,7 @@ setup-ci:
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
+	@go get github.com/golang/protobuf/protoc-gen-go
 
 run-chat-example:
 	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
@@ -51,8 +51,8 @@ run-custom-metrics-example:
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --gogofaster_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --gogofaster_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

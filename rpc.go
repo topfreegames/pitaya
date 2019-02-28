@@ -24,7 +24,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/worker"
