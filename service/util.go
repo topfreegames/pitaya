@@ -165,11 +165,13 @@ func processHandlerMessage(
 	if err != nil {
 		return nil, e.NewError(err, e.ErrInternalCode)
 	}
+
+	logger := ctx.Value(constants.LoggerCtxKey).(logger.Logger)
 	exit, err := h.ValidateMessageType(msgType)
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
-		logger.Log.Warn(err.Error())
+		logger.Warnf("invalid message type, error: %s", err.Error())
 	}
 
 	// First unmarshal the handler arg that will be passed to
@@ -183,7 +185,7 @@ func processHandlerMessage(
 		return nil, err
 	}
 
-	logger.Log.Debugf("SID=%d, Data=%s", session.ID(), data)
+	logger.Debugf("SID=%d, Data=%s", session.ID(), data)
 	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))

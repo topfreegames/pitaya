@@ -23,8 +23,6 @@
 package tracing
 
 import (
-	"fmt"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 )
@@ -36,13 +34,4 @@ func LogError(span opentracing.Span, message string) {
 		log.String("event", "error"),
 		log.String("message", message),
 	)
-}
-
-// LogPanic logs a panic to a opentracing span
-func LogPanic(span opentracing.Span) {
-	if err := recover(); err != nil {
-		message := fmt.Sprint(err)
-		LogError(span, message)
-		panic(err)
-	}
 }

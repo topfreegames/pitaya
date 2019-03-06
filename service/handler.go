@@ -268,6 +268,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		"local.id":  h.server.ID,
 		"span.kind": "server",
 		"msg.type":  strings.ToLower(msg.Type.String()),
+		"player.id": a.Session.UID(),
 	}
 	ctx = tracing.StartSpan(ctx, msg.Route, tags)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.Session)

@@ -23,6 +23,7 @@ package util
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -37,6 +38,7 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/tracing"
 )
 
@@ -44,12 +46,12 @@ import (
 func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			logger.Log.Errorf("pitaya/dispatch: %v", rec)
+			logger.Log.Errorf("pitaya/dispatch: %s: %v", method.Name, rec)
 			logger.Log.Debugf("%s", debug.Stack())
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {
-				err = errors.New("rpc call internal error")
+				err = fmt.Errorf("rpc call internal error - %s: %v", method.Name, rec)
 			}
 		}
 	}()
@@ -135,11 +137,20 @@ func CtxWithDefaultLogger(ctx context.Context, route, sessionID string) context.
 	var defaultLogger logger.Logger
 	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
 	if ok {
+		playerID := ""
+		if sessionID != "" {
+			sessionVal := ctx.Value(constants.SessionCtxKey)
+			if sessionVal != nil {
+				session := sessionVal.(*session.Session)
+				playerID = session.UID()
+			}
+		}
 		defaultLogger = logrusLogger.WithFields(
 			logrus.Fields{
 				"sessionId": sessionID,
 				"route":     route,
 				"requestId": uuid.New(),
+				"playerId":  playerID,
 			})
 	} else {
 		defaultLogger = logger.Log
