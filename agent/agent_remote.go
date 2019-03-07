@@ -86,7 +86,7 @@ func NewRemote(
 	return a, nil
 }
 
-// Kick kicks the player
+// Kick kicks the user
 func (a *Remote) Kick(ctx context.Context) error {
 	if a.Session.UID() == "" {
 		return constants.ErrNoUIDBind
@@ -101,7 +101,7 @@ func (a *Remote) Kick(ctx context.Context) error {
 	return err
 }
 
-// Push pushes the message to the player
+// Push pushes the message to the user
 func (a *Remote) Push(route string, v interface{}) error {
 	if (reflect.TypeOf(a.rpcClient) == reflect.TypeOf(&cluster.NatsRPCClient{}) &&
 		a.Session.UID() == "") {
@@ -126,7 +126,7 @@ func (a *Remote) Push(route string, v interface{}) error {
 	)
 }
 
-// ResponseMID reponds the message with mid to the player
+// ResponseMID reponds the message with mid to the user
 func (a *Remote) ResponseMID(ctx context.Context, mid uint, v interface{}, isError ...bool) error {
 	err := false
 	if len(isError) > 0 {
@@ -152,7 +152,7 @@ func (a *Remote) ResponseMID(ctx context.Context, mid uint, v interface{}, isErr
 // Close closes the remote
 func (a *Remote) Close() error { return nil }
 
-// RemoteAddr returns the remote address of the player
+// RemoteAddr returns the remote address of the user
 func (a *Remote) RemoteAddr() net.Addr { return nil }
 
 func (a *Remote) serialize(m pendingMessage) ([]byte, error) {

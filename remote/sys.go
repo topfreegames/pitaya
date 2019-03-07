@@ -58,7 +58,7 @@ func (s *Sys) PushSession(ctx context.Context, sessionData *protos.Session) (*pr
 	return &protos.Response{Data: []byte("ack")}, nil
 }
 
-// Kick kicks a local player
+// Kick kicks a local user
 func (s *Sys) Kick(ctx context.Context, msg *protos.KickMsg) (*protos.KickAnswer, error) {
 	res := &protos.KickAnswer{
 		Kicked: false,

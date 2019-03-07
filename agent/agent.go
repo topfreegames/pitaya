@@ -101,7 +101,7 @@ func NewAgent(
 	messageEncoder message.Encoder,
 	metricsReporters []metrics.Reporter,
 ) *Agent {
-	// initialize heartbeat and handshake data on first player connection
+	// initialize heartbeat and handshake data on first user connection
 	once.Do(func() {
 		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializer.GetName())
 	})
@@ -434,12 +434,12 @@ func (a *Agent) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
-		logger.Log.Error("error answering the player with an error: ", e.Error())
+		logger.Log.Error("error answering the user with an error: ", e.Error())
 		return
 	}
 	e = a.Session.ResponseMID(ctx, mid, p, true)
 	if e != nil {
-		logger.Log.Error("error answering the player with an error: ", e.Error())
+		logger.Log.Error("error answering the user with an error: ", e.Error())
 	}
 }
 

@@ -137,12 +137,12 @@ func CtxWithDefaultLogger(ctx context.Context, route, sessionID string) context.
 	var defaultLogger logger.Logger
 	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
 	if ok {
-		playerID := ""
+		userID := ""
 		if sessionID != "" {
 			sessionVal := ctx.Value(constants.SessionCtxKey)
 			if sessionVal != nil {
 				session := sessionVal.(*session.Session)
-				playerID = session.UID()
+				userID = session.UID()
 			}
 		}
 		defaultLogger = logrusLogger.WithFields(
@@ -150,7 +150,7 @@ func CtxWithDefaultLogger(ctx context.Context, route, sessionID string) context.
 				"sessionId": sessionID,
 				"route":     route,
 				"requestId": uuid.New(),
-				"playerId":  playerID,
+				"userId":    userID,
 			})
 	} else {
 		defaultLogger = logger.Log
