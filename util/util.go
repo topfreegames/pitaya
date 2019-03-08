@@ -38,16 +38,33 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/tracing"
 )
+
+func getLoggerFromArgs(args []reflect.Value) logger.Logger {
+	for _, a := range args {
+		if !a.IsValid() {
+			continue
+		}
+		if ctx, ok := a.Interface().(context.Context); ok {
+			logVal := ctx.Value(constants.LoggerCtxKey)
+			if logVal != nil {
+				log := logVal.(logger.Logger)
+				return log
+			}
+		}
+	}
+	return logger.Log
+}
 
 // Pcall calls a method that returns an interface and an error and recovers in case of panic
 func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			logger.Log.Errorf("pitaya/dispatch: %s: %v", method.Name, rec)
-			logger.Log.Debugf("%s", debug.Stack())
+			// Try to use logger from context here to help trace error cause
+			log := getLoggerFromArgs(args)
+			log.Errorf("panic - pitaya/dispatch: %s: %v", method.Name, rec)
+			log.Debugf("%s", debug.Stack())
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {
@@ -131,23 +148,14 @@ func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
 }
 
 // CtxWithDefaultLogger inserts a default logger on ctx to be used on handlers and remotes.
-// If using logrus, sessionsId, route and requestId will be added as fields.
+// If using logrus, userId, route and requestId will be added as fields.
 // Otherwise the pitaya logger will be used as it is.
-func CtxWithDefaultLogger(ctx context.Context, route, sessionID string) context.Context {
+func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Context {
 	var defaultLogger logger.Logger
 	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
 	if ok {
-		userID := ""
-		if sessionID != "" {
-			sessionVal := ctx.Value(constants.SessionCtxKey)
-			if sessionVal != nil {
-				session := sessionVal.(*session.Session)
-				userID = session.UID()
-			}
-		}
 		defaultLogger = logrusLogger.WithFields(
 			logrus.Fields{
-				"sessionId": sessionID,
 				"route":     route,
 				"requestId": uuid.New(),
 				"userId":    userID,
