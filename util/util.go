@@ -154,10 +154,18 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 	var defaultLogger logger.Logger
 	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
 	if ok {
+		requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
+		if rID, ok := requestID.(string); ok {
+			if rID == "" {
+				requestID = uuid.New()
+			}
+		} else {
+			requestID = uuid.New()
+		}
 		defaultLogger = logrusLogger.WithFields(
 			logrus.Fields{
 				"route":     route,
-				"requestId": uuid.New(),
+				"requestId": requestID,
 				"userId":    userID,
 			})
 	} else {
@@ -181,6 +189,7 @@ func GetContextFromRequest(req *protos.Request, serverID string) (context.Contex
 		"span.kind":    "server",
 		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
 		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
+		"request.id":   pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey),
 	}
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {

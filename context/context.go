@@ -45,6 +45,9 @@ func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 
 // ToMap returns the values that will be propagated through RPC calls in map[string]interface{} format
 func ToMap(ctx context.Context) map[string]interface{} {
+	if ctx == nil {
+		return map[string]interface{}{}
+	}
 	p := ctx.Value(constants.PropagateCtxKey)
 	if p != nil {
 		return p.(map[string]interface{})

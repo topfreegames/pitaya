@@ -153,6 +153,9 @@ func processHandlerMessage(
 	msgTypeIface interface{},
 	remote bool,
 ) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
 	ctx = util.CtxWithDefaultLogger(ctx, rt.String(), session.UID())
 
