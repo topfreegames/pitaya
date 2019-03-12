@@ -57,8 +57,12 @@ These configuration values configure service discovery for the default etcd serv
     - Prefix used to avoid collisions with different pitaya applications, servers must have the same prefix to be able to see each other
   * - pitaya.cluster.sd.etcd.syncservers.interval
     - 120s
-    - time.Time
+    - time.Duration
     - Interval between server syncs performed by the service discovery module
+  * - pitaya.cluster.sd.etcd.shutdown.delay
+    - 10ms
+    - time.Duration
+    - Time to wait to shutdown after deregistering from service discovery
 
 RPC Service
 ===========

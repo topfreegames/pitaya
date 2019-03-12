@@ -58,6 +58,7 @@ type etcdServiceDiscovery struct {
 	grantLeaseTimeout    time.Duration
 	grantLeaseMaxRetries int
 	grantLeaseInterval   time.Duration
+	shutdownDelay        time.Duration
 	appDieChan           chan bool
 }
 
@@ -98,6 +99,7 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.grantLeaseTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.timeout")
 	sd.grantLeaseMaxRetries = sd.config.GetInt("pitaya.cluster.sd.etcd.grantlease.maxretries")
 	sd.grantLeaseInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval")
+	sd.shutdownDelay = sd.config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay")
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
@@ -196,9 +198,7 @@ func (sd *etcdServiceDiscovery) addServerIntoEtcd(server *Server) error {
 }
 
 func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
-	// put key
-	err := sd.addServerIntoEtcd(server)
-	if err != nil {
+	if err := sd.addServerIntoEtcd(server); err != nil {
 		return err
 	}
 
@@ -214,10 +214,6 @@ func (sd *etcdServiceDiscovery) AddListener(listener SDListener) {
 
 // AfterInit executes after Init
 func (sd *etcdServiceDiscovery) AfterInit() {
-}
-
-// BeforeShutdown executes before shutting down
-func (sd *etcdServiceDiscovery) BeforeShutdown() {
 }
 
 func (sd *etcdServiceDiscovery) notifyListeners(act Action, sv *Server) {
@@ -382,7 +378,6 @@ func (sd *etcdServiceDiscovery) printServers() {
 		logger.Log.Debugf("type: %s, servers: %s", k, v)
 		return true
 	})
-
 }
 
 // SyncServers gets all servers from etcd
@@ -425,11 +420,17 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	return nil
 }
 
+// BeforeShutdown executes before shutting down and will remove the server from the list
+func (sd *etcdServiceDiscovery) BeforeShutdown() {
+	sd.revoke()
+	time.Sleep(sd.shutdownDelay) // Sleep for a short while to ensure shutdown has propagated
+}
+
 // Shutdown executes on shutdown and will clean etcd
 func (sd *etcdServiceDiscovery) Shutdown() error {
 	sd.running = false
 	close(sd.stopChan)
-	return sd.revoke()
+	return nil
 }
 
 // revoke prevents Pitaya from crashing when etcd is not available
@@ -478,7 +479,7 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 						var sv *Server
 						var err error
 						if sv, err = parseServer(ev.Kv.Value); err != nil {
-							logger.Log.Error(err)
+							logger.Log.Errorf("Failed to parse server from etcd: %v", err)
 							continue
 						}
 						sd.addServer(sv)
@@ -487,7 +488,7 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					case clientv3.EventTypeDelete:
 						_, svID, err := parseEtcdKey(string(ev.Kv.Key))
 						if err != nil {
-							logger.Log.Warn("failed to parse key from etcd: %s", ev.Kv.Key)
+							logger.Log.Warnf("failed to parse key from etcd: %s", ev.Kv.Key)
 							continue
 						}
 						sd.deleteServer(svID)

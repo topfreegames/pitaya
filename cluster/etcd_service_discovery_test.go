@@ -260,6 +260,24 @@ func TestEtcdSDInit(t *testing.T) {
 	}
 }
 
+func TestEtcdBeforeShutdown(t *testing.T) {
+	t.Parallel()
+	for _, table := range etcdSDTables {
+		t.Run(table.server.ID, func(t *testing.T) {
+			config := getConfig()
+			c, cli := helpers.GetTestEtcd(t)
+			defer c.Terminate(t)
+			e := getEtcdSD(t, config, table.server, cli)
+			e.Init()
+			assert.True(t, e.running)
+			e.BeforeShutdown()
+			assert.True(t, e.running)
+			_, err := cli.Revoke(context.TODO(), e.leaseID)
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestEtcdShutdown(t *testing.T) {
 	t.Parallel()
 	for _, table := range etcdSDTables {
@@ -272,8 +290,6 @@ func TestEtcdShutdown(t *testing.T) {
 			assert.True(t, e.running)
 			e.Shutdown()
 			assert.False(t, e.running)
-			_, err := cli.Revoke(context.TODO(), e.leaseID)
-			assert.Error(t, err)
 		})
 	}
 }
