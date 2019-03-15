@@ -252,8 +252,9 @@ func TestExecuteBeforePipelineError(t *testing.T) {
 
 func TestExecuteAfterPipelineEmpty(t *testing.T) {
 	expected := []byte("whatever")
-	res := executeAfterPipeline(nil, nil, expected)
+	res, err := executeAfterPipeline(nil, expected, nil)
 	assert.Equal(t, expected, res)
+	assert.Nil(t, err)
 }
 
 func TestExecuteAfterPipelineSuccess(t *testing.T) {
@@ -261,41 +262,41 @@ func TestExecuteAfterPipelineSuccess(t *testing.T) {
 	data := []byte("ok")
 	expected1 := []byte("oh noes 1")
 	expected2 := []byte("oh noes 2")
-	after1 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	err0 := errors.New("start with this")
+	err1 := errors.New("send this error")
+	after1 := func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 		assert.Equal(t, c, ctx)
-		assert.Equal(t, data, in)
-		return expected1, nil
+		assert.Equal(t, data, out)
+		assert.Equal(t, err0, err)
+		return expected1, err1
 	}
-	after2 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	after2 := func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 		assert.Equal(t, c, ctx)
-		assert.Equal(t, expected1, in)
+		assert.Equal(t, expected1, out)
+		assert.Equal(t, err1, err)
 		return expected2, nil
 	}
 	pipeline.AfterHandler.PushBack(after1)
 	pipeline.AfterHandler.PushBack(after2)
 	defer pipeline.AfterHandler.Clear()
 
-	res := executeAfterPipeline(c, nil, []byte("ok"))
+	res, err := executeAfterPipeline(c, []byte("ok"), err0)
 	assert.Equal(t, expected2, res)
+	assert.Nil(t, err)
 }
 
 func TestExecuteAfterPipelineError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockSerializer := mocks.NewMockSerializer(ctrl)
-
 	c := context.Background()
-	after := func(ctx context.Context, in interface{}) (interface{}, error) {
+	after := func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 		assert.Equal(t, c, ctx)
 		return nil, errors.New("oh noes")
 	}
 	pipeline.AfterHandler.PushFront(after)
 	defer pipeline.AfterHandler.Clear()
 
-	expected := []byte("error")
-	mockSerializer.EXPECT().Marshal(gomock.Any()).Return(expected, nil)
-	res := executeAfterPipeline(c, mockSerializer, []byte("ok"))
-	assert.Equal(t, expected, res)
+	res, err := executeAfterPipeline(c, []byte("ok"), nil)
+	assert.Nil(t, res)
+	assert.Equal(t, errors.New("oh noes"), err)
 }
 
 func TestSerializeReturn(t *testing.T) {
@@ -428,7 +429,7 @@ func TestProcessHandlerMessageBrokenAfterPipeline(t *testing.T) {
 	handlers[rt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 	defer func() { delete(handlers, rt.Short()) }()
 
-	after := func(ctx context.Context, in interface{}) (interface{}, error) {
+	after := func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 		return nil, errors.New("oh noes")
 	}
 	pipeline.AfterHandler.PushFront(after)
@@ -443,10 +444,8 @@ func TestProcessHandlerMessageBrokenAfterPipeline(t *testing.T) {
 		func(p []byte, arg interface{}) {
 			arg = &test.SomeStruct{}
 		})
-	expected := []byte("oops")
-	mockSerializer.EXPECT().Marshal(gomock.Any()).Return(expected, nil)
 
 	out, err := processHandlerMessage(nil, rt, mockSerializer, ss, nil, message.Request, false)
-	assert.Equal(t, expected, out)
-	assert.NoError(t, err)
+	assert.Nil(t, out)
+	assert.Equal(t, errors.New("oh noes"), err)
 }

@@ -24,12 +24,12 @@ import "github.com/topfreegames/pitaya/pipeline"
 
 // BeforeHandler pushs a function to the back of the functions pipeline that will
 // be executed before the handler method
-func BeforeHandler(h pipeline.Handler) {
+func BeforeHandler(h pipeline.HandlerTempl) {
 	pipeline.BeforeHandler.PushBack(h)
 }
 
 // AfterHandler pushs a function to the back of the functions pipeline that will
 // be executed after the handler method
-func AfterHandler(h pipeline.Handler) {
+func AfterHandler(h pipeline.AfterHandlerTempl) {
 	pipeline.AfterHandler.PushBack(h)
 }

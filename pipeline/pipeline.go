@@ -26,33 +26,59 @@ var (
 	// BeforeHandler contains the functions to be called before the handler method is executed
 	BeforeHandler = &pipelineChannel{}
 	// AfterHandler contains the functions to be called after the handler method is executed
-	AfterHandler = &pipelineChannel{}
+	AfterHandler = &pipelineAfterChannel{}
 )
 
 type (
-	// Handler is a function that has the same signature as a handler and will
+	// HandlerTempl is a function that has the same signature as a handler and will
 	// be called before or after handler methods
-	Handler func(ctx context.Context, in interface{}) (out interface{}, err error)
+	HandlerTempl func(ctx context.Context, in interface{}) (out interface{}, err error)
+
+	// AfterHandlerTempl is a function for the after handler, receives both the handler response
+	// and the error returned
+	AfterHandlerTempl func(ctx context.Context, out interface{}, err error) (interface{}, error)
 
 	pipelineChannel struct {
-		Handlers []Handler
+		Handlers []HandlerTempl
+	}
+
+	pipelineAfterChannel struct {
+		Handlers []AfterHandlerTempl
 	}
 )
 
 // PushFront should not be used after pitaya is running
-func (p *pipelineChannel) PushFront(h Handler) {
-	Handlers := make([]Handler, len(p.Handlers)+1)
+func (p *pipelineChannel) PushFront(h HandlerTempl) {
+	Handlers := make([]HandlerTempl, len(p.Handlers)+1)
 	Handlers[0] = h
 	copy(Handlers[1:], p.Handlers)
 	p.Handlers = Handlers
 }
 
 // PushBack should not be used after pitaya is running
-func (p *pipelineChannel) PushBack(h Handler) {
+func (p *pipelineChannel) PushBack(h HandlerTempl) {
 	p.Handlers = append(p.Handlers, h)
 }
 
-// Clear should not be used after pitaya running
+// Clear should not be used after pitaya is running
 func (p *pipelineChannel) Clear() {
-	p.Handlers = make([]Handler, 0)
+	p.Handlers = make([]HandlerTempl, 0)
+}
+
+// PushFront should not be used after pitaya is running
+func (p *pipelineAfterChannel) PushFront(h AfterHandlerTempl) {
+	Handlers := make([]AfterHandlerTempl, len(p.Handlers)+1)
+	Handlers[0] = h
+	copy(Handlers[1:], p.Handlers)
+	p.Handlers = Handlers
+}
+
+// PushBack should not be used after pitaya is running
+func (p *pipelineAfterChannel) PushBack(h AfterHandlerTempl) {
+	p.Handlers = append(p.Handlers, h)
+}
+
+// Clear should not be used after pitaya is running
+func (p *pipelineAfterChannel) Clear() {
+	p.Handlers = make([]AfterHandlerTempl, 0)
 }

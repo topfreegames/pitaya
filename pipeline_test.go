@@ -29,11 +29,15 @@ import (
 )
 
 func resetPipelines() {
-	pipeline.BeforeHandler.Handlers = make([]pipeline.Handler, 0)
-	pipeline.AfterHandler.Handlers = make([]pipeline.Handler, 0)
+	pipeline.BeforeHandler.Handlers = make([]pipeline.HandlerTempl, 0)
+	pipeline.AfterHandler.Handlers = make([]pipeline.AfterHandlerTempl, 0)
 }
 
 var myHandler = func(ctx context.Context, in interface{}) (interface{}, error) {
+	return []byte("test"), nil
+}
+
+var myAfterHandler = func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 	return []byte("test"), nil
 }
 
@@ -47,8 +51,8 @@ func TestBeforeHandler(t *testing.T) {
 
 func TestAfterHandler(t *testing.T) {
 	resetPipelines()
-	AfterHandler(myHandler)
-	r, err := pipeline.AfterHandler.Handlers[0](nil, nil)
+	AfterHandler(myAfterHandler)
+	r, err := pipeline.AfterHandler.Handlers[0](nil, nil, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test"), r)
 }

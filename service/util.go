@@ -106,7 +106,7 @@ func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, 
 				// TODO: not sure if this should be logged
 				// one may want to have a before filter that prevents handler execution
 				// example: auth
-				logger.Log.Errorf("pitaya/handler: broken pipeline: %s", err.Error())
+				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
 				return res, err
 			}
 		}
@@ -114,21 +114,14 @@ func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, 
 	return res, nil
 }
 
-func executeAfterPipeline(ctx context.Context, ser serialize.Serializer, res interface{}) interface{} {
-	var err error
+func executeAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
 	ret := res
 	if len(pipeline.AfterHandler.Handlers) > 0 {
 		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err = h(ctx, ret)
-			if err != nil {
-				logger.Log.Debugf("broken pipeline, error: %s", err.Error())
-				// err can be ignored since serializer was already tested previously
-				ret, _ = util.GetErrorPayload(ser, err)
-				return ret
-			}
+			ret, err = h(ctx, ret, err)
 		}
 	}
-	return ret
+	return ret, err
 }
 
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
@@ -195,10 +188,6 @@ func processHandlerMessage(
 	}
 
 	resp, err := util.Pcall(h.Method, args)
-	if err != nil {
-		return nil, err
-	}
-
 	if remote && msgType == message.Notify {
 		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout
@@ -208,7 +197,11 @@ func processHandlerMessage(
 		resp = []byte("ack")
 	}
 
-	resp = executeAfterPipeline(ctx, serializer, resp)
+	resp, err = executeAfterPipeline(ctx, resp, err)
+	if err != nil {
+		return nil, err
+	}
+
 	ret, err := serializeReturn(serializer, resp)
 	if err != nil {
 		return nil, err

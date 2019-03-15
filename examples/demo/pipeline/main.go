@@ -81,11 +81,11 @@ func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (inte
 }
 
 // Simple example of an after pipeline. The 2nd argument is the handler response.
-func (g *MetagameServer) simpleAfter(ctx context.Context, resp interface{}) (interface{}, error) {
+func (g *MetagameServer) simpleAfter(ctx context.Context, resp interface{}, err error) (interface{}, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	logger.Info("Simple After exec - response:", resp)
+	logger.Infof("Simple After exec - response: %v , error: %v", resp, err)
 
-	return resp, nil
+	return resp, err
 }
 
 func main() {
