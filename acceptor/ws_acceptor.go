@@ -88,7 +88,7 @@ func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	c, err := newWSConn(conn)
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Log.Errorf("Failed to create new ws connection: %s", err.Error())
 		return
 	}
 	h.connChan <- c
@@ -115,7 +115,7 @@ func (w *WSAcceptor) ListenAndServe() {
 
 	listener, err := net.Listen("tcp", w.addr)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 	w.listener = listener
 
@@ -131,13 +131,13 @@ func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
 
 	crt, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Fatalf("Failed to load x509: %s", err.Error())
 	}
 
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
 	listener, err := tls.Listen("tcp", w.addr, tlsCfg)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 	w.listener = listener
 	w.serve(&upgrader)
@@ -156,7 +156,7 @@ func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 func (w *WSAcceptor) Stop() {
 	err := w.listener.Close()
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Log.Errorf("Failed to stop: %s", err.Error())
 	}
 }
 

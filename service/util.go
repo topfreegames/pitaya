@@ -103,9 +103,6 @@ func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, 
 		for _, h := range pipeline.BeforeHandler.Handlers {
 			res, err = h(ctx, res)
 			if err != nil {
-				// TODO: not sure if this should be logged
-				// one may want to have a before filter that prevents handler execution
-				// example: auth
 				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
 				return res, err
 			}
@@ -127,7 +124,7 @@ func executeAfterPipeline(ctx context.Context, res interface{}, err error) (inte
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
 	res, err := util.SerializeOrRaw(ser, ret)
 	if err != nil {
-		logger.Log.Error(err.Error())
+		logger.Log.Errorf("Failed to serialize return: %s", err.Error())
 		res, err = util.GetErrorPayload(ser, err)
 		if err != nil {
 			logger.Log.Error("cannot serialize message and respond to the client ", err.Error())

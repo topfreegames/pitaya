@@ -351,7 +351,7 @@ func (a *Agent) write() {
 		case data := <-a.chSend:
 			payload, err := util.SerializeOrRaw(a.serializer, data.payload)
 			if err != nil {
-				logger.Log.Error(err.Error())
+				logger.Log.Errorf("Failed to serialize response: %s", err.Error())
 				payload, err = util.GetErrorPayload(a.serializer, err)
 				if err != nil {
 					tracing.FinishSpan(data.ctx, err)
@@ -377,7 +377,7 @@ func (a *Agent) write() {
 				if data.typ == message.Response {
 					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
-				logger.Log.Error(err.Error())
+				logger.Log.Errorf("Failed to encode message: %s", err.Error())
 				break
 			}
 
@@ -388,7 +388,7 @@ func (a *Agent) write() {
 				if data.typ == message.Response {
 					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
-				logger.Log.Error(err)
+				logger.Log.Errorf("Failed to encode packet: %s", err.Error())
 				break
 			}
 			// close agent if low-level Conn broken
@@ -397,7 +397,7 @@ func (a *Agent) write() {
 				if data.typ == message.Response {
 					metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, err)
 				}
-				logger.Log.Error(err.Error())
+				logger.Log.Errorf("Failed to write response: %s", err.Error())
 				return
 			}
 			var e error

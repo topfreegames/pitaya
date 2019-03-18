@@ -192,7 +192,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 		// (warning): decoder uses slice for performance, packet data should be copied before next Decode
 		packets, err := h.decoder.Decode(buf[:n])
 		if err != nil {
-			logger.Log.Error(err.Error())
+			logger.Log.Errorf("Failed to decode message: %s", err.Error())
 			return
 		}
 
@@ -204,7 +204,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 		// process all packet
 		for i := range packets {
 			if err := h.processPacket(a, packets[i]); err != nil {
-				logger.Log.Error(err.Error())
+				logger.Log.Errorf("Failed to process packet: %s", err.Error())
 				return
 			}
 		}
@@ -279,7 +279,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 
 	r, err := route.Decode(msg.Route)
 	if err != nil {
-		logger.Log.Error(err.Error())
+		logger.Log.Errorf("Failed to decode route: %s", err.Error())
 		a.AnswerWithError(ctx, msg.ID, e.NewError(err, e.ErrBadRequestCode))
 		return
 	}
@@ -317,7 +317,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 	ret, err := processHandlerMessage(ctx, route, h.serializer, a.Session, msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
-			logger.Log.Error(err)
+			logger.Log.Errorf("Failed to process handler message: %s", err.Error())
 			a.AnswerWithError(ctx, mid, err)
 		} else {
 			a.Session.ResponseMID(ctx, mid, ret)

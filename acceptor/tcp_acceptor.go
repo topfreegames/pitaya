@@ -90,7 +90,7 @@ func (a *TCPAcceptor) ListenAndServe() {
 
 	listener, err := net.Listen("tcp", a.addr)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 	a.listener = listener
 	a.running = true
@@ -101,7 +101,7 @@ func (a *TCPAcceptor) ListenAndServe() {
 func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 	crt, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
@@ -117,7 +117,7 @@ func (a *TCPAcceptor) serve() {
 	for a.running {
 		conn, err := a.listener.Accept()
 		if err != nil {
-			logger.Log.Error(err.Error())
+			logger.Log.Errorf("Failed to accept TCP connection: %s", err.Error())
 			continue
 		}
 

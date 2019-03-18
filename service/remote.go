@@ -98,13 +98,13 @@ func (r *RemoteService) remoteProcess(
 	switch msg.Type {
 	case message.Request:
 		if err != nil {
-			logger.Log.Error(err)
+			logger.Log.Errorf("Failed to process remote: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
 		err := a.Session.ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
-			logger.Log.Error(err)
+			logger.Log.Errorf("Failed to respond remote: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
 	case message.Notify:
