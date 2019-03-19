@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
@@ -171,6 +171,7 @@ func processHandlerMessage(
 	// both handler and pipeline functions
 	arg, err := unmarshalHandlerArg(h, serializer, data)
 	if err != nil {
+		logger.Warnf("invalid message: %s", string(data))
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
