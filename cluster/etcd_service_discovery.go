@@ -52,6 +52,7 @@ type etcdServiceDiscovery struct {
 	running              bool
 	server               *Server
 	stopChan             chan bool
+	stopLeaseChan        chan bool
 	lastSyncTime         time.Time
 	listeners            []SDListener
 	revokeTimeout        time.Duration
@@ -74,13 +75,14 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:     config,
-		running:    false,
-		server:     server,
-		listeners:  make([]SDListener, 0),
-		stopChan:   make(chan bool),
-		appDieChan: appDieChan,
-		cli:        client,
+		config:        config,
+		running:       false,
+		server:        server,
+		listeners:     make([]SDListener, 0),
+		stopChan:      make(chan bool),
+		stopLeaseChan: make(chan bool),
+		appDieChan:    appDieChan,
+		cli:           client,
 	}
 
 	sd.configure()
@@ -107,6 +109,8 @@ func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAlive
 	for {
 		select {
 		case <-sd.stopChan:
+			return
+		case <-sd.stopLeaseChan:
 			return
 		case leaseKeepAliveResponse := <-c:
 			if leaseKeepAliveResponse != nil {
@@ -287,13 +291,11 @@ func (sd *etcdServiceDiscovery) GetServers() []*Server {
 }
 
 func (sd *etcdServiceDiscovery) bootstrap() error {
-	err := sd.grantLease()
-	if err != nil {
+	if err := sd.grantLease(); err != nil {
 		return err
 	}
 
-	err = sd.bootstrapServer(sd.server)
-	if err != nil {
+	if err := sd.bootstrapServer(sd.server); err != nil {
 		return err
 	}
 
@@ -435,6 +437,7 @@ func (sd *etcdServiceDiscovery) Shutdown() error {
 
 // revoke prevents Pitaya from crashing when etcd is not available
 func (sd *etcdServiceDiscovery) revoke() error {
+	close(sd.stopLeaseChan)
 	c := make(chan error)
 	defer close(c)
 	go func() {
