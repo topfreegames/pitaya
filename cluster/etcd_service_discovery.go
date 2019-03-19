@@ -44,7 +44,8 @@ type etcdServiceDiscovery struct {
 	logHeartbeat         bool
 	lastHeartbeatTime    time.Time
 	leaseID              clientv3.LeaseID
-	serverMapByType      sync.Map
+	mapByTypeLock        sync.RWMutex
+	serverMapByType      map[string]map[string]*Server
 	serverMapByID        sync.Map
 	etcdEndpoints        []string
 	etcdPrefix           string
@@ -75,14 +76,15 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:        config,
-		running:       false,
-		server:        server,
-		listeners:     make([]SDListener, 0),
-		stopChan:      make(chan bool),
-		stopLeaseChan: make(chan bool),
-		appDieChan:    appDieChan,
-		cli:           client,
+		config:          config,
+		running:         false,
+		server:          server,
+		serverMapByType: make(map[string]map[string]*Server, 0),
+		listeners:       make([]SDListener, 0),
+		stopChan:        make(chan bool),
+		stopLeaseChan:   make(chan bool),
+		appDieChan:      appDieChan,
+		cli:             client,
 	}
 
 	sd.configure()
@@ -234,10 +236,11 @@ func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
 	if actual, ok := sd.serverMapByID.Load(serverID); ok {
 		sv := actual.(*Server)
 		sd.serverMapByID.Delete(sv.ID)
-		if svMap, ok := sd.serverMapByType.Load(sv.Type); ok {
-			sm := svMap.(map[string]*Server)
-			delete(sm, sv.ID)
+		sd.mapByTypeLock.Lock()
+		if svMap, ok := sd.serverMapByType[sv.Type]; ok {
+			delete(svMap, sv.ID)
 		}
+		sd.mapByTypeLock.Unlock()
 		sd.notifyListeners(DEL, sv)
 	}
 }
@@ -271,10 +274,15 @@ func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (
 
 // GetServersByType returns a slice with all the servers of a certain type
 func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]*Server, error) {
-	if m, ok := sd.serverMapByType.Load(serverType); ok {
-		sm := m.(map[string]*Server)
-		if len(sm) > 0 {
-			return sm, nil
+	sd.mapByTypeLock.RLock()
+	defer sd.mapByTypeLock.RUnlock()
+	if m, ok := sd.serverMapByType[serverType]; ok {
+		if len(m) > 0 {
+			ret := make(map[string]*Server, len(sd.serverMapByType))
+			for k, v := range sd.serverMapByType[serverType] {
+				ret[k] = v
+			}
+			return ret, nil
 		}
 	}
 	return nil, constants.ErrNoServersAvailableOfType
@@ -376,10 +384,11 @@ func parseServer(value []byte) (*Server, error) {
 }
 
 func (sd *etcdServiceDiscovery) printServers() {
-	sd.serverMapByType.Range(func(k, v interface{}) bool {
-		logger.Log.Debugf("type: %s, servers: %s", k, v)
-		return true
-	})
+	sd.mapByTypeLock.RLock()
+	for k, v := range sd.serverMapByType {
+		logger.Log.Debugf("type: %s, servers: %+v", k, v)
+	}
+	sd.mapByTypeLock.RUnlock()
 }
 
 // SyncServers gets all servers from etcd
@@ -457,12 +466,14 @@ func (sd *etcdServiceDiscovery) revoke() error {
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 	if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
-		mapSvByType, ok := sd.serverMapByType.Load(sv.Type)
+		sd.mapByTypeLock.Lock()
+		mapSvByType, ok := sd.serverMapByType[sv.Type]
 		if !ok {
 			mapSvByType = make(map[string]*Server)
-			sd.serverMapByType.Store(sv.Type, mapSvByType)
+			sd.serverMapByType[sv.Type] = mapSvByType
 		}
-		mapSvByType.(map[string]*Server)[sv.ID] = sv
+		mapSvByType[sv.ID] = sv
+		sd.mapByTypeLock.Unlock()
 		if sv.ID != sd.server.ID {
 			sd.notifyListeners(ADD, sv)
 		}
