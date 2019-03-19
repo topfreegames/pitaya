@@ -19,9 +19,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Error struct {
-	Code                 string            `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	Msg                  string            `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
-	Metadata             map[string]string `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Code                 string            `protobuf:"bytes,1,opt,name=code" json:"code,omitempty"`
+	Msg                  string            `protobuf:"bytes,2,opt,name=msg" json:"msg,omitempty"`
+	Metadata             map[string]string `protobuf:"bytes,3,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -31,7 +31,7 @@ func (m *Error) Reset()         { *m = Error{} }
 func (m *Error) String() string { return proto.CompactTextString(m) }
 func (*Error) ProtoMessage()    {}
 func (*Error) Descriptor() ([]byte, []int) {
-	return fileDescriptor_error_28572e96028e6170, []int{0}
+	return fileDescriptor_error_ea2c1b3dd908475b, []int{0}
 }
 func (m *Error) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Error.Unmarshal(m, b)
@@ -77,9 +77,9 @@ func init() {
 	proto.RegisterMapType((map[string]string)(nil), "protos.Error.MetadataEntry")
 }
 
-func init() { proto.RegisterFile("error.proto", fileDescriptor_error_28572e96028e6170) }
+func init() { proto.RegisterFile("error.proto", fileDescriptor_error_ea2c1b3dd908475b) }
 
-var fileDescriptor_error_28572e96028e6170 = []byte{
+var fileDescriptor_error_ea2c1b3dd908475b = []byte{
 	// 153 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4e, 0x2d, 0x2a, 0xca,
 	0x2f, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x8b, 0x19, 0xb9,

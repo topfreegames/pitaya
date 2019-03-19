@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type KickMsg struct {
-	UserId               string   `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	UserId               string   `protobuf:"bytes,1,opt,name=userId" json:"userId,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -29,7 +29,7 @@ func (m *KickMsg) Reset()         { *m = KickMsg{} }
 func (m *KickMsg) String() string { return proto.CompactTextString(m) }
 func (*KickMsg) ProtoMessage()    {}
 func (*KickMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_kick_25712f066fa1bd3c, []int{0}
+	return fileDescriptor_kick_71de7c6289e550fd, []int{0}
 }
 func (m *KickMsg) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_KickMsg.Unmarshal(m, b)
@@ -57,7 +57,7 @@ func (m *KickMsg) GetUserId() string {
 }
 
 type KickAnswer struct {
-	Kicked               bool     `protobuf:"varint,1,opt,name=kicked,proto3" json:"kicked,omitempty"`
+	Kicked               bool     `protobuf:"varint,1,opt,name=kicked" json:"kicked,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -67,7 +67,7 @@ func (m *KickAnswer) Reset()         { *m = KickAnswer{} }
 func (m *KickAnswer) String() string { return proto.CompactTextString(m) }
 func (*KickAnswer) ProtoMessage()    {}
 func (*KickAnswer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_kick_25712f066fa1bd3c, []int{1}
+	return fileDescriptor_kick_71de7c6289e550fd, []int{1}
 }
 func (m *KickAnswer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_KickAnswer.Unmarshal(m, b)
@@ -99,9 +99,9 @@ func init() {
 	proto.RegisterType((*KickAnswer)(nil), "protos.KickAnswer")
 }
 
-func init() { proto.RegisterFile("kick.proto", fileDescriptor_kick_25712f066fa1bd3c) }
+func init() { proto.RegisterFile("kick.proto", fileDescriptor_kick_71de7c6289e550fd) }
 
-var fileDescriptor_kick_25712f066fa1bd3c = []byte{
+var fileDescriptor_kick_71de7c6289e550fd = []byte{
 	// 97 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xce, 0x4c, 0xce,
 	0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x8a, 0x5c, 0xec, 0xde,

@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type BindMsg struct {
-	Uid                  string   `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
-	Fid                  string   `protobuf:"bytes,2,opt,name=fid,proto3" json:"fid,omitempty"`
+	Uid                  string   `protobuf:"bytes,1,opt,name=uid" json:"uid,omitempty"`
+	Fid                  string   `protobuf:"bytes,2,opt,name=fid" json:"fid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -30,7 +30,7 @@ func (m *BindMsg) Reset()         { *m = BindMsg{} }
 func (m *BindMsg) String() string { return proto.CompactTextString(m) }
 func (*BindMsg) ProtoMessage()    {}
 func (*BindMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bind_cca2aa20c9145e3d, []int{0}
+	return fileDescriptor_bind_9cf772af172ead7d, []int{0}
 }
 func (m *BindMsg) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BindMsg.Unmarshal(m, b)
@@ -68,9 +68,9 @@ func init() {
 	proto.RegisterType((*BindMsg)(nil), "protos.BindMsg")
 }
 
-func init() { proto.RegisterFile("bind.proto", fileDescriptor_bind_cca2aa20c9145e3d) }
+func init() { proto.RegisterFile("bind.proto", fileDescriptor_bind_9cf772af172ead7d) }
 
-var fileDescriptor_bind_cca2aa20c9145e3d = []byte{
+var fileDescriptor_bind_9cf772af172ead7d = []byte{
 	// 83 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4a, 0xca, 0xcc, 0x4b,
 	0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0xba, 0x5c, 0xec, 0x4e,

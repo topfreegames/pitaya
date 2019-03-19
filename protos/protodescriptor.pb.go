@@ -30,7 +30,7 @@ func (m *ProtoDescriptor) Reset()         { *m = ProtoDescriptor{} }
 func (m *ProtoDescriptor) String() string { return proto.CompactTextString(m) }
 func (*ProtoDescriptor) ProtoMessage()    {}
 func (*ProtoDescriptor) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protodescriptor_e04f446d4ffce499, []int{0}
+	return fileDescriptor_protodescriptor_d1dc0afa30ee5672, []int{0}
 }
 func (m *ProtoDescriptor) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProtoDescriptor.Unmarshal(m, b)
@@ -58,7 +58,7 @@ func (m *ProtoDescriptor) GetDesc() []byte {
 }
 
 type ProtoName struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -68,7 +68,7 @@ func (m *ProtoName) Reset()         { *m = ProtoName{} }
 func (m *ProtoName) String() string { return proto.CompactTextString(m) }
 func (*ProtoName) ProtoMessage()    {}
 func (*ProtoName) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protodescriptor_e04f446d4ffce499, []int{1}
+	return fileDescriptor_protodescriptor_d1dc0afa30ee5672, []int{1}
 }
 func (m *ProtoName) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProtoName.Unmarshal(m, b)
@@ -106,7 +106,7 @@ func (m *ProtoDescriptors) Reset()         { *m = ProtoDescriptors{} }
 func (m *ProtoDescriptors) String() string { return proto.CompactTextString(m) }
 func (*ProtoDescriptors) ProtoMessage()    {}
 func (*ProtoDescriptors) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protodescriptor_e04f446d4ffce499, []int{2}
+	return fileDescriptor_protodescriptor_d1dc0afa30ee5672, []int{2}
 }
 func (m *ProtoDescriptors) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProtoDescriptors.Unmarshal(m, b)
@@ -134,7 +134,7 @@ func (m *ProtoDescriptors) GetDesc() [][]byte {
 }
 
 type ProtoNames struct {
-	Name                 []string `protobuf:"bytes,1,rep,name=name,proto3" json:"name,omitempty"`
+	Name                 []string `protobuf:"bytes,1,rep,name=name" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -144,7 +144,7 @@ func (m *ProtoNames) Reset()         { *m = ProtoNames{} }
 func (m *ProtoNames) String() string { return proto.CompactTextString(m) }
 func (*ProtoNames) ProtoMessage()    {}
 func (*ProtoNames) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protodescriptor_e04f446d4ffce499, []int{3}
+	return fileDescriptor_protodescriptor_d1dc0afa30ee5672, []int{3}
 }
 func (m *ProtoNames) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProtoNames.Unmarshal(m, b)
@@ -179,10 +179,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("protodescriptor.proto", fileDescriptor_protodescriptor_e04f446d4ffce499)
+	proto.RegisterFile("protodescriptor.proto", fileDescriptor_protodescriptor_d1dc0afa30ee5672)
 }
 
-var fileDescriptor_protodescriptor_e04f446d4ffce499 = []byte{
+var fileDescriptor_protodescriptor_d1dc0afa30ee5672 = []byte{
 	// 123 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2d, 0x28, 0xca, 0x2f,
 	0xc9, 0x4f, 0x49, 0x2d, 0x4e, 0x2e, 0xca, 0x2c, 0x28, 0xc9, 0x2f, 0xd2, 0x03, 0xf3, 0x85, 0xd8,

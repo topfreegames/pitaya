@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type TestRequest struct {
-	Msg                  string   `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+	Msg                  string   `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -29,7 +29,7 @@ func (m *TestRequest) Reset()         { *m = TestRequest{} }
 func (m *TestRequest) String() string { return proto.CompactTextString(m) }
 func (*TestRequest) ProtoMessage()    {}
 func (*TestRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_testrequest_b06ed3d5095fd632, []int{0}
+	return fileDescriptor_testrequest_64ede5bd0b1b0648, []int{0}
 }
 func (m *TestRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TestRequest.Unmarshal(m, b)
@@ -60,9 +60,9 @@ func init() {
 	proto.RegisterType((*TestRequest)(nil), "test.TestRequest")
 }
 
-func init() { proto.RegisterFile("testrequest.proto", fileDescriptor_testrequest_b06ed3d5095fd632) }
+func init() { proto.RegisterFile("testrequest.proto", fileDescriptor_testrequest_64ede5bd0b1b0648) }
 
-var fileDescriptor_testrequest_b06ed3d5095fd632 = []byte{
+var fileDescriptor_testrequest_64ede5bd0b1b0648 = []byte{
 	// 79 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x49, 0x2d, 0x2e,
 	0x29, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x01,

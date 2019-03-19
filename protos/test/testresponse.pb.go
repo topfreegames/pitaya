@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type TestResponse struct {
-	Code                 int32    `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Msg                  string   `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	Code                 int32    `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
+	Msg                  string   `protobuf:"bytes,2,opt,name=msg" json:"msg,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -30,7 +30,7 @@ func (m *TestResponse) Reset()         { *m = TestResponse{} }
 func (m *TestResponse) String() string { return proto.CompactTextString(m) }
 func (*TestResponse) ProtoMessage()    {}
 func (*TestResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_testresponse_5fbd3cb466e28bc8, []int{0}
+	return fileDescriptor_testresponse_54303195d9d8e908, []int{0}
 }
 func (m *TestResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TestResponse.Unmarshal(m, b)
@@ -68,9 +68,9 @@ func init() {
 	proto.RegisterType((*TestResponse)(nil), "test.TestResponse")
 }
 
-func init() { proto.RegisterFile("testresponse.proto", fileDescriptor_testresponse_5fbd3cb466e28bc8) }
+func init() { proto.RegisterFile("testresponse.proto", fileDescriptor_testresponse_54303195d9d8e908) }
 
-var fileDescriptor_testresponse_5fbd3cb466e28bc8 = []byte{
+var fileDescriptor_testresponse_54303195d9d8e908 = []byte{
 	// 96 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2a, 0x49, 0x2d, 0x2e,
 	0x29, 0x4a, 0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62,

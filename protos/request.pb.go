@@ -38,14 +38,14 @@ func (x RPCType) String() string {
 	return proto.EnumName(RPCType_name, int32(x))
 }
 func (RPCType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_request_d729efd81f1bdb1c, []int{0}
+	return fileDescriptor_request_af3dbb976ee13f3b, []int{0}
 }
 
 type Request struct {
-	Type                 RPCType  `protobuf:"varint,1,opt,name=type,proto3,enum=protos.RPCType" json:"type,omitempty"`
-	Session              *Session `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
-	Msg                  *Msg     `protobuf:"bytes,3,opt,name=msg,proto3" json:"msg,omitempty"`
-	FrontendID           string   `protobuf:"bytes,4,opt,name=frontendID,proto3" json:"frontendID,omitempty"`
+	Type                 RPCType  `protobuf:"varint,1,opt,name=type,enum=protos.RPCType" json:"type,omitempty"`
+	Session              *Session `protobuf:"bytes,2,opt,name=session" json:"session,omitempty"`
+	Msg                  *Msg     `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`
+	FrontendID           string   `protobuf:"bytes,4,opt,name=frontendID" json:"frontendID,omitempty"`
 	Metadata             []byte   `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -56,7 +56,7 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_d729efd81f1bdb1c, []int{0}
+	return fileDescriptor_request_af3dbb976ee13f3b, []int{0}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
@@ -116,9 +116,9 @@ func init() {
 	proto.RegisterEnum("protos.RPCType", RPCType_name, RPCType_value)
 }
 
-func init() { proto.RegisterFile("request.proto", fileDescriptor_request_d729efd81f1bdb1c) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_request_af3dbb976ee13f3b) }
 
-var fileDescriptor_request_d729efd81f1bdb1c = []byte{
+var fileDescriptor_request_af3dbb976ee13f3b = []byte{
 	// 210 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x8f, 0xb1, 0x4e, 0x87, 0x30,
 	0x10, 0x87, 0xad, 0xa0, 0xfd, 0x73, 0x88, 0x92, 0x9b, 0x1a, 0xa2, 0xa6, 0xd1, 0xa5, 0x3a, 0x30,

@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type SomeStruct struct {
-	A                    int32    `protobuf:"varint,1,opt,name=A,proto3" json:"A,omitempty"`
-	B                    string   `protobuf:"bytes,2,opt,name=B,proto3" json:"B,omitempty"`
+	A                    int32    `protobuf:"varint,1,opt,name=A" json:"A,omitempty"`
+	B                    string   `protobuf:"bytes,2,opt,name=B" json:"B,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -30,7 +30,7 @@ func (m *SomeStruct) Reset()         { *m = SomeStruct{} }
 func (m *SomeStruct) String() string { return proto.CompactTextString(m) }
 func (*SomeStruct) ProtoMessage()    {}
 func (*SomeStruct) Descriptor() ([]byte, []int) {
-	return fileDescriptor_somestruct_5e81a066be23057d, []int{0}
+	return fileDescriptor_somestruct_0b613b601297f11c, []int{0}
 }
 func (m *SomeStruct) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SomeStruct.Unmarshal(m, b)
@@ -68,9 +68,9 @@ func init() {
 	proto.RegisterType((*SomeStruct)(nil), "test.SomeStruct")
 }
 
-func init() { proto.RegisterFile("somestruct.proto", fileDescriptor_somestruct_5e81a066be23057d) }
+func init() { proto.RegisterFile("somestruct.proto", fileDescriptor_somestruct_0b613b601297f11c) }
 
-var fileDescriptor_somestruct_5e81a066be23057d = []byte{
+var fileDescriptor_somestruct_0b613b601297f11c = []byte{
 	// 90 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x28, 0xce, 0xcf, 0x4d,
 	0x2d, 0x2e, 0x29, 0x2a, 0x4d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0x49,

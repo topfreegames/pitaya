@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Ping struct {
-	Content              string   `protobuf:"bytes,1,opt,name=Content,proto3" json:"Content,omitempty"`
+	Content              string   `protobuf:"bytes,1,opt,name=Content" json:"Content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -29,7 +29,7 @@ func (m *Ping) Reset()         { *m = Ping{} }
 func (m *Ping) String() string { return proto.CompactTextString(m) }
 func (*Ping) ProtoMessage()    {}
 func (*Ping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_test_d5fedb75cd53f8a3, []int{0}
+	return fileDescriptor_test_ab5a0806b9eb7ae2, []int{0}
 }
 func (m *Ping) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Ping.Unmarshal(m, b)
@@ -57,7 +57,7 @@ func (m *Ping) GetContent() string {
 }
 
 type Pong struct {
-	Content              string   `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
+	Content              string   `protobuf:"bytes,2,opt,name=Content" json:"Content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -67,7 +67,7 @@ func (m *Pong) Reset()         { *m = Pong{} }
 func (m *Pong) String() string { return proto.CompactTextString(m) }
 func (*Pong) ProtoMessage()    {}
 func (*Pong) Descriptor() ([]byte, []int) {
-	return fileDescriptor_test_d5fedb75cd53f8a3, []int{1}
+	return fileDescriptor_test_ab5a0806b9eb7ae2, []int{1}
 }
 func (m *Pong) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Pong.Unmarshal(m, b)
@@ -99,9 +99,9 @@ func init() {
 	proto.RegisterType((*Pong)(nil), "testdata.Pong")
 }
 
-func init() { proto.RegisterFile("test.proto", fileDescriptor_test_d5fedb75cd53f8a3) }
+func init() { proto.RegisterFile("test.proto", fileDescriptor_test_ab5a0806b9eb7ae2) }
 
-var fileDescriptor_test_d5fedb75cd53f8a3 = []byte{
+var fileDescriptor_test_ab5a0806b9eb7ae2 = []byte{
 	// 85 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2a, 0x49, 0x2d, 0x2e,
 	0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x00, 0xb1, 0x53, 0x12, 0x4b, 0x12, 0x95, 0x14,

@@ -23,7 +23,7 @@
 #   non-go = false
 #   go-tests = true
 #   unused-packages = true
-
+required = ["github.com/gogo/protobuf/gogoproto"]
 
 [[constraint]]
   name = "github.com/golang/protobuf"

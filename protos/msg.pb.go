@@ -44,15 +44,15 @@ func (x MsgType) String() string {
 	return proto.EnumName(MsgType_name, int32(x))
 }
 func (MsgType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_msg_c371bacb726ca576, []int{0}
+	return fileDescriptor_msg_40ab112f05d06c13, []int{0}
 }
 
 type Msg struct {
-	Id                   uint64   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Route                string   `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
+	Id                   uint64   `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Route                string   `protobuf:"bytes,2,opt,name=route" json:"route,omitempty"`
 	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	Reply                string   `protobuf:"bytes,4,opt,name=reply,proto3" json:"reply,omitempty"`
-	Type                 MsgType  `protobuf:"varint,5,opt,name=type,proto3,enum=protos.MsgType" json:"type,omitempty"`
+	Reply                string   `protobuf:"bytes,4,opt,name=reply" json:"reply,omitempty"`
+	Type                 MsgType  `protobuf:"varint,5,opt,name=type,enum=protos.MsgType" json:"type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -62,7 +62,7 @@ func (m *Msg) Reset()         { *m = Msg{} }
 func (m *Msg) String() string { return proto.CompactTextString(m) }
 func (*Msg) ProtoMessage()    {}
 func (*Msg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_msg_c371bacb726ca576, []int{0}
+	return fileDescriptor_msg_40ab112f05d06c13, []int{0}
 }
 func (m *Msg) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Msg.Unmarshal(m, b)
@@ -122,9 +122,9 @@ func init() {
 	proto.RegisterEnum("protos.MsgType", MsgType_name, MsgType_value)
 }
 
-func init() { proto.RegisterFile("msg.proto", fileDescriptor_msg_c371bacb726ca576) }
+func init() { proto.RegisterFile("msg.proto", fileDescriptor_msg_40ab112f05d06c13) }
 
-var fileDescriptor_msg_c371bacb726ca576 = []byte{
+var fileDescriptor_msg_40ab112f05d06c13 = []byte{
 	// 196 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x2c, 0x8f, 0xc1, 0x4e, 0xc6, 0x20,
 	0x0c, 0xc7, 0x85, 0xf1, 0x69, 0xd6, 0xe9, 0x46, 0x1a, 0x0f, 0x1c, 0x89, 0x5e, 0x88, 0x87, 0x1d,

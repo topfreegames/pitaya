@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DocMsg struct {
-	GetProtos            bool     `protobuf:"varint,1,opt,name=getProtos,proto3" json:"getProtos,omitempty"`
+	GetProtos            bool     `protobuf:"varint,1,opt,name=getProtos" json:"getProtos,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -29,7 +29,7 @@ func (m *DocMsg) Reset()         { *m = DocMsg{} }
 func (m *DocMsg) String() string { return proto.CompactTextString(m) }
 func (*DocMsg) ProtoMessage()    {}
 func (*DocMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_docmsg_07e3adea3d738f41, []int{0}
+	return fileDescriptor_docmsg_6d699a2b0ab5525e, []int{0}
 }
 func (m *DocMsg) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocMsg.Unmarshal(m, b)
@@ -60,9 +60,9 @@ func init() {
 	proto.RegisterType((*DocMsg)(nil), "protos.DocMsg")
 }
 
-func init() { proto.RegisterFile("docmsg.proto", fileDescriptor_docmsg_07e3adea3d738f41) }
+func init() { proto.RegisterFile("docmsg.proto", fileDescriptor_docmsg_6d699a2b0ab5525e) }
 
-var fileDescriptor_docmsg_07e3adea3d738f41 = []byte{
+var fileDescriptor_docmsg_6d699a2b0ab5525e = []byte{
 	// 75 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x49, 0xc9, 0x4f, 0xce,
 	0x2d, 0x4e, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x6a, 0x5c,

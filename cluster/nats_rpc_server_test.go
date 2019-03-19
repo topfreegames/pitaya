@@ -172,7 +172,7 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	err = conn.Publish(GetUserKickTopic("someuid", sv.Type), dt)
 	assert.NoError(t, err)
 	msg := helpers.ShouldEventuallyReceive(t, rpcServer.getUserKickChannel()).(*protos.KickMsg)
-	assert.Equal(t, msg, kick)
+	assert.Equal(t, msg.UserId, kick.UserId)
 }
 
 func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
@@ -372,7 +372,10 @@ func TestNatsRPCServerProcessBindings(t *testing.T) {
 		Data: bindData,
 	}
 
-	pitayaSvMock.EXPECT().SessionBindRemote(context.Background(), bindMsg).Do(func(ctx context.Context, b *protos.BindMsg) {
+	unmarshalledMsg := &protos.BindMsg{}
+	_ = proto.Unmarshal(bindData, unmarshalledMsg)
+
+	pitayaSvMock.EXPECT().SessionBindRemote(context.Background(), unmarshalledMsg).Do(func(ctx context.Context, b *protos.BindMsg) {
 		assert.Equal(t, bindMsg.Uid, b.Uid)
 		assert.Equal(t, bindMsg.Fid, b.Fid)
 	})

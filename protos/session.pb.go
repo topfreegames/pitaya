@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Session struct {
-	Id                   int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Id                   int64    `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid" json:"uid,omitempty"`
 	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -31,7 +31,7 @@ func (m *Session) Reset()         { *m = Session{} }
 func (m *Session) String() string { return proto.CompactTextString(m) }
 func (*Session) ProtoMessage()    {}
 func (*Session) Descriptor() ([]byte, []int) {
-	return fileDescriptor_session_9a9ff980de1f2738, []int{0}
+	return fileDescriptor_session_4ab38c3ef8b6fd7a, []int{0}
 }
 func (m *Session) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Session.Unmarshal(m, b)
@@ -76,9 +76,9 @@ func init() {
 	proto.RegisterType((*Session)(nil), "protos.Session")
 }
 
-func init() { proto.RegisterFile("session.proto", fileDescriptor_session_9a9ff980de1f2738) }
+func init() { proto.RegisterFile("session.proto", fileDescriptor_session_4ab38c3ef8b6fd7a) }
 
-var fileDescriptor_session_9a9ff980de1f2738 = []byte{
+var fileDescriptor_session_4ab38c3ef8b6fd7a = []byte{
 	// 103 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4e, 0x2d, 0x2e,
 	0xce, 0xcc, 0xcf, 0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0xf6,

@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Push struct {
-	Route                string   `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
-	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Route                string   `protobuf:"bytes,1,opt,name=route" json:"route,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid" json:"uid,omitempty"`
 	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -31,7 +31,7 @@ func (m *Push) Reset()         { *m = Push{} }
 func (m *Push) String() string { return proto.CompactTextString(m) }
 func (*Push) ProtoMessage()    {}
 func (*Push) Descriptor() ([]byte, []int) {
-	return fileDescriptor_push_b01900fa6aef5157, []int{0}
+	return fileDescriptor_push_77d28476f32095f7, []int{0}
 }
 func (m *Push) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Push.Unmarshal(m, b)
@@ -76,9 +76,9 @@ func init() {
 	proto.RegisterType((*Push)(nil), "protos.Push")
 }
 
-func init() { proto.RegisterFile("push.proto", fileDescriptor_push_b01900fa6aef5157) }
+func init() { proto.RegisterFile("push.proto", fileDescriptor_push_77d28476f32095f7) }
 
-var fileDescriptor_push_b01900fa6aef5157 = []byte{
+var fileDescriptor_push_77d28476f32095f7 = []byte{
 	// 100 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2a, 0x28, 0x2d, 0xce,
 	0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x03, 0x53, 0xc5, 0x4a, 0x4e, 0x5c, 0x2c, 0x01,
