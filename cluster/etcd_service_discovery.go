@@ -276,14 +276,15 @@ func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (
 func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]*Server, error) {
 	sd.mapByTypeLock.RLock()
 	defer sd.mapByTypeLock.RUnlock()
-	if m, ok := sd.serverMapByType[serverType]; ok {
-		if len(m) > 0 {
-			ret := make(map[string]*Server, len(sd.serverMapByType))
-			for k, v := range sd.serverMapByType[serverType] {
-				ret[k] = v
-			}
-			return ret, nil
+	if m, ok := sd.serverMapByType[serverType]; ok && len(m) > 0 {
+		// Create a new map to avoid concurrent read and write access to the
+		// map, this also prevents accidental changes to the list of servers
+		// kept by the service discovery.
+		ret := make(map[string]*Server, len(sd.serverMapByType))
+		for k, v := range sd.serverMapByType[serverType] {
+			ret[k] = v
 		}
+		return ret, nil
 	}
 	return nil, constants.ErrNoServersAvailableOfType
 }
