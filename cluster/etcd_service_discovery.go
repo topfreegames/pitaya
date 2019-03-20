@@ -79,7 +79,7 @@ func NewEtcdServiceDiscovery(
 		config:          config,
 		running:         false,
 		server:          server,
-		serverMapByType: make(map[string]map[string]*Server, 0),
+		serverMapByType: make(map[string]map[string]*Server),
 		listeners:       make([]SDListener, 0),
 		stopChan:        make(chan bool),
 		stopLeaseChan:   make(chan bool),
