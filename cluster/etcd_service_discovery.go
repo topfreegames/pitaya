@@ -44,7 +44,8 @@ type etcdServiceDiscovery struct {
 	logHeartbeat         bool
 	lastHeartbeatTime    time.Time
 	leaseID              clientv3.LeaseID
-	serverMapByType      sync.Map
+	mapByTypeLock        sync.RWMutex
+	serverMapByType      map[string]map[string]*Server
 	serverMapByID        sync.Map
 	etcdEndpoints        []string
 	etcdPrefix           string
@@ -52,6 +53,7 @@ type etcdServiceDiscovery struct {
 	running              bool
 	server               *Server
 	stopChan             chan bool
+	stopLeaseChan        chan bool
 	lastSyncTime         time.Time
 	listeners            []SDListener
 	revokeTimeout        time.Duration
@@ -74,13 +76,15 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:     config,
-		running:    false,
-		server:     server,
-		listeners:  make([]SDListener, 0),
-		stopChan:   make(chan bool),
-		appDieChan: appDieChan,
-		cli:        client,
+		config:          config,
+		running:         false,
+		server:          server,
+		serverMapByType: make(map[string]map[string]*Server),
+		listeners:       make([]SDListener, 0),
+		stopChan:        make(chan bool),
+		stopLeaseChan:   make(chan bool),
+		appDieChan:      appDieChan,
+		cli:             client,
 	}
 
 	sd.configure()
@@ -107,6 +111,8 @@ func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAlive
 	for {
 		select {
 		case <-sd.stopChan:
+			return
+		case <-sd.stopLeaseChan:
 			return
 		case leaseKeepAliveResponse := <-c:
 			if leaseKeepAliveResponse != nil {
@@ -226,14 +232,21 @@ func (sd *etcdServiceDiscovery) notifyListeners(act Action, sv *Server) {
 	}
 }
 
+func (sd *etcdServiceDiscovery) writeLockScope(f func()) {
+	sd.mapByTypeLock.Lock()
+	defer sd.mapByTypeLock.Unlock()
+	f()
+}
+
 func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
 	if actual, ok := sd.serverMapByID.Load(serverID); ok {
 		sv := actual.(*Server)
 		sd.serverMapByID.Delete(sv.ID)
-		if svMap, ok := sd.serverMapByType.Load(sv.Type); ok {
-			sm := svMap.(map[string]*Server)
-			delete(sm, sv.ID)
-		}
+		sd.writeLockScope(func() {
+			if svMap, ok := sd.serverMapByType[sv.Type]; ok {
+				delete(svMap, sv.ID)
+			}
+		})
 		sd.notifyListeners(DEL, sv)
 	}
 }
@@ -267,11 +280,17 @@ func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (
 
 // GetServersByType returns a slice with all the servers of a certain type
 func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]*Server, error) {
-	if m, ok := sd.serverMapByType.Load(serverType); ok {
-		sm := m.(map[string]*Server)
-		if len(sm) > 0 {
-			return sm, nil
+	sd.mapByTypeLock.RLock()
+	defer sd.mapByTypeLock.RUnlock()
+	if m, ok := sd.serverMapByType[serverType]; ok && len(m) > 0 {
+		// Create a new map to avoid concurrent read and write access to the
+		// map, this also prevents accidental changes to the list of servers
+		// kept by the service discovery.
+		ret := make(map[string]*Server, len(sd.serverMapByType))
+		for k, v := range sd.serverMapByType[serverType] {
+			ret[k] = v
 		}
+		return ret, nil
 	}
 	return nil, constants.ErrNoServersAvailableOfType
 }
@@ -287,13 +306,11 @@ func (sd *etcdServiceDiscovery) GetServers() []*Server {
 }
 
 func (sd *etcdServiceDiscovery) bootstrap() error {
-	err := sd.grantLease()
-	if err != nil {
+	if err := sd.grantLease(); err != nil {
 		return err
 	}
 
-	err = sd.bootstrapServer(sd.server)
-	if err != nil {
+	if err := sd.bootstrapServer(sd.server); err != nil {
 		return err
 	}
 
@@ -374,10 +391,11 @@ func parseServer(value []byte) (*Server, error) {
 }
 
 func (sd *etcdServiceDiscovery) printServers() {
-	sd.serverMapByType.Range(func(k, v interface{}) bool {
-		logger.Log.Debugf("type: %s, servers: %s", k, v)
-		return true
-	})
+	sd.mapByTypeLock.RLock()
+	defer sd.mapByTypeLock.RUnlock()
+	for k, v := range sd.serverMapByType {
+		logger.Log.Debugf("type: %s, servers: %+v", k, v)
+	}
 }
 
 // SyncServers gets all servers from etcd
@@ -435,6 +453,7 @@ func (sd *etcdServiceDiscovery) Shutdown() error {
 
 // revoke prevents Pitaya from crashing when etcd is not available
 func (sd *etcdServiceDiscovery) revoke() error {
+	close(sd.stopLeaseChan)
 	c := make(chan error)
 	defer close(c)
 	go func() {
@@ -454,12 +473,14 @@ func (sd *etcdServiceDiscovery) revoke() error {
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 	if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
-		mapSvByType, ok := sd.serverMapByType.Load(sv.Type)
-		if !ok {
-			mapSvByType = make(map[string]*Server)
-			sd.serverMapByType.Store(sv.Type, mapSvByType)
-		}
-		mapSvByType.(map[string]*Server)[sv.ID] = sv
+		sd.writeLockScope(func() {
+			mapSvByType, ok := sd.serverMapByType[sv.Type]
+			if !ok {
+				mapSvByType = make(map[string]*Server)
+				sd.serverMapByType[sv.Type] = mapSvByType
+			}
+			mapSvByType[sv.ID] = sv
+		})
 		if sv.ID != sd.server.ID {
 			sd.notifyListeners(ADD, sv)
 		}
