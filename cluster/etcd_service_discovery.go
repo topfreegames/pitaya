@@ -232,15 +232,21 @@ func (sd *etcdServiceDiscovery) notifyListeners(act Action, sv *Server) {
 	}
 }
 
+func (sd *etcdServiceDiscovery) writeLockScope(f func()) {
+	sd.mapByTypeLock.Lock()
+	defer sd.mapByTypeLock.Unlock()
+	f()
+}
+
 func (sd *etcdServiceDiscovery) deleteServer(serverID string) {
 	if actual, ok := sd.serverMapByID.Load(serverID); ok {
 		sv := actual.(*Server)
 		sd.serverMapByID.Delete(sv.ID)
-		sd.mapByTypeLock.Lock()
-		if svMap, ok := sd.serverMapByType[sv.Type]; ok {
-			delete(svMap, sv.ID)
-		}
-		sd.mapByTypeLock.Unlock()
+		sd.writeLockScope(func() {
+			if svMap, ok := sd.serverMapByType[sv.Type]; ok {
+				delete(svMap, sv.ID)
+			}
+		})
 		sd.notifyListeners(DEL, sv)
 	}
 }
@@ -386,10 +392,10 @@ func parseServer(value []byte) (*Server, error) {
 
 func (sd *etcdServiceDiscovery) printServers() {
 	sd.mapByTypeLock.RLock()
+	defer sd.mapByTypeLock.RUnlock()
 	for k, v := range sd.serverMapByType {
 		logger.Log.Debugf("type: %s, servers: %+v", k, v)
 	}
-	sd.mapByTypeLock.RUnlock()
 }
 
 // SyncServers gets all servers from etcd
@@ -467,14 +473,14 @@ func (sd *etcdServiceDiscovery) revoke() error {
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 	if _, loaded := sd.serverMapByID.LoadOrStore(sv.ID, sv); !loaded {
-		sd.mapByTypeLock.Lock()
-		mapSvByType, ok := sd.serverMapByType[sv.Type]
-		if !ok {
-			mapSvByType = make(map[string]*Server)
-			sd.serverMapByType[sv.Type] = mapSvByType
-		}
-		mapSvByType[sv.ID] = sv
-		sd.mapByTypeLock.Unlock()
+		sd.writeLockScope(func() {
+			mapSvByType, ok := sd.serverMapByType[sv.Type]
+			if !ok {
+				mapSvByType = make(map[string]*Server)
+				sd.serverMapByType[sv.Type] = mapSvByType
+			}
+			mapSvByType[sv.ID] = sv
+		})
 		if sv.ID != sd.server.ID {
 			sd.notifyListeners(ADD, sv)
 		}
