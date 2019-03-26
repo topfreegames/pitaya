@@ -219,7 +219,7 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 
 	host, portKey = gs.getServerHost(sv)
 	if host == "" {
-		logger.Log.Errorf("server %s has no grpc-host specified in metadata", sv.ID)
+		logger.Log.Errorf("server %s has no grpcHost specified in metadata", sv.ID)
 		return
 	}
 
