@@ -106,16 +106,14 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 	}
 	if c, ok := gs.clientMap.Load(server.ID); ok {
 		ctxT, done := context.WithTimeout(ctx, gs.reqTimeout)
+		defer done()
 
-		defer func() {
-			if gs.metricsReporters != nil {
-				startTime := time.Now()
-				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
-				ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
-				metrics.ReportTimingFromCtx(ctx, gs.metricsReporters, "rpc", err)
-			}
-			done()
-		}()
+		if gs.metricsReporters != nil {
+			startTime := time.Now()
+			ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
+			ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
+			defer metrics.ReportTimingFromCtx(ctxT, gs.metricsReporters, "rpc", err)
+		}
 
 		res, err := c.(protos.PitayaClient).Call(ctxT, &req)
 		if err != nil {
