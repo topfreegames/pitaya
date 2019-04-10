@@ -22,7 +22,6 @@ package metrics
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -42,7 +41,6 @@ type StatsdReporter struct {
 	client      Client
 	rate        float64
 	serverType  string
-	hostname    string
 	defaultTags []string
 }
 
@@ -59,15 +57,9 @@ func NewStatsdReporter(
 	if err != nil {
 		return nil, err
 	}
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-
 	sr := &StatsdReporter{
 		rate:       rate,
 		serverType: serverType,
-		hostname:   hostname,
 	}
 
 	sr.buildDefaultTags(tagsMap)
@@ -86,12 +78,11 @@ func NewStatsdReporter(
 }
 
 func (s *StatsdReporter) buildDefaultTags(tagsMap map[string]string) {
-	defaultTags := make([]string, len(tagsMap)+2)
+	defaultTags := make([]string, len(tagsMap)+1)
 
 	defaultTags[0] = fmt.Sprintf("serverType:%s", s.serverType)
-	defaultTags[1] = fmt.Sprintf("hostname:%s", s.hostname)
 
-	idx := 2
+	idx := 1
 	for k, v := range tagsMap {
 		defaultTags[idx] = fmt.Sprintf("%s:%s", k, v)
 		idx++

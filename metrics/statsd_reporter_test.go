@@ -44,7 +44,6 @@ func TestNewStatsdReporter(t *testing.T) {
 	assert.Equal(t, mockClient, sr.client)
 	assert.Equal(t, float64(cfg.GetInt("pitaya.metrics.statsd.rate")), sr.rate)
 	assert.Equal(t, "svType", sr.serverType)
-	assert.NotEmpty(t, sr.hostname)
 }
 
 func TestReportLatency(t *testing.T) {
@@ -119,7 +118,6 @@ func TestReportCount(t *testing.T) {
 			assert.Contains(t, tags, fmt.Sprintf("%s:%s", k, v))
 		}
 		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
-		assert.Contains(t, tags, fmt.Sprintf("hostname:%s", sr.hostname))
 		assert.Contains(t, tags, "defaultTag:value")
 	})
 
