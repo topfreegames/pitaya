@@ -19,6 +19,8 @@ func helperConcatBytes(packetType packet.Type, length, data []byte) []byte {
 	return bytes
 }
 
+var tooBigData = make([]byte, 1<<25)
+
 var encodeTables = map[string]struct {
 	packetType packet.Type
 	length     []byte
@@ -27,6 +29,7 @@ var encodeTables = map[string]struct {
 }{
 	"test_encode_handshake":    {packet.Handshake, []byte{0x00, 0x00, 0x02}, []byte{0x01, 0x00}, nil},
 	"test_invalid_packet_type": {0xff, nil, nil, packet.ErrWrongPomeloPacketType},
+	"test_too_big_packet":      {packet.Data, nil, tooBigData, ErrPacketSizeExcced},
 }
 
 func TestEncode(t *testing.T) {
@@ -37,10 +40,12 @@ func TestEncode(t *testing.T) {
 			ppe := NewPomeloPacketEncoder()
 
 			encoded, err := ppe.Encode(table.packetType, table.data)
-
-			expectedEncoded := helperConcatBytes(table.packetType, table.length, table.data)
-			assert.Equal(t, expectedEncoded, encoded)
-			assert.Equal(t, table.err, err)
+			if table.err != nil {
+				assert.Equal(t, table.err, err)
+			} else {
+				expectedEncoded := helperConcatBytes(table.packetType, table.length, table.data)
+				assert.Equal(t, expectedEncoded, encoded)
+			}
 		})
 	}
 }

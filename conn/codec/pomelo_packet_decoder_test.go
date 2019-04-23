@@ -19,12 +19,6 @@ var forwardTables = map[string]struct {
 	"test_kick_type":          {[]byte{packet.Kick}, nil},
 
 	"test_wrong_packet_type": {[]byte{0x06}, packet.ErrWrongPomeloPacketType},
-
-	"test_max_packet_size_handshake_type":     {[]byte{packet.Handshake, 0xFF, 0xFF, 0xFF}, ErrPacketSizeExcced},
-	"test_max_packet_size_handshake_ack_type": {[]byte{packet.HandshakeAck, 0xFF, 0xFF, 0xFF}, ErrPacketSizeExcced},
-	"test_max_packet_size_heartbeat_type":     {[]byte{packet.Heartbeat, 0xFF, 0xFF, 0xFF}, ErrPacketSizeExcced},
-	"test_max_packet_size_data_type":          {[]byte{packet.Data, 0xFF, 0xFF, 0xFF}, ErrPacketSizeExcced},
-	"test_max_packet_size_kick_type":          {[]byte{packet.Kick, 0xFF, 0xFF, 0xFF}, ErrPacketSizeExcced},
 }
 
 var (
