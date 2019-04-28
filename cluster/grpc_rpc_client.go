@@ -227,9 +227,7 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 	}
 
 	address := fmt.Sprintf("%s:%s", host, port)
-	ctxT, done := context.WithTimeout(context.Background(), gs.dialTimeout)
-	defer done()
-	conn, err := grpc.DialContext(ctxT, address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)
 		return
