@@ -188,6 +188,18 @@ func OnSessionClose(f func(s *Session)) {
 	SessionCloseCallbacks = append(SessionCloseCallbacks, f)
 }
 
+// CloseAll calls Close on all sessions
+func CloseAll() {
+	// TODO: check if frontend?
+	logger.Log.Debug("closing all sessions, %d sessions", SessionCount)
+	sessionsByID.Range(func(_, value interface{}) bool {
+		s := value.(*Session)
+		s.Close()
+		return true
+	})
+	logger.Log.Debug("finished closing sessions")
+}
+
 func (s *Session) updateEncodedData() error {
 	var b []byte
 	b, err := json.Marshal(s.data)
