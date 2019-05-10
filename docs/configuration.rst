@@ -130,10 +130,18 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 10
     - string
     - Number of connections to keep with Redis
+  * - pitaya.worker.redis.password
+    - ""
+    - string
+    - Redis password to connect to pitaya workers redis
   * - pitaya.worker.concurrency
     - 1
     - int
     - Number of workers to execute job
+  * - pitaya.worker.namespace
+    - ""
+    - string
+    - Worker namespace, can be used to differ stacks in a blue-green deployment
   * - pitaya.worker.retry.enabled
     - true
     - bool

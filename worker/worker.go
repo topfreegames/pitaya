@@ -50,10 +50,11 @@ func NewWorker(config *config.Config) (*Worker, error) {
 	}
 
 	workers.Configure(map[string]string{
-		"server":   config.GetString("pitaya.worker.redis.url"),
-		"pool":     config.GetString("pitaya.worker.redis.pool"),
-		"password": config.GetString("pitaya.worker.redis.password"),
-		"process":  hostname,
+		"server":    config.GetString("pitaya.worker.redis.url"),
+		"pool":      config.GetString("pitaya.worker.redis.pool"),
+		"password":  config.GetString("pitaya.worker.redis.password"),
+		"namespace": config.GetString("pitaya.worker.namespace"),
+		"process":   hostname,
 	})
 
 	return &Worker{
