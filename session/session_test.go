@@ -77,6 +77,52 @@ func TestSessionIDServiceSessionID(t *testing.T) {
 	assert.EqualValues(t, 1, sessionID)
 }
 
+func TestCloseAll(t *testing.T) {
+	var (
+		entity *mocks.MockNetworkEntity
+	)
+
+	tables := map[string]struct {
+		sessions func() []*Session
+		mock     func()
+	}{
+		"test_close_many_sessions": {
+			sessions: func() []*Session {
+				return []*Session{
+					New(entity, true, uuid.New().String()),
+					New(entity, true, uuid.New().String()),
+					New(entity, true, uuid.New().String()),
+				}
+			},
+			mock: func() {
+				entity.EXPECT().Close().Times(3)
+			},
+		},
+
+		"test_close_no_sessions": {
+			sessions: func() []*Session { return []*Session{} },
+			mock:     func() {},
+		},
+	}
+
+	for name, table := range tables {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			entity = mocks.NewMockNetworkEntity(ctrl)
+			for _, s := range table.sessions() {
+				sessionsByID.Store(s.ID(), s)
+				sessionsByUID.Store(s.UID(), s)
+			}
+
+			table.mock()
+
+			CloseAll()
+		})
+	}
+}
+
 func TestNew(t *testing.T) {
 	tables := []struct {
 		name     string
