@@ -439,6 +439,7 @@ func Start() {
 
 	logger.Log.Warn("server is stopping...")
 
+	session.CloseAll()
 	shutdownModules()
 	shutdownComponents()
 }
