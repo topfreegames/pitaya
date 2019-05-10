@@ -190,8 +190,7 @@ func OnSessionClose(f func(s *Session)) {
 
 // CloseAll calls Close on all sessions
 func CloseAll() {
-	// TODO: check if frontend?
-	logger.Log.Debug("closing all sessions, %d sessions", SessionCount)
+	logger.Log.Debugf("closing all sessions, %d sessions", SessionCount)
 	sessionsByID.Range(func(_, value interface{}) bool {
 		s := value.(*Session)
 		s.Close()

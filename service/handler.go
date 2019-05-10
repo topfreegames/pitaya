@@ -183,7 +183,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			logger.Log.Debugf("Read message error: %s, session will be closed immediately", err.Error())
+			logger.Log.Debugf("Read message error: '%s', session will be closed immediately", err.Error())
 			return
 		}
 

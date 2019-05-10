@@ -202,7 +202,7 @@ func (a *Agent) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.Debugf("Session closed, ID=%d, UID=%d, IP=%s",
+	logger.Log.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
 		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
