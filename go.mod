@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/DataDog/datadog-go v0.0.0-20180330214955-e67964b4021a
+	github.com/DataDog/datadog-go v2.2.0+incompatible
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
