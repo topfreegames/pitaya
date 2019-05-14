@@ -44,12 +44,14 @@ func reportQueueSizes(r metrics.Reporter, queues map[string]string) {
 }
 
 func reportJobsTotal(r metrics.Reporter, failed, processed int) {
-	err := r.ReportCount(metrics.WorkerJobsTotal, map[string]string{
+	// "failed" and "processed" always grow up,
+	// so they work as count but must be reported as gauge
+	err := r.ReportGauge(metrics.WorkerJobsTotal, map[string]string{
 		"status": "failed",
 	}, float64(failed))
 	checkReportErr(metrics.WorkerJobsTotal, err)
 
-	err = r.ReportCount(metrics.WorkerJobsTotal, map[string]string{
+	err = r.ReportGauge(metrics.WorkerJobsTotal, map[string]string{
 		"status": "ok",
 	}, float64(processed))
 	checkReportErr(metrics.WorkerJobsTotal, err)

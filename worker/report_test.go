@@ -73,12 +73,12 @@ func TestReportJobsTotal(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockReporter := mocks.NewMockReporter(ctrl)
-	mockReporter.EXPECT().ReportCount(
+	mockReporter.EXPECT().ReportGauge(
 		metrics.WorkerJobsTotal,
 		map[string]string{"status": "failed"},
 		float64(10))
 
-	mockReporter.EXPECT().ReportCount(
+	mockReporter.EXPECT().ReportGauge(
 		metrics.WorkerJobsTotal,
 		map[string]string{"status": "ok"},
 		float64(20))

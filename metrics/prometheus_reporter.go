@@ -234,8 +234,8 @@ func (p *PrometheusReporter) registerMetrics(
 		append([]string{"queue"}, additionalLabelsKeys...),
 	)
 
-	p.countReportersMap[WorkerJobsTotal] = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	p.gaugeReportersMap[WorkerJobsTotal] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace:   "pitaya",
 			Subsystem:   "worker",
 			Name:        WorkerJobsTotal,
