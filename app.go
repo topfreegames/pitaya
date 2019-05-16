@@ -532,7 +532,12 @@ func GetSessionFromCtx(ctx context.Context) *session.Session {
 
 // GetDefaultLoggerFromCtx returns the default logger from the given context
 func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
-	return ctx.Value(constants.LoggerCtxKey).(logger.Logger)
+	l := ctx.Value(constants.LoggerCtxKey)
+	if l == nil {
+		return logger.Log
+	}
+
+	return l.(logger.Logger)
 }
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will
