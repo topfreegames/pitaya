@@ -408,7 +408,7 @@ func (a *Agent) write() {
 				if m.Err {
 					// default code is overwritten, if any
 					rErr = &errors.Error{Code: errors.ErrUnknownCode}
-					_ = a.serializer.Unmarshal(m.Data, rErr)
+					_ = a.serializer.Unmarshal(payload, rErr)
 				}
 
 				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, rErr)
