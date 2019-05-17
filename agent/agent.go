@@ -134,7 +134,7 @@ func NewAgent(
 func (a *Agent) send(m pendingMessage) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = constants.ErrBrokenPipe
+			err = errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 		}
 	}()
 	a.reportChannelSize()
@@ -145,7 +145,7 @@ func (a *Agent) send(m pendingMessage) (err error) {
 // Push implementation for session.NetworkEntity interface
 func (a *Agent) Push(route string, v interface{}) error {
 	if a.GetStatus() == constants.StatusClosed {
-		return constants.ErrBrokenPipe
+		return errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 	}
 
 	switch d := v.(type) {
@@ -167,7 +167,7 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 		err = isError[0]
 	}
 	if a.GetStatus() == constants.StatusClosed {
-		err := constants.ErrBrokenPipe
+		err := errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 		tracing.FinishSpan(ctx, err)
 		metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		return err

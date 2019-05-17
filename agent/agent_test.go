@@ -148,7 +148,7 @@ func TestAgentSend(t *testing.T) {
 		err  error
 	}{
 		{"success", nil},
-		{"failure", constants.ErrBrokenPipe},
+		{"failure", e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
 	}
 
 	for _, table := range tables {
@@ -195,7 +195,7 @@ func TestAgentPushFailsIfClosedAgent(t *testing.T) {
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
 	err := ag.Push("", nil)
-	assert.Equal(t, constants.ErrBrokenPipe, err)
+	assert.Equal(t, e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest), err)
 }
 
 func TestAgentPush(t *testing.T) {
@@ -206,7 +206,7 @@ func TestAgentPush(t *testing.T) {
 	}{
 		{"success_raw", []byte("ok"), nil},
 		{"success_struct", &someStruct{A: "ok"}, nil},
-		{"failure", []byte("ok"), constants.ErrBrokenPipe},
+		{"failure", []byte("ok"), e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
 	}
 
 	for _, table := range tables {
@@ -294,7 +294,7 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 	ctx := getCtxWithRequestKeys()
 	err := ag.ResponseMID(ctx, 1, nil)
-	assert.Equal(t, constants.ErrBrokenPipe, err)
+	assert.Equal(t, e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest), err)
 }
 
 func TestAgentResponseMID(t *testing.T) {
@@ -309,7 +309,8 @@ func TestAgentResponseMID(t *testing.T) {
 		{"success_raw_msg_err", uint(rand.Int()), []byte("ok"), true, nil},
 		{"success_struct", uint(rand.Int()), &someStruct{A: "ok"}, false, nil},
 		{"failure_empty_mid", 0, []byte("ok"), false, constants.ErrSessionOnNotify},
-		{"failure_send", uint(rand.Int()), []byte("ok"), false, constants.ErrBrokenPipe},
+		{"failure_send", uint(rand.Int()), []byte("ok"), false,
+			e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
 	}
 
 	for _, table := range tables {
