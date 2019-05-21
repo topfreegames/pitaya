@@ -94,6 +94,14 @@ func ReportSysMetrics(reporters []Reporter, period time.Duration) {
 	}
 }
 
+// ReportExceededRateLimiting reports the number of requests made
+// after exceeded rate limiting in a connection
+func ReportExceededRateLimiting(reporters []Reporter) {
+	for _, r := range reporters {
+		r.ReportCount(ExceededRateLimiting, map[string]string{}, 1)
+	}
+}
+
 func tagsFromContext(ctx context.Context) map[string]string {
 	val := pcontext.GetFromPropagateCtx(ctx, constants.MetricTagsKey)
 	if val == nil {

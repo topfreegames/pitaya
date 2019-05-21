@@ -187,6 +187,18 @@ Connection
     - 30s
     - time.Time
     - Keepalive heartbeat interval for the client connection
+  * - pitaya.conn.ratelimiting.interval
+    - 1s
+    - time.Duration
+    - Window of time to count requests
+  * - pitaya.conn.ratelimiting.limit
+    - 20
+    - int
+    - Max number of requests allowed in a interval
+  * - pitaya.conn.ratelimiting.forcedisable
+    - false
+    - bool
+    - If true, ignores rate limiting even when added with WithWrappers
 
 Metrics Reporting
 =================

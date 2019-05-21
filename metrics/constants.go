@@ -25,4 +25,7 @@ var (
 	WorkerJobsRetry = "worker_jobs_retry_total"
 	// WorkerQueueSize reports the queue size on worker
 	WorkerQueueSize = "worker_queue_size"
+	// ExceededRateLimiting reports the number of requests made in a connection
+	// after the rate limit was exceeded
+	ExceededRateLimiting = "exceeded_rate_limiting"
 )
