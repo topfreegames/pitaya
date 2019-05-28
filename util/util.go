@@ -164,8 +164,9 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 		}
 		defaultLogger = logrusLogger.WithFields(
 			logrus.Fields{
-				"route":  route,
-				"userId": userID,
+				"route":     route,
+				"requestId": requestID,
+				"userId":    userID,
 			})
 	} else {
 		defaultLogger = logger.Log
