@@ -245,6 +245,17 @@ func (p *PrometheusReporter) registerMetrics(
 		append([]string{"status"}, additionalLabelsKeys...),
 	)
 
+	p.countReportersMap[ExceededRateLimiting] = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "acceptor",
+			Name:        ExceededRateLimiting,
+			Help:        "the number of blocked requests by exceeded rate limiting",
+			ConstLabels: constLabels,
+		},
+		additionalLabelsKeys,
+	)
+
 	toRegister := make([]prometheus.Collector, 0)
 	for _, c := range p.countReportersMap {
 		toRegister = append(toRegister, c)

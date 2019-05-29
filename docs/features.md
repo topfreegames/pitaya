@@ -23,6 +23,22 @@ They are useful for creating game rooms for example, you just put all the player
 
 Frontend servers must specify one or more acceptors to handle incoming client connections, Pitaya comes with TCP and Websocket acceptors already implemented, and other acceptors can be added to the application by implementing the acceptor interface.
 
+## Acceptor Wrappers
+
+Wrappers can be used on acceptors, like TCP and Websocket, to read and change incoming data before performing the message forwarding. To create a new wrapper just implement the Wrapper interface (or inherit the struct from BaseWrapper) and add it into your acceptor by using the WithWrappers method. Next there are some examples of acceptor wrappers. 
+
+### Rate limiting
+Read the incoming data on each player's connection to limit requests troughput. After the limit is exceeded, requests are dropped until slots are available again. The requests count and management is done on player's connection, therefore it happens even before session bind. The used algorithm is the [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket#Comparison_with_the_token_bucket_algorithm). This algorithm represents a leaky bucket that has its output flow slower than its input flow. It saves each request timestamp in a `slot` (of a total of `limit` slots) and this slot is freed again after `interval`. For example: if `limit` of 1 request in an `interval` of 1 second, when a request happens at 0.2s the next request will only be handled by pitaya after 1s (at 1.2s).
+
+```
+0     request
+|--------|
+   0.2s
+0                 available again
+|------------------------|
+|- 0.2s -|----- 1s ------|
+```
+
 ## Message forwarding
 
 When a server instance receives a client message, it checks the target server type by looking at the route. If the target server type is different from the receiving server type, the instance forwards the message to an appropriate server instance of the correct type. The client doesn't need to take any action to forward the message, this process is done automatically by Pitaya.

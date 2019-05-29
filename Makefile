@@ -49,6 +49,9 @@ run-cluster-worker-example-worker:
 run-custom-metrics-example:
 	@cd examples/demo/custom_metrics && go run main.go --port 3250
 
+run-rate-limiting-example:
+	@go run examples/demo/rate_limiting/main.go
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
@@ -139,3 +142,6 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 
 serializer-mock:
 	@mockgen github.com/topfreegames/pitaya/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
+
+acceptor-mock:
+	@mockgen github.com/topfreegames/pitaya/acceptor Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go
