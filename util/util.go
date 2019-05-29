@@ -175,14 +175,13 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 	return context.WithValue(ctx, constants.LoggerCtxKey, defaultLogger)
 }
 
-// GetContextFromRequest gets the context from a request
-func GetContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
-	ctx, err := pcontext.Decode(req.GetMetadata())
-	if err != nil {
-		return nil, err
-	}
+// StartSpanFromRequest starts a tracing span from the request
+func StartSpanFromRequest(
+	ctx context.Context,
+	serverID, route string,
+) context.Context {
 	if ctx == nil {
-		return nil, constants.ErrNoContextFound
+		return nil
 	}
 	tags := opentracing.Tags{
 		"local.id":     serverID,
@@ -195,7 +194,19 @@ func GetContextFromRequest(req *protos.Request, serverID string) (context.Contex
 	if err != nil {
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
-	ctx = tracing.StartSpan(ctx, req.GetMsg().GetRoute(), tags, parent)
+	ctx = tracing.StartSpan(ctx, route, tags, parent)
+	return ctx
+}
+
+// GetContextFromRequest gets the context from a request
+func GetContextFromRequest(req *protos.Request, serverID string) (context.Context, error) {
+	ctx, err := pcontext.Decode(req.GetMetadata())
+	if err != nil {
+		return nil, err
+	}
+	if ctx == nil {
+		return nil, constants.ErrNoContextFound
+	}
 	ctx = CtxWithDefaultLogger(ctx, req.GetMsg().GetRoute(), "")
 	return ctx, nil
 }
