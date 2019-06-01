@@ -203,6 +203,7 @@ func (ns *NatsRPCServer) handleMessages() {
 			maxPending = math.Max(float64(maxPending), subsChanLen)
 			logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", subsChanLen, maxPending, dropped)
 			req := &protos.Request{}
+			// TODO: Add tracing here to report delay to start processing message in spans
 			err = proto.Unmarshal(msg.Data, req)
 			if err != nil {
 				// should answer rpc with an error
