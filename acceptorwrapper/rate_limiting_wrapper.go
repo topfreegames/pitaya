@@ -23,6 +23,7 @@ package acceptorwrapper
 import (
 	"net"
 
+	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/config"
 )
 
@@ -46,5 +47,11 @@ func NewRateLimitingWrapper(c *config.Config) *RateLimitingWrapper {
 		return NewRateLimiter(conn, limit, interval, forceDisable)
 	})
 
+	return r
+}
+
+// Wrap saves acceptor as an attribute
+func (r *RateLimitingWrapper) Wrap(a acceptor.Acceptor) acceptor.Acceptor {
+	r.Acceptor = a
 	return r
 }

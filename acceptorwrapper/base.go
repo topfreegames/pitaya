@@ -44,12 +44,6 @@ func NewBaseWrapper(wrapConn func(net.Conn) net.Conn) BaseWrapper {
 	}
 }
 
-// Wrap saves acceptor as an attribute
-func (b *BaseWrapper) Wrap(a acceptor.Acceptor) acceptor.Acceptor {
-	b.Acceptor = a
-	return b
-}
-
 // ListenAndServe starts a goroutine that wraps acceptor's conn
 // and calls acceptor's listenAndServe
 func (b *BaseWrapper) ListenAndServe() {
