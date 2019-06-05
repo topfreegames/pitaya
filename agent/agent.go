@@ -229,7 +229,7 @@ func (a *Agent) RemoteAddr() net.Addr {
 
 // String, implementation for Stringer interface
 func (a *Agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt))
 }
 
 // GetStatus gets the status
@@ -250,7 +250,7 @@ func (a *Agent) Kick(ctx context.Context) error {
 
 // SetLastAt sets the last at to now
 func (a *Agent) SetLastAt() {
-	a.lastAt = time.Now().Unix()
+	atomic.StoreInt64(&a.lastAt, time.Now().Unix())
 }
 
 // SetStatus sets the agent status
@@ -302,8 +302,8 @@ func (a *Agent) heartbeat() {
 		select {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
-			if a.lastAt < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline)
+			if atomic.LoadInt64(&a.lastAt) < deadline {
+				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
 				return
 			}
 			if _, err := a.conn.Write(hbd); err != nil {
