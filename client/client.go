@@ -21,6 +21,7 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -137,7 +138,7 @@ func (c *Client) sendHandshakeRequest() error {
 }
 
 func (c *Client) handleHandshakeResponse() error {
-	buf := make([]byte, 2048)
+	buf := bytes.NewBuffer(nil)
 	packets, err := c.readPackets(buf)
 	if err != nil {
 		return err
@@ -255,29 +256,34 @@ func (c *Client) handlePackets() {
 	}
 }
 
-func (c *Client) readPackets(buf []byte) ([]*packet.Packet, error) {
+func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	// listen for sv messages
-	n := len(buf)
+	data := make([]byte, 1024)
+	n := len(data)
 	var err error
 
-	data := make([]byte, 0)
-	for n == len(buf) {
-		n, err = c.conn.Read(buf)
+	for n == len(data) {
+		n, err = c.conn.Read(data)
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, buf[:n]...)
+		buf.Write(data[:n])
 	}
-	packets, err := c.packetDecoder.Decode(data)
+	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
 		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
 	}
+	totalProcessed := 0
+	for _, p := range packets {
+		totalProcessed += codec.HeadLength + p.Length
+	}
+	buf.Next(totalProcessed)
 
 	return packets, nil
 }
 
 func (c *Client) handleServerMessages() {
-	buf := make([]byte, 1024)
+	buf := bytes.NewBuffer(nil)
 	defer c.Disconnect()
 	for c.Connected {
 		packets, err := c.readPackets(buf)
