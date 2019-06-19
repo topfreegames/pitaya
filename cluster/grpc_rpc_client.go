@@ -40,7 +40,6 @@ import (
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/tracing"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 // GRPCClient rpc server struct
@@ -244,11 +243,6 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 	address := fmt.Sprintf("%s:%s", host, port)
 	conn, err := grpc.Dial(address,
 		grpc.WithInsecure(),
-		grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.connection.time"),
-			Timeout:             gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.connection.timeout"),
-			PermitWithoutStream: true,
-		}),
 	)
 	if err != nil {
 		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)

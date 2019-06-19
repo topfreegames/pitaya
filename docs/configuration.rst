@@ -94,14 +94,6 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 5s
     - time.Time
     - Timeout for the gRPC client to establish the connection
-  * - pitaya.cluster.rpc.client.grpc.connection.time
-    - 30s
-    - time.Duration
-    - Time with inactivity before the gRPC client pings the server
-  * - pitaya.cluster.rpc.client.grpc.connection.timeout
-    - 30s
-    - time.Duration
-    - Time with inactivity after sending a ping that the client waits before closing the connection
   * - pitaya.cluster.rpc.client.nats.connect
     - nats://localhost:4222
     - string
@@ -122,14 +114,6 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 15
     - int
     - Maximum number of retries to reconnect to nats for the server
-  * - pitaya.cluster.rpc.server.grpc.connection.time
-    - 30s
-    - time.Duration
-    - Time with inactivity before the gRPC server pings the client
-  * - pitaya.cluster.rpc.server.grpc.connection.timeout
-    - 30s
-    - time.Duration
-    - Time with inactivity after sending a ping that the server waits before closing the connection
   * - pitaya.cluster.rpc.server.grpc.port
     - 3434
     - int

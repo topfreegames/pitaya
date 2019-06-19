@@ -25,7 +25,6 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/metrics"
@@ -58,14 +57,7 @@ func (gs *GRPCServer) Init() error {
 	if err != nil {
 		return err
 	}
-	gs.grpcSv = grpc.NewServer(
-		grpc.KeepaliveParams(
-			keepalive.ServerParameters{
-				Time:    gs.config.GetDuration("pitaya.cluster.rpc.server.grpc.connection.time"),
-				Timeout: gs.config.GetDuration("pitaya.cluster.rpc.server.grpc.connection.timeout"),
-			},
-		),
-	)
+	gs.grpcSv = grpc.NewServer()
 	protos.RegisterPitayaServer(gs.grpcSv, gs.pitayaServer)
 	go gs.grpcSv.Serve(lis)
 	return nil
