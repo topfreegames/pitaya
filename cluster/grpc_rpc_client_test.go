@@ -41,7 +41,7 @@ func TestCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
-	g.clientMap.Store(g.server.ID, mockPitayaClient)
+	g.clientMap.Store(g.server.ID, &grpcClient{cli: mockPitayaClient})
 
 	ctx := context.Background()
 	rpcType := protos.RPCType_Sys
@@ -94,8 +94,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 			//mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
 
 			if table.bindingStorage != nil {
-
-				g.clientMap.Store(g.server.ID, mockPitayaClient)
+				g.clientMap.Store(g.server.ID, &grpcClient{cli: mockPitayaClient})
 
 				g.bindingStorage = mockBindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(uid, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
@@ -155,7 +154,7 @@ func TestSendKick(t *testing.T) {
 			assert.NoError(t, err)
 
 			if table.bindingStorage != nil {
-				g.clientMap.Store(table.sv.ID, mockPitayaClient)
+				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
 				g.bindingStorage = table.bindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(table.userID, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
 					assert.Equal(t, table.userID, u)
@@ -216,7 +215,7 @@ func TestSendPush(t *testing.T) {
 			uid := "someuid"
 
 			if table.bindingStorage != nil && table.sv.ID == "" {
-				g.clientMap.Store(table.sv.ID, mockPitayaClient)
+				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
 				g.bindingStorage = table.bindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(uid, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
 					assert.Equal(t, uid, u)
@@ -231,7 +230,7 @@ func TestSendPush(t *testing.T) {
 				})
 
 			} else if table.bindingStorage == nil && table.sv.ID != "" {
-				g.clientMap.Store(table.sv.ID, mockPitayaClient)
+				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
 				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push) {
 					assert.Equal(t, uid, msg.Uid)
 					assert.Equal(t, msg.Route, "sv.svc.mth")
@@ -364,13 +363,31 @@ func TestGetServerHost(t *testing.T) {
 func TestRemoveServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
 
-	server := getServer()
-	conf := getConfig()
+	c := viper.New()
+	port := helpers.GetFreePort(t)
+	c.Set("pitaya.cluster.rpc.server.grpc.port", port)
+	conf := getConfig(c)
+
+	server := &Server{
+		ID:   "someid",
+		Type: "sometype",
+		Metadata: map[string]string{
+			constants.GRPCHostKey: "localhost",
+			constants.GRPCPortKey: fmt.Sprintf("%d", port),
+		},
+		Frontend: false,
+	}
+	gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+	assert.NoError(t, err)
+	mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
+	gs.SetPitayaServer(mockPitayaServer)
+	err = gs.Init()
+	assert.NoError(t, err)
+
 	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{}, nil, nil)
 	assert.NoError(t, err)
-	gc.clientMap.Store(server.ID, mockPitayaClient)
+	gc.AddServer(server)
 
 	sv, ok := gc.clientMap.Load(server.ID)
 	assert.NotNil(t, sv)

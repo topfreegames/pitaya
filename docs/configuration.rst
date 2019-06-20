@@ -92,7 +92,7 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - Request timeout for RPC calls with the gRPC client
   * - pitaya.cluster.rpc.client.grpc.dialtimeout
     - 5s
-    - time.Tim
+    - time.Time
     - Timeout for the gRPC client to establish the connection
   * - pitaya.cluster.rpc.client.nats.connect
     - nats://localhost:4222

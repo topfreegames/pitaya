@@ -75,6 +75,11 @@ func NewGRPCClient(
 	return gs, nil
 }
 
+type grpcClient struct {
+	conn *grpc.ClientConn
+	cli  protos.PitayaClient
+}
+
 // Init inits grpc rpc client
 func (gs *GRPCClient) Init() error {
 	return nil
@@ -86,7 +91,19 @@ func (gs *GRPCClient) configure() {
 }
 
 // Call makes a RPC Call
-func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) (*protos.Response, error) {
+func (gs *GRPCClient) Call(
+	ctx context.Context,
+	rpcType protos.RPCType,
+	route *route.Route,
+	session *session.Session,
+	msg *message.Message,
+	server *Server,
+) (*protos.Response, error) {
+	c, ok := gs.clientMap.Load(server.ID)
+	if !ok {
+		return nil, constants.ErrNoConnectionToServer
+	}
+
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
@@ -104,36 +121,33 @@ func (gs *GRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *r
 	if err != nil {
 		return nil, err
 	}
-	if c, ok := gs.clientMap.Load(server.ID); ok {
-		ctxT, done := context.WithTimeout(ctx, gs.reqTimeout)
-		defer done()
 
-		if gs.metricsReporters != nil {
-			startTime := time.Now()
-			ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
-			ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
-			defer metrics.ReportTimingFromCtx(ctxT, gs.metricsReporters, "rpc", err)
-		}
+	ctxT, done := context.WithTimeout(ctx, gs.reqTimeout)
+	defer done()
 
-		res, err := c.(protos.PitayaClient).Call(ctxT, &req)
-		if err != nil {
-			return nil, err
-		}
-		if res.Error != nil {
-			if res.Error.Code == "" {
-				res.Error.Code = pitErrors.ErrUnknownCode
-			}
-			err = &pitErrors.Error{
-				Code:     res.Error.Code,
-				Message:  res.Error.Msg,
-				Metadata: res.Error.Metadata,
-			}
-			return nil, err
-		}
-		return res, nil
-
+	if gs.metricsReporters != nil {
+		startTime := time.Now()
+		ctxT = pcontext.AddToPropagateCtx(ctxT, constants.StartTimeKey, startTime.UnixNano())
+		ctxT = pcontext.AddToPropagateCtx(ctxT, constants.RouteKey, route.String())
+		defer metrics.ReportTimingFromCtx(ctxT, gs.metricsReporters, "rpc", err)
 	}
-	return nil, constants.ErrNoConnectionToServer
+
+	res, err := c.(*grpcClient).cli.Call(ctxT, &req)
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		if res.Error.Code == "" {
+			res.Error.Code = pitErrors.ErrUnknownCode
+		}
+		err = &pitErrors.Error{
+			Code:     res.Error.Code,
+			Message:  res.Error.Msg,
+			Metadata: res.Error.Metadata,
+		}
+		return nil, err
+	}
+	return res, nil
 }
 
 // Send not implemented in grpc client
@@ -155,7 +169,7 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 			}
 			ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 			defer done()
-			_, err := c.(protos.PitayaClient).SessionBindRemote(ctxT, msg)
+			_, err := c.(*grpcClient).cli.SessionBindRemote(ctxT, msg)
 			return err
 		}
 	}
@@ -179,7 +193,7 @@ func (gs *GRPCClient) SendKick(userID string, serverType string, kick *protos.Ki
 	if c, ok := gs.clientMap.Load(svID); ok {
 		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 		defer done()
-		_, err := c.(protos.PitayaClient).KickUser(ctxT, kick)
+		_, err := c.(*grpcClient).cli.KickUser(ctxT, kick)
 		return err
 	}
 	return constants.ErrNoConnectionToServer
@@ -204,7 +218,7 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 	if c, ok := gs.clientMap.Load(svID); ok {
 		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 		defer done()
-		_, err := c.(protos.PitayaClient).PushToUser(ctxT, push)
+		_, err := c.(*grpcClient).cli.PushToUser(ctxT, push)
 		return err
 	}
 	return constants.ErrNoConnectionToServer
@@ -227,20 +241,22 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 	}
 
 	address := fmt.Sprintf("%s:%s", host, port)
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address,
+		grpc.WithInsecure(),
+	)
 	if err != nil {
 		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)
 		return
 	}
 	c := protos.NewPitayaClient(conn)
-	gs.clientMap.Store(sv.ID, c)
+	gs.clientMap.Store(sv.ID, &grpcClient{conn: conn, cli: c})
 	logger.Log.Debugf("[grpc client] added server %s at %s", sv.ID, address)
 }
 
 // RemoveServer is called when a server is removed
 func (gs *GRPCClient) RemoveServer(sv *Server) {
-	if _, ok := gs.clientMap.Load(sv.ID); ok {
-		// TODO: do I need to disconnect client?
+	if c, ok := gs.clientMap.Load(sv.ID); ok {
+		c.(*grpcClient).conn.Close()
 		gs.clientMap.Delete(sv.ID)
 		logger.Log.Debugf("[grpc client] removed server %s", sv.ID)
 	}
