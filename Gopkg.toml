@@ -73,7 +73,7 @@ required = ["github.com/gogo/protobuf/gogoproto"]
 
 [[constraint]]
   name = "github.com/prometheus/client_golang"
-  version = "0.8.0"
+  version = "1.0.0"
 
 [[constraint]]
   branch = "master"
