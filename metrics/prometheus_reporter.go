@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 )
@@ -298,7 +299,7 @@ func GetPrometheusReporter(
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
 		prometheusReporter.registerMetrics(constLabels, additionalLabels, spec)
-		http.Handle("/metrics", prometheus.Handler())
+		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 		})()
