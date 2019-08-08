@@ -31,7 +31,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/conn/codec"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/conn/packet"
@@ -45,6 +44,8 @@ import (
 	"github.com/topfreegames/pitaya/tracing"
 	"github.com/topfreegames/pitaya/util"
 	"github.com/topfreegames/pitaya/util/compression"
+
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 var (
@@ -404,13 +405,9 @@ func (a *Agent) write() {
 			tracing.FinishSpan(data.ctx, e)
 			if data.typ == message.Response {
 				var rErr error
-
 				if m.Err {
-					// default code is overwritten, if any
-					rErr = &errors.Error{Code: errors.ErrUnknownCode}
-					_ = a.serializer.Unmarshal(payload, rErr)
+					rErr = util.GetErrorFromPayload(a.serializer, payload)
 				}
-
 				metrics.ReportTimingFromCtx(data.ctx, a.metricsReporters, handlerType, rErr)
 			}
 		case <-a.chStopWrite:

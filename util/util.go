@@ -28,9 +28,6 @@ import (
 	"reflect"
 	"runtime/debug"
 
-	"github.com/google/uuid"
-	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
 	pcontext "github.com/topfreegames/pitaya/context"
@@ -38,7 +35,13 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
+	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/tracing"
+
+	"github.com/google/uuid"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 )
 
 func getLoggerFromArgs(args []reflect.Value) logger.Logger {
@@ -114,6 +117,20 @@ func SerializeOrRaw(serializer serialize.Serializer, v interface{}) ([]byte, err
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+// GetErrorFromPayload gets the error from payload
+func GetErrorFromPayload(serializer serialize.Serializer, payload []byte) error {
+	err := &e.Error{Code: e.ErrUnknownCode}
+	switch serializer.(type) {
+	case *json.Serializer:
+		_ = serializer.Unmarshal(payload, err)
+	case *protobuf.Serializer:
+		pErr := &protos.Error{Code: e.ErrUnknownCode}
+		_ = serializer.Unmarshal(payload, pErr)
+		err = &e.Error{Code: pErr.Code, Message: pErr.Msg, Metadata: pErr.Metadata}
+	}
+	return err
 }
 
 // GetErrorPayload creates and serializes an error payload
