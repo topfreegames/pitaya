@@ -209,7 +209,6 @@ func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
 	}
 
 	sd.SyncServers()
-
 	return nil
 }
 
@@ -346,8 +345,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 	sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
 	sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
 
-	err = sd.bootstrap()
-	if err != nil {
+	if err = sd.bootstrap(); err != nil {
 		return err
 	}
 
