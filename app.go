@@ -370,17 +370,17 @@ func Start() {
 			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
 		}
 
-		err := RegisterModuleBefore(app.serviceDiscovery, "serviceDiscovery")
-		if err != nil {
-			logger.Log.Fatal("failed to register service discovery module: %s", err.Error())
-		}
-		err = RegisterModuleBefore(app.rpcServer, "rpcServer")
-		if err != nil {
+		if err := RegisterModuleBefore(app.rpcServer, "rpcServer"); err != nil {
 			logger.Log.Fatal("failed to register rpc server module: %s", err.Error())
 		}
-		err = RegisterModuleBefore(app.rpcClient, "rpcClient")
-		if err != nil {
+		if err := RegisterModuleBefore(app.rpcClient, "rpcClient"); err != nil {
 			logger.Log.Fatal("failed to register rpc client module: %s", err.Error())
+		}
+		// set the service discovery as the last module to be started to ensure
+		// all modules have been properly initialized before the server starts
+		// receiving requests from other pitaya servers
+		if err := RegisterModuleAfter(app.serviceDiscovery, "serviceDiscovery"); err != nil {
+			logger.Log.Fatal("failed to register service discovery module: %s", err.Error())
 		}
 
 		app.router.SetServiceDiscovery(app.serviceDiscovery)
