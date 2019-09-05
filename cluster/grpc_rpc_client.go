@@ -76,8 +76,10 @@ func NewGRPCClient(
 }
 
 type grpcClient struct {
-	conn *grpc.ClientConn
-	cli  protos.PitayaClient
+	address   string
+	cli       protos.PitayaClient
+	conn      *grpc.ClientConn
+	connected bool
 }
 
 // Init inits grpc rpc client
@@ -106,7 +108,7 @@ func (gs *GRPCClient) Call(
 
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		logger.Log.Warnf("[grpc client] failed to retrieve parent span: %s", err.Error())
 	}
 	tags := opentracing.Tags{
 		"span.kind":       "client",
@@ -231,12 +233,12 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 
 	host, portKey = gs.getServerHost(sv)
 	if host == "" {
-		logger.Log.Errorf("server %s has no grpcHost specified in metadata", sv.ID)
+		logger.Log.Errorf("[grpc client] server %s has no grpcHost specified in metadata", sv.ID)
 		return
 	}
 
 	if port, ok = sv.Metadata[portKey]; !ok {
-		logger.Log.Errorf("server %s has no %s specified in metadata", sv.ID, portKey)
+		logger.Log.Errorf("[grpc client] server %s has no %s specified in metadata", sv.ID, portKey)
 		return
 	}
 
@@ -245,18 +247,26 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)
+		logger.Log.Errorf("[grpc client] unable to connect to server %s at %s: %v", sv.ID, address, err)
 		return
 	}
 	c := protos.NewPitayaClient(conn)
-	gs.clientMap.Store(sv.ID, &grpcClient{conn: conn, cli: c})
+	gs.clientMap.Store(sv.ID, &grpcClient{
+		address:   address,
+		cli:       c,
+		conn:      conn,
+		connected: true,
+	})
 	logger.Log.Debugf("[grpc client] added server %s at %s", sv.ID, address)
 }
 
 // RemoveServer is called when a server is removed
 func (gs *GRPCClient) RemoveServer(sv *Server) {
 	if c, ok := gs.clientMap.Load(sv.ID); ok {
-		c.(*grpcClient).conn.Close()
+		cli := c.(*grpcClient)
+		if cli.connected {
+			cli.conn.Close()
+		}
 		gs.clientMap.Delete(sv.ID)
 		logger.Log.Debugf("[grpc client] removed server %s", sv.ID)
 	}
@@ -290,15 +300,15 @@ func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
 			return externalHost, constants.GRPCExternalPortKey
 		}
 
-		logger.Log.Warnf("server %s has no region nor external host specified in metadata, using internal host", sv.ID)
+		logger.Log.Warnf("[grpc client] server %s has no region nor external host specified in metadata, using internal host", sv.ID)
 		return internalHost, constants.GRPCPortKey
 	}
 
 	if gs.infoRetriever.Region() == serverRegion || !hasExternal {
-		logger.Log.Infof("server %s is in same region or external host not provided, using internal host", sv.ID)
+		logger.Log.Infof("[grpc client] server %s is in same region or external host not provided, using internal host", sv.ID)
 		return internalHost, constants.GRPCPortKey
 	}
 
-	logger.Log.Infof("server %s is in other region, using external host", sv.ID)
+	logger.Log.Infof("[grpc client] server %s is in other region, using external host", sv.ID)
 	return externalHost, constants.GRPCExternalPortKey
 }
