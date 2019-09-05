@@ -78,6 +78,7 @@ type grpcClient struct {
 	cli       protos.PitayaClient
 	conn      *grpc.ClientConn
 	connected bool
+	lock      sync.Mutex
 }
 
 // Init inits grpc rpc client
@@ -302,6 +303,12 @@ func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
 }
 
 func (gc *grpcClient) connect() error {
+	gc.lock.Lock()
+	defer gc.lock.Unlock()
+	if gc.connected {
+		return nil
+	}
+
 	conn, err := grpc.Dial(
 		gc.address,
 		grpc.WithInsecure(),
