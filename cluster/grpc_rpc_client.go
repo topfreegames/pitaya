@@ -324,9 +324,12 @@ func (gc *grpcClient) connect() error {
 }
 
 func (gc *grpcClient) disconnect() {
+	gc.lock.Lock()
 	if gc.connected {
 		gc.conn.Close()
+		gc.connected = false
 	}
+	gc.lock.Unlock()
 }
 
 func (gc *grpcClient) call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
