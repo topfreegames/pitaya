@@ -59,6 +59,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.info.region":                            "",
 		"pitaya.cluster.rpc.client.grpc.dialtimeout":            "5s",
 		"pitaya.cluster.rpc.client.grpc.requesttimeout":         "5s",
+		"pitaya.cluster.rpc.client.grpc.lazyconnection":         false,
 		"pitaya.cluster.rpc.client.nats.connect":                "nats://localhost:4222",
 		"pitaya.cluster.rpc.client.nats.maxreconnectionretries": 15,
 		"pitaya.cluster.rpc.client.nats.requesttimeout":         "5s",
