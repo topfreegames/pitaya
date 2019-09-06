@@ -105,7 +105,14 @@ func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
 }
 
 // StartServer starts a server
-func StartServer(t testing.TB, frontend bool, debug bool, svType string, port int, sdPrefix string, grpc bool) func() {
+func StartServer(
+	t testing.TB,
+	frontend, debug bool,
+	svType string,
+	port int,
+	sdPrefix string,
+	grpc, lazyConnection bool,
+) func() {
 	grpcPort := GetFreePort(t)
 	promPort := GetFreePort(t)
 	var useGRPC string
@@ -133,8 +140,12 @@ func StartServer(t testing.TB, frontend bool, debug bool, svType string, port in
 		"../examples/testing/server",
 		args...,
 	)
-	// always use a random port for prometheus, for avoiding e2e conflicts
-	cmd.Env = []string{fmt.Sprintf("PITAYA_METRICS_PROMETHEUS_PORT=%d", promPort)}
+
+	// always use a random port for prometheus, to avoid e2e conflicts
+	cmd.Env = []string{
+		fmt.Sprintf("PITAYA_METRICS_PROMETHEUS_PORT=%d", promPort),
+		fmt.Sprintf("PITAYA_CLUSTER_RPC_CLIENT_GRPC_LAZYCONNECTION=%v", lazyConnection),
+	}
 
 	outPipe, err := cmd.StderrPipe()
 	if err != nil {
@@ -147,7 +158,6 @@ func StartServer(t testing.TB, frontend bool, debug bool, svType string, port in
 	}
 
 	waitForServerToBeReady(t, bufio.NewReader(outPipe))
-
 	return func() {
 		err := cmd.Process.Kill()
 		if err != nil {

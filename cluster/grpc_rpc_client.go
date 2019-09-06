@@ -44,14 +44,14 @@ import (
 
 // GRPCClient rpc server struct
 type GRPCClient struct {
-	server           *Server
-	config           *config.Config
-	metricsReporters []metrics.Reporter
-	clientMap        sync.Map
 	bindingStorage   interfaces.BindingStorage
-	infoRetriever    InfoRetriever
-	reqTimeout       time.Duration
+	clientMap        sync.Map
 	dialTimeout      time.Duration
+	infoRetriever    InfoRetriever
+	lazy             bool
+	metricsReporters []metrics.Reporter
+	reqTimeout       time.Duration
+	server           *Server
 }
 
 // NewGRPCClient returns a new instance of GRPCClient
@@ -63,21 +63,22 @@ func NewGRPCClient(
 	infoRetriever InfoRetriever,
 ) (*GRPCClient, error) {
 	gs := &GRPCClient{
-		config:           config,
-		server:           server,
-		metricsReporters: metricsReporters,
 		bindingStorage:   bindingStorage,
 		infoRetriever:    infoRetriever,
+		metricsReporters: metricsReporters,
+		server:           server,
 	}
 
-	gs.configure()
-
+	gs.configure(config)
 	return gs, nil
 }
 
 type grpcClient struct {
-	conn *grpc.ClientConn
-	cli  protos.PitayaClient
+	address   string
+	cli       protos.PitayaClient
+	conn      *grpc.ClientConn
+	connected bool
+	lock      sync.Mutex
 }
 
 // Init inits grpc rpc client
@@ -85,9 +86,10 @@ func (gs *GRPCClient) Init() error {
 	return nil
 }
 
-func (gs *GRPCClient) configure() {
-	gs.reqTimeout = gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout")
-	gs.dialTimeout = gs.config.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout")
+func (gs *GRPCClient) configure(cfg *config.Config) {
+	gs.dialTimeout = cfg.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout")
+	gs.lazy = cfg.GetBool("pitaya.cluster.rpc.client.grpc.lazyconnection")
+	gs.reqTimeout = cfg.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout")
 }
 
 // Call makes a RPC Call
@@ -106,7 +108,7 @@ func (gs *GRPCClient) Call(
 
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		logger.Log.Warnf("[grpc client] failed to retrieve parent span: %s", err.Error())
 	}
 	tags := opentracing.Tags{
 		"span.kind":       "client",
@@ -132,7 +134,7 @@ func (gs *GRPCClient) Call(
 		defer metrics.ReportTimingFromCtx(ctxT, gs.metricsReporters, "rpc", err)
 	}
 
-	res, err := c.(*grpcClient).cli.Call(ctxT, &req)
+	res, err := c.(*grpcClient).call(ctxT, &req)
 	if err != nil {
 		return nil, err
 	}
@@ -231,32 +233,30 @@ func (gs *GRPCClient) AddServer(sv *Server) {
 
 	host, portKey = gs.getServerHost(sv)
 	if host == "" {
-		logger.Log.Errorf("server %s has no grpcHost specified in metadata", sv.ID)
+		logger.Log.Errorf("[grpc client] server %s has no grpcHost specified in metadata", sv.ID)
 		return
 	}
 
 	if port, ok = sv.Metadata[portKey]; !ok {
-		logger.Log.Errorf("server %s has no %s specified in metadata", sv.ID, portKey)
+		logger.Log.Errorf("[grpc client] server %s has no %s specified in metadata", sv.ID, portKey)
 		return
 	}
 
 	address := fmt.Sprintf("%s:%s", host, port)
-	conn, err := grpc.Dial(address,
-		grpc.WithInsecure(),
-	)
-	if err != nil {
-		logger.Log.Errorf("unable to connect to server %s at %s: %v", sv.ID, address, err)
-		return
+	client := &grpcClient{address: address}
+	if !gs.lazy {
+		if err := client.connect(); err != nil {
+			logger.Log.Errorf("[grpc client] unable to connect to server %s at %s: %v", sv.ID, address, err)
+		}
 	}
-	c := protos.NewPitayaClient(conn)
-	gs.clientMap.Store(sv.ID, &grpcClient{conn: conn, cli: c})
+	gs.clientMap.Store(sv.ID, client)
 	logger.Log.Debugf("[grpc client] added server %s at %s", sv.ID, address)
 }
 
 // RemoveServer is called when a server is removed
 func (gs *GRPCClient) RemoveServer(sv *Server) {
 	if c, ok := gs.clientMap.Load(sv.ID); ok {
-		c.(*grpcClient).conn.Close()
+		c.(*grpcClient).disconnect()
 		gs.clientMap.Delete(sv.ID)
 		logger.Log.Debugf("[grpc client] removed server %s", sv.ID)
 	}
@@ -285,20 +285,58 @@ func (gs *GRPCClient) getServerHost(sv *Server) (host, portKey string) {
 
 	if !hasRegion {
 		if hasExternal {
-			msg := "server %s has no region specified in metadata, using external host"
-			logger.Log.Warnf(msg, sv.ID)
+			logger.Log.Warnf("[grpc client] server %s has no region specified in metadata, using external host", sv.ID)
 			return externalHost, constants.GRPCExternalPortKey
 		}
 
-		logger.Log.Warnf("server %s has no region nor external host specified in metadata, using internal host", sv.ID)
+		logger.Log.Warnf("[grpc client] server %s has no region nor external host specified in metadata, using internal host", sv.ID)
 		return internalHost, constants.GRPCPortKey
 	}
 
 	if gs.infoRetriever.Region() == serverRegion || !hasExternal {
-		logger.Log.Infof("server %s is in same region or external host not provided, using internal host", sv.ID)
+		logger.Log.Infof("[grpc client] server %s is in same region or external host not provided, using internal host", sv.ID)
 		return internalHost, constants.GRPCPortKey
 	}
 
-	logger.Log.Infof("server %s is in other region, using external host", sv.ID)
+	logger.Log.Infof("[grpc client] server %s is in other region, using external host", sv.ID)
 	return externalHost, constants.GRPCExternalPortKey
+}
+
+func (gc *grpcClient) connect() error {
+	gc.lock.Lock()
+	defer gc.lock.Unlock()
+	if gc.connected {
+		return nil
+	}
+
+	conn, err := grpc.Dial(
+		gc.address,
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		return err
+	}
+	c := protos.NewPitayaClient(conn)
+	gc.cli = c
+	gc.conn = conn
+	gc.connected = true
+	return nil
+}
+
+func (gc *grpcClient) disconnect() {
+	gc.lock.Lock()
+	if gc.connected {
+		gc.conn.Close()
+		gc.connected = false
+	}
+	gc.lock.Unlock()
+}
+
+func (gc *grpcClient) call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
+	if !gc.connected {
+		if err := gc.connect(); err != nil {
+			return nil, err
+		}
+	}
+	return gc.cli.Call(ctx, req)
 }

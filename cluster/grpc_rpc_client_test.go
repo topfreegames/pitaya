@@ -41,7 +41,10 @@ func TestCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
-	g.clientMap.Store(g.server.ID, &grpcClient{cli: mockPitayaClient})
+	g.clientMap.Store(g.server.ID, &grpcClient{
+		cli:       mockPitayaClient,
+		connected: true,
+	})
 
 	ctx := context.Background()
 	rpcType := protos.RPCType_Sys
@@ -290,6 +293,49 @@ func TestAddServer(t *testing.T) {
 		sv, ok := g.clientMap.Load(server.ID)
 		assert.NotNil(t, sv)
 		assert.True(t, ok)
+		cli := sv.(*grpcClient)
+		assert.True(t, cli.connected)
+		assert.NotNil(t, cli.cli)
+	})
+
+	t.Run("lazy", func(t *testing.T) {
+		// listen
+		c := viper.New()
+		port := helpers.GetFreePort(t)
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		c.Set("pitaya.cluster.rpc.server.grpc.port", port)
+		c.Set("pitaya.cluster.rpc.client.grpc.lazyconnection", true)
+		conf := getConfig(c)
+		server := &Server{
+			ID:   "someid",
+			Type: "sometype",
+			Metadata: map[string]string{
+				constants.GRPCHostKey: "localhost",
+				constants.GRPCPortKey: fmt.Sprintf("%d", port),
+			},
+			Frontend: false,
+		}
+		gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+		assert.NoError(t, err)
+
+		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
+		gs.SetPitayaServer(mockPitayaServer)
+
+		err = gs.Init()
+		assert.NoError(t, err)
+		g, err := getRPCClient(conf)
+		assert.NoError(t, err)
+		// --- should not connect to the server and add it to the client map
+		g.AddServer(server)
+
+		sv, ok := g.clientMap.Load(server.ID)
+		assert.NotNil(t, sv)
+		assert.True(t, ok)
+		cli := sv.(*grpcClient)
+		assert.False(t, cli.connected)
+		assert.Nil(t, cli.cli)
 	})
 }
 

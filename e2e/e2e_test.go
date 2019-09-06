@@ -70,7 +70,7 @@ func TestHandlerCallToFront(t *testing.T) {
 	port := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
-	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix, *grpc, false)()
 	c := client.New(logrus.InfoLevel)
 
 	err := c.ConnectTo(fmt.Sprintf("localhost:%d", port))
@@ -93,7 +93,7 @@ func TestGroupFront(t *testing.T) {
 	port := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -141,7 +141,7 @@ func TestKick(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -173,7 +173,7 @@ func TestSameUIDUserShouldBeKicked(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -205,8 +205,8 @@ func TestSameUIDUserShouldBeKickedInDifferentServersFromSameType(t *testing.T) {
 	port2 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -238,8 +238,8 @@ func TestSameUIDUserShouldNotBeKickedInDifferentServersFromDiffType(t *testing.T
 	port2 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector1", port1, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector2", port2, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector1", port1, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector2", port2, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -270,8 +270,8 @@ func TestKickOnBack(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.DebugLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
@@ -294,10 +294,10 @@ func TestPushToUsers(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
 	port2 := helpers.GetFreePort(t)
-	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -350,8 +350,8 @@ func TestPushToUsers(t *testing.T) {
 func TestForwardToBackend(t *testing.T) {
 	portFront := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", portFront, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector", portFront, sdPrefix, *grpc, true)()
 
 	tables := []struct {
 		req  string
@@ -389,9 +389,9 @@ func TestGroupBack(t *testing.T) {
 	port2 := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
 
-	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc)()
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
+	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 	c2 := client.New(logrus.InfoLevel)
 
@@ -439,8 +439,9 @@ func TestUserRPC(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
-	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc)()
-	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc)()
+	// set lazy connections
+	defer helpers.StartServer(t, false, true, "game", 0, sdPrefix, *grpc, true)()
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
 	c1 := client.New(logrus.InfoLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
