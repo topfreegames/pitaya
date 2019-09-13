@@ -8,9 +8,7 @@ init-submodules:
 
 setup-ci:
 	@go get github.com/mattn/goveralls
-	@go get -u github.com/golang/dep/cmd/dep
 	@go get -u github.com/wadey/gocovmerge
-	@dep ensure
 
 setup-protobuf-macos:
 	@brew install protobuf
