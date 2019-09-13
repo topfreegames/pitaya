@@ -22,7 +22,7 @@ It provides a basic development framework for distributed multiplayer games and 
 
 * [Go](https://golang.org/) >= 1.10
 * [etcd](https://github.com/coreos/etcd) (used for service discovery)
-* [nats](https://github.com/nats-io/go-nats) (optional, used for sending and receiving rpc, grpc implementations can be used too if prefered)
+* [nats](https://github.com/nats-io/nats.go) (optional, used for sending and receiving rpc, grpc implementations can be used too if prefered)
 * [docker](https://www.docker.com) (optional: used for running etcd and nats dependencies on containers)
 
 ### Installing

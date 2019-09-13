@@ -17,7 +17,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/integration"
 	"github.com/nats-io/gnatsd/server"
-	gnatsd "github.com/nats-io/gnatsd/test"
+	gnatsd "github.com/nats-io/nats-server/test"
 )
 
 // GetFreePort returns a free port

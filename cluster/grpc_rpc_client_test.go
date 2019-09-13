@@ -97,7 +97,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 			//mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
 
 			if table.bindingStorage != nil {
-				g.clientMap.Store(g.server.ID, &grpcClient{cli: mockPitayaClient})
+				g.clientMap.Store(g.server.ID, &grpcClient{connected: true, cli: mockPitayaClient})
 
 				g.bindingStorage = mockBindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(uid, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
@@ -110,11 +110,9 @@ func TestBroadcastSessionBind(t *testing.T) {
 				mockPitayaClient.EXPECT().SessionBindRemote(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.BindMsg) {
 					assert.Equal(t, uid, msg.Uid, g.server.ID, msg.Fid)
 				})
-
 			}
 
 			err = g.BroadcastSessionBind(uid)
-
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())
 			} else {
@@ -157,7 +155,7 @@ func TestSendKick(t *testing.T) {
 			assert.NoError(t, err)
 
 			if table.bindingStorage != nil {
-				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
+				g.clientMap.Store(table.sv.ID, &grpcClient{connected: true, cli: mockPitayaClient})
 				g.bindingStorage = table.bindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(table.userID, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
 					assert.Equal(t, table.userID, u)
@@ -197,8 +195,8 @@ func TestSendPush(t *testing.T) {
 	}{
 		{"bindingstorage-no-fid", mockBindingStorage, &Server{
 			Type:     "tp",
-			Frontend: true}, nil,
-		},
+			Frontend: true,
+		}, nil},
 		{"nobindingstorage-no-fid", nil, &Server{
 			Type:     "tp",
 			Frontend: true,
@@ -218,7 +216,7 @@ func TestSendPush(t *testing.T) {
 			uid := "someuid"
 
 			if table.bindingStorage != nil && table.sv.ID == "" {
-				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
+				g.clientMap.Store(table.sv.ID, &grpcClient{connected: true, cli: mockPitayaClient})
 				g.bindingStorage = table.bindingStorage
 				mockBindingStorage.EXPECT().GetUserFrontendID(uid, gomock.Any()).DoAndReturn(func(u, svType string) (string, error) {
 					assert.Equal(t, uid, u)
@@ -231,9 +229,8 @@ func TestSendPush(t *testing.T) {
 					assert.Equal(t, msg.Route, "sv.svc.mth")
 					assert.Equal(t, msg.Data, []byte{0x01})
 				})
-
 			} else if table.bindingStorage == nil && table.sv.ID != "" {
-				g.clientMap.Store(table.sv.ID, &grpcClient{cli: mockPitayaClient})
+				g.clientMap.Store(table.sv.ID, &grpcClient{connected: true, cli: mockPitayaClient})
 				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push) {
 					assert.Equal(t, uid, msg.Uid)
 					assert.Equal(t, msg.Route, "sv.svc.mth")

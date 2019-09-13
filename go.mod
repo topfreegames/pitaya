@@ -37,9 +37,9 @@ require (
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
-	github.com/nats-io/gnatsd v1.1.0
-	github.com/nats-io/go-nats v1.4.0
-	github.com/nats-io/nuid v1.0.0 // indirect
+	github.com/nats-io/gnatsd v1.4.1
+	github.com/nats-io/nats-server v1.4.1
+	github.com/nats-io/nats.go v1.8.1
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
@@ -67,7 +67,7 @@ require (
 	github.com/ugorji/go v0.0.0-20180112141927-9831f2c3ac10 // indirect
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	golang.org/x/sync v0.0.0-20190412183630-56d357773e84 // indirect
 	golang.org/x/time v0.0.0-20180314180208-26559e0f760e // indirect
 	google.golang.org/grpc v1.21.0

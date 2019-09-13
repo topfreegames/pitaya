@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	nats "github.com/nats-io/go-nats"
+	nats "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/conn/message"

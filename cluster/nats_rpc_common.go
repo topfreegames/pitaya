@@ -23,7 +23,7 @@ package cluster
 import (
 	"fmt"
 
-	nats "github.com/nats-io/go-nats"
+	nats "github.com/nats-io/nats.go"
 	"github.com/topfreegames/pitaya/logger"
 )
 
