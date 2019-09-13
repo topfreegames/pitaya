@@ -171,7 +171,7 @@ func (gs *GRPCClient) BroadcastSessionBind(uid string) error {
 			}
 			ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 			defer done()
-			_, err := c.(*grpcClient).cli.SessionBindRemote(ctxT, msg)
+			err := c.(*grpcClient).sessionBindRemote(ctxT, msg)
 			return err
 		}
 	}
@@ -195,7 +195,7 @@ func (gs *GRPCClient) SendKick(userID string, serverType string, kick *protos.Ki
 	if c, ok := gs.clientMap.Load(svID); ok {
 		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 		defer done()
-		_, err := c.(*grpcClient).cli.KickUser(ctxT, kick)
+		err := c.(*grpcClient).sendKick(ctxT, kick)
 		return err
 	}
 	return constants.ErrNoConnectionToServer
@@ -220,7 +220,7 @@ func (gs *GRPCClient) SendPush(userID string, frontendSv *Server, push *protos.P
 	if c, ok := gs.clientMap.Load(svID); ok {
 		ctxT, done := context.WithTimeout(context.Background(), gs.reqTimeout)
 		defer done()
-		_, err := c.(*grpcClient).cli.PushToUser(ctxT, push)
+		err := c.(*grpcClient).pushToUser(ctxT, push)
 		return err
 	}
 	return constants.ErrNoConnectionToServer
@@ -332,6 +332,16 @@ func (gc *grpcClient) disconnect() {
 	gc.lock.Unlock()
 }
 
+func (gc *grpcClient) pushToUser(ctx context.Context, push *protos.Push) error {
+	if !gc.connected {
+		if err := gc.connect(); err != nil {
+			return err
+		}
+	}
+	_, err := gc.cli.PushToUser(ctx, push)
+	return err
+}
+
 func (gc *grpcClient) call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	if !gc.connected {
 		if err := gc.connect(); err != nil {
@@ -339,4 +349,24 @@ func (gc *grpcClient) call(ctx context.Context, req *protos.Request) (*protos.Re
 		}
 	}
 	return gc.cli.Call(ctx, req)
+}
+
+func (gc *grpcClient) sessionBindRemote(ctx context.Context, req *protos.BindMsg) error {
+	if !gc.connected {
+		if err := gc.connect(); err != nil {
+			return err
+		}
+	}
+	_, err := gc.cli.SessionBindRemote(ctx, req)
+	return err
+}
+
+func (gc *grpcClient) sendKick(ctx context.Context, req *protos.KickMsg) error {
+	if !gc.connected {
+		if err := gc.connect(); err != nil {
+			return err
+		}
+	}
+	_, err := gc.cli.KickUser(ctx, req)
+	return err
 }
