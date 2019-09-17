@@ -21,7 +21,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
-	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20180203143532-66deaeb636df // indirect
 	github.com/golang/mock v1.1.1
 	github.com/golang/protobuf v1.3.1
@@ -35,10 +35,12 @@ require (
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.0 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
 	github.com/nats-io/gnatsd v1.4.1
+	github.com/nats-io/go-nats v1.4.0 // indirect
 	github.com/nats-io/nats-server v1.4.1
+	github.com/nats-io/nats-server/v2 v2.0.4 // indirect
 	github.com/nats-io/nats.go v1.8.1
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
@@ -68,7 +70,6 @@ require (
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
 	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
-	golang.org/x/sync v0.0.0-20190412183630-56d357773e84 // indirect
 	golang.org/x/time v0.0.0-20180314180208-26559e0f760e // indirect
 	google.golang.org/grpc v1.21.0
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
