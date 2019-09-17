@@ -524,7 +524,7 @@ func Error(err error, code string, metadata ...map[string]string) *errors.Error 
 func GetSessionFromCtx(ctx context.Context) *session.Session {
 	sessionVal := ctx.Value(constants.SessionCtxKey)
 	if sessionVal == nil {
-		logger.Log.Warn("ctx doesn't contain a session, are you calling GetSessionFromCtx from inside a remote?")
+		logger.Log.Debug("ctx doesn't contain a session, are you calling GetSessionFromCtx from inside a remote?")
 		return nil
 	}
 	return sessionVal.(*session.Session)
