@@ -230,7 +230,7 @@ func (a *Agent) RemoteAddr() net.Addr {
 
 // String, implementation for Stringer interface
 func (a *Agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt))
+	return fmt.Sprintf("Remote=%s, LastTime=%d, ID=%d", a.conn.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt), a.Session.ID())
 }
 
 // GetStatus gets the status
@@ -304,15 +304,17 @@ func (a *Agent) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d, ID=%d", atomic.LoadInt64(&a.lastAt), deadline, a.Session.ID())
 				return
 			}
 			if _, err := a.conn.Write(hbd); err != nil {
+				logger.Log.Errorf("Failed to send heartbeat, ID=%d", a.Session.ID())
 				return
 			}
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
+			logger.Log.Debugf("Stopping session heartbeat, ID=%d", a.Session.ID())
 			return
 		}
 	}

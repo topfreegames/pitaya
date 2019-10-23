@@ -482,7 +482,7 @@ func TestAgentString(t *testing.T) {
 	assert.NotNil(t, ag)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	expected := fmt.Sprintf("Remote=remote-string, LastTime=%d", ag.lastAt)
+	expected := fmt.Sprintf("Remote=remote-string, LastTime=%d, ID=%d", ag.lastAt, ag.Session.ID())
 	str := ag.String()
 	assert.Equal(t, expected, str)
 }
