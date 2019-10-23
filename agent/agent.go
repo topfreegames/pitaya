@@ -307,6 +307,7 @@ func (a *Agent) heartbeat() {
 				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d, ID=%d", atomic.LoadInt64(&a.lastAt), deadline, a.Session.ID())
 				return
 			}
+			logger.Log.Debugf("Sending heartbeat to user, ID=%d", a.Session.ID())
 			if _, err := a.conn.Write(hbd); err != nil {
 				logger.Log.Errorf("Failed to send heartbeat, ID=%d", a.Session.ID())
 				return
