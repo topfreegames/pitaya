@@ -308,7 +308,8 @@ func (a *Agent) heartbeat() {
 				return
 			}
 			if _, err := a.conn.Write(hbd); err != nil {
-				return
+				logger.Log.Errorf("Failed to write heartbeat on connection: %w", err)
+				continue
 			}
 		case <-a.chDie:
 			return
