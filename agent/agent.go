@@ -308,6 +308,7 @@ func (a *Agent) heartbeat() {
 				return
 			}
 			if _, err := a.conn.Write(hbd); err != nil {
+				logger.Log.Errorf("Failed to write heartbeat to socket: %v", err)
 				return
 			}
 		case <-a.chDie:
