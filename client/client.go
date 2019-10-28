@@ -37,23 +37,8 @@ import (
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util/compression"
-)
-
-var (
-	handshakeBuffer = `
-{
-	"sys": {
-		"platform": "mac",
-		"libVersion": "0.3.5-release",
-		"clientBuildNumber":"20",
-		"clientVersion":"2.1"
-	},
-	"user": {
-		"age": 30
-	}
-}
-`
 )
 
 // HandshakeSys struct
@@ -76,19 +61,20 @@ type pendingRequest struct {
 
 // Client struct
 type Client struct {
-	conn            net.Conn
-	Connected       bool
-	packetEncoder   codec.PacketEncoder
-	packetDecoder   codec.PacketDecoder
-	packetChan      chan *packet.Packet
-	IncomingMsgChan chan *message.Message
-	pendingChan     chan bool
-	pendingRequests map[uint]*pendingRequest
-	pendingReqMutex sync.Mutex
-	requestTimeout  time.Duration
-	closeChan       chan struct{}
-	nextID          uint32
-	messageEncoder  message.Encoder
+	conn                net.Conn
+	Connected           bool
+	packetEncoder       codec.PacketEncoder
+	packetDecoder       codec.PacketDecoder
+	packetChan          chan *packet.Packet
+	IncomingMsgChan     chan *message.Message
+	pendingChan         chan bool
+	pendingRequests     map[uint]*pendingRequest
+	pendingReqMutex     sync.Mutex
+	requestTimeout      time.Duration
+	closeChan           chan struct{}
+	nextID              uint32
+	messageEncoder      message.Encoder
+	clientHandshakeData *session.HandshakeData
 }
 
 // MsgChannel return the incoming message channel
@@ -125,11 +111,31 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
 		messageEncoder: message.NewMessagesEncoder(true),
+		clientHandshakeData: &session.HandshakeData{
+			Sys: session.HandshakeClientData{
+				Platform:    "mac",
+				LibVersion:  "0.3.5-release",
+				BuildNumber: "20",
+				Version:     "2.1",
+			},
+			User: map[string]interface{}{
+				"age": 30,
+			},
+		},
 	}
 }
 
+func (c *Client) SetClientHandshakeData(data *session.HandshakeData) {
+	c.clientHandshakeData = data
+}
+
 func (c *Client) sendHandshakeRequest() error {
-	p, err := c.packetEncoder.Encode(packet.Handshake, []byte(handshakeBuffer))
+	enc, err := json.Marshal(c.clientHandshakeData)
+	if err != nil {
+		return err
+	}
+
+	p, err := c.packetEncoder.Encode(packet.Handshake, enc)
 	if err != nil {
 		return err
 	}
