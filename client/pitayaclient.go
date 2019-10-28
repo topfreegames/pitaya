@@ -22,14 +22,16 @@ package client
 
 import (
 	"github.com/topfreegames/pitaya/conn/message"
+	"github.com/topfreegames/pitaya/session"
 )
 
 type PitayaClient interface {
 	ConnectTo(addr string) error
 	ConnectToTLS(addr string, skipVerify bool) error
+	ConnectedStatus() bool
 	Disconnect()
+	MsgChannel() chan *message.Message
 	SendNotify(route string, data []byte) error
 	SendRequest(route string, data []byte) (uint, error)
-	ConnectedStatus() bool
-	MsgChannel() chan *message.Message
+	SetClientHandshakeData(data *session.HandshakeData)
 }
