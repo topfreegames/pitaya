@@ -48,6 +48,8 @@ type etcdServiceDiscovery struct {
 	serverMapByType      map[string]map[string]*Server
 	serverMapByID        sync.Map
 	etcdEndpoints        []string
+	etcdUser             string
+	etcdPass             string
 	etcdPrefix           string
 	etcdDialTimeout      time.Duration
 	running              bool
@@ -94,6 +96,8 @@ func NewEtcdServiceDiscovery(
 
 func (sd *etcdServiceDiscovery) configure() {
 	sd.etcdEndpoints = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints")
+	sd.etcdUser = sd.config.GetString("pitaya.cluster.sd.etcd.user")
+	sd.etcdPass = sd.config.GetString("pitaya.cluster.sd.etcd.pass")
 	sd.etcdDialTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
 	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
@@ -330,10 +334,15 @@ func (sd *etcdServiceDiscovery) Init() error {
 	var cli *clientv3.Client
 	var err error
 	if sd.cli == nil {
-		cli, err = clientv3.New(clientv3.Config{
+		config := clientv3.Config{
 			Endpoints:   sd.etcdEndpoints,
 			DialTimeout: sd.etcdDialTimeout,
-		})
+		}
+		if sd.etcdUser != "" && sd.etcdPass != "" {
+			config.Username = sd.etcdUser
+			config.Password = sd.etcdPass
+		}
+		cli, err = clientv3.New(config)
 		if err != nil {
 			return err
 		}

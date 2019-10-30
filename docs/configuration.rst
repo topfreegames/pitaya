@@ -27,6 +27,14 @@ These configuration values configure service discovery for the default etcd serv
     - localhost:2379
     - string
     - List of comma separated etcd endpoints
+  * - pitaya.cluster.sd.etcd.user
+    - 
+    - string
+    - Username to connect to etcd
+  * - pitaya.cluster.sd.etcd.pass
+    - 
+    - string
+    - Password to connect to etcd
   * - pitaya.cluster.sd.etcd.heartbeat.ttl
     - 60s
     - time.Time
