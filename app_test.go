@@ -79,7 +79,7 @@ func setup() {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
 
-	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -202,7 +202,7 @@ func TestGetMetricsReporters(t *testing.T) {
 	assert.Equal(t, app.metricsReporters, GetMetricsReporters())
 }
 func TestGetServerByID(t *testing.T) {
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -212,7 +212,7 @@ func TestGetServerByID(t *testing.T) {
 }
 
 func TestGetServersByType(t *testing.T) {
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -251,7 +251,7 @@ func TestSetRPCClient(t *testing.T) {
 func TestSetServiceDiscovery(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, viper.New())
-	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
+	r, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	SetServiceDiscoveryClient(r)
@@ -418,7 +418,7 @@ func TestStartAndListenCluster(t *testing.T) {
 	initApp()
 	Configure(true, "testtype", Cluster, map[string]string{}, cfg)
 
-	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, cli)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan, nil, cli)
 	assert.NoError(t, err)
 	SetServiceDiscoveryClient(etcdSD)
 
