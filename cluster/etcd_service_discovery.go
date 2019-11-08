@@ -64,6 +64,7 @@ type etcdServiceDiscovery struct {
 	grantLeaseInterval   time.Duration
 	shutdownDelay        time.Duration
 	appDieChan           chan bool
+	serverTypesBlacklist []string
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -71,6 +72,7 @@ func NewEtcdServiceDiscovery(
 	config *config.Config,
 	server *Server,
 	appDieChan chan bool,
+	serverTypesBlacklist []string,
 	cli ...*clientv3.Client,
 ) (ServiceDiscovery, error) {
 	var client *clientv3.Client
@@ -78,15 +80,16 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:          config,
-		running:         false,
-		server:          server,
-		serverMapByType: make(map[string]map[string]*Server),
-		listeners:       make([]SDListener, 0),
-		stopChan:        make(chan bool),
-		stopLeaseChan:   make(chan bool),
-		appDieChan:      appDieChan,
-		cli:             client,
+		config:               config,
+		running:              false,
+		server:               server,
+		serverMapByType:      make(map[string]map[string]*Server),
+		listeners:            make([]SDListener, 0),
+		stopChan:             make(chan bool),
+		stopLeaseChan:        make(chan bool),
+		appDieChan:           appDieChan,
+		cli:                  client,
+		serverTypesBlacklist: serverTypesBlacklist,
 	}
 
 	sd.configure()
@@ -421,23 +424,52 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	allIds := make([]string, 0)
 
 	// filter servers I need to grab info
+	serversChan := make(chan *Server)
+	var wg sync.WaitGroup
+
 	for _, kv := range keys.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
 			logger.Log.Warnf("failed to parse etcd key %s, error: %s", kv.Key, err.Error())
+			continue
 		}
+
+		if sd.isServerTypeBlacklisted(svType) && svID != sd.server.ID {
+			logger.Log.Debug("ignoring blacklisted server type '%s'", svType)
+			continue
+		}
+
 		allIds = append(allIds, svID)
-		// TODO is this slow? if so we can paralellize
+
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
-			logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
-			sv, err := sd.getServerFromEtcd(svType, svID)
-			if err != nil {
-				logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
-				continue
-			}
-			sd.addServer(sv)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
+				sv, err := sd.getServerFromEtcd(svType, svID)
+				if err != nil {
+					logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
+					return
+				}
+
+				serversChan <- sv
+			}()
 		}
 	}
+
+	go func() {
+		// Wait until all goroutines are finished and then close the channel
+		wg.Wait()
+		close(serversChan)
+	}()
+
+	// Loop over all of the values on the channel
+	for sv := range serversChan {
+		logger.Log.Debugf("Adding server %v", sv)
+		sd.addServer(sv)
+	}
+
 	sd.deleteLocalInvalidServers(allIds)
 
 	sd.printServers()
@@ -502,6 +534,19 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			select {
 			case wResp := <-chn:
 				for _, ev := range wResp.Events {
+					// we parse the string and check whether it is valid or not.
+					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
+					if err != nil {
+						logger.Log.Warnf("failed to parse key from etcd: %s", ev.Kv.Key)
+						continue
+					}
+
+					// we then check if the server type is blacklisted or not
+					if sd.isServerTypeBlacklisted(svType) && sd.server.ID != svID {
+						logger.Log.Debug("ignoring blacklisted server type %s", svType)
+						continue
+					}
+
 					switch ev.Type {
 					case clientv3.EventTypePut:
 						var sv *Server
@@ -510,15 +555,11 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 							logger.Log.Errorf("Failed to parse server from etcd: %v", err)
 							continue
 						}
+
 						sd.addServer(sv)
 						logger.Log.Debugf("server %s added", ev.Kv.Key)
 						sd.printServers()
 					case clientv3.EventTypeDelete:
-						_, svID, err := parseEtcdKey(string(ev.Kv.Key))
-						if err != nil {
-							logger.Log.Warnf("failed to parse key from etcd: %s", ev.Kv.Key)
-							continue
-						}
 						sd.deleteServer(svID)
 						logger.Log.Debugf("server %s deleted", svID)
 						sd.printServers()
@@ -529,4 +570,13 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			}
 		}
 	}(w)
+}
+
+func (sd *etcdServiceDiscovery) isServerTypeBlacklisted(svType string) bool {
+	for _, blacklistedSv := range sd.serverTypesBlacklist {
+		if blacklistedSv == svType {
+			return true
+		}
+	}
+	return false
 }

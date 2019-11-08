@@ -294,6 +294,7 @@ func startDefaultSD() {
 		app.config,
 		app.server,
 		app.dieChan,
+		nil,
 	)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster service discovery component: %s", err.Error())
