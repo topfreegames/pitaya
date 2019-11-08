@@ -426,10 +426,6 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	// delete invalid servers (local ones that are not in etcd)
 	allIds := make([]string, 0)
 
-	// filter servers I need to grab info
-	serversChan := make(chan *Server)
-	var wg sync.WaitGroup
-
 	for _, kv := range keys.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
@@ -445,32 +441,14 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 		allIds = append(allIds, svID)
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
-				sv, err := sd.getServerFromEtcd(svType, svID)
-				if err != nil {
-					logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
-					return
-				}
-
-				serversChan <- sv
-			}()
+			logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
+			sv, err := sd.getServerFromEtcd(svType, svID)
+			if err != nil {
+				logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
+				continue
+			}
+			sd.addServer(sv)
 		}
-	}
-
-	go func() {
-		// Wait until all goroutines are finished and then close the channel
-		wg.Wait()
-		close(serversChan)
-	}()
-
-	// Loop over all of the values on the channel
-	for sv := range serversChan {
-		logger.Log.Debugf("Adding server %v", sv)
-		sd.addServer(sv)
 	}
 
 	sd.deleteLocalInvalidServers(allIds)
