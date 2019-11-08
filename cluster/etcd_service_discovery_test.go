@@ -435,9 +435,6 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			// We sleep to guarantee that the servers were added to etcd
-			time.Sleep(time.Millisecond * 50)
-
 			for _, serverToAdd := range table.serversToAdd {
 				_, err := e.GetServer(serverToAdd.ID)
 				if e.isServerTypeBlacklisted(serverToAdd.Type) {
