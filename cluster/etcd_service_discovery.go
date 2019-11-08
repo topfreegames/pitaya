@@ -72,7 +72,6 @@ func NewEtcdServiceDiscovery(
 	config *config.Config,
 	server *Server,
 	appDieChan chan bool,
-	serverTypesBlacklist []string,
 	cli ...*clientv3.Client,
 ) (ServiceDiscovery, error) {
 	var client *clientv3.Client
@@ -80,16 +79,15 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:               config,
-		running:              false,
-		server:               server,
-		serverMapByType:      make(map[string]map[string]*Server),
-		listeners:            make([]SDListener, 0),
-		stopChan:             make(chan bool),
-		stopLeaseChan:        make(chan bool),
-		appDieChan:           appDieChan,
-		cli:                  client,
-		serverTypesBlacklist: serverTypesBlacklist,
+		config:          config,
+		running:         false,
+		server:          server,
+		serverMapByType: make(map[string]map[string]*Server),
+		listeners:       make([]SDListener, 0),
+		stopChan:        make(chan bool),
+		stopLeaseChan:   make(chan bool),
+		appDieChan:      appDieChan,
+		cli:             client,
 	}
 
 	sd.configure()
@@ -111,6 +109,11 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.grantLeaseMaxRetries = sd.config.GetInt("pitaya.cluster.sd.etcd.grantlease.maxretries")
 	sd.grantLeaseInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval")
 	sd.shutdownDelay = sd.config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay")
+	sd.serverTypesBlacklist = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist")
+
+	if len(sd.serverTypesBlacklist) > 0 {
+		logger.Log.Info("using server types blacklist: %s", sd.serverTypesBlacklist)
+	}
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {
