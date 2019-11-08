@@ -37,34 +37,35 @@ import (
 )
 
 type etcdServiceDiscovery struct {
-	cli                  *clientv3.Client
-	config               *config.Config
-	syncServersInterval  time.Duration
-	heartbeatTTL         time.Duration
-	logHeartbeat         bool
-	lastHeartbeatTime    time.Time
-	leaseID              clientv3.LeaseID
-	mapByTypeLock        sync.RWMutex
-	serverMapByType      map[string]map[string]*Server
-	serverMapByID        sync.Map
-	etcdEndpoints        []string
-	etcdUser             string
-	etcdPass             string
-	etcdPrefix           string
-	etcdDialTimeout      time.Duration
-	running              bool
-	server               *Server
-	stopChan             chan bool
-	stopLeaseChan        chan bool
-	lastSyncTime         time.Time
-	listeners            []SDListener
-	revokeTimeout        time.Duration
-	grantLeaseTimeout    time.Duration
-	grantLeaseMaxRetries int
-	grantLeaseInterval   time.Duration
-	shutdownDelay        time.Duration
-	appDieChan           chan bool
-	serverTypesBlacklist []string
+	cli                    *clientv3.Client
+	config                 *config.Config
+	syncServersInterval    time.Duration
+	heartbeatTTL           time.Duration
+	logHeartbeat           bool
+	lastHeartbeatTime      time.Time
+	leaseID                clientv3.LeaseID
+	mapByTypeLock          sync.RWMutex
+	serverMapByType        map[string]map[string]*Server
+	serverMapByID          sync.Map
+	etcdEndpoints          []string
+	etcdUser               string
+	etcdPass               string
+	etcdPrefix             string
+	etcdDialTimeout        time.Duration
+	running                bool
+	server                 *Server
+	stopChan               chan bool
+	stopLeaseChan          chan bool
+	lastSyncTime           time.Time
+	listeners              []SDListener
+	revokeTimeout          time.Duration
+	grantLeaseTimeout      time.Duration
+	grantLeaseMaxRetries   int
+	grantLeaseInterval     time.Duration
+	shutdownDelay          time.Duration
+	appDieChan             chan bool
+	serverTypesBlacklist   []string
+	syncServersParallelism int
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -110,6 +111,11 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.grantLeaseInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval")
 	sd.shutdownDelay = sd.config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay")
 	sd.serverTypesBlacklist = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist")
+	sd.syncServersParallelism = sd.config.GetInt("pitaya.cluster.sd.etcd.syncserversparallelism")
+
+	if sd.syncServersParallelism == 0 {
+		sd.syncServersParallelism = 10
+	}
 
 	if len(sd.serverTypesBlacklist) > 0 {
 		logger.Log.Info("using server types blacklist: %s", sd.serverTypesBlacklist)
@@ -411,6 +417,26 @@ func (sd *etcdServiceDiscovery) printServers() {
 	}
 }
 
+func (sd *etcdServiceDiscovery) processPendingServer(
+	sv *Server, wg *sync.WaitGroup, serversMutex sync.Mutex, servers *[]*Server,
+) {
+	defer wg.Done()
+	logger.Log.Debugf("loading info from missing server: %s/%s", sv.Type, sv.ID)
+
+	svType, svID := sv.Type, sv.ID
+
+	sv, err := sd.getServerFromEtcd(svType, svID)
+	if err != nil {
+		logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
+		return
+	}
+
+	// We add into the resulting servers array
+	serversMutex.Lock()
+	*servers = append(*servers, sv)
+	serversMutex.Unlock()
+}
+
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers() error {
 	keys, err := sd.cli.Get(
@@ -426,6 +452,22 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	// delete invalid servers (local ones that are not in etcd)
 	allIds := make([]string, 0)
 
+	var (
+		servers           []*Server
+		serversMutex      sync.Mutex
+		wg                sync.WaitGroup
+		pendingServerChan = make(chan *Server)
+	)
+
+	// Spawn worker goroutines
+	for i := 0; i < sd.syncServersParallelism; i++ {
+		go func() {
+			for sv := range pendingServerChan {
+				sd.processPendingServer(sv, &wg, serversMutex, &servers)
+			}
+		}()
+	}
+
 	for _, kv := range keys.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
@@ -433,6 +475,7 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 			continue
 		}
 
+		// Check whether the server type is blacklisted or not
 		if sd.isServerTypeBlacklisted(svType) && svID != sd.server.ID {
 			logger.Log.Debug("ignoring blacklisted server type '%s'", svType)
 			continue
@@ -441,14 +484,19 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 		allIds = append(allIds, svID)
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
-			logger.Log.Debugf("loading info from missing server: %s/%s", svType, svID)
-			sv, err := sd.getServerFromEtcd(svType, svID)
-			if err != nil {
-				logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
-				continue
-			}
-			sd.addServer(sv)
+			// Add new work to the channel
+			wg.Add(1)
+			pendingServerChan <- &Server{ID: svID, Type: svType}
 		}
+	}
+
+	// Wait until all goroutines are finished
+	wg.Wait()
+	close(pendingServerChan)
+
+	for _, server := range servers {
+		logger.Log.Debugf("adding server %s", server)
+		sd.addServer(server)
 	}
 
 	sd.deleteLocalInvalidServers(allIds)
