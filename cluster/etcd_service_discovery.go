@@ -462,7 +462,6 @@ func (p *parallelGetter) start() {
 					return
 				}
 
-				// We add into the resulting servers array
 				p.resultMutex.Lock()
 				*p.result = append(*p.result, sv)
 				p.resultMutex.Unlock()
@@ -598,16 +597,13 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			select {
 			case wResp := <-chn:
 				for _, ev := range wResp.Events {
-					// we parse the string and check whether it is valid or not.
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
 					if err != nil {
 						logger.Log.Warnf("failed to parse key from etcd: %s", ev.Kv.Key)
 						continue
 					}
 
-					// we then check if the server type is blacklisted or not
 					if sd.isServerTypeBlacklisted(svType) && sd.server.ID != svID {
-						logger.Log.Debug("ignoring blacklisted server type %s", svType)
 						continue
 					}
 
