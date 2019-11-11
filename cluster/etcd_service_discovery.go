@@ -417,26 +417,6 @@ func (sd *etcdServiceDiscovery) printServers() {
 	}
 }
 
-func (sd *etcdServiceDiscovery) processPendingServer(
-	sv *Server, wg *sync.WaitGroup, serversMutex sync.Mutex, servers *[]*Server,
-) {
-	defer wg.Done()
-	logger.Log.Debugf("loading info from missing server: %s/%s", sv.Type, sv.ID)
-
-	svType, svID := sv.Type, sv.ID
-
-	sv, err := getServerFromEtcd(sd.cli, svType, svID)
-	if err != nil {
-		logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
-		return
-	}
-
-	// We add into the resulting servers array
-	serversMutex.Lock()
-	*servers = append(*servers, sv)
-	serversMutex.Unlock()
-}
-
 // Struct that encapsulates a parallel/concurrent etcd get
 // it spawns goroutines and receives work requests through a channel
 type parallelGetterWork struct {
