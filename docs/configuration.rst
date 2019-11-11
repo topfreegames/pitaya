@@ -71,6 +71,14 @@ These configuration values configure service discovery for the default etcd serv
     - 10ms
     - time.Duration
     - Time to wait to shutdown after deregistering from service discovery
+  * - pitaya.cluster.sd.etcd.servertypeblacklist
+    - nil
+    - []string
+    - A list of server types that should be ignored by the service discovery
+  * - pitaya.cluster.sd.etcd.syncserversparallelism
+    - 10
+    - int
+    - The number of goroutines that should be used while getting server information on etcd initialization
 
 RPC Service
 ===========
@@ -110,6 +118,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - nats://localhost:4222
     - string
     - Nats address for the client
+  * - pitaya.cluster.rpc.client.nats.connectiontimeout
+    - 5s
+    - time.Duration
+    - Timeout for the nats client to establish the connection
   * - pitaya.cluster.rpc.client.nats.requesttimeout
     - 5s
     - time.Time
@@ -122,6 +134,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - nats://localhost:4222
     - string
     - Nats address for the server
+  * - pitaya.cluster.rpc.server.nats.connectiontimeout
+    - 5s
+    - time.Duration
+    - Timeout for the nats server to establish the connection
   * - pitaya.cluster.rpc.server.nats.maxreconnectionretries
     - 15
     - int

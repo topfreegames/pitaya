@@ -61,11 +61,13 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.client.grpc.requesttimeout":         "5s",
 		"pitaya.cluster.rpc.client.grpc.lazyconnection":         false,
 		"pitaya.cluster.rpc.client.nats.connect":                "nats://localhost:4222",
+		"pitaya.cluster.rpc.client.nats.connectiontimeout":      "2s",
 		"pitaya.cluster.rpc.client.nats.maxreconnectionretries": 15,
 		"pitaya.cluster.rpc.client.nats.requesttimeout":         "5s",
 		"pitaya.cluster.rpc.server.grpc.externalport":           3434,
 		"pitaya.cluster.rpc.server.grpc.port":                   3434,
 		"pitaya.cluster.rpc.server.nats.connect":                "nats://localhost:4222",
+		"pitaya.cluster.rpc.server.nats.connectiontimeout":      "2s",
 		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": 15,
 		"pitaya.cluster.sd.etcd.dialtimeout":                    "5s",
 		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
@@ -78,6 +80,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
 		"pitaya.cluster.sd.etcd.shutdown.delay":                 "10ms",
+		"pitaya.cluster.sd.etcd.servertypeblacklist":            nil,
+		"pitaya.cluster.sd.etcd.syncserversparallelism":         10,
 		// the sum of this config among all the frontend servers should always be less than
 		// the sum of pitaya.buffer.cluster.rpc.server.nats.messages, for covering the worst case scenario
 		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.nats.messages bigger
