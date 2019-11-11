@@ -118,7 +118,7 @@ func (sd *etcdServiceDiscovery) configure() {
 	}
 
 	if len(sd.serverTypesBlacklist) > 0 {
-		logger.Log.Info("using server types blacklist: %s", sd.serverTypesBlacklist)
+		logger.Log.Warnf("using server types blacklist: %s", sd.serverTypesBlacklist)
 	}
 }
 
