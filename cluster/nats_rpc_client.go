@@ -46,6 +46,7 @@ type NatsRPCClient struct {
 	config                 *config.Config
 	conn                   *nats.Conn
 	connString             string
+	connectionTimeout      time.Duration
 	maxReconnectionRetries int
 	reqTimeout             time.Duration
 	running                bool
@@ -62,11 +63,12 @@ func NewNatsRPCClient(
 	appDieChan chan bool,
 ) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		config:           config,
-		server:           server,
-		running:          false,
-		metricsReporters: metricsReporters,
-		appDieChan:       appDieChan,
+		config:            config,
+		server:            server,
+		running:           false,
+		metricsReporters:  metricsReporters,
+		appDieChan:        appDieChan,
+		connectionTimeout: nats.DefaultTimeout,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -78,6 +80,9 @@ func (ns *NatsRPCClient) configure() error {
 	ns.connString = ns.config.GetString("pitaya.cluster.rpc.client.nats.connect")
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
+	}
+	if timeout := ns.config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout"); timeout != 0 {
+		ns.connectionTimeout = timeout
 	}
 	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries")
 	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
@@ -202,7 +207,13 @@ func (ns *NatsRPCClient) Call(
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true
-	conn, err := setupNatsConn(ns.connString, ns.appDieChan, nats.MaxReconnects(ns.maxReconnectionRetries))
+	logger.Log.Debugf("connecting to nats with timeout of %s", ns.connectionTimeout)
+	conn, err := setupNatsConn(
+		ns.connString,
+		ns.appDieChan,
+		nats.MaxReconnects(ns.maxReconnectionRetries),
+		nats.Timeout(ns.connectionTimeout),
+	)
 	if err != nil {
 		return err
 	}
