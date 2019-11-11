@@ -354,7 +354,7 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 			}
 			err = e.addServerIntoEtcd(newServer)
 			assert.NoError(t, err)
-			ss, err := e.getServerFromEtcd(newServer.Type, newServer.ID)
+			ss, err := getServerFromEtcd(e.cli, newServer.Type, newServer.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, newServer, ss)
 			helpers.ShouldEventuallyReturn(t, func() int {
@@ -388,7 +388,7 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 			}
 			err = e.addServerIntoEtcd(newServer)
 			assert.NoError(t, err)
-			ss, err := e.getServerFromEtcd(newServer.Type, newServer.ID)
+			ss, err := getServerFromEtcd(e.cli, newServer.Type, newServer.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, newServer, ss)
 			helpers.ShouldEventuallyReturn(t, func() int {
@@ -426,7 +426,6 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 
 			// Add all servers to ETCD
 			for _, serverToAdd := range table.serversToAdd {
-				err = e.addServerIntoEtcd(serverToAdd)
 				_, err := cli.Put(
 					context.TODO(),
 					getKey(serverToAdd.ID, serverToAdd.Type),
@@ -444,5 +443,56 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestParallelGetter(t *testing.T) {
+	c, cli := helpers.GetTestEtcd(t)
+	defer c.Terminate(t)
+
+	serversToAdd := []*Server{
+		NewServer("frontend-1", "type1", true, nil),
+		NewServer("frontend-2", "type2", true, nil),
+		NewServer("frontend-3", "type3", true, nil),
+		NewServer("frontend-4", "type4", true, nil),
+		NewServer("frontend-5", "type5", true, nil),
+		NewServer("frontend-6", "type6", true, nil),
+		NewServer("frontend-7", "type7", true, nil),
+		NewServer("frontend-8", "type8", true, nil),
+		NewServer("frontend-9", "type9", true, nil),
+	}
+
+	// Add server
+	for _, serverToAdd := range serversToAdd {
+		_, err := cli.Put(
+			context.TODO(),
+			getKey(serverToAdd.ID, serverToAdd.Type),
+			serverToAdd.AsJSONString(),
+		)
+		assert.NoError(t, err)
+	}
+
+	parallelGetter := newParallelGetter(cli, 5)
+	for _, serverToAdd := range serversToAdd {
+		parallelGetter.addWork(serverToAdd.Type, serverToAdd.ID)
+	}
+
+	servers := parallelGetter.waitAndGetResult()
+	assert.Equal(t, len(serversToAdd), len(servers))
+
+	// We add the returned servers to a map first, since the results may be out the order they were added.
+	serversMap := map[string]*Server{}
+	for _, sv := range servers {
+		_, ok := serversMap[sv.ID]
+		assert.False(t, ok)
+		serversMap[sv.ID] = sv
+	}
+
+	for _, serverToAdd := range serversToAdd {
+		sv, ok := serversMap[serverToAdd.ID]
+		assert.True(t, ok)
+		assert.Equal(t, serverToAdd.Type, sv.Type)
+		assert.Equal(t, serverToAdd.ID, sv.ID)
+		assert.Equal(t, serverToAdd.Frontend, sv.Frontend)
 	}
 }

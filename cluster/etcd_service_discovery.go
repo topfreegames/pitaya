@@ -281,9 +281,9 @@ func getKey(serverID, serverType string) string {
 	return fmt.Sprintf("servers/%s/%s", serverType, serverID)
 }
 
-func (sd *etcdServiceDiscovery) getServerFromEtcd(serverType, serverID string) (*Server, error) {
+func getServerFromEtcd(cli *clientv3.Client, serverType, serverID string) (*Server, error) {
 	svKey := getKey(serverID, serverType)
-	svEInfo, err := sd.cli.Get(context.TODO(), svKey)
+	svEInfo, err := cli.Get(context.TODO(), svKey)
 	if err != nil {
 		return nil, fmt.Errorf("error getting server: %s from etcd, error: %s", svKey, err.Error())
 	}
@@ -425,7 +425,7 @@ func (sd *etcdServiceDiscovery) processPendingServer(
 
 	svType, svID := sv.Type, sv.ID
 
-	sv, err := sd.getServerFromEtcd(svType, svID)
+	sv, err := getServerFromEtcd(sd.cli, svType, svID)
 	if err != nil {
 		logger.Log.Errorf("error getting server from etcd: %s, error: %s", svID, err.Error())
 		return
@@ -435,6 +435,76 @@ func (sd *etcdServiceDiscovery) processPendingServer(
 	serversMutex.Lock()
 	*servers = append(*servers, sv)
 	serversMutex.Unlock()
+}
+
+// Struct that encapsulates a parallel/concurrent etcd get
+// it spawns goroutines and receives work requests through a channel
+type parallelGetterWork struct {
+	serverType string
+	serverID   string
+}
+
+type parallelGetter struct {
+	cli         *clientv3.Client
+	numWorkers  int
+	wg          *sync.WaitGroup
+	resultMutex sync.Mutex
+	result      *[]*Server
+	workChan    chan parallelGetterWork
+}
+
+func newParallelGetter(cli *clientv3.Client, numWorkers int) parallelGetter {
+	if numWorkers <= 0 {
+		numWorkers = 10
+	}
+	p := parallelGetter{
+		cli:        cli,
+		numWorkers: numWorkers,
+		workChan:   make(chan parallelGetterWork),
+		wg:         new(sync.WaitGroup),
+		result:     new([]*Server),
+	}
+	p.start()
+	return p
+}
+
+func (p *parallelGetter) start() {
+	for i := 0; i < p.numWorkers; i++ {
+		go func() {
+			for work := range p.workChan {
+				logger.Log.Debugf("loading info from missing server: %s/%s", work.serverType, work.serverID)
+
+				sv, err := getServerFromEtcd(p.cli, work.serverType, work.serverID)
+				if err != nil {
+					logger.Log.Errorf("error getting server from etcd: %s, error: %s", work.serverID, err.Error())
+					println("calling done")
+					p.wg.Done()
+					return
+				}
+
+				// We add into the resulting servers array
+				p.resultMutex.Lock()
+				*p.result = append(*p.result, sv)
+				p.resultMutex.Unlock()
+
+				p.wg.Done()
+			}
+		}()
+	}
+}
+
+func (p *parallelGetter) waitAndGetResult() []*Server {
+	p.wg.Wait()
+	close(p.workChan)
+	return *p.result
+}
+
+func (p *parallelGetter) addWork(serverType, serverID string) {
+	p.wg.Add(1)
+	p.workChan <- parallelGetterWork{
+		serverType: serverType,
+		serverID:   serverID,
+	}
 }
 
 // SyncServers gets all servers from etcd
@@ -450,23 +520,10 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	}
 
 	// delete invalid servers (local ones that are not in etcd)
-	allIds := make([]string, 0)
+	var allIds = make([]string, 0)
 
-	var (
-		servers           []*Server
-		serversMutex      sync.Mutex
-		wg                sync.WaitGroup
-		pendingServerChan = make(chan *Server)
-	)
-
-	// Spawn worker goroutines
-	for i := 0; i < sd.syncServersParallelism; i++ {
-		go func() {
-			for sv := range pendingServerChan {
-				sd.processPendingServer(sv, &wg, serversMutex, &servers)
-			}
-		}()
-	}
+	// Spawn worker goroutines that will work in parallel
+	parallelGetter := newParallelGetter(sd.cli, sd.syncServersParallelism)
 
 	for _, kv := range keys.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
@@ -485,14 +542,12 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
 			// Add new work to the channel
-			wg.Add(1)
-			pendingServerChan <- &Server{ID: svID, Type: svType}
+			parallelGetter.addWork(svType, svID)
 		}
 	}
 
 	// Wait until all goroutines are finished
-	wg.Wait()
-	close(pendingServerChan)
+	servers := parallelGetter.waitAndGetResult()
 
 	for _, server := range servers {
 		logger.Log.Debugf("adding server %s", server)
