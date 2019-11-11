@@ -459,7 +459,7 @@ func (p *parallelGetter) start() {
 					logger.Log.Errorf("error getting server from etcd: %s, error: %s", work.serverID, err.Error())
 					println("calling done")
 					p.wg.Done()
-					return
+					continue
 				}
 
 				p.resultMutex.Lock()
