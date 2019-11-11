@@ -81,9 +81,7 @@ func (ns *NatsRPCClient) configure() error {
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
-	if timeout := ns.config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout"); timeout != 0 {
-		ns.connectionTimeout = timeout
-	}
+	ns.connectionTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout")
 	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries")
 	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
 	if ns.reqTimeout == 0 {
