@@ -113,10 +113,6 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.serverTypesBlacklist = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist")
 	sd.syncServersParallelism = sd.config.GetInt("pitaya.cluster.sd.etcd.syncserversparallelism")
 
-	if sd.syncServersParallelism == 0 {
-		sd.syncServersParallelism = 10
-	}
-
 	if len(sd.serverTypesBlacklist) > 0 {
 		logger.Log.Warnf("using server types blacklist: %s", sd.serverTypesBlacklist)
 	}
