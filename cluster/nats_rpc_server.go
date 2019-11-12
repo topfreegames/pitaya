@@ -314,7 +314,7 @@ func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
 
-	logger.Log.Debugf("connecting to nats with timeout of %s", ns.connectionTimeout)
+	logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
