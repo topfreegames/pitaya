@@ -434,18 +434,34 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			// We sleep here to guarantee that the watch callback is called. However, the etcd server is in memory,
-			// so the callback is really fast. The time here is an upper bound.
-			time.Sleep(time.Millisecond * 500)
-
-			for _, serverToAdd := range table.serversToAdd {
-				_, err := e.GetServer(serverToAdd.ID)
-				if e.isServerTypeBlacklisted(serverToAdd.Type) {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
+			numRequiredServersInSd := func() int {
+				num := 0
+				for _, serverToAdd := range table.serversToAdd {
+					if !e.isServerTypeBlacklisted(serverToAdd.Type) {
+						num++
+					}
 				}
+				return num + 1 // The server itself is always added to the cache, that's why we add one here
 			}
+
+			numServersInSd := func() int {
+				num := 0
+
+				_, err := e.GetServer(table.server.ID)
+				if err == nil {
+					num++
+				}
+				for _, serverToAdd := range table.serversToAdd {
+					_, err := e.GetServer(serverToAdd.ID)
+					if err == nil {
+						num++
+					}
+				}
+				println("Returning val ", num)
+				return num
+			}
+
+			helpers.ShouldEventuallyReturn(t, numServersInSd, numRequiredServersInSd())
 		})
 	}
 }
