@@ -453,7 +453,6 @@ func (p *parallelGetter) start() {
 				sv, err := getServerFromEtcd(p.cli, work.serverType, work.serverID)
 				if err != nil {
 					logger.Log.Errorf("error getting server from etcd: %s, error: %s", work.serverID, err.Error())
-					println("calling done")
 					p.wg.Done()
 					continue
 				}
