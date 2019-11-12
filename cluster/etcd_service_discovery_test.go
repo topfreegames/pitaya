@@ -457,7 +457,6 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 						num++
 					}
 				}
-				println("Returning val ", num)
 				return num
 			}
 
