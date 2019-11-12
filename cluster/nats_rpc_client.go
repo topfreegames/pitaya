@@ -205,7 +205,7 @@ func (ns *NatsRPCClient) Call(
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true
-	logger.Log.Debugf("connecting to nats with timeout of %s", ns.connectionTimeout)
+	logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
