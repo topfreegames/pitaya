@@ -110,7 +110,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
-		messageEncoder: message.NewMessagesEncoder(true),
+		messageEncoder: message.NewMessagesEncoder(false),
 		clientHandshakeData: &session.HandshakeData{
 			Sys: session.HandshakeClientData{
 				Platform:    "mac",
