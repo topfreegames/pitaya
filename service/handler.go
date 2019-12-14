@@ -21,6 +21,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -179,25 +180,36 @@ func (h *HandlerService) Handle(conn net.Conn) {
 	}()
 
 	// read loop
-	buf := make([]byte, 2048)
+	data := make([]byte, 4096)
+	buf := bytes.NewBuffer(nil)
 	for {
-		n, err := conn.Read(buf)
-		if err != nil {
-			logger.Log.Debugf("Read message error: '%s', session will be closed immediately", err.Error())
-			return
+		totalLen := 0
+		n := len(data)
+		var err error
+		for n == len(data) {
+			n, err = conn.Read(data)
+			if err != nil {
+				logger.Log.Debugf("Read message error: '%s', session will be closed immediately", err.Error())
+				return
+			}
+			buf.Write(data[:n])
+			totalLen += n
+			if totalLen > codec.MaxPacketSize {
+				logger.Log.Warn("received chunk > MaxPacketSize, disconnecting client...")
+				return
+			}
 		}
 
-		logger.Log.Debug("Received data on connection")
+		logger.Log.Debugf("Received data on connection with len %d", totalLen)
 
-		// (warning): decoder uses slice for performance, packet data should be copied before next Decode
-		packets, err := h.decoder.Decode(buf[:n])
+		packets, err := h.decoder.Decode(buf.Bytes())
 		if err != nil {
 			logger.Log.Errorf("Failed to decode message: %s", err.Error())
 			return
 		}
 
 		if len(packets) < 1 {
-			logger.Log.Warnf("Read no packets, data: %v", buf[:n])
+			logger.Log.Warnf("Read no packets, data: %v", buf.Bytes())
 			continue
 		}
 
@@ -208,6 +220,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 				return
 			}
 		}
+		buf.Reset()
 	}
 }
 
