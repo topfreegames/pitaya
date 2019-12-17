@@ -180,7 +180,7 @@ func (h *HandlerService) Handle(conn net.Conn) {
 	}()
 
 	// read loop
-	data := make([]byte, 4096)
+	data := make([]byte, constants.IOBufferBytesSize)
 	buf := bytes.NewBuffer(nil)
 	for {
 		totalLen := 0

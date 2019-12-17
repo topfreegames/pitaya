@@ -106,8 +106,8 @@ func (w *WSAcceptor) ListenAndServe() {
 	}
 
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  constants.IOBufferBytesSize,
+		WriteBufferSize: constants.IOBufferBytesSize,
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -125,8 +125,8 @@ func (w *WSAcceptor) ListenAndServe() {
 // ListenAndServeTLS listens and serve in the specified addr using tls
 func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  constants.IOBufferBytesSize,
+		WriteBufferSize: constants.IOBufferBytesSize,
 	}
 
 	crt, err := tls.LoadX509KeyPair(cert, key)
