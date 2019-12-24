@@ -27,10 +27,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/topfreegames/pitaya/acceptor"
+
+	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/conn/codec"
@@ -125,6 +129,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	}
 }
 
+// SetClientHandshakeData sets the data to send inside handshake
 func (c *Client) SetClientHandshakeData(data *session.HandshakeData) {
 	c.clientHandshakeData = data
 }
@@ -139,6 +144,7 @@ func (c *Client) sendHandshakeRequest() error {
 	if err != nil {
 		return err
 	}
+
 	_, err = c.conn.Write(p)
 	return err
 }
@@ -334,12 +340,16 @@ func (c *Client) Disconnect() {
 	}
 }
 
-// ConnectToTLS connects to the server at addr using TLS, for now the only supported protocol is tcp
-// this methods blocks as it also handles the messages from the server
-func (c *Client) ConnectToTLS(addr string, skipVerify bool) error {
-	conn, err := tls.Dial("tcp", addr, &tls.Config{
-		InsecureSkipVerify: skipVerify,
-	})
+// ConnectTo connects to the server at addr, for now the only supported protocol is tcp
+// if tlsConfig is sent, it connects using TLS
+func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
+	var conn net.Conn
+	var err error
+	if len(tlsConfig) > 0 {
+		conn, err = tls.Dial("tcp", addr, tlsConfig[0])
+	} else {
+		conn, err = net.Dial("tcp", addr)
+	}
 	if err != nil {
 		return err
 	}
@@ -351,17 +361,30 @@ func (c *Client) ConnectToTLS(addr string, skipVerify bool) error {
 	}
 
 	c.closeChan = make(chan struct{})
+
 	return nil
 }
 
-// ConnectTo connects to the server at addr, for now the only supported protocol is tcp
-// this methods blocks as it also handles the messages from the server
-func (c *Client) ConnectTo(addr string) error {
-	conn, err := net.Dial("tcp", addr)
+// ConnectToWS connects using webshocket protocol
+func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config) error {
+	u := url.URL{Scheme: "ws", Host: addr, Path: path}
+	dialer := websocket.DefaultDialer
+
+	if len(tlsConfig) > 0 {
+		dialer.TLSClientConfig = tlsConfig[0]
+		u.Scheme = "wss"
+	}
+
+	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
-	c.conn = conn
+
+	c.conn, err = acceptor.NewWSConn(conn)
+	if err != nil {
+		return err
+	}
+
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {

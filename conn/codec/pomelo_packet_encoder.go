@@ -52,17 +52,8 @@ func (e *PomeloPacketEncoder) Encode(typ packet.Type, data []byte) ([]byte, erro
 	buf := make([]byte, p.Length+HeadLength)
 	buf[0] = byte(p.Type)
 
-	copy(buf[1:HeadLength], intToBytes(p.Length))
+	copy(buf[1:HeadLength], IntToBytes(p.Length))
 	copy(buf[HeadLength:], data)
 
 	return buf, nil
-}
-
-// Encode packet data length to bytes(Big end)
-func intToBytes(n int) []byte {
-	buf := make([]byte, 3)
-	buf[0] = byte((n >> 16) & 0xFF)
-	buf[1] = byte((n >> 8) & 0xFF)
-	buf[2] = byte(n & 0xFF)
-	return buf
 }

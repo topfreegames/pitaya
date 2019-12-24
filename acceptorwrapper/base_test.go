@@ -21,8 +21,9 @@
 package acceptorwrapper
 
 import (
-	"net"
 	"testing"
+
+	"github.com/topfreegames/pitaya/acceptor"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -36,9 +37,9 @@ func TestListenAndServe(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockAcceptor := mocks.NewMockAcceptor(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 
-	conns := make(chan net.Conn)
+	conns := make(chan acceptor.PlayerConn)
 	exit := make(chan struct{})
 	reads := 3
 	go func() {
@@ -51,8 +52,8 @@ func TestListenAndServe(t *testing.T) {
 	mockAcceptor.EXPECT().GetConnChan().Return(conns)
 	wrapper := &BaseWrapper{
 		Acceptor: mockAcceptor,
-		connChan: make(chan net.Conn),
-		wrapConn: func(c net.Conn) net.Conn {
+		connChan: make(chan acceptor.PlayerConn),
+		wrapConn: func(c acceptor.PlayerConn) acceptor.PlayerConn {
 			_, err := c.Read([]byte{})
 			assert.NoError(t, err)
 			return c

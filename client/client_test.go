@@ -17,7 +17,7 @@ func TestSendRequestShouldTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	c.conn = mockConn
 	go c.pendingRequestsReaper()
 

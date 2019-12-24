@@ -21,8 +21,6 @@
 package acceptorwrapper
 
 import (
-	"net"
-
 	"github.com/topfreegames/pitaya/acceptor"
 )
 
@@ -32,14 +30,14 @@ import (
 // Any new wrapper can inherit from BaseWrapper and just implement wrapConn.
 type BaseWrapper struct {
 	acceptor.Acceptor
-	connChan chan net.Conn
-	wrapConn func(net.Conn) net.Conn
+	connChan chan acceptor.PlayerConn
+	wrapConn func(acceptor.PlayerConn) acceptor.PlayerConn
 }
 
 // NewBaseWrapper returns an instance of BaseWrapper.
-func NewBaseWrapper(wrapConn func(net.Conn) net.Conn) BaseWrapper {
+func NewBaseWrapper(wrapConn func(acceptor.PlayerConn) acceptor.PlayerConn) BaseWrapper {
 	return BaseWrapper{
-		connChan: make(chan net.Conn),
+		connChan: make(chan acceptor.PlayerConn),
 		wrapConn: wrapConn,
 	}
 }
@@ -52,7 +50,7 @@ func (b *BaseWrapper) ListenAndServe() {
 }
 
 // GetConnChan returns the wrapper conn chan
-func (b *BaseWrapper) GetConnChan() chan net.Conn {
+func (b *BaseWrapper) GetConnChan() chan acceptor.PlayerConn {
 	return b.connChan
 }
 

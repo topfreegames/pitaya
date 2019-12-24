@@ -77,7 +77,7 @@ func TestNewAgent(t *testing.T) {
 	dieChan := make(chan bool)
 	hbTime := time.Second
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Not(gomock.Nil())).Do(
 		func(typ packet.Type, d []byte) {
@@ -128,7 +128,7 @@ func TestKick(t *testing.T) {
 	dieChan := make(chan bool)
 	hbTime := time.Second
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
 		func(typ packet.Type, d []byte) {
 			assert.EqualValues(t, packet.Kick, typ)
@@ -136,6 +136,7 @@ func TestKick(t *testing.T) {
 	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
 	messageEncoder := message.NewMessagesEncoder(false)
 
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
 	c := context.Background()
 	err := ag.Kick(c)
@@ -164,7 +165,8 @@ func TestAgentSend(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -222,9 +224,10 @@ func TestAgentPush(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 			mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -262,9 +265,10 @@ func TestAgentPushFullChannel(t *testing.T) {
 	hbTime := time.Second
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
@@ -327,9 +331,10 @@ func TestAgentResponseMID(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -381,9 +386,10 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	hbTime := time.Second
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
@@ -413,7 +419,7 @@ func TestAgentClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
@@ -457,7 +463,7 @@ func TestAgentRemoteAddr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
@@ -474,7 +480,7 @@ func TestAgentString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
@@ -501,7 +507,7 @@ func TestAgentGetStatus(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
@@ -598,7 +604,7 @@ func TestAgentSendHandshakeResponse(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
@@ -633,6 +639,7 @@ func TestAnswerWithError(t *testing.T) {
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			messageEncoder := message.NewMessagesEncoder(false)
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 1, nil, messageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -652,8 +659,9 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -683,8 +691,9 @@ func TestAgentHeartbeatExitsIfConnError(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -713,12 +722,13 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 
 	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
 	mockConn.EXPECT().Close().MaxTimes(1)
 
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -736,7 +746,7 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -788,7 +798,7 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
@@ -854,8 +864,9 @@ func TestAgentHandle(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -909,8 +920,9 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
@@ -942,7 +954,7 @@ func TestIPVersion(t *testing.T) {
 		t.Run("test_"+table.addr, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockAddr := &customMockAddr{str: table.addr}
 
 			mockConn.EXPECT().RemoteAddr().Return(mockAddr)

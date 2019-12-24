@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 )
@@ -96,7 +97,7 @@ func TestWSAcceptorListenAndServe(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			assert.NotNil(t, conn)
 		})
@@ -111,7 +112,7 @@ func TestWSAcceptorListenAndServeTLS(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServeTLS("./fixtures/server.crt", "./fixtures/server.key")
 			mustConnectToWS(t, table.write, w, "wss")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			assert.NotNil(t, conn)
 		})
@@ -140,7 +141,7 @@ func TestWSConnRead(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			b := make([]byte, len(table.write))
 			n, err := conn.Read(b)
@@ -159,7 +160,7 @@ func TestWSConnWrite(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			b := make([]byte, len(table.write))
 			n, err := conn.Write(b)
@@ -177,7 +178,7 @@ func TestWSConnLocalAddr(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			a := conn.LocalAddr().String()
 			assert.NotEmpty(t, a)
@@ -193,7 +194,7 @@ func TestWSConnRemoteAddr(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			a := conn.RemoteAddr().String()
 			assert.NotEmpty(t, a)
@@ -209,7 +210,7 @@ func TestWSConnSetDeadline(t *testing.T) {
 			defer w.Stop()
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
-			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*wsConn)
+			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
 			defer conn.Close()
 			conn.SetDeadline(time.Now().Add(5 * time.Millisecond))
 			time.Sleep(10 * time.Millisecond)
@@ -217,4 +218,78 @@ func TestWSConnSetDeadline(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func TestWSGetNextMessage(t *testing.T) {
+	tables := []struct {
+		name string
+		data []byte
+		err  error
+	}{
+		{"invalid_header", []byte{0x00, 0x00, 0x00, 0x00}, packet.ErrWrongPomeloPacketType},
+		{"valid_message", []byte{0x02, 0x00, 0x00, 0x01, 0x00}, nil},
+		{"invalid_message", []byte{0x02, 0x00, 0x00, 0x02, 0x00}, constants.ErrReceivedMsgSmallerThanExpected},
+		{"invalid_header", []byte{0x02, 0x00}, packet.ErrInvalidPomeloHeader},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			w := NewWSAcceptor("0.0.0.0:0")
+			c := w.GetConnChan()
+			defer w.Stop()
+			go w.ListenAndServe()
+
+			var conn *websocket.Conn
+			var err error
+			helpers.ShouldEventuallyReturn(t, func() error {
+				addr := fmt.Sprintf("%s://%s", "ws", w.GetAddr())
+				dialer := websocket.DefaultDialer
+				conn, _, err = dialer.Dial(addr, nil)
+				return err
+			}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+			playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
+			defer playerConn.Close()
+			err = conn.WriteMessage(websocket.BinaryMessage, table.data)
+			assert.NoError(t, err)
+			msg, err := playerConn.GetNextMessage()
+			if table.err != nil {
+				assert.EqualError(t, err, table.err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, table.data, msg)
+			}
+		})
+	}
+}
+
+func TestWSGetNextMessageSequentially(t *testing.T) {
+	w := NewWSAcceptor("0.0.0.0:0")
+	c := w.GetConnChan()
+	defer w.Stop()
+	go w.ListenAndServe()
+
+	var conn *websocket.Conn
+	var err error
+	helpers.ShouldEventuallyReturn(t, func() error {
+		addr := fmt.Sprintf("%s://%s", "ws", w.GetAddr())
+		dialer := websocket.DefaultDialer
+		conn, _, err = dialer.Dial(addr, nil)
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+	playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(*WSConn)
+	defer playerConn.Close()
+	msg1 := []byte{0x01, 0x00, 0x00, 0x02, 0x01, 0x01}
+	msg2 := []byte{0x02, 0x00, 0x00, 0x02, 0x05, 0x04}
+	err = conn.WriteMessage(websocket.BinaryMessage, msg1)
+	assert.NoError(t, err)
+	err = conn.WriteMessage(websocket.BinaryMessage, msg2)
+	assert.NoError(t, err)
+	msg, err := playerConn.GetNextMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, msg1, msg)
+	msg, err = playerConn.GetNextMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, msg2, msg)
 }

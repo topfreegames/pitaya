@@ -23,6 +23,7 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -317,13 +318,17 @@ func NewWithDescriptor(descriptorsRoute string, docsRoute string, docslogLevel l
 func (pc *ProtoClient) LoadServerInfo(addr string) error {
 	pc.ready = false
 
-	if err := pc.Client.ConnectToTLS(addr, true); err != nil {
-		if err.Error() == "EOF" {
-			if err := pc.Client.ConnectTo(addr); err != nil {
-				return err
+	if err := pc.Client.ConnectToWS(addr, "", &tls.Config{
+		InsecureSkipVerify: true,
+	}); err != nil {
+		if err := pc.Client.ConnectToWS(addr, ""); err != nil {
+			if err := pc.Client.ConnectTo(addr, &tls.Config{
+				InsecureSkipVerify: true,
+			}); err != nil {
+				if err := pc.Client.ConnectTo(addr); err != nil {
+					return err
+				}
 			}
-		} else {
-			return err
 		}
 	}
 
@@ -415,31 +420,10 @@ func (pc *ProtoClient) waitForData() {
 	}
 }
 
-// ConnectToTLS connects to the server at addr using TLS, for now the only supported protocol is tcp
-// this methods blocks as it also handles the messages from the server
-func (pc *ProtoClient) ConnectToTLS(addr string, skipVerify bool) error {
-	err := pc.Client.ConnectToTLS(addr, skipVerify)
-	if err != nil {
-		return err
-	}
-
-	if !pc.ready {
-		err = pc.LoadServerInfo(addr)
-		if err != nil {
-			return err
-		}
-	}
-
-	if pc.ready {
-		go pc.waitForData()
-	}
-	return nil
-}
-
 // ConnectTo connects to the server at addr, for now the only supported protocol is tcp
 // this methods blocks as it also handles the messages from the server
-func (pc *ProtoClient) ConnectTo(addr string) error {
-	err := pc.Client.ConnectTo(addr)
+func (pc *ProtoClient) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
+	err := pc.Client.ConnectTo(addr, tlsConfig...)
 	if err != nil {
 		return err
 	}

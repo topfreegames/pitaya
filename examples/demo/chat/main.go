@@ -129,7 +129,9 @@ func main() {
 	go http.ListenAndServe(":3251", nil)
 
 	t := acceptor.NewTCPAcceptor(":3250")
+	w := acceptor.NewWSAcceptor(":3252")
 	pitaya.AddAcceptor(t)
+	pitaya.AddAcceptor(w)
 
 	pitaya.Configure(true, "chat", pitaya.Cluster, map[string]string{}, conf)
 	pitaya.Start()

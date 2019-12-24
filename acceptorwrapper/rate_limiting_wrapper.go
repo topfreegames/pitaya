@@ -21,8 +21,6 @@
 package acceptorwrapper
 
 import (
-	"net"
-
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/config"
 )
@@ -37,7 +35,7 @@ type RateLimitingWrapper struct {
 func NewRateLimitingWrapper(c *config.Config) *RateLimitingWrapper {
 	r := &RateLimitingWrapper{}
 
-	r.BaseWrapper = NewBaseWrapper(func(conn net.Conn) net.Conn {
+	r.BaseWrapper = NewBaseWrapper(func(conn acceptor.PlayerConn) acceptor.PlayerConn {
 		var (
 			limit        = c.GetInt("pitaya.conn.ratelimiting.limit")
 			interval     = c.GetDuration("pitaya.conn.ratelimiting.interval")
