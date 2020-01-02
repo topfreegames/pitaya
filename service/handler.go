@@ -205,7 +205,6 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 				return
 			}
 		}
-		//buf.Reset()
 	}
 }
 

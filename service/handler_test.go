@@ -296,7 +296,10 @@ func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
 	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.HandshakeAck})
 	assert.NoError(t, err)
 	assert.Equal(t, constants.StatusWorking, ag.GetStatus())
@@ -312,7 +315,10 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 	svc := NewHandlerService(nil, nil, nil, nil, 1*time.Second, 1, 1, 1, nil, nil, nil, nil)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
-	ag := agent.NewAgent(mockConn, nil, packetEncoder, nil, 1*time.Second, 1, nil, messageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := agent.NewAgent(mockConn, nil, packetEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	// wait to check if lastTime is updated. SORRY!
 	time.Sleep(1 * time.Second)
 	err := svc.processPacket(ag, &packet.Packet{Type: packet.Heartbeat})
