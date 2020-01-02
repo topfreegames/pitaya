@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
 )
@@ -144,4 +145,133 @@ func TestStop(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func TestGetNextMessage(t *testing.T) {
+	tables := []struct {
+		name string
+		data []byte
+		err  error
+	}{
+		{"invalid_header", []byte{0x00, 0x00, 0x00, 0x00}, packet.ErrWrongPomeloPacketType},
+		{"valid_message", []byte{0x02, 0x00, 0x00, 0x01, 0x00}, nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			a := NewTCPAcceptor("0.0.0.0:0")
+			go a.ListenAndServe()
+			defer a.Stop()
+			c := a.GetConnChan()
+			// should be able to connect within 100 milliseconds
+			var conn net.Conn
+			var err error
+			helpers.ShouldEventuallyReturn(t, func() error {
+				conn, err = net.Dial("tcp", a.GetAddr())
+				return err
+			}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+			defer conn.Close()
+			playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(PlayerConn)
+			_, err = conn.Write(table.data)
+			assert.NoError(t, err)
+
+			msg, err := playerConn.GetNextMessage()
+			if table.err != nil {
+				assert.EqualError(t, err, table.err.Error())
+			} else {
+				assert.Equal(t, table.data, msg)
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGetNextMessageTwoMessagesInBuffer(t *testing.T) {
+	a := NewTCPAcceptor("0.0.0.0:0")
+	go a.ListenAndServe()
+	defer a.Stop()
+	c := a.GetConnChan()
+	// should be able to connect within 100 milliseconds
+	var conn net.Conn
+	var err error
+	helpers.ShouldEventuallyReturn(t, func() error {
+		conn, err = net.Dial("tcp", a.GetAddr())
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+	defer conn.Close()
+
+	playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(PlayerConn)
+	msg1 := []byte{0x01, 0x00, 0x00, 0x01, 0x02}
+	msg2 := []byte{0x02, 0x00, 0x00, 0x02, 0x01, 0x01}
+	buffer := append(msg1, msg2...)
+	_, err = conn.Write(buffer)
+	assert.NoError(t, err)
+
+	msg, err := playerConn.GetNextMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, msg1, msg)
+
+	msg, err = playerConn.GetNextMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, msg2, msg)
+}
+
+func TestGetNextMessageEOF(t *testing.T) {
+	a := NewTCPAcceptor("0.0.0.0:0")
+	go a.ListenAndServe()
+	defer a.Stop()
+	c := a.GetConnChan()
+	// should be able to connect within 100 milliseconds
+	var conn net.Conn
+	var err error
+	helpers.ShouldEventuallyReturn(t, func() error {
+		conn, err = net.Dial("tcp", a.GetAddr())
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+	playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(PlayerConn)
+	buffer := []byte{0x02, 0x00, 0x00, 0x02, 0x01}
+	_, err = conn.Write(buffer)
+	assert.NoError(t, err)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		conn.Close()
+	}()
+
+	_, err = playerConn.GetNextMessage()
+	assert.EqualError(t, err, constants.ErrReceivedMsgSmallerThanExpected.Error())
+
+}
+
+func TestGetNextMessageInParts(t *testing.T) {
+	a := NewTCPAcceptor("0.0.0.0:0")
+	go a.ListenAndServe()
+	defer a.Stop()
+	c := a.GetConnChan()
+	// should be able to connect within 100 milliseconds
+	var conn net.Conn
+	var err error
+	helpers.ShouldEventuallyReturn(t, func() error {
+		conn, err = net.Dial("tcp", a.GetAddr())
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+	defer conn.Close()
+	playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(PlayerConn)
+	part1 := []byte{0x02, 0x00, 0x00, 0x03, 0x01}
+	part2 := []byte{0x01, 0x02}
+	_, err = conn.Write(part1)
+	assert.NoError(t, err)
+
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		_, err = conn.Write(part2)
+	}()
+
+	msg, err := playerConn.GetNextMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, msg, append(part1, part2...))
+
 }

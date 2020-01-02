@@ -21,13 +21,13 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"strings"
 	"time"
+
+	"github.com/topfreegames/pitaya/acceptor"
 
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -164,7 +164,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 }
 
 // Handle handles messages from a conn
-func (h *HandlerService) Handle(conn net.Conn) {
+func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// create a client agent and startup write goroutine
 	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporters)
 
@@ -179,37 +179,22 @@ func (h *HandlerService) Handle(conn net.Conn) {
 		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
 
-	// read loop
-	data := make([]byte, constants.IOBufferBytesSize)
-	buf := bytes.NewBuffer(nil)
 	for {
-		totalLen := 0
-		n := len(data)
-		var err error
-		for n == len(data) {
-			n, err = conn.Read(data)
-			if err != nil {
-				logger.Log.Debugf("Read message error: '%s', session will be closed immediately", err.Error())
-				return
-			}
-			buf.Write(data[:n])
-			totalLen += n
-			if totalLen > codec.MaxPacketSize {
-				logger.Log.Warn("received chunk > MaxPacketSize, disconnecting client...")
-				return
-			}
+		msg, err := conn.GetNextMessage()
+
+		if err != nil {
+			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			return
 		}
 
-		logger.Log.Debugf("Received data on connection with len %d", totalLen)
-
-		packets, err := h.decoder.Decode(buf.Bytes())
+		packets, err := h.decoder.Decode(msg)
 		if err != nil {
 			logger.Log.Errorf("Failed to decode message: %s", err.Error())
 			return
 		}
 
 		if len(packets) < 1 {
-			logger.Log.Warnf("Read no packets, data: %v", buf.Bytes())
+			logger.Log.Warnf("Read no packets, data: %v", msg)
 			continue
 		}
 
@@ -220,7 +205,6 @@ func (h *HandlerService) Handle(conn net.Conn) {
 				return
 			}
 		}
-		buf.Reset()
 	}
 }
 

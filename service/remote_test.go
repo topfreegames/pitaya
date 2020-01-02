@@ -437,7 +437,8 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 			}
 
 			encoder := codec.NewPomeloPacketEncoder()
-			mockConn := connmock.NewMockConn(ctrl)
+			mockConn := connmock.NewMockPlayerConn(ctrl)
+			mockSerializer.EXPECT().GetName()
 			ag := agent.NewAgent(mockConn, nil, encoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 
 			if table.responseMIDErr {

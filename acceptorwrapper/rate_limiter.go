@@ -22,10 +22,10 @@ package acceptorwrapper
 
 import (
 	"container/list"
-	"net"
 	"time"
 
 	"github.com/topfreegames/pitaya"
+	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
@@ -41,7 +41,7 @@ import (
 // On the client side, this will yield a timeout error and the client must
 // be prepared to handle it.
 type RateLimiter struct {
-	net.Conn
+	acceptor.PlayerConn
 	limit        int
 	interval     time.Duration
 	times        list.List
@@ -50,13 +50,13 @@ type RateLimiter struct {
 
 // NewRateLimiter returns an initialized *RateLimiting
 func NewRateLimiter(
-	conn net.Conn,
+	conn acceptor.PlayerConn,
 	limit int,
 	interval time.Duration,
 	forceDisable bool,
 ) *RateLimiter {
 	r := &RateLimiter{
-		Conn:         conn,
+		PlayerConn:   conn,
 		limit:        limit,
 		interval:     interval,
 		forceDisable: forceDisable,
@@ -67,25 +67,26 @@ func NewRateLimiter(
 	return r
 }
 
-func (r *RateLimiter) Read(b []byte) (n int, err error) {
+// GetNextMessage gets the next message in the connection
+func (r *RateLimiter) GetNextMessage() (msg []byte, err error) {
 	if r.forceDisable {
-		return r.Conn.Read(b)
+		return r.PlayerConn.GetNextMessage()
 	}
 
 	for {
-		n, err = r.Conn.Read(b)
+		msg, err := r.PlayerConn.GetNextMessage()
 		if err != nil {
-			return n, err
+			return nil, err
 		}
 
 		now := time.Now()
 		if r.shouldRateLimit(now) {
-			logger.Log.Errorf("Data=%s, Error=%s", b, constants.ErrRateLimitExceeded)
+			logger.Log.Errorf("Data=%s, Error=%s", msg, constants.ErrRateLimitExceeded)
 			metrics.ReportExceededRateLimiting(pitaya.GetMetricsReporters())
 			continue
 		}
 
-		return n, err
+		return msg, err
 	}
 }
 

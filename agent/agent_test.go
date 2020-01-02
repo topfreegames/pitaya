@@ -69,7 +69,7 @@ func TestNewAgent(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	mockSerializer.EXPECT().GetName()
+	mockSerializer.EXPECT().GetName().Times(2)
 
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
@@ -77,7 +77,7 @@ func TestNewAgent(t *testing.T) {
 	dieChan := make(chan bool)
 	hbTime := time.Second
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Not(gomock.Nil())).Do(
 		func(typ packet.Type, d []byte) {
@@ -114,7 +114,7 @@ func TestNewAgent(t *testing.T) {
 
 	// second call should no call hdb encode
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
-	ag = NewAgent(nil, nil, mockEncoder, nil, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
+	ag = NewAgent(nil, nil, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 }
 
@@ -128,7 +128,7 @@ func TestKick(t *testing.T) {
 	dieChan := make(chan bool)
 	hbTime := time.Second
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
 		func(typ packet.Type, d []byte) {
 			assert.EqualValues(t, packet.Kick, typ)
@@ -136,6 +136,7 @@ func TestKick(t *testing.T) {
 	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
 	messageEncoder := message.NewMessagesEncoder(false)
 
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
 	c := context.Background()
 	err := ag.Kick(c)
@@ -164,7 +165,8 @@ func TestAgentSend(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -187,11 +189,14 @@ func TestAgentPushFailsIfClosedAgent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	messageEncoder := message.NewMessagesEncoder(false)
 
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, messageEncoder, nil)
+	ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 10, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
 	err := ag.Push("", nil)
@@ -222,9 +227,10 @@ func TestAgentPush(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 			mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -262,9 +268,10 @@ func TestAgentPushFullChannel(t *testing.T) {
 	hbTime := time.Second
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
@@ -285,9 +292,12 @@ func TestAgentResponseMIDFailsIfClosedAgent(t *testing.T) {
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, mockMetricsReporters)
+	ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 10, nil, mockMessageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
 
@@ -327,9 +337,10 @@ func TestAgentResponseMID(t *testing.T) {
 			hbTime := time.Second
 			messageEncoder := message.NewMessagesEncoder(false)
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 			assert.NotNil(t, ag)
 
@@ -381,9 +392,10 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	hbTime := time.Second
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 0, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
@@ -401,8 +413,10 @@ func TestAgentCloseFailsIfAlreadyClosed(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
 
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 10, nil, mockMessageEncoder, nil)
+	ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 10, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 	ag.state = constants.StatusClosed
 	err := ag.Close()
@@ -413,11 +427,14 @@ func TestAgentClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
 	expected := false
@@ -457,11 +474,14 @@ func TestAgentRemoteAddr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
 	expected := &mockAddr{}
@@ -474,11 +494,14 @@ func TestAgentString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-	ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
@@ -501,11 +524,15 @@ func TestAgentGetStatus(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-			ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockSerializer.EXPECT().GetName()
+
+			ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
 			ag.state = table.status
@@ -523,7 +550,10 @@ func TestAgentSetLastAt(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-	ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
 	ag.lastAt = 0
@@ -548,7 +578,10 @@ func TestAgentSetStatus(t *testing.T) {
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-			ag := NewAgent(nil, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockSerializer.EXPECT().GetName()
+
+			ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
 			ag.SetStatus(table.status)
@@ -598,11 +631,14 @@ func TestAgentSendHandshakeResponse(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
-			ag := NewAgent(mockConn, nil, mockEncoder, nil, time.Second, 0, nil, mockMessageEncoder, nil)
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockSerializer.EXPECT().GetName()
+
+			ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, mockMessageEncoder, nil)
 			assert.NotNil(t, ag)
 
 			mockConn.EXPECT().Write(hrd).Return(0, table.err)
@@ -633,6 +669,7 @@ func TestAnswerWithError(t *testing.T) {
 			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 			heartbeatAndHandshakeMocks(mockEncoder)
 			messageEncoder := message.NewMessagesEncoder(false)
+			mockSerializer.EXPECT().GetName()
 			ag := NewAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 1, nil, messageEncoder, nil)
 			assert.NotNil(t, ag)
 
@@ -652,8 +689,9 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -683,8 +721,9 @@ func TestAgentHeartbeatExitsIfConnError(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, mockMessageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -713,12 +752,13 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 
 	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
 	mockConn.EXPECT().Close().MaxTimes(1)
 
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -736,7 +776,7 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
@@ -788,7 +828,7 @@ func TestAgentWriteChSendSerializeErr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
@@ -854,8 +894,9 @@ func TestAgentHandle(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
 	assert.NotNil(t, ag)
 
@@ -909,8 +950,9 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
-	mockConn := mocks.NewMockConn(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockSerializer.EXPECT().GetName()
 	ag := NewAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, mockMetricsReporters)
 	assert.NotNil(t, ag)
 
@@ -942,7 +984,7 @@ func TestIPVersion(t *testing.T) {
 		t.Run("test_"+table.addr, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockConn := mocks.NewMockConn(ctrl)
+			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockAddr := &customMockAddr{str: table.addr}
 
 			mockConn.EXPECT().RemoteAddr().Return(mockAddr)

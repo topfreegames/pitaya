@@ -103,8 +103,10 @@ func NewAgent(
 	metricsReporters []metrics.Reporter,
 ) *Agent {
 	// initialize heartbeat and handshake data on first user connection
+	serializerName := serializer.GetName()
+
 	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializer.GetName())
+		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
 	})
 
 	a := &Agent{

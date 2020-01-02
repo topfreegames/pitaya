@@ -22,8 +22,11 @@ package acceptor
 
 import (
 	"crypto/tls"
+	"io"
+	"io/ioutil"
 	"net"
 
+	"github.com/topfreegames/pitaya/conn/codec"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 )
@@ -31,11 +34,35 @@ import (
 // TCPAcceptor struct
 type TCPAcceptor struct {
 	addr     string
-	connChan chan net.Conn
+	connChan chan PlayerConn
 	listener net.Listener
 	running  bool
 	certFile string
 	keyFile  string
+}
+
+type tcpPlayerConn struct {
+	net.Conn
+}
+
+// GetNextMessage reads the next message available in the stream
+func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
+	header, err := ioutil.ReadAll(io.LimitReader(t.Conn, codec.HeadLength))
+	if err != nil {
+		return nil, err
+	}
+	msgSize, _, err := codec.ParseHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	msgData, err := ioutil.ReadAll(io.LimitReader(t.Conn, int64(msgSize)))
+	if err != nil {
+		return nil, err
+	}
+	if len(msgData) < msgSize {
+		return nil, constants.ErrReceivedMsgSmallerThanExpected
+	}
+	return append(header, msgData...), nil
 }
 
 // NewTCPAcceptor creates a new instance of tcp acceptor
@@ -51,7 +78,7 @@ func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 
 	return &TCPAcceptor{
 		addr:     addr,
-		connChan: make(chan net.Conn),
+		connChan: make(chan PlayerConn),
 		running:  false,
 		certFile: certFile,
 		keyFile:  keyFile,
@@ -67,7 +94,7 @@ func (a *TCPAcceptor) GetAddr() string {
 }
 
 // GetConnChan gets a connection channel
-func (a *TCPAcceptor) GetConnChan() chan net.Conn {
+func (a *TCPAcceptor) GetConnChan() chan PlayerConn {
 	return a.connChan
 }
 
@@ -121,6 +148,8 @@ func (a *TCPAcceptor) serve() {
 			continue
 		}
 
-		a.connChan <- conn
+		a.connChan <- &tcpPlayerConn{
+			Conn: conn,
+		}
 	}
 }
