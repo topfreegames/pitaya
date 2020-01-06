@@ -33,6 +33,9 @@ import (
 
 // ReportTimingFromCtx reports the latency from the context
 func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, err error) {
+	if ctx == nil {
+		return
+	}
 	code := errors.CodeFromError(err)
 	status := "ok"
 	if err != nil {
