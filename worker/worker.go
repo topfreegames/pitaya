@@ -38,29 +38,56 @@ type Worker struct {
 	concurrency int
 	registered  bool
 	opts        *EnqueueOpts
-	config      *config.Config
 	started     bool
 }
 
+// WorkerConfig provides worker configuration
+type WorkerConfig struct {
+	ServerURL   string
+	Pool        string
+	Password    string
+	Namespace   string
+	Concurrency int
+}
+
+// NewDefaultWorkerConfig provides worker default configuration
+func NewDefaultWorkerConfig() WorkerConfig {
+	return WorkerConfig{
+		ServerURL:   "localhost:6379",
+		Pool:        "10",
+		Concurrency: 1,
+	}
+}
+
+// NewWorkerConfig provides worker configuration based on default string paths
+func NewWorkerConfig(config *config.Config) WorkerConfig {
+	return WorkerConfig{
+		ServerURL:   config.GetString("pitaya.worker.redis.url"),
+		Pool:        config.GetString("pitaya.worker.redis.pool"),
+		Password:    config.GetString("pitaya.worker.redis.password"),
+		Namespace:   config.GetString("pitaya.worker.namespace"),
+		Concurrency: config.GetInt("pitaya.worker.concurrency"),
+	}
+}
+
 // NewWorker configures and returns a *Worker
-func NewWorker(config *config.Config) (*Worker, error) {
+func NewWorker(config WorkerConfig, opts EnqueueOpts) (*Worker, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
 	workers.Configure(map[string]string{
-		"server":    config.GetString("pitaya.worker.redis.url"),
-		"pool":      config.GetString("pitaya.worker.redis.pool"),
-		"password":  config.GetString("pitaya.worker.redis.password"),
-		"namespace": config.GetString("pitaya.worker.namespace"),
+		"server":    config.ServerURL,
+		"pool":      config.Pool,
+		"password":  config.Password,
+		"namespace": config.Namespace,
 		"process":   hostname,
 	})
 
 	return &Worker{
-		concurrency: config.GetInt("pitaya.worker.concurrency"),
-		opts:        NewEnqueueOpts(config),
-		config:      config,
+		concurrency: config.Concurrency,
+		opts:        &opts,
 	}, nil
 }
 

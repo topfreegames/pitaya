@@ -9,6 +9,7 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/custom_metrics/services"
 )
 
@@ -21,17 +22,18 @@ func main() {
 
 	flag.Parse()
 
-	config := viper.New()
-	config.AddConfigPath(".")
-	config.SetConfigName("config")
-	err := config.ReadInConfig()
+	cfg := viper.New()
+	cfg.AddConfigPath(".")
+	cfg.SetConfigName("config")
+	err := cfg.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
-	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+	conf := config.NewConfig(cfg)
+	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, pitaya.Cluster, map[string]string{}, conf)
 	builder.AddAcceptor(tcp)
 	app = builder.Build()
 

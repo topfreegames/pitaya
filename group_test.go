@@ -25,14 +25,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
 func createGroupTestApp() Pitaya {
-	config := viper.New()
+	config := NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 	return app
 }
@@ -379,8 +378,8 @@ func TestBroadcast(t *testing.T) {
 	mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(s1).Times(1)
 	mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
 
-	config := viper.New()
-	builder := NewBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	config := NewDefaultBuilderConfig()
+	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 	builder.SessionPool = mockSessionPool
 	app := builder.Build()
 

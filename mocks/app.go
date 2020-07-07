@@ -10,7 +10,6 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	cluster "github.com/topfreegames/pitaya/cluster"
 	component "github.com/topfreegames/pitaya/component"
-	config "github.com/topfreegames/pitaya/config"
 	interfaces "github.com/topfreegames/pitaya/interfaces"
 	metrics "github.com/topfreegames/pitaya/metrics"
 	router "github.com/topfreegames/pitaya/router"
@@ -66,18 +65,6 @@ func (m *MockPitaya) Documentation(arg0 bool) (map[string]interface{}, error) {
 // Documentation indicates an expected call of Documentation
 func (mr *MockPitayaMockRecorder) Documentation(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Documentation", reflect.TypeOf((*MockPitaya)(nil).Documentation), arg0)
-}
-
-// GetConfig mocks base method
-func (m *MockPitaya) GetConfig() *config.Config {
-	ret := m.ctrl.Call(m, "GetConfig")
-	ret0, _ := ret[0].(*config.Config)
-	return ret0
-}
-
-// GetConfig indicates an expected call of GetConfig
-func (mr *MockPitayaMockRecorder) GetConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockPitaya)(nil).GetConfig))
 }
 
 // GetDieChan mocks base method

@@ -36,14 +36,23 @@ type CustomMetricsSpec struct {
 	Counters  []*Counter
 }
 
-// NewCustomMetricsSpec returns a *CustomMetricsSpec by reading config key
-func NewCustomMetricsSpec(config *config.Config) (*CustomMetricsSpec, error) {
+// NewDefaultCustomMetricsSpec returns an empty *CustomMetricsSpec
+func NewDefaultCustomMetricsSpec() CustomMetricsSpec {
+	return CustomMetricsSpec{
+		Summaries: []*Summary{},
+		Gauges:    []*Gauge{},
+		Counters:  []*Counter{},
+	}
+}
+
+// NewCustomMetricsSpec returns a *CustomMetricsSpec by reading config key (DEPRECATED)
+func NewCustomMetricsSpec(config *config.Config) CustomMetricsSpec {
 	var spec CustomMetricsSpec
 
 	err := config.UnmarshalKey("pitaya.metrics.custom", &spec)
 	if err != nil {
-		return nil, err
+		return NewDefaultCustomMetricsSpec()
 	}
 
-	return &spec, nil
+	return spec
 }

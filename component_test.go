@@ -23,7 +23,6 @@ package pitaya
 import (
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/component"
 )
@@ -42,7 +41,7 @@ func (m *MyComp) Shutdown() {
 }
 
 func TestRegister(t *testing.T) {
-	config := viper.New()
+	config := NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	b := &component.Base{}
 	app.Register(b)
@@ -51,7 +50,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterRemote(t *testing.T) {
-	config := viper.New()
+	config := NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	before := app.remoteComp
 	b := &component.Base{}
@@ -61,7 +60,7 @@ func TestRegisterRemote(t *testing.T) {
 }
 
 func TestStartupComponents(t *testing.T) {
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
 
 	app.Register(&MyComp{})
 	app.RegisterRemote(&MyComp{})
@@ -70,7 +69,7 @@ func TestStartupComponents(t *testing.T) {
 }
 
 func TestShutdownComponents(t *testing.T) {
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
 
 	app.Register(&MyComp{})
 	app.RegisterRemote(&MyComp{})

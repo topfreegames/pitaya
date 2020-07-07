@@ -24,8 +24,36 @@ var (
 type EtcdGroupService struct {
 }
 
+// EtcdGroupServiceConfig provides ETCD configuration
+type EtcdGroupServiceConfig struct {
+	DialTimeout        time.Duration
+	Endpoints          []string
+	Prefix             string
+	TransactionTimeout time.Duration
+}
+
+// NewDefaultEtcdGroupServiceConfig provides default ETCD configuration
+func NewDefaultEtcdGroupServiceConfig() EtcdGroupServiceConfig {
+	return EtcdGroupServiceConfig{
+		DialTimeout:        time.Duration(5 * time.Second),
+		Endpoints:          []string{"localhost:2379"},
+		Prefix:             "pitaya/",
+		TransactionTimeout: time.Duration(5 * time.Second),
+	}
+}
+
+// NewEtcdGroupServiceConfig reads from config to build ETCD configuration
+func NewEtcdGroupServiceConfig(config *config.Config) EtcdGroupServiceConfig {
+	return EtcdGroupServiceConfig{
+		DialTimeout:        config.GetDuration("pitaya.groups.etcd.dialtimeout"),
+		Endpoints:          config.GetStringSlice("pitaya.groups.etcd.endpoints"),
+		Prefix:             config.GetString("pitaya.groups.etcd.prefix"),
+		TransactionTimeout: config.GetDuration("pitaya.groups.etcd.transactiontimeout"),
+	}
+}
+
 // NewEtcdGroupService returns a new group instance
-func NewEtcdGroupService(conf *config.Config, clientOrNil *clientv3.Client) (*EtcdGroupService, error) {
+func NewEtcdGroupService(conf EtcdGroupServiceConfig, clientOrNil *clientv3.Client) (*EtcdGroupService, error) {
 	err := initClientInstance(conf, clientOrNil)
 	if err != nil {
 		return nil, err
@@ -33,7 +61,7 @@ func NewEtcdGroupService(conf *config.Config, clientOrNil *clientv3.Client) (*Et
 	return &EtcdGroupService{}, err
 }
 
-func initClientInstance(config *config.Config, clientOrNil *clientv3.Client) error {
+func initClientInstance(config EtcdGroupServiceConfig, clientOrNil *clientv3.Client) error {
 	var err error
 	etcdOnce.Do(func() {
 		if clientOrNil != nil {
@@ -45,20 +73,20 @@ func initClientInstance(config *config.Config, clientOrNil *clientv3.Client) err
 			logger.Log.Fatalf("error initializing singleton etcd client in groups: %s", err.Error())
 			return
 		}
-		transactionTimeout = config.GetDuration("pitaya.groups.etcd.transactiontimeout")
+		transactionTimeout = config.TransactionTimeout
 	})
 	return err
 }
 
-func createBaseClient(config *config.Config) (*clientv3.Client, error) {
+func createBaseClient(config EtcdGroupServiceConfig) (*clientv3.Client, error) {
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   config.GetStringSlice("pitaya.groups.etcd.endpoints"),
-		DialTimeout: config.GetDuration("pitaya.groups.etcd.dialtimeout"),
+		Endpoints:   config.Endpoints,
+		DialTimeout: config.DialTimeout,
 	})
 	if err != nil {
 		return nil, err
 	}
-	cli.KV = namespace.NewKV(cli.KV, config.GetString("pitaya.groups.etcd.prefix"))
+	cli.KV = namespace.NewKV(cli.KV, config.Prefix)
 	return cli, nil
 }
 

@@ -9,7 +9,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
@@ -48,13 +47,13 @@ func main() {
 
 	flag.Parse()
 
-	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, pitaya.NewDefaultBuilderConfig())
 	if *isFrontend {
 		ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
 		builder.AddAcceptor(ws)
 	}
 	builder.Serializer = protobuf.NewSerializer()
-	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
+	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()

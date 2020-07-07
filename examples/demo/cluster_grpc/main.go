@@ -4,8 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-
-	"github.com/spf13/viper"
+	"strconv"
 
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
 	"github.com/topfreegames/pitaya/groups"
@@ -80,19 +78,16 @@ func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
-	rpcServerPort := flag.String("rpcsvport", "3434", "the port that grpc server will listen")
+	rpcServerPort := flag.Int("rpcsvport", 3434, "the port that grpc server will listen")
 
 	flag.Parse()
 
-	confs := viper.New()
-	confs.Set("pitaya.cluster.rpc.server.grpc.port", *rpcServerPort)
-
 	meta := map[string]string{
 		constants.GRPCHostKey: "127.0.0.1",
-		constants.GRPCPortKey: *rpcServerPort,
+		constants.GRPCPortKey: strconv.Itoa(*rpcServerPort),
 	}
 
-	app, bs := createApp(*port, *isFrontend, *svType, meta, confs)
+	app, bs := createApp(*port, *isFrontend, *svType, meta, *rpcServerPort)
 
 	defer app.Shutdown()
 
@@ -105,25 +100,26 @@ func main() {
 	app.Start()
 }
 
-func createApp(port int, isFrontend bool, svType string, meta map[string]string, confs ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
-	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, meta, confs...)
+func createApp(port int, isFrontend bool, svType string, meta map[string]string, rpcServerPort int) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
+	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, pitaya.NewDefaultBuilderConfig())
 
-	config := config.NewConfig(builder.Configs...)
-	gs, err := cluster.NewGRPCServer(config, builder.Server, builder.MetricsReporters)
+	grpcServerConfig := cluster.NewDefaultGRPCServerConfig()
+	grpcServerConfig.Port = rpcServerPort
+	gs, err := cluster.NewGRPCServer(grpcServerConfig, builder.Server, builder.MetricsReporters)
 	if err != nil {
 		panic(err)
 	}
 	builder.RPCServer = gs
-	builder.Groups = groups.NewMemoryGroupService(config)
+	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
 
-	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config)
+	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, modules.NewDefaultETCDBindingConfig())
 
 	gc, err := cluster.NewGRPCClient(
-		config,
+		cluster.NewDefaultGRPCClientConfig(),
 		builder.Server,
 		builder.MetricsReporters,
 		bs,
-		cluster.NewConfigInfoRetriever(config),
+		cluster.NewConfigInfoRetriever(cluster.NewDefaultConfigInfoRetrieverConfig()),
 	)
 	if err != nil {
 		panic(err)

@@ -2,7 +2,6 @@ package pitaya
 
 import (
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
@@ -25,7 +24,7 @@ import (
 // Builder holds dependency instances for a pitaya App
 type Builder struct {
 	acceptors        []acceptor.Acceptor
-	Configs          []*viper.Viper
+	Config           BuilderConfig
 	DieChan          chan bool
 	PacketDecoder    codec.PacketDecoder
 	PacketEncoder    codec.PacketEncoder
@@ -49,16 +48,134 @@ type PitayaBuilder interface {
 	Build() Pitaya
 }
 
-// NewBuilder return a builder instance with default dependency instances for a pitaya App
-func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, cfgs ...*viper.Viper) *Builder {
-	config := config.NewConfig(cfgs...)
+// BuilderConfig provides configuration for Builder
+type BuilderConfig struct {
+	PitayaConfig             PitayaConfig
+	IsPrometheusEnabled      bool
+	IsStatsdEnabled          bool
+	IsDefaultPipelineEnabled bool
+}
+
+// NewDefaultBuilderConfig provides default builder configuration
+func NewDefaultBuilderConfig() BuilderConfig {
+	return BuilderConfig{
+		PitayaConfig:             NewDefaultPitayaConfig(),
+		IsPrometheusEnabled:      false,
+		IsStatsdEnabled:          false,
+		IsDefaultPipelineEnabled: false,
+	}
+}
+
+// NewBuilderConfig reads from config to build builder configuration
+func NewBuilderConfig(config *config.Config) BuilderConfig {
+	return BuilderConfig{
+		PitayaConfig:             NewPitayaConfig(config),
+		IsPrometheusEnabled:      config.GetBool("pitaya.metrics.prometheus.enabled"),
+		IsStatsdEnabled:          config.GetBool("pitaya.metrics.statsd.enabled"),
+		IsDefaultPipelineEnabled: config.GetBool("pitaya.defaultpipelines.structvalidation.enabled"),
+	}
+}
+
+// NewBuilderWithConfigs return a builder instance with default dependency instances for a pitaya App
+// with configs defined by a config file (config.Config) and default paths (see documentation).
+func NewBuilderWithConfigs(
+	isFrontend bool,
+	serverType string,
+	serverMode ServerMode,
+	serverMetadata map[string]string,
+	conf *config.Config,
+) *Builder {
+	config := NewBuilderConfig(conf)
+	customMetrics := metrics.NewCustomMetricsSpec(conf)
+	prometheusConfig := metrics.NewPrometheusConfig(conf)
+	statsdConfig := metrics.NewStatsdConfig(conf)
+	etcdSDConfig := cluster.NewEtcdServiceDiscoveryConfig(conf)
+	natsRPCServerConfig := cluster.NewNatsRPCServerConfig(conf)
+	natsRPCClientConfig := cluster.NewNatsRPCClientConfig(conf)
+	workerConfig := worker.NewWorkerConfig(conf)
+	enqueueOpts := worker.NewEnqueueOpts(conf)
+	groupServiceConfig := groups.NewMemoryGroupConfig(conf)
+	return NewBuilder(
+		isFrontend,
+		serverType,
+		serverMode,
+		serverMetadata,
+		config,
+		customMetrics,
+		prometheusConfig,
+		statsdConfig,
+		etcdSDConfig,
+		natsRPCServerConfig,
+		natsRPCClientConfig,
+		workerConfig,
+		enqueueOpts,
+		groupServiceConfig,
+	)
+}
+
+// NewDefaultBuilder return a builder instance with default dependency instances for a pitaya App,
+// with default configs
+func NewDefaultBuilder(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, config BuilderConfig) *Builder {
+	customMetrics := metrics.NewDefaultCustomMetricsSpec()
+	prometheusConfig := metrics.NewDefaultPrometheusConfig()
+	statsdConfig := metrics.NewDefaultStatsdConfig()
+	etcdSDConfig := cluster.NewDefaultEtcdServiceDiscoveryConfig()
+	natsRPCServerConfig := cluster.NewDefaultNatsRPCServerConfig()
+	natsRPCClientConfig := cluster.NewDefaultNatsRPCClientConfig()
+	workerConfig := worker.NewDefaultWorkerConfig()
+	enqueueOpts := worker.NewDefaultEnqueueOpts()
+	groupServiceConfig := groups.NewDefaultMemoryGroupConfig()
+	return NewBuilder(
+		isFrontend,
+		serverType,
+		serverMode,
+		serverMetadata,
+		config,
+		customMetrics,
+		prometheusConfig,
+		statsdConfig,
+		etcdSDConfig,
+		natsRPCServerConfig,
+		natsRPCClientConfig,
+		workerConfig,
+		enqueueOpts,
+		groupServiceConfig,
+	)
+}
+
+// NewBuilder return a builder instance with default dependency instances for a pitaya App,
+// with configs explicitly defined
+func NewBuilder(isFrontend bool,
+	serverType string,
+	serverMode ServerMode,
+	serverMetadata map[string]string,
+	config BuilderConfig,
+	customMetrics metrics.CustomMetricsSpec,
+	prometheusConfig metrics.PrometheusConfig,
+	statsdConfig metrics.StatsdConfig,
+	etcdSDConfig cluster.EtcdServiceDiscoveryConfig,
+	natsRPCServerConfig cluster.NatsRPCServerConfig,
+	natsRPCClientConfig cluster.NatsRPCClientConfig,
+	workerConfig worker.WorkerConfig,
+	enqueueOpts worker.EnqueueOpts,
+	groupServiceConfig groups.MemoryGroupConfig,
+) *Builder {
 	server := cluster.NewServer(uuid.New().String(), serverType, isFrontend, serverMetadata)
 	dieChan := make(chan bool)
 
-	metricsReporters := createDefaultMetrics(serverType, config)
+	metricsReporters := []metrics.Reporter{}
+	if config.IsPrometheusEnabled {
+		metricsReporters = addDefaultPrometheus(prometheusConfig, customMetrics, metricsReporters, serverType)
+	}
+
+	if config.IsStatsdEnabled {
+		metricsReporters = addDefaultStatsd(statsdConfig, metricsReporters, serverType)
+	}
 
 	handlerHooks := pipeline.NewHandlerHooks()
-	configureDefaultPipelines(handlerHooks, config)
+	if config.IsDefaultPipelineEnabled {
+		configureDefaultPipelines(handlerHooks)
+	}
 
 	sessionPool := session.NewSessionPool()
 
@@ -67,39 +184,39 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 	var rpcClient cluster.RPCClient
 	if serverMode == Cluster {
 		var err error
-		serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(config, server, dieChan)
+		serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(etcdSDConfig, server, dieChan)
 		if err != nil {
 			logger.Log.Fatalf("error creating default cluster service discovery component: %s", err.Error())
 		}
 
-		rpcServer, err = cluster.NewNatsRPCServer(config, server, metricsReporters, dieChan, sessionPool)
+		rpcServer, err = cluster.NewNatsRPCServer(natsRPCServerConfig, server, metricsReporters, dieChan, sessionPool)
 		if err != nil {
 			logger.Log.Fatalf("error setting default cluster rpc server component: %s", err.Error())
 		}
 
-		rpcClient, err = cluster.NewNatsRPCClient(config, server, metricsReporters, dieChan)
+		rpcClient, err = cluster.NewNatsRPCClient(natsRPCClientConfig, server, metricsReporters, dieChan)
 		if err != nil {
 			logger.Log.Fatalf("error setting default cluster rpc client component: %s", err.Error())
 		}
 	}
 
-	worker, err := worker.NewWorker(config)
+	worker, err := worker.NewWorker(workerConfig, enqueueOpts)
 	if err != nil {
 		logger.Log.Fatalf("error creating default worker: %s", err.Error())
 	}
 
-	gsi := groups.NewMemoryGroupService(config)
+	gsi := groups.NewMemoryGroupService(groupServiceConfig)
 	if err != nil {
 		panic(err)
 	}
 
 	return &Builder{
 		acceptors:        []acceptor.Acceptor{},
-		Configs:          cfgs,
+		Config:           config,
 		DieChan:          dieChan,
 		PacketDecoder:    codec.NewPomeloPacketDecoder(),
 		PacketEncoder:    codec.NewPomeloPacketEncoder(),
-		MessageEncoder:   message.NewMessagesEncoder(config.GetBool("pitaya.handler.messages.compression")),
+		MessageEncoder:   message.NewMessagesEncoder(config.PitayaConfig.MessageCompression),
 		Serializer:       json.NewSerializer(),
 		Router:           router.New(),
 		RPCClient:        rpcClient,
@@ -154,15 +271,13 @@ func (builder *Builder) Build() Pitaya {
 		builder.RPCServer.SetPitayaServer(remoteService)
 	}
 
-	config := config.NewConfig(builder.Configs...)
-
 	agentFactory := agent.NewAgentFactory(builder.DieChan,
 		builder.PacketDecoder,
 		builder.PacketEncoder,
 		builder.Serializer,
-		config.GetDuration("pitaya.heartbeat.interval"),
+		builder.Config.PitayaConfig.HearbeatInterval,
 		builder.MessageEncoder,
-		config.GetInt("pitaya.buffer.agent.messages"),
+		builder.Config.PitayaConfig.BufferAgentMessages,
 		builder.SessionPool,
 		builder.MetricsReporters,
 	)
@@ -170,8 +285,8 @@ func (builder *Builder) Build() Pitaya {
 	handlerService := service.NewHandlerService(
 		builder.PacketDecoder,
 		builder.Serializer,
-		config.GetInt("pitaya.buffer.handler.localprocess"),
-		config.GetInt("pitaya.buffer.handler.remoteprocess"),
+		builder.Config.PitayaConfig.BufferHandlerLocalProcess,
+		builder.Config.PitayaConfig.BufferHandlerRemoteProcess,
 		builder.Server,
 		remoteService,
 		agentFactory,
@@ -195,54 +310,36 @@ func (builder *Builder) Build() Pitaya {
 		builder.Groups,
 		builder.SessionPool,
 		builder.MetricsReporters,
-		builder.Configs...,
+		builder.Config.PitayaConfig,
 	)
 }
 
 // NewDefaultApp returns a default pitaya app instance
-func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, cfgs ...*viper.Viper) Pitaya {
-	builder := NewBuilder(isFrontend, serverType, serverMode, serverMetadata, cfgs...)
+func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, config BuilderConfig) Pitaya {
+	builder := NewDefaultBuilder(isFrontend, serverType, serverMode, serverMetadata, config)
 	return builder.Build()
 }
 
-func configureDefaultPipelines(handlerHooks *pipeline.HandlerHooks, config *config.Config) {
-	if config.GetBool("pitaya.defaultpipelines.structvalidation.enabled") {
-		handlerHooks.BeforeHandler.PushBack(defaultpipelines.StructValidatorInstance.Validate)
-	}
+func configureDefaultPipelines(handlerHooks *pipeline.HandlerHooks) {
+	handlerHooks.BeforeHandler.PushBack(defaultpipelines.StructValidatorInstance.Validate)
 }
 
-func createDefaultMetrics(serverType string, config *config.Config) []metrics.Reporter {
-	metricsReporters := make([]metrics.Reporter, 0)
-	constTags := config.GetStringMapString("pitaya.metrics.constTags")
-
-	if config.GetBool("pitaya.metrics.prometheus.enabled") {
-		port := config.GetInt("pitaya.metrics.prometheus.port")
-		logger.Log.Infof("prometheus is enabled, configuring reporter on port %d", port)
-		prometheus, err := metrics.GetPrometheusReporter(serverType, config, constTags)
-		if err != nil {
-			logger.Log.Errorf("failed to start prometheus metrics reporter, skipping %v", err)
-		} else {
-			metricsReporters = append(metricsReporters, prometheus)
-		}
+func addDefaultPrometheus(config metrics.PrometheusConfig, customMetrics metrics.CustomMetricsSpec, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
+	prometheus, err := CreatePrometheusReporter(serverType, config, customMetrics)
+	if err != nil {
+		logger.Log.Errorf("failed to start prometheus metrics reporter, skipping %v", err)
 	} else {
-		logger.Log.Info("prometheus is disabled, reporter will not be enabled")
+		reporters = append(reporters, prometheus)
 	}
+	return reporters
+}
 
-	if config.GetBool("pitaya.metrics.statsd.enabled") {
-		logger.Log.Infof(
-			"statsd is enabled, configuring the metrics reporter with host: %s",
-			config.Get("pitaya.metrics.statsd.host"),
-		)
-		metricsReporter, err := metrics.NewStatsdReporter(
-			config,
-			serverType,
-			constTags,
-		)
-		if err != nil {
-			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
-		} else {
-			metricsReporters = append(metricsReporters, metricsReporter)
-		}
+func addDefaultStatsd(config metrics.StatsdConfig, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
+	statsd, err := CreateStatsdReporter(serverType, config)
+	if err != nil {
+		logger.Log.Errorf("failed to start statsd metrics reporter, skipping %v", err)
+	} else {
+		reporters = append(reporters, statsd)
 	}
-	return metricsReporters
+	return reporters
 }

@@ -6,9 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
@@ -22,20 +20,20 @@ import (
 	"google.golang.org/grpc"
 )
 
-func getRPCClient(c *config.Config) (*GRPCClient, error) {
+func getRPCClient(c GRPCClientConfig) (*GRPCClient, error) {
 	sv := getServer()
 	return NewGRPCClient(c, sv, []metrics.Reporter{}, nil, nil)
 }
 
 func TestNewGRPCClient(t *testing.T) {
-	c := getConfig()
+	c := NewDefaultGRPCClientConfig()
 	g, err := getRPCClient(c)
 	assert.NoError(t, err)
 	assert.NotNil(t, g)
 }
 
 func TestCall(t *testing.T) {
-	c := getConfig()
+	c := NewDefaultGRPCClientConfig()
 	g, err := getRPCClient(c)
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
@@ -96,7 +94,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c := getConfig()
+			c := NewDefaultGRPCClientConfig()
 			g, err := getRPCClient(c)
 			assert.NoError(t, err)
 			uid := "someuid"
@@ -156,7 +154,7 @@ func TestSendKick(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c := getConfig()
+			c := NewDefaultGRPCClientConfig()
 			g, err := getRPCClient(c)
 			assert.NoError(t, err)
 
@@ -216,8 +214,7 @@ func TestSendPush(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c := getConfig()
-			g, err := getRPCClient(c)
+			g, err := getRPCClient(NewDefaultGRPCClientConfig())
 			assert.NoError(t, err)
 			uid := "someuid"
 
@@ -264,23 +261,23 @@ func TestSendPush(t *testing.T) {
 func TestAddServer(t *testing.T) {
 	t.Run("try-connect", func(t *testing.T) {
 		// listen
-		c := viper.New()
-		port := helpers.GetFreePort(t)
+		clientConfig := NewDefaultGRPCClientConfig()
+
+		serverConfig := NewDefaultGRPCServerConfig()
+		serverConfig.Port = helpers.GetFreePort(t)
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c.Set("pitaya.cluster.rpc.server.grpc.port", port)
-		conf := getConfig(c)
 		server := &Server{
 			ID:   "someid",
 			Type: "sometype",
 			Metadata: map[string]string{
 				constants.GRPCHostKey: "localhost",
-				constants.GRPCPortKey: fmt.Sprintf("%d", port),
+				constants.GRPCPortKey: fmt.Sprintf("%d", serverConfig.Port),
 			},
 			Frontend: false,
 		}
-		gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+		gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
 		assert.NoError(t, err)
 
 		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
@@ -289,7 +286,7 @@ func TestAddServer(t *testing.T) {
 		err = gs.Init()
 		assert.NoError(t, err)
 		// --- should connect to the server and add it to the client map
-		g, err := getRPCClient(conf)
+		g, err := getRPCClient(clientConfig)
 		assert.NoError(t, err)
 		g.AddServer(server)
 
@@ -303,24 +300,25 @@ func TestAddServer(t *testing.T) {
 
 	t.Run("lazy", func(t *testing.T) {
 		// listen
-		c := viper.New()
-		port := helpers.GetFreePort(t)
+		clientConfig := NewDefaultGRPCClientConfig()
+		clientConfig.LazyConnection = true
+
+		serverConfig := NewDefaultGRPCServerConfig()
+		serverConfig.Port = helpers.GetFreePort(t)
+
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c.Set("pitaya.cluster.rpc.server.grpc.port", port)
-		c.Set("pitaya.cluster.rpc.client.grpc.lazyconnection", true)
-		conf := getConfig(c)
 		server := &Server{
 			ID:   "someid",
 			Type: "sometype",
 			Metadata: map[string]string{
 				constants.GRPCHostKey: "localhost",
-				constants.GRPCPortKey: fmt.Sprintf("%d", port),
+				constants.GRPCPortKey: fmt.Sprintf("%d", serverConfig.Port),
 			},
 			Frontend: false,
 		}
-		gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+		gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
 		assert.NoError(t, err)
 
 		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
@@ -328,7 +326,7 @@ func TestAddServer(t *testing.T) {
 
 		err = gs.Init()
 		assert.NoError(t, err)
-		g, err := getRPCClient(conf)
+		g, err := getRPCClient(clientConfig)
 		assert.NoError(t, err)
 		// --- should not connect to the server and add it to the client map
 		g.AddServer(server)
@@ -393,9 +391,8 @@ func TestGetServerHost(t *testing.T) {
 
 	for name, table := range tables {
 		t.Run(name, func(t *testing.T) {
-			viperConfig := viper.New()
-			viperConfig.Set("pitaya.cluster.info.region", table.clientRegion)
-			config := config.NewConfig(viperConfig)
+			config := NewDefaultConfigInfoRetrieverConfig()
+			config.Region = table.clientRegion
 			infoRetriever := NewConfigInfoRetriever(config)
 			gs := &GRPCClient{infoRetriever: infoRetriever}
 
@@ -413,28 +410,28 @@ func TestRemoveServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	c := viper.New()
-	port := helpers.GetFreePort(t)
-	c.Set("pitaya.cluster.rpc.server.grpc.port", port)
-	conf := getConfig(c)
+	clientConfig := NewDefaultGRPCClientConfig()
+
+	serverConfig := NewDefaultGRPCServerConfig()
+	serverConfig.Port = helpers.GetFreePort(t)
 
 	server := &Server{
 		ID:   "someid",
 		Type: "sometype",
 		Metadata: map[string]string{
 			constants.GRPCHostKey: "localhost",
-			constants.GRPCPortKey: fmt.Sprintf("%d", port),
+			constants.GRPCPortKey: fmt.Sprintf("%d", serverConfig.Port),
 		},
 		Frontend: false,
 	}
-	gs, err := NewGRPCServer(conf, server, []metrics.Reporter{})
+	gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
 	assert.NoError(t, err)
 	mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
 	gs.SetPitayaServer(mockPitayaServer)
 	err = gs.Init()
 	assert.NoError(t, err)
 
-	gc, err := NewGRPCClient(conf, server, []metrics.Reporter{}, nil, nil)
+	gc, err := NewGRPCClient(clientConfig, server, []metrics.Reporter{}, nil, nil)
 	assert.NoError(t, err)
 	gc.AddServer(server)
 

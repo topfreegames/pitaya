@@ -21,7 +21,10 @@
 package acceptorwrapper
 
 import (
+	"time"
+
 	"github.com/topfreegames/pitaya"
+
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/config"
 )
@@ -32,18 +35,37 @@ type RateLimitingWrapper struct {
 	BaseWrapper
 }
 
+// RateLimitingConfig rate limits config
+type RateLimitingConfig struct {
+	Limit        int
+	Interval     time.Duration
+	ForceDisable bool
+}
+
+// NewDefaultRateLimitingConfig rate limits default config
+func NewDefaultRateLimitingConfig() RateLimitingConfig {
+	return RateLimitingConfig{
+		Limit:        20,
+		Interval:     time.Duration(time.Second),
+		ForceDisable: false,
+	}
+}
+
+// NewRateLimitingConfig reads from config to build rate limiting configuration
+func NewRateLimitingConfig(config *config.Config) RateLimitingConfig {
+	return RateLimitingConfig{
+		Limit:        config.GetInt("pitaya.conn.ratelimiting.limit"),
+		Interval:     config.GetDuration("pitaya.conn.ratelimiting.interval"),
+		ForceDisable: config.GetBool("pitaya.conn.ratelimiting.forcedisable"),
+	}
+}
+
 // NewRateLimitingWrapper returns an instance of *RateLimitingWrapper
-func NewRateLimitingWrapper(app pitaya.Pitaya, c *config.Config) *RateLimitingWrapper {
+func NewRateLimitingWrapper(app pitaya.Pitaya, c RateLimitingConfig) *RateLimitingWrapper {
 	r := &RateLimitingWrapper{}
 
 	r.BaseWrapper = NewBaseWrapper(func(conn acceptor.PlayerConn) acceptor.PlayerConn {
-		var (
-			limit        = c.GetInt("pitaya.conn.ratelimiting.limit")
-			interval     = c.GetDuration("pitaya.conn.ratelimiting.interval")
-			forceDisable = c.GetBool("pitaya.conn.ratelimiting.forcedisable")
-		)
-
-		return NewRateLimiter(app, conn, limit, interval, forceDisable)
+		return NewRateLimiter(app, conn, c.Limit, c.Interval, c.ForceDisable)
 	})
 
 	return r

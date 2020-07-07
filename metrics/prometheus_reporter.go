@@ -47,6 +47,33 @@ type PrometheusReporter struct {
 	additionalLabels    map[string]string
 }
 
+// PrometheusConfig provides configuration for PrometheusReporter
+type PrometheusConfig struct {
+	Port             int
+	Game             string
+	AdditionalLabels map[string]string
+	ConstLabels      map[string]string
+}
+
+// NewDefaultPrometheusConfig provides default configuration for PrometheusReporter
+func NewDefaultPrometheusConfig() PrometheusConfig {
+	return PrometheusConfig{
+		Port:             9090,
+		AdditionalLabels: map[string]string{},
+		ConstLabels:      map[string]string{},
+	}
+}
+
+// NewPrometheusConfig reads from config to build configuration for PrometheusReporter
+func NewPrometheusConfig(config *config.Config) PrometheusConfig {
+	return PrometheusConfig{
+		Port:             config.GetInt("pitaya.metrics.prometheus.port"),
+		Game:             config.GetString("pitaya.game"),
+		AdditionalLabels: config.GetStringMapString("pitaya.metrics.additionalTags"),
+		ConstLabels:      config.GetStringMapString("pitaya.metrics.constTags"),
+	}
+}
+
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
 	additionalLabelsKeys []string,
@@ -276,32 +303,29 @@ func (p *PrometheusReporter) registerMetrics(
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
 	serverType string,
-	config *config.Config,
-	constLabels map[string]string,
+	config PrometheusConfig,
+	metricsSpecs CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
-	var (
-		port             = config.GetInt("pitaya.metrics.prometheus.port")
-		game             = config.GetString("pitaya.game")
-		additionalLabels = config.GetStringMapString("pitaya.metrics.additionalTags")
-	)
+	return getPrometheusReporter(serverType, config, &metricsSpecs)
+}
 
-	spec, err := NewCustomMetricsSpec(config)
-	if err != nil {
-		return nil, err
-	}
-
+func getPrometheusReporter(
+	serverType string,
+	config PrometheusConfig,
+	metricsSpecs *CustomMetricsSpec,
+) (*PrometheusReporter, error) {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:          serverType,
-			game:                game,
+			game:                config.Game,
 			countReportersMap:   make(map[string]*prometheus.CounterVec),
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(constLabels, additionalLabels, spec)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil))
 		})()
 	})
 

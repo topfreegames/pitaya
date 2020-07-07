@@ -11,7 +11,6 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/route"
@@ -79,12 +78,12 @@ func main() {
 
 	flag.Parse()
 
-	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, pitaya.NewDefaultBuilderConfig())
 	if *isFrontend {
 		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 		builder.AddAcceptor(tcp)
 	}
-	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
+	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()

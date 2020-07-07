@@ -28,7 +28,6 @@ import (
 	"github.com/coreos/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 )
 
@@ -43,14 +42,13 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	var err error
-	conf := config.NewConfig()
 	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(conf, cli)
+	etcdGroupService, err = NewEtcdGroupService(NewDefaultEtcdGroupServiceConfig(), cli)
 	if err != nil {
 		panic(err)
 	}
-	memoryGroupService = NewMemoryGroupService(conf)
+	memoryGroupService = NewMemoryGroupService(NewDefaultMemoryGroupConfig())
 }
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {

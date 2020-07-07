@@ -44,34 +44,70 @@ type StatsdReporter struct {
 	defaultTags []string
 }
 
-// NewStatsdReporter returns an instance of statsd reportar and an error if something fails
-func NewStatsdReporter(
-	config *config.Config,
-	serverType string,
-	tagsMap map[string]string,
-	clientOrNil ...Client,
-) (*StatsdReporter, error) {
-	host := config.GetString("pitaya.metrics.statsd.host")
-	prefix := config.GetString("pitaya.metrics.statsd.prefix")
+// StatsdConfig provides configuration for statsd
+type StatsdConfig struct {
+	Host        string
+	Prefix      string
+	Rate        float64
+	ConstLabels map[string]string
+}
+
+// NewDefaultStatsdConfig provides default configuration for statsd
+func NewDefaultStatsdConfig() StatsdConfig {
+	return StatsdConfig{
+		Host:        "localhost:9125",
+		Prefix:      "pitaya.",
+		Rate:        1,
+		ConstLabels: map[string]string{},
+	}
+}
+
+// NewStatsdConfig reads from config to build configuration for statsd
+func NewStatsdConfig(config *config.Config) StatsdConfig {
 	rate, err := strconv.ParseFloat(config.GetString("pitaya.metrics.statsd.rate"), 64)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
+
+	statsdConfig := StatsdConfig{
+		Host:        config.GetString("pitaya.metrics.statsd.host"),
+		Prefix:      config.GetString("pitaya.metrics.statsd.prefix"),
+		Rate:        rate,
+		ConstLabels: config.GetStringMapString("pitaya.metrics.constTags"),
+	}
+
+	return statsdConfig
+}
+
+// NewStatsdReporter returns an instance of statsd reportar and an
+// error if something fails
+func NewStatsdReporter(
+	config StatsdConfig,
+	serverType string,
+	clientOrNil ...Client,
+) (*StatsdReporter, error) {
+	return newStatsdReporter(config, serverType, clientOrNil...)
+}
+
+func newStatsdReporter(
+	config StatsdConfig,
+	serverType string,
+	clientOrNil ...Client) (*StatsdReporter, error) {
 	sr := &StatsdReporter{
-		rate:       rate,
+		rate:       config.Rate,
 		serverType: serverType,
 	}
 
-	sr.buildDefaultTags(tagsMap)
+	sr.buildDefaultTags(config.ConstLabels)
 
 	if len(clientOrNil) > 0 {
 		sr.client = clientOrNil[0]
 	} else {
-		c, err := statsd.New(host)
+		c, err := statsd.New(config.Host)
 		if err != nil {
 			return nil, err
 		}
-		c.Namespace = prefix
+		c.Namespace = config.Prefix
 		sr.client = c
 	}
 	return sr, nil

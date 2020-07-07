@@ -31,7 +31,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/constants"
@@ -51,13 +50,12 @@ func TestNewNatsRPCClient(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	cfg := getConfig()
+	cfg := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, err := NewNatsRPCClient(cfg, sv, mockMetricsReporters, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
-	assert.Equal(t, cfg, n.config)
 	assert.Equal(t, mockMetricsReporters, n.metricsReporters)
 	assert.False(t, n.running)
 }
@@ -66,21 +64,20 @@ func TestNatsRPCClientConfigure(t *testing.T) {
 	t.Parallel()
 	tables := []struct {
 		natsConnect string
-		reqTimeout  string
+		reqTimeout  time.Duration
 		err         error
 	}{
-		{"nats://localhost:2333", "10s", nil},
-		{"nats://localhost:2333", "0", constants.ErrNatsNoRequestTimeout},
-		{"", "10s", constants.ErrNoNatsConnectionString},
+		{"nats://localhost:2333", time.Duration(10 * time.Second), nil},
+		{"nats://localhost:2333", time.Duration(0), constants.ErrNatsNoRequestTimeout},
+		{"", time.Duration(10 * time.Second), constants.ErrNoNatsConnectionString},
 	}
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("%s-%s", table.natsConnect, table.reqTimeout), func(t *testing.T) {
-			cfg := viper.New()
-			cfg.Set("pitaya.cluster.rpc.client.nats.connect", table.natsConnect)
-			cfg.Set("pitaya.cluster.rpc.client.nats.requesttimeout", table.reqTimeout)
-			conf := getConfig(cfg)
-			_, err := NewNatsRPCClient(conf, getServer(), nil, nil)
+			cfg := NewDefaultNatsRPCClientConfig()
+			cfg.Connect = table.natsConnect
+			cfg.RequestTimeout = table.reqTimeout
+			_, err := NewNatsRPCClient(cfg, getServer(), nil, nil)
 			assert.Equal(t, table.err, err)
 		})
 	}
@@ -88,7 +85,7 @@ func TestNatsRPCClientConfigure(t *testing.T) {
 
 func TestNatsRPCClientGetSubscribeChannel(t *testing.T) {
 	t.Parallel()
-	cfg := getConfig()
+	cfg := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	assert.Equal(t, fmt.Sprintf("pitaya/servers/%s/%s", n.server.Type, n.server.ID), n.getSubscribeChannel())
@@ -96,7 +93,7 @@ func TestNatsRPCClientGetSubscribeChannel(t *testing.T) {
 
 func TestNatsRPCClientStop(t *testing.T) {
 	t.Parallel()
-	cfg := getConfig()
+	cfg := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	// change it to true to ensure it goes to false
@@ -108,10 +105,9 @@ func TestNatsRPCClientStop(t *testing.T) {
 func TestNatsRPCClientInitShouldFailIfConnFails(t *testing.T) {
 	t.Parallel()
 	sv := getServer()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", "nats://localhost:1")
-	config := getConfig(cfg)
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = "nats://localhost:1"
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	err := rpcClient.Init()
 	assert.Error(t, err)
 }
@@ -119,12 +115,11 @@ func TestNatsRPCClientInitShouldFailIfConnFails(t *testing.T) {
 func TestNatsRPCClientInit(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	config := getConfig(cfg)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	err := rpcClient.Init()
 	assert.NoError(t, err)
 	assert.True(t, rpcClient.running)
@@ -138,12 +133,11 @@ func TestNatsRPCClientBroadcastSessionBind(t *testing.T) {
 	uid := "testuid123"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	config := getConfig(cfg)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	rpcClient.Init()
 
 	subChan := make(chan *nats.Msg)
@@ -171,12 +165,11 @@ func TestNatsRPCClientSendKick(t *testing.T) {
 	uid := "testuid"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	config := getConfig(cfg)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	err := rpcClient.Init()
 	assert.NoError(t, err)
 
@@ -207,12 +200,11 @@ func TestNatsRPCClientSendPush(t *testing.T) {
 	uid := "testuid123"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	config := getConfig(cfg)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	rpcClient.Init()
 
 	subChan := make(chan *nats.Msg)
@@ -245,7 +237,7 @@ func TestNatsRPCClientSendPush(t *testing.T) {
 }
 
 func TestNatsRPCClientSendShouldFailIfNotRunning(t *testing.T) {
-	config := getConfig()
+	config := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 	err := rpcClient.Send("topic", []byte("data"))
@@ -255,12 +247,11 @@ func TestNatsRPCClientSendShouldFailIfNotRunning(t *testing.T) {
 func TestNatsRPCClientSend(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	config := getConfig(cfg)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	rpcClient.Init()
 
 	tables := []struct {
@@ -290,7 +281,7 @@ func TestNatsRPCClientSend(t *testing.T) {
 }
 
 func TestNatsRPCClientBuildRequest(t *testing.T) {
-	config := getConfig()
+	config := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 
@@ -400,7 +391,7 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 }
 
 func TestNatsRPCClientCallShouldFailIfNotRunning(t *testing.T) {
-	config := getConfig()
+	config := NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 	res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, nil, nil, nil, sv)
@@ -412,11 +403,10 @@ func TestNatsRPCClientCall(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	sv := getServer()
 	defer s.Shutdown()
-	cfg := viper.New()
-	cfg.Set("pitaya.cluster.rpc.client.nats.connect", fmt.Sprintf("nats://%s", s.Addr()))
-	cfg.Set("pitaya.cluster.rpc.client.nats.requesttimeout", "300ms")
-	config := getConfig(cfg)
-	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
+	cfg := NewDefaultNatsRPCClientConfig()
+	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
+	cfg.RequestTimeout = time.Duration(300 * time.Millisecond)
+	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	rpcClient.Init()
 
 	rt := route.NewRoute("sv", "svc", "method")

@@ -32,9 +32,21 @@ type EnqueueOpts struct {
 	MaxRandom         int
 }
 
+// NewDefaultEnqueueOpts provides default EnqueueOpts
+func NewDefaultEnqueueOpts() EnqueueOpts {
+	return EnqueueOpts{
+		RetryEnabled:      true,
+		MaxRetries:        2,
+		ExponentialFactor: 5,
+		MinDelayToRetry:   10,
+		MaxDelayToRetry:   10,
+		MaxRandom:         0,
+	}
+}
+
 // NewEnqueueOpts reads from config to build *EnqueueOpts
-func NewEnqueueOpts(config *config.Config) *EnqueueOpts {
-	return &EnqueueOpts{
+func NewEnqueueOpts(config *config.Config) EnqueueOpts {
+	return EnqueueOpts{
 		RetryEnabled:      config.GetBool("pitaya.worker.retry.enabled"),
 		MaxRetries:        config.GetInt("pitaya.worker.retry.max"),
 		ExponentialFactor: config.GetInt("pitaya.worker.retry.exponential"),

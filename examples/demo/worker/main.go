@@ -10,6 +10,7 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/worker/services"
 )
 
@@ -27,13 +28,15 @@ func main() {
 
 	flag.Parse()
 
-	config := viper.New()
-	config.SetDefault("pitaya.worker.redis.url", "localhost:6379")
-	config.SetDefault("pitaya.worker.redis.pool", "3")
+	conf := viper.New()
+	conf.SetDefault("pitaya.worker.redis.url", "localhost:6379")
+	conf.SetDefault("pitaya.worker.redis.pool", "3")
+
+	config := config.NewConfig(conf)
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
-	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	builder := pitaya.NewBuilderWithConfigs(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
 	if *isFrontend {
 		builder.AddAcceptor(tcp)
 	}

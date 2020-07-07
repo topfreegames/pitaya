@@ -42,7 +42,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// GRPCClient rpc server struct
+// GRPCClient rpc client struct
 type GRPCClient struct {
 	bindingStorage   interfaces.BindingStorage
 	clientMap        sync.Map
@@ -54,9 +54,34 @@ type GRPCClient struct {
 	server           *Server
 }
 
+// GRPCClientConfig rpc client config struct
+type GRPCClientConfig struct {
+	DialTimeout    time.Duration
+	LazyConnection bool
+	RequestTimeout time.Duration
+}
+
+// NewDefaultGRPCClientConfig rpc client default config struct
+func NewDefaultGRPCClientConfig() GRPCClientConfig {
+	return GRPCClientConfig{
+		DialTimeout:    time.Duration(5 * time.Second),
+		LazyConnection: false,
+		RequestTimeout: time.Duration(5 * time.Second),
+	}
+}
+
+// NewGRPCClientConfig reads from config to build GRPCCLientConfig
+func NewGRPCClientConfig(config *config.Config) GRPCClientConfig {
+	return GRPCClientConfig{
+		DialTimeout:    config.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout"),
+		LazyConnection: config.GetBool("pitaya.cluster.rpc.client.grpc.lazyconnection"),
+		RequestTimeout: config.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout"),
+	}
+}
+
 // NewGRPCClient returns a new instance of GRPCClient
 func NewGRPCClient(
-	config *config.Config,
+	config GRPCClientConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	bindingStorage interfaces.BindingStorage,
@@ -69,7 +94,10 @@ func NewGRPCClient(
 		server:           server,
 	}
 
-	gs.configure(config)
+	gs.dialTimeout = config.DialTimeout
+	gs.lazy = config.LazyConnection
+	gs.reqTimeout = config.RequestTimeout
+
 	return gs, nil
 }
 
@@ -84,12 +112,6 @@ type grpcClient struct {
 // Init inits grpc rpc client
 func (gs *GRPCClient) Init() error {
 	return nil
-}
-
-func (gs *GRPCClient) configure(cfg *config.Config) {
-	gs.dialTimeout = cfg.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout")
-	gs.lazy = cfg.GetBool("pitaya.cluster.rpc.client.grpc.lazyconnection")
-	gs.reqTimeout = cfg.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout")
 }
 
 // Call makes a RPC Call

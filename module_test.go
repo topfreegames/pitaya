@@ -23,7 +23,6 @@ package pitaya
 import (
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/component"
 )
@@ -51,7 +50,7 @@ func (m *MyMod) Shutdown() error {
 func TestRegisterModule(t *testing.T) {
 	b := &MyMod{}
 
-	config := viper.New()
+	config := NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 
 	err := app.RegisterModule(b, "mod")
@@ -68,7 +67,7 @@ func TestRegisterModule(t *testing.T) {
 func TestGetModule(t *testing.T) {
 	b := &MyMod{}
 
-	config := viper.New()
+	config := NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 
 	app.RegisterModule(b, "mod")
@@ -82,7 +81,7 @@ func TestGetModule(t *testing.T) {
 
 func TestStartupModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)
@@ -103,7 +102,7 @@ func TestStartupModules(t *testing.T) {
 
 func TestShutdownModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)
