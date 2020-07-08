@@ -30,7 +30,7 @@ import (
 )
 
 // SendKickToUsers sends kick to an user array
-func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
+func (app *App) SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	if !app.server.Frontend && frontendType == "" {
 		return uids, constants.ErrFrontendTypeNotSpecified
 	}

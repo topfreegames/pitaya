@@ -12,13 +12,19 @@ import (
 // Room server
 type Room struct {
 	component.Base
+	app pitaya.Pitaya
+}
+
+// NewRoom ctor
+func NewRoom(app pitaya.Pitaya) *Room {
+	return &Room{app: app}
 }
 
 // CallLog makes ReliableRPC to metagame LogRemote
-func (*Room) CallLog(ctx context.Context, arg *protos.Arg) (*protos.Response, error) {
+func (r *Room) CallLog(ctx context.Context, arg *protos.Arg) (*protos.Response, error) {
 	route := "metagame.metagame.logremote"
 	reply := &protos.Response{}
-	jid, err := pitaya.ReliableRPC(route, nil, reply, arg)
+	jid, err := r.app.ReliableRPC(route, nil, reply, arg)
 	if err != nil {
 		logger.Log.Infof("failed to enqueue rpc: %q", err)
 		return nil, err

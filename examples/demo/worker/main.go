@@ -23,22 +23,24 @@ func configureMetagame() {
 
 func configureRoom(port int) error {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.AddAcceptor(tcp)
+	app.AddAcceptor(tcp)
 
-	pitaya.Register(&services.Room{},
+	pitaya.Register(services.NewRoom(app),
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	err := pitaya.StartWorker(pitaya.GetConfig())
+	err := app.StartWorker(app.GetConfig())
 	return err
 }
 
 func configureWorker() error {
 	worker := services.Worker{}
-	err := worker.Configure()
+	err := worker.Configure(app)
 	return err
 }
+
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -47,15 +49,15 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
-
-	pitaya.SetSerializer(json.NewSerializer())
-
 	config := viper.New()
 	config.SetDefault("pitaya.worker.redis.url", "localhost:6379")
 	config.SetDefault("pitaya.worker.redis.pool", "3")
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+
+	defer app.Shutdown()
+
+	app.SetSerializer(json.NewSerializer())
 
 	var err error
 	switch *svType {
@@ -71,5 +73,5 @@ func main() {
 		panic(err)
 	}
 
-	pitaya.Start()
+	app.Start()
 }

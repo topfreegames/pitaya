@@ -88,15 +88,24 @@ func (g *MetagameServer) simpleAfter(ctx context.Context, resp interface{}, err 
 	return resp, err
 }
 
+var app pitaya.Pitaya
+
 func main() {
 	svType := flag.String("type", "metagameDemo", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 	flag.Parse()
 
-	defer pitaya.Shutdown()
+	config := viper.New()
+
+	// Enable default validator
+	config.Set("pitaya.defaultpipelines.structvalidation.enabled", true)
+
+	app = pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+
+	defer app.Shutdown()
 
 	metagameServer := NewMetagameMock()
-	pitaya.SetSerializer(json.NewSerializer())
+	app.SetSerializer(json.NewSerializer())
 	pitaya.Register(metagameServer,
 		component.WithName("metagameHandler"),
 	)
@@ -107,12 +116,7 @@ func main() {
 
 	port := 3251
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.AddAcceptor(tcp)
+	app.AddAcceptor(tcp)
 
-	config := viper.New()
-
-	// Enable default validator
-	config.Set("pitaya.defaultpipelines.structvalidation.enabled", true)
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
-	pitaya.Start()
+	app.Start()
 }

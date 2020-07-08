@@ -21,7 +21,7 @@ import (
 )
 
 func configureBackend() {
-	room := services.NewRoom()
+	room := services.NewRoom(app)
 	pitaya.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
@@ -36,7 +36,7 @@ func configureBackend() {
 func configureFrontend(port int) {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 
-	pitaya.Register(&services.Connector{},
+	pitaya.Register(services.NewConnector(app),
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -45,7 +45,7 @@ func configureFrontend(port int) {
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	err := pitaya.AddRoute("room", func(
+	err := app.AddRoute("room", func(
 		ctx context.Context,
 		route *route.Route,
 		payload []byte,
@@ -62,7 +62,7 @@ func configureFrontend(port int) {
 		fmt.Printf("error adding route %s\n", err.Error())
 	}
 
-	err = pitaya.SetDictionary(map[string]uint16{
+	err = app.SetDictionary(map[string]uint16{
 		"connector.getsessiondata": 1,
 		"connector.setsessiondata": 2,
 		"room.room.getsessiondata": 3,
@@ -74,8 +74,10 @@ func configureFrontend(port int) {
 		fmt.Printf("error setting route dictionary %s\n", err.Error())
 	}
 
-	pitaya.AddAcceptor(tcp)
+	app.AddAcceptor(tcp)
 }
+
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -85,16 +87,6 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
-
-	pitaya.SetSerializer(json.NewSerializer())
-
-	if !*isFrontend {
-		configureBackend()
-	} else {
-		configureFrontend(*port)
-	}
-
 	confs := viper.New()
 	confs.Set("pitaya.cluster.rpc.server.grpc.port", *rpcServerPort)
 
@@ -103,26 +95,37 @@ func main() {
 		constants.GRPCPortKey: *rpcServerPort,
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, meta, confs)
-	gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
+	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, meta, confs)
+
+	defer app.Shutdown()
+
+	app.SetSerializer(json.NewSerializer())
+
+	if !*isFrontend {
+		configureBackend()
+	} else {
+		configureFrontend(*port)
+	}
+
+	gs, err := cluster.NewGRPCServer(app.GetConfig(), app.GetServer(), app.GetMetricsReporters())
 	if err != nil {
 		panic(err)
 	}
 
-	bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
+	bs := modules.NewETCDBindingStorage(app.GetServer(), app.GetConfig())
 	pitaya.RegisterModule(bs, "bindingsStorage")
 
 	gc, err := cluster.NewGRPCClient(
-		pitaya.GetConfig(),
-		pitaya.GetServer(),
-		pitaya.GetMetricsReporters(),
+		app.GetConfig(),
+		app.GetServer(),
+		app.GetMetricsReporters(),
 		bs,
-		cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
+		cluster.NewConfigInfoRetriever(app.GetConfig()),
 	)
 	if err != nil {
 		panic(err)
 	}
-	pitaya.SetRPCServer(gs)
-	pitaya.SetRPCClient(gc)
-	pitaya.Start()
+	app.SetRPCServer(gs)
+	app.SetRPCClient(gc)
+	app.Start()
 }

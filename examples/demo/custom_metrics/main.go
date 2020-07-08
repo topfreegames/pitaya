@@ -16,13 +16,15 @@ import (
 
 func configureRoom(port int) {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.AddAcceptor(tcp)
+	app.AddAcceptor(tcp)
 
-	pitaya.Register(&services.Room{},
+	pitaya.Register(services.NewRoom(app),
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 }
+
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -30,10 +32,6 @@ func main() {
 	isFrontend := true
 
 	flag.Parse()
-
-	defer pitaya.Shutdown()
-
-	pitaya.SetSerializer(json.NewSerializer())
 
 	config := viper.New()
 	config.AddConfigPath(".")
@@ -43,7 +41,12 @@ func main() {
 		panic(err)
 	}
 
-	pitaya.Configure(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+	app = pitaya.NewApp(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+
+	defer app.Shutdown()
+
+	app.SetSerializer(json.NewSerializer())
+
 	configureRoom(*port)
-	pitaya.Start()
+	app.Start()
 }

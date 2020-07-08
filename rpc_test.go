@@ -41,7 +41,7 @@ import (
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
-	err := doSendRPC(nil, "", "", nil, nil)
+	err := app.doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
@@ -83,7 +83,7 @@ func TestDoSendRPC(t *testing.T) {
 				mockSD.EXPECT().GetServer("myserver").Return(&cluster.Server{}, nil)
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&protos.Response{Data: b}, nil)
 			}
-			err := RPCTo(ctx, "myserver", table.routeStr, table.reply, table.arg)
+			err := app.RPCTo(ctx, "myserver", table.routeStr, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 		})
 	}

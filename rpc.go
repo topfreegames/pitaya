@@ -31,18 +31,18 @@ import (
 )
 
 // RPC calls a method in a different server
-func RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error {
-	return doSendRPC(ctx, "", routeStr, reply, arg)
+func (app *App) RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error {
+	return app.doSendRPC(ctx, "", routeStr, reply, arg)
 }
 
 // RPCTo send a rpc to a specific server
-func RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
-	return doSendRPC(ctx, serverID, routeStr, reply, arg)
+func (app *App) RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
+	return app.doSendRPC(ctx, serverID, routeStr, reply, arg)
 }
 
 // ReliableRPC enqueues RPC to worker so it's executed asynchronously
 // Default enqueue options are used
-func ReliableRPC(
+func (app *App) ReliableRPC(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
@@ -52,7 +52,7 @@ func ReliableRPC(
 
 // ReliableRPCWithOptions enqueues RPC to worker
 // Receive worker options for this specific RPC
-func ReliableRPCWithOptions(
+func (app *App) ReliableRPCWithOptions(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
@@ -61,7 +61,7 @@ func ReliableRPCWithOptions(
 	return app.worker.EnqueueRPCWithOptions(routeStr, metadata, reply, arg, opts)
 }
 
-func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
+func (app *App) doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
 	if app.rpcServer == nil {
 		return constants.ErrRPCServerNotInitialized
 	}

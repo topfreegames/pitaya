@@ -14,7 +14,7 @@ import (
 )
 
 func configureBackend() {
-	room := services.NewRoom()
+	room := services.NewRoom(app)
 	pitaya.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
@@ -37,8 +37,10 @@ func configureFrontend(port int) {
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.AddAcceptor(ws)
+	app.AddAcceptor(ws)
 }
+
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -47,11 +49,12 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
+	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+
+	defer app.Shutdown()
 
 	ser := protobuf.NewSerializer()
-
-	pitaya.SetSerializer(ser)
+	app.SetSerializer(ser)
 
 	if !*isFrontend {
 		configureBackend()
@@ -59,6 +62,5 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
-	pitaya.Start()
+	app.Start()
 }

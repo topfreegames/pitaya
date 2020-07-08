@@ -46,33 +46,33 @@ func InitGroups(groupService groups.GroupService) {
 }
 
 // GroupCreate creates a group
-func GroupCreate(ctx context.Context, groupName string) error {
+func (app *App) GroupCreate(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupCreate(ctx, groupName)
 }
 
 // GroupCreateWithTTL creates a group with given TTL
-func GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
+func (app *App) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
 	return groupServiceInstance.GroupCreateWithTTL(ctx, groupName, ttlTime)
 }
 
 // GroupMembers returns all member's UIDs
-func GroupMembers(ctx context.Context, groupName string) ([]string, error) {
+func (app *App) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
 	return groupServiceInstance.GroupMembers(ctx, groupName)
 }
 
 // GroupBroadcast pushes the message to all members inside group
-func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
+func (app *App) GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error {
 	logger.Log.Debugf("Type=Broadcast Route=%s, Data=%+v", route, v)
 
-	members, err := GroupMembers(ctx, groupName)
+	members, err := app.GroupMembers(ctx, groupName)
 	if err != nil {
 		return err
 	}
-	return sendDataToMembers(members, frontendType, route, v)
+	return app.sendDataToMembers(members, frontendType, route, v)
 }
 
-func sendDataToMembers(uids []string, frontendType, route string, v interface{}) error {
-	errUids, err := SendPushToUsers(route, v, uids, frontendType)
+func (app *App) sendDataToMembers(uids []string, frontendType, route string, v interface{}) error {
+	errUids, err := app.SendPushToUsers(route, v, uids, frontendType)
 	if err != nil {
 		logger.Log.Errorf("Group push message error, UID=%d, Error=%s", errUids, err.Error())
 		return err
@@ -81,7 +81,7 @@ func sendDataToMembers(uids []string, frontendType, route string, v interface{})
 }
 
 // GroupContainsMember checks whether an UID is contained in group or not
-func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
+func (app *App) GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error) {
 	if uid == "" {
 		return false, constants.ErrEmptyUID
 	}
@@ -89,7 +89,7 @@ func GroupContainsMember(ctx context.Context, groupName, uid string) (bool, erro
 }
 
 // GroupAddMember adds UID to group
-func GroupAddMember(ctx context.Context, groupName, uid string) error {
+func (app *App) GroupAddMember(ctx context.Context, groupName, uid string) error {
 	if uid == "" {
 		return constants.ErrEmptyUID
 	}
@@ -98,27 +98,27 @@ func GroupAddMember(ctx context.Context, groupName, uid string) error {
 }
 
 // GroupRemoveMember removes specified UID from group
-func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
+func (app *App) GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
 	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
 // GroupRemoveAll clears all UIDs
-func GroupRemoveAll(ctx context.Context, groupName string) error {
+func (app *App) GroupRemoveAll(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
 }
 
 // GroupCountMembers get current member amount in group
-func GroupCountMembers(ctx context.Context, groupName string) (int, error) {
+func (app *App) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
 	return groupServiceInstance.GroupCountMembers(ctx, groupName)
 }
 
 // GroupRenewTTL renews group with the initial TTL
-func GroupRenewTTL(ctx context.Context, groupName string) error {
+func (app *App) GroupRenewTTL(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
 }
 
 // GroupDelete deletes whole group, including UIDs and base group
-func GroupDelete(ctx context.Context, groupName string) error {
+func (app *App) GroupDelete(ctx context.Context, groupName string) error {
 	return groupServiceInstance.GroupDelete(ctx, groupName)
 }

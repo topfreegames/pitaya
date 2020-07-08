@@ -51,7 +51,7 @@ func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	expectedErr := errors.New("serialize error")
 	mockSerializer.EXPECT().Marshal(data).Return(nil, expectedErr)
 
-	errArr, err := SendPushToUsers(route, data, []string{uid}, "test")
+	errArr, err := app.SendPushToUsers(route, data, []string{uid}, "test")
 	assert.Equal(t, expectedErr, err)
 	assert.Len(t, errArr, 1)
 	assert.Equal(t, errArr[0], uid)
@@ -84,7 +84,7 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)
-			errArr, err := SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
+			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
 
 			if table.err != nil {
 				assert.Equal(t, err, table.err)
@@ -131,7 +131,7 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			}
 			mockRPCClient.EXPECT().SendPush(uid1, gomock.Any(), expectedMsg1).Return(table.err)
 			mockRPCClient.EXPECT().SendPush(uid2, gomock.Any(), expectedMsg2).Return(table.err)
-			errArr, err := SendPushToUsers(route, data, []string{uid1, uid2}, svType)
+			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, svType)
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())
 				assert.Len(t, errArr, 2)

@@ -30,6 +30,7 @@ import (
 
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/spf13/viper"
@@ -69,6 +70,64 @@ const (
 	Standalone
 )
 
+// Pitaya App interface
+type Pitaya interface {
+	AddAcceptor(ac acceptor.Acceptor)
+	GetDieChan() chan bool
+	SetDebug(debug bool)
+	SetPacketDecoder(d codec.PacketDecoder)
+	SetPacketEncoder(e codec.PacketEncoder)
+	SetHeartbeatTime(interval time.Duration)
+	GetServerID() string
+	GetConfig() *config.Config
+	GetMetricsReporters() []metrics.Reporter
+	SetRPCServer(s cluster.RPCServer)
+	SetRPCClient(s cluster.RPCClient)
+	SetServiceDiscoveryClient(s cluster.ServiceDiscovery)
+	SetSerializer(seri serialize.Serializer)
+	GetSerializer() serialize.Serializer
+	GetServer() *cluster.Server
+	GetServerByID(id string) (*cluster.Server, error)
+	GetServersByType(t string) (map[string]*cluster.Server, error)
+	GetServers() []*cluster.Server
+	AddMetricsReporter(mr metrics.Reporter)
+	Start()
+	SetDictionary(dict map[string]uint16) error
+	AddRoute(serverType string, routingFunction router.RoutingFunc) error
+	Shutdown()
+	StartWorker(config *config.Config) error
+	RegisterRPCJob(rpcJob worker.RPCJob) error
+
+	RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error
+	RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error
+	ReliableRPC(
+		routeStr string,
+		metadata map[string]interface{},
+		reply, arg proto.Message,
+	) (jid string, err error)
+	ReliableRPCWithOptions(
+		routeStr string,
+		metadata map[string]interface{},
+		reply, arg proto.Message,
+		opts *worker.EnqueueOpts,
+	) (jid string, err error)
+
+	SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error)
+	SendKickToUsers(uids []string, frontendType string) ([]string, error)
+
+	GroupCreate(ctx context.Context, groupName string) error
+	GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error
+	GroupMembers(ctx context.Context, groupName string) ([]string, error)
+	GroupBroadcast(ctx context.Context, frontendType, groupName, route string, v interface{}) error
+	GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error)
+	GroupAddMember(ctx context.Context, groupName, uid string) error
+	GroupRemoveMember(ctx context.Context, groupName, uid string) error
+	GroupRemoveAll(ctx context.Context, groupName string) error
+	GroupCountMembers(ctx context.Context, groupName string) (int, error)
+	GroupRenewTTL(ctx context.Context, groupName string) error
+	GroupDelete(ctx context.Context, groupName string) error
+}
+
 // App is the base app struct
 type App struct {
 	acceptors        []acceptor.Acceptor
@@ -95,8 +154,20 @@ type App struct {
 }
 
 var (
-	app = &App{
-		server:           cluster.NewServer(uuid.New().String(), "game", true, map[string]string{}),
+	remoteService  *service.RemoteService
+	handlerService *service.HandlerService
+)
+
+// NewApp configures and returns a new pitaya app instance
+func NewApp(
+	isFrontend bool,
+	serverType string,
+	serverMode ServerMode,
+	serverMetadata map[string]string,
+	cfgs ...*viper.Viper,
+) *App {
+	app := &App{
+		server:           cluster.NewServer(uuid.New().String(), serverType, true, map[string]string{}),
 		debug:            false,
 		startAt:          time.Now(),
 		dieChan:          make(chan bool),
@@ -110,22 +181,6 @@ var (
 		running:          false,
 		router:           router.New(),
 	}
-
-	remoteService  *service.RemoteService
-	handlerService *service.HandlerService
-)
-
-// Configure configures the app
-func Configure(
-	isFrontend bool,
-	serverType string,
-	serverMode ServerMode,
-	serverMetadata map[string]string,
-	cfgs ...*viper.Viper,
-) {
-	if app.configured {
-		logger.Log.Warn("pitaya configured twice!")
-	}
 	app.config = config.NewConfig(cfgs...)
 	if app.heartbeat == time.Duration(0) {
 		app.heartbeat = app.config.GetDuration("pitaya.heartbeat.interval")
@@ -135,12 +190,13 @@ func Configure(
 	app.serverMode = serverMode
 	app.server.Metadata = serverMetadata
 	app.messageEncoder = message.NewMessagesEncoder(app.config.GetBool("pitaya.handler.messages.compression"))
-	configureMetrics(serverType)
-	configureDefaultPipelines(app.config)
+	app.configureMetrics(serverType)
+	app.configureDefaultPipelines(app.config)
 	app.configured = true
+	return app
 }
 
-func configureMetrics(serverType string) {
+func (app *App) configureMetrics(serverType string) {
 	app.metricsReporters = make([]metrics.Reporter, 0)
 	constTags := app.config.GetStringMapString("pitaya.metrics.constTags")
 
@@ -151,7 +207,7 @@ func configureMetrics(serverType string) {
 		if err != nil {
 			logger.Log.Errorf("failed to start prometheus metrics reporter, skipping %v", err)
 		} else {
-			AddMetricsReporter(prometheus)
+			app.AddMetricsReporter(prometheus)
 		}
 	} else {
 		logger.Log.Info("prometheus is disabled, reporter will not be enabled")
@@ -171,19 +227,19 @@ func configureMetrics(serverType string) {
 			logger.Log.Errorf("failed to start statds metrics reporter, skipping %v", err)
 		} else {
 			logger.Log.Info("successfully configured statsd metrics reporter")
-			AddMetricsReporter(metricsReporter)
+			app.AddMetricsReporter(metricsReporter)
 		}
 	}
 }
 
-func configureDefaultPipelines(config *config.Config) {
+func (app *App) configureDefaultPipelines(config *config.Config) {
 	if config.GetBool("pitaya.defaultpipelines.structvalidation.enabled") {
 		BeforeHandler(defaultpipelines.StructValidatorInstance.Validate)
 	}
 }
 
 // AddAcceptor adds a new acceptor to app
-func AddAcceptor(ac acceptor.Acceptor) {
+func (app *App) AddAcceptor(ac acceptor.Acceptor) {
 	if !app.server.Frontend {
 		logger.Log.Error("tried to add an acceptor to a backend server, skipping")
 		return
@@ -192,28 +248,94 @@ func AddAcceptor(ac acceptor.Acceptor) {
 }
 
 // GetDieChan gets the channel that the app sinalizes when its going to die
-func GetDieChan() chan bool {
+func (app *App) GetDieChan() chan bool {
 	return app.dieChan
 }
 
 // SetDebug toggles debug on/off
-func SetDebug(debug bool) {
+func (app *App) SetDebug(debug bool) {
 	app.debug = debug
 }
 
 // SetPacketDecoder changes the decoder used to parse messages received
-func SetPacketDecoder(d codec.PacketDecoder) {
+func (app *App) SetPacketDecoder(d codec.PacketDecoder) {
 	app.packetDecoder = d
 }
 
 // SetPacketEncoder changes the encoder used to package outgoing messages
-func SetPacketEncoder(e codec.PacketEncoder) {
+func (app *App) SetPacketEncoder(e codec.PacketEncoder) {
 	app.packetEncoder = e
 }
 
 // SetHeartbeatTime sets the heartbeat time
-func SetHeartbeatTime(interval time.Duration) {
+func (app *App) SetHeartbeatTime(interval time.Duration) {
 	app.heartbeat = interval
+}
+
+// GetServerID returns the generated server id
+func (app *App) GetServerID() string {
+	return app.server.ID
+}
+
+// GetConfig gets the pitaya config instance
+func (app *App) GetConfig() *config.Config {
+	return app.config
+}
+
+// GetMetricsReporters gets registered metrics reporters
+func (app *App) GetMetricsReporters() []metrics.Reporter {
+	return app.metricsReporters
+}
+
+// SetRPCServer to be used
+func (app *App) SetRPCServer(s cluster.RPCServer) {
+	app.rpcServer = s
+}
+
+// SetRPCClient to be used
+func (app *App) SetRPCClient(s cluster.RPCClient) {
+	app.rpcClient = s
+}
+
+// SetServiceDiscoveryClient to be used
+func (app *App) SetServiceDiscoveryClient(s cluster.ServiceDiscovery) {
+	app.serviceDiscovery = s
+}
+
+// SetSerializer customize application serializer, which automatically Marshal
+// and UnMarshal handler payload
+func (app *App) SetSerializer(seri serialize.Serializer) {
+	app.serializer = seri
+}
+
+// GetSerializer gets the app serializer
+func (app *App) GetSerializer() serialize.Serializer {
+	return app.serializer
+}
+
+// GetServer gets the local server instance
+func (app *App) GetServer() *cluster.Server {
+	return app.server
+}
+
+// GetServerByID returns the server with the specified id
+func (app *App) GetServerByID(id string) (*cluster.Server, error) {
+	return app.serviceDiscovery.GetServer(id)
+}
+
+// GetServersByType get all servers of type
+func (app *App) GetServersByType(t string) (map[string]*cluster.Server, error) {
+	return app.serviceDiscovery.GetServersByType(t)
+}
+
+// GetServers get all servers
+func (app *App) GetServers() []*cluster.Server {
+	return app.serviceDiscovery.GetServers()
+}
+
+// AddMetricsReporter to be used
+func (app *App) AddMetricsReporter(mr metrics.Reporter) {
+	app.metricsReporters = append(app.metricsReporters, mr)
 }
 
 // SetLogger logger setter
@@ -221,73 +343,7 @@ func SetLogger(l logger.Logger) {
 	logger.Log = l
 }
 
-// GetServerID returns the generated server id
-func GetServerID() string {
-	return app.server.ID
-}
-
-// GetConfig gets the pitaya config instance
-func GetConfig() *config.Config {
-	return app.config
-}
-
-// GetMetricsReporters gets registered metrics reporters
-func GetMetricsReporters() []metrics.Reporter {
-	return app.metricsReporters
-}
-
-// SetRPCServer to be used
-func SetRPCServer(s cluster.RPCServer) {
-	app.rpcServer = s
-}
-
-// SetRPCClient to be used
-func SetRPCClient(s cluster.RPCClient) {
-	app.rpcClient = s
-}
-
-// SetServiceDiscoveryClient to be used
-func SetServiceDiscoveryClient(s cluster.ServiceDiscovery) {
-	app.serviceDiscovery = s
-}
-
-// SetSerializer customize application serializer, which automatically Marshal
-// and UnMarshal handler payload
-func SetSerializer(seri serialize.Serializer) {
-	app.serializer = seri
-}
-
-// GetSerializer gets the app serializer
-func GetSerializer() serialize.Serializer {
-	return app.serializer
-}
-
-// GetServer gets the local server instance
-func GetServer() *cluster.Server {
-	return app.server
-}
-
-// GetServerByID returns the server with the specified id
-func GetServerByID(id string) (*cluster.Server, error) {
-	return app.serviceDiscovery.GetServer(id)
-}
-
-// GetServersByType get all servers of type
-func GetServersByType(t string) (map[string]*cluster.Server, error) {
-	return app.serviceDiscovery.GetServersByType(t)
-}
-
-// GetServers get all servers
-func GetServers() []*cluster.Server {
-	return app.serviceDiscovery.GetServers()
-}
-
-// AddMetricsReporter to be used
-func AddMetricsReporter(mr metrics.Reporter) {
-	app.metricsReporters = append(app.metricsReporters, mr)
-}
-
-func startDefaultSD() {
+func (app *App) startDefaultSD() {
 	// initialize default service discovery
 	var err error
 	app.serviceDiscovery, err = cluster.NewEtcdServiceDiscovery(
@@ -300,22 +356,22 @@ func startDefaultSD() {
 	}
 }
 
-func startDefaultRPCServer() {
+func (app *App) startDefaultRPCServer() {
 	// initialize default rpc server
 	rpcServer, err := cluster.NewNatsRPCServer(app.config, app.server, app.metricsReporters, app.dieChan)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster rpc server component: %s", err.Error())
 	}
-	SetRPCServer(rpcServer)
+	app.SetRPCServer(rpcServer)
 }
 
-func startDefaultRPCClient() {
+func (app *App) startDefaultRPCClient() {
 	// initialize default rpc client
 	rpcClient, err := cluster.NewNatsRPCClient(app.config, app.server, app.metricsReporters, app.dieChan)
 	if err != nil {
 		logger.Log.Fatalf("error starting cluster rpc client component: %s", err.Error())
 	}
-	SetRPCClient(rpcClient)
+	app.SetRPCClient(rpcClient)
 }
 
 func initSysRemotes() {
@@ -326,7 +382,7 @@ func initSysRemotes() {
 	)
 }
 
-func periodicMetrics() {
+func (app *App) periodicMetrics() {
 	period := app.config.GetDuration("pitaya.metrics.periodicMetrics.period")
 	go metrics.ReportSysMetrics(app.metricsReporters, period)
 
@@ -336,11 +392,7 @@ func periodicMetrics() {
 }
 
 // Start starts the app
-func Start() {
-	if !app.configured {
-		logger.Log.Fatal("starting app without configuring it first! call pitaya.Configure()")
-	}
-
+func (app *App) Start() {
 	if !app.server.Frontend && len(app.acceptors) > 0 {
 		logger.Log.Fatal("acceptors are not allowed on backend servers")
 	}
@@ -353,17 +405,17 @@ func Start() {
 		if app.serviceDiscovery == nil {
 			logger.Log.Warn("creating default service discovery because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetServiceDiscoveryClient")
-			startDefaultSD()
+			app.startDefaultSD()
 		}
 		if app.rpcServer == nil {
 			logger.Log.Warn("creating default rpc server because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetRPCServer")
-			startDefaultRPCServer()
+			app.startDefaultRPCServer()
 		}
 		if app.rpcClient == nil {
 			logger.Log.Warn("creating default rpc client because cluster mode is enabled, " +
 				"if you want to specify yours, use pitaya.SetRPCClient")
-			startDefaultRPCClient()
+			app.startDefaultRPCClient()
 		}
 
 		if reflect.TypeOf(app.rpcClient) == reflect.TypeOf(&cluster.GRPCClient{}) {
@@ -416,9 +468,9 @@ func Start() {
 		app.metricsReporters,
 	)
 
-	periodicMetrics()
+	app.periodicMetrics()
 
-	listen()
+	app.listen()
 
 	defer func() {
 		timer.GlobalTicker.Stop()
@@ -444,7 +496,7 @@ func Start() {
 	shutdownComponents()
 }
 
-func listen() {
+func (app *App) listen() {
 	startupComponents()
 	// create global ticker instance, timer precision could be customized
 	// by SetTimerPrecision
@@ -483,7 +535,7 @@ func listen() {
 }
 
 // SetDictionary sets routes map
-func SetDictionary(dict map[string]uint16) error {
+func (app *App) SetDictionary(dict map[string]uint16) error {
 	if app.running {
 		return constants.ErrChangeDictionaryWhileRunning
 	}
@@ -491,7 +543,7 @@ func SetDictionary(dict map[string]uint16) error {
 }
 
 // AddRoute adds a routing function to a server type
-func AddRoute(
+func (app *App) AddRoute(
 	serverType string,
 	routingFunction router.RoutingFunc,
 ) error {
@@ -507,7 +559,7 @@ func AddRoute(
 }
 
 // Shutdown send a signal to let 'pitaya' shutdown itself.
-func Shutdown() {
+func (app *App) Shutdown() {
 	select {
 	case <-app.dieChan: // prevent closing closed channel
 	default:
@@ -604,7 +656,7 @@ func Descriptor(protoName string) ([]byte, error) {
 }
 
 // StartWorker configures, starts and returns pitaya worker
-func StartWorker(config *config.Config) error {
+func (app *App) StartWorker(config *config.Config) error {
 	var err error
 	app.worker, err = worker.NewWorker(config)
 	if err != nil {
@@ -617,7 +669,7 @@ func StartWorker(config *config.Config) error {
 }
 
 // RegisterRPCJob registers rpc job to execute jobs with retries
-func RegisterRPCJob(rpcJob worker.RPCJob) error {
+func (app *App) RegisterRPCJob(rpcJob worker.RPCJob) error {
 	err := app.worker.RegisterRPCJob(rpcJob)
 	return err
 }

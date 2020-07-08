@@ -16,8 +16,10 @@ import (
 	"github.com/topfreegames/pitaya/serialize/json"
 )
 
+var app pitaya.Pitaya
+
 func configureBackend() {
-	room := services.NewRoom()
+	room := services.NewRoom(app)
 	pitaya.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
@@ -41,7 +43,7 @@ func configureFrontend(port int) {
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	err := pitaya.AddRoute("room", func(
+	err := app.AddRoute("room", func(
 		ctx context.Context,
 		route *route.Route,
 		payload []byte,
@@ -58,7 +60,7 @@ func configureFrontend(port int) {
 		fmt.Printf("error adding route %s\n", err.Error())
 	}
 
-	err = pitaya.SetDictionary(map[string]uint16{
+	err = app.SetDictionary(map[string]uint16{
 		"connector.getsessiondata": 1,
 		"connector.setsessiondata": 2,
 		"room.room.getsessiondata": 3,
@@ -70,7 +72,7 @@ func configureFrontend(port int) {
 		fmt.Printf("error setting route dictionary %s\n", err.Error())
 	}
 
-	pitaya.AddAcceptor(tcp)
+	app.AddAcceptor(tcp)
 }
 
 func main() {
@@ -80,9 +82,11 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
+	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
 
-	pitaya.SetSerializer(json.NewSerializer())
+	defer app.Shutdown()
+
+	app.SetSerializer(json.NewSerializer())
 
 	if !*isFrontend {
 		configureBackend()
@@ -90,6 +94,5 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
-	pitaya.Start()
+	app.Start()
 }

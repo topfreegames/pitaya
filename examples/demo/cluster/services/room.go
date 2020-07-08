@@ -19,6 +19,7 @@ type (
 	Room struct {
 		component.Base
 		timer *timer.Timer
+		app   pitaya.Pitaya
 		Stats *Stats
 	}
 
@@ -64,8 +65,9 @@ type (
 )
 
 // NewRoom returns a new room
-func NewRoom() *Room {
+func NewRoom(app pitaya.Pitaya) *Room {
 	return &Room{
+		app:   app,
 		Stats: &Stats{},
 	}
 }
@@ -74,13 +76,13 @@ func NewRoom() *Room {
 func (r *Room) Init() {
 	gsi := groups.NewMemoryGroupService(config.NewConfig())
 	pitaya.InitGroups(gsi)
-	pitaya.GroupCreate(context.Background(), "room")
+	r.app.GroupCreate(context.Background(), "room")
 }
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		count, err := r.app.GroupCountMembers(context.Background(), "room")
 		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "Error=>", err)
 		println("OutboundBytes", r.Stats.outboundBytes)
 		println("InboundBytes", r.Stats.outboundBytes)
@@ -130,20 +132,20 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
 	s := pitaya.GetSessionFromCtx(ctx)
-	err := pitaya.GroupAddMember(ctx, "room", s.UID())
+	err := r.app.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		logger.Error("Failed to join room")
 		logger.Error(err)
 		return nil, err
 	}
-	members, err := pitaya.GroupMembers(ctx, "room")
+	members, err := r.app.GroupMembers(ctx, "room")
 	if err != nil {
 		logger.Error("Failed to get members")
 		logger.Error(err)
 		return nil, err
 	}
 	s.Push("onMembers", &AllMembers{Members: members})
-	err = pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	err = r.app.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	if err != nil {
 		logger.Error("Failed to broadcast onNewUser")
 		logger.Error(err)
@@ -155,7 +157,7 @@ func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
+	err := r.app.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		logger.Error("Error broadcasting message")
 		logger.Error(err)
@@ -166,7 +168,7 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
 	ret := &protos.RPCRes{}
-	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
+	err := r.app.RPCTo(ctx, msg.ServerID, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
 	if err != nil {
 		logger.Errorf("Failed to execute RPCTo %s - %s", msg.ServerID, msg.Route)
 		logger.Error(err)

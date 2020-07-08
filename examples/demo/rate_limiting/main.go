@@ -33,21 +33,24 @@ func configureFrontend(port int) {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	wrapped := acceptorwrapper.WithWrappers(
 		tcp,
-		acceptorwrapper.NewRateLimitingWrapper(pConfig))
-	pitaya.AddAcceptor(wrapped)
+		acceptorwrapper.NewRateLimitingWrapper(app, pConfig))
+	app.AddAcceptor(wrapped)
 }
 
-func main() {
-	defer pitaya.Shutdown()
+var app pitaya.Pitaya
 
+func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := "room"
 
 	flag.Parse()
 
-	pitaya.SetSerializer(json.NewSerializer())
+	app = pitaya.NewApp(true, svType, pitaya.Cluster, map[string]string{})
+
+	defer app.Shutdown()
+
+	app.SetSerializer(json.NewSerializer())
 	configureFrontend(*port)
 
-	pitaya.Configure(true, svType, pitaya.Cluster, map[string]string{})
-	pitaya.Start()
+	app.Start()
 }

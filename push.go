@@ -30,7 +30,7 @@ import (
 )
 
 // SendPushToUsers sends a message to the given list of users
-func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error) {
+func (app *App) SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error) {
 	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
 		return uids, err

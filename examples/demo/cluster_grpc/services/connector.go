@@ -17,6 +17,7 @@ type ConnectorRemote struct {
 // Connector struct
 type Connector struct {
 	component.Base
+	app pitaya.Pitaya
 }
 
 // SessionData struct
@@ -28,6 +29,11 @@ type SessionData struct {
 type Response struct {
 	Code int32
 	Msg  string
+}
+
+// NewConnector ctor
+func NewConnector(app pitaya.Pitaya) *Connector {
+	return &Connector{app: app}
 }
 
 func reply(code int32, msg string) (*Response, error) {
@@ -68,7 +74,7 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 
 // SendPushToUser sends a push to a user
 func (c *Connector) SendPushToUser(ctx context.Context, msg *UserMessage) (*Response, error) {
-	_, err := pitaya.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
+	_, err := c.app.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
 	if err != nil {
 		return nil, err
 	}
