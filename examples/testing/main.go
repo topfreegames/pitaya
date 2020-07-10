@@ -99,8 +99,6 @@ func (tr *TestRemoteSvc) RPCTestNoArgs(ctx context.Context) (*test.TestResponse,
 
 // Init inits testsvc
 func (t *TestSvc) Init() {
-	gsi := groups.NewMemoryGroupService(config.NewConfig())
-	pitaya.InitGroups(gsi)
 	err := t.app.GroupCreate(context.Background(), "g1")
 	if err != nil {
 		panic(err)
@@ -303,6 +301,10 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		builder.AddAcceptor(tcp)
 	}
 
+	config := config.NewConfig(cfg...)
+
+	builder.Groups = groups.NewMemoryGroupService(config)
+
 	if serializer == "json" {
 		builder.Serializer = json.NewSerializer()
 	} else if serializer == "protobuf" {
@@ -312,7 +314,6 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 	}
 
 	var bs *modules.ETCDBindingStorage
-	config := config.NewConfig(cfg...)
 	if grpc {
 		gs, err := cluster.NewGRPCServer(config, builder.Server, builder.MetricsReporters)
 		if err != nil {

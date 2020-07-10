@@ -9,9 +9,7 @@ import (
 
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/protos"
-	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -83,8 +81,6 @@ func NewRoom(app pitaya.Pitaya) *Room {
 
 // Init runs on service initialization
 func (r *Room) Init() {
-	gsi := groups.NewMemoryGroupService(config.NewConfig())
-	pitaya.InitGroups(gsi)
 	r.app.GroupCreate(context.Background(), "room")
 	// It is necessary to register all structs that will be used in RPC calls
 	// This must be done both in the caller and callee servers

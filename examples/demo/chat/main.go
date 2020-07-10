@@ -110,12 +110,11 @@ func main() {
 
 	builder := pitaya.NewBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
 	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
+	builder.Groups = groups.NewMemoryGroupService(config.NewConfig(conf))
 	app := builder.Build()
 
 	defer app.Shutdown()
 
-	gsi := groups.NewMemoryGroupService(config.NewConfig(conf))
-	pitaya.InitGroups(gsi)
 	err := app.GroupCreate(context.Background(), "room")
 	if err != nil {
 		panic(err)

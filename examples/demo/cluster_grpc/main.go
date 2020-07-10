@@ -16,6 +16,7 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/route"
 )
@@ -113,6 +114,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 		panic(err)
 	}
 	builder.RPCServer = gs
+	builder.Groups = groups.NewMemoryGroupService(config)
 
 	bs := modules.NewETCDBindingStorage(builder.Server, config)
 

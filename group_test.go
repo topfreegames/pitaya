@@ -25,12 +25,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/coreos/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
@@ -38,13 +36,6 @@ import (
 func createGroupTestApp() *App {
 	config := viper.New()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
-	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
-	cli := c.RandClient()
-	gsi, err := groups.NewEtcdGroupService(app.config, cli)
-	if err != nil {
-		panic(err)
-	}
-	InitGroups(gsi)
 	return app
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/topfreegames/pitaya/conn/codec"
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/defaultpipelines"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/metrics"
 	"github.com/topfreegames/pitaya/pipeline"
@@ -35,6 +36,7 @@ type Builder struct {
 	Server           *cluster.Server
 	ServerMode       ServerMode
 	ServiceDiscovery cluster.ServiceDiscovery
+	Groups           groups.GroupService
 	Worker           *worker.Worker
 	HandlerHooks     *pipeline.HandlerHooks
 }
@@ -76,6 +78,11 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 		logger.Log.Fatalf("error creating default worker: %s", err.Error())
 	}
 
+	gsi := groups.NewMemoryGroupService(config)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Builder{
 		acceptors:        []acceptor.Acceptor{},
 		Configs:          cfgs,
@@ -90,6 +97,7 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 		MetricsReporters: metricsReporters,
 		Server:           server,
 		ServerMode:       serverMode,
+		Groups:           gsi,
 		HandlerHooks:     handlerHooks,
 		ServiceDiscovery: serviceDiscovery,
 		Worker:           worker,
@@ -164,6 +172,7 @@ func (builder *Builder) Build() *App {
 		builder.ServiceDiscovery,
 		remoteService,
 		handlerService,
+		builder.Groups,
 		builder.MetricsReporters,
 		builder.Configs...,
 	)

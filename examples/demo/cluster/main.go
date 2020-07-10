@@ -11,7 +11,9 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/route"
 )
 
@@ -82,6 +84,7 @@ func main() {
 		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 		builder.AddAcceptor(tcp)
 	}
+	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()

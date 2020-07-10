@@ -9,7 +9,9 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 )
 
@@ -52,6 +54,7 @@ func main() {
 		builder.AddAcceptor(ws)
 	}
 	builder.Serializer = protobuf.NewSerializer()
+	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()

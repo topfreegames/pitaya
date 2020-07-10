@@ -22,42 +22,28 @@ package pitaya
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
 )
 
 // Group represents an agglomeration of UIDs which is used to manage
 // users. Data sent to the group will be sent to all users in it.
 
-var (
-	groupServiceInstance groups.GroupService
-	groupsOnce           sync.Once
-)
-
-// InitGroups should be called once at the beginning of the application to setup the service type that will manage the groups
-func InitGroups(groupService groups.GroupService) {
-	groupsOnce.Do(func() {
-		groupServiceInstance = groupService
-	})
-}
-
 // GroupCreate creates a group
 func (app *App) GroupCreate(ctx context.Context, groupName string) error {
-	return groupServiceInstance.GroupCreate(ctx, groupName)
+	return app.groups.GroupCreate(ctx, groupName)
 }
 
 // GroupCreateWithTTL creates a group with given TTL
 func (app *App) GroupCreateWithTTL(ctx context.Context, groupName string, ttlTime time.Duration) error {
-	return groupServiceInstance.GroupCreateWithTTL(ctx, groupName, ttlTime)
+	return app.groups.GroupCreateWithTTL(ctx, groupName, ttlTime)
 }
 
 // GroupMembers returns all member's UIDs
 func (app *App) GroupMembers(ctx context.Context, groupName string) ([]string, error) {
-	return groupServiceInstance.GroupMembers(ctx, groupName)
+	return app.groups.GroupMembers(ctx, groupName)
 }
 
 // GroupBroadcast pushes the message to all members inside group
@@ -85,7 +71,7 @@ func (app *App) GroupContainsMember(ctx context.Context, groupName, uid string) 
 	if uid == "" {
 		return false, constants.ErrEmptyUID
 	}
-	return groupServiceInstance.GroupContainsMember(ctx, groupName, uid)
+	return app.groups.GroupContainsMember(ctx, groupName, uid)
 }
 
 // GroupAddMember adds UID to group
@@ -94,31 +80,31 @@ func (app *App) GroupAddMember(ctx context.Context, groupName, uid string) error
 		return constants.ErrEmptyUID
 	}
 	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
-	return groupServiceInstance.GroupAddMember(ctx, groupName, uid)
+	return app.groups.GroupAddMember(ctx, groupName, uid)
 }
 
 // GroupRemoveMember removes specified UID from group
 func (app *App) GroupRemoveMember(ctx context.Context, groupName, uid string) error {
 	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
-	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
+	return app.groups.GroupRemoveMember(ctx, groupName, uid)
 }
 
 // GroupRemoveAll clears all UIDs
 func (app *App) GroupRemoveAll(ctx context.Context, groupName string) error {
-	return groupServiceInstance.GroupRemoveAll(ctx, groupName)
+	return app.groups.GroupRemoveAll(ctx, groupName)
 }
 
 // GroupCountMembers get current member amount in group
 func (app *App) GroupCountMembers(ctx context.Context, groupName string) (int, error) {
-	return groupServiceInstance.GroupCountMembers(ctx, groupName)
+	return app.groups.GroupCountMembers(ctx, groupName)
 }
 
 // GroupRenewTTL renews group with the initial TTL
 func (app *App) GroupRenewTTL(ctx context.Context, groupName string) error {
-	return groupServiceInstance.GroupRenewTTL(ctx, groupName)
+	return app.groups.GroupRenewTTL(ctx, groupName)
 }
 
 // GroupDelete deletes whole group, including UIDs and base group
 func (app *App) GroupDelete(ctx context.Context, groupName string) error {
-	return groupServiceInstance.GroupDelete(ctx, groupName)
+	return app.groups.GroupDelete(ctx, groupName)
 }
