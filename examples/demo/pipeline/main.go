@@ -9,7 +9,6 @@ import (
 	"github.com/topfreegames/pitaya"
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
 
 // MetagameServer ...
@@ -100,23 +99,21 @@ func main() {
 	// Enable default validator
 	config.Set("pitaya.defaultpipelines.structvalidation.enabled", true)
 
-	app = pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	port := 3251
+	metagameServer := NewMetagameMock()
+
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+	builder.AddAcceptor(tcp)
+	builder.HandlerHooks.BeforeHandler.PushBack(metagameServer.simpleBefore)
+	builder.HandlerHooks.AfterHandler.PushBack(metagameServer.simpleAfter)
+	app = builder.Build()
 
 	defer app.Shutdown()
 
-	metagameServer := NewMetagameMock()
-	app.SetSerializer(json.NewSerializer())
-	pitaya.Register(metagameServer,
+	app.Register(metagameServer,
 		component.WithName("metagameHandler"),
 	)
-
-	// Pipelines registration
-	pitaya.BeforeHandler(metagameServer.simpleBefore)
-	pitaya.AfterHandler(metagameServer.simpleAfter)
-
-	port := 3251
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	app.AddAcceptor(tcp)
 
 	app.Start()
 }

@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/topfreegames/pitaya/acceptor"
+	"github.com/topfreegames/pitaya/pipeline"
 
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -58,6 +59,7 @@ var (
 type (
 	// HandlerService service
 	HandlerService struct {
+		baseService
 		appDieChan         chan bool             // die channel app
 		chLocalProcess     chan unhandledMessage // channel of messages that will be processed locally
 		chRemoteProcess    chan unhandledMessage // channel of messages that will be processed remotely
@@ -95,6 +97,7 @@ func NewHandlerService(
 	remoteService *RemoteService,
 	messageEncoder message.Encoder,
 	metricsReporters []metrics.Reporter,
+	handlerHooks *pipeline.HandlerHooks,
 ) *HandlerService {
 	h := &HandlerService{
 		services:           make(map[string]*component.Service),
@@ -111,6 +114,8 @@ func NewHandlerService(
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
 	}
+
+	h.handlerHooks = handlerHooks
 
 	return h
 }
@@ -311,7 +316,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 		mid = 0
 	}
 
-	ret, err := processHandlerMessage(ctx, route, h.serializer, a.Session, msg.Data, msg.Type, false)
+	ret, err := processHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.Session, msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
 			logger.Log.Errorf("Failed to process handler message: %s", err.Error())

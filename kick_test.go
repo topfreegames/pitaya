@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
 	"github.com/topfreegames/pitaya/constants"
@@ -61,6 +62,9 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 		mockNetworkEntity.EXPECT().Close().Times(2)
 	}
 
+	config := viper.New()
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+
 	failedUids, err := app.SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
 	assert.Nil(t, failedUids)
 	assert.NoError(t, err)
@@ -86,6 +90,10 @@ func TestSendKickToUsersFail(t *testing.T) {
 
 	mockNetworkEntity.EXPECT().Kick(context.Background()).Times(1)
 	mockNetworkEntity.EXPECT().Close()
+
+	config := viper.New()
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+
 	failedUids, err := app.SendKickToUsers([]string{table.uid1, table.uid2}, table.frontendType)
 	assert.Len(t, failedUids, 1)
 	assert.Equal(t, failedUids[0], table.uid2)
@@ -108,6 +116,9 @@ func TestSendKickToUsersRemoteSession(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
+
+			config := viper.New()
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 			app.rpcClient = mockRPCClient
 
 			for _, uid := range table.uids {

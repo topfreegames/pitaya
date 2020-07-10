@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"strings"
 
 	"github.com/spf13/viper"
@@ -11,18 +10,7 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/custom_metrics/services"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
-
-func configureRoom(port int) {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	app.AddAcceptor(tcp)
-
-	pitaya.Register(services.NewRoom(app),
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower),
-	)
-}
 
 var app pitaya.Pitaya
 
@@ -41,12 +29,18 @@ func main() {
 		panic(err)
 	}
 
-	app = pitaya.NewApp(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
+
+	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+	builder.AddAcceptor(tcp)
+	app = builder.Build()
 
 	defer app.Shutdown()
 
-	app.SetSerializer(json.NewSerializer())
+	app.Register(services.NewRoom(app),
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
 
-	configureRoom(*port)
 	app.Start()
 }

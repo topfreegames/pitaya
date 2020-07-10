@@ -13,32 +13,29 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
 	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
 
 var app pitaya.Pitaya
 
 func configureBackend() {
 	room := services.NewRoom(app)
-	pitaya.Register(room,
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.RegisterRemote(room,
+	app.RegisterRemote(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 }
 
 func configureFrontend(port int) {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-
-	pitaya.Register(&services.Connector{},
+	app.Register(&services.Connector{},
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
-	pitaya.RegisterRemote(&services.ConnectorRemote{},
+	app.RegisterRemote(services.NewConnectorRemote(app),
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -71,8 +68,6 @@ func configureFrontend(port int) {
 	if err != nil {
 		fmt.Printf("error setting route dictionary %s\n", err.Error())
 	}
-
-	app.AddAcceptor(tcp)
 }
 
 func main() {
@@ -82,11 +77,14 @@ func main() {
 
 	flag.Parse()
 
-	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	if *isFrontend {
+		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+		builder.AddAcceptor(tcp)
+	}
+	app := builder.Build()
 
 	defer app.Shutdown()
-
-	app.SetSerializer(json.NewSerializer())
 
 	if !*isFrontend {
 		configureBackend()

@@ -11,36 +11,14 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/worker/services"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
 
-func configureMetagame() {
-	pitaya.RegisterRemote(&services.Metagame{},
-		component.WithName("metagame"),
-		component.WithNameFunc(strings.ToLower),
-	)
-}
-
-func configureRoom(port int) error {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	app.AddAcceptor(tcp)
-
-	pitaya.Register(services.NewRoom(app),
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower),
-	)
-
-	err := app.StartWorker(app.GetConfig())
-	return err
-}
-
-func configureWorker() error {
-	worker := services.Worker{}
-	err := worker.Configure(app)
-	return err
-}
-
 var app pitaya.Pitaya
+
+func configureWorker() {
+	worker := services.Worker{}
+	worker.Configure(app)
+}
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -53,24 +31,31 @@ func main() {
 	config.SetDefault("pitaya.worker.redis.url", "localhost:6379")
 	config.SetDefault("pitaya.worker.redis.pool", "3")
 
-	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
+
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	if *isFrontend {
+		builder.AddAcceptor(tcp)
+	}
+	app = builder.Build()
 
 	defer app.Shutdown()
 
-	app.SetSerializer(json.NewSerializer())
+	defer app.Shutdown()
 
-	var err error
 	switch *svType {
 	case "metagame":
-		configureMetagame()
+		app.RegisterRemote(&services.Metagame{},
+			component.WithName("metagame"),
+			component.WithNameFunc(strings.ToLower),
+		)
 	case "room":
-		err = configureRoom(*port)
+		app.Register(services.NewRoom(app),
+			component.WithName("room"),
+			component.WithNameFunc(strings.ToLower),
+		)
 	case "worker":
-		err = configureWorker()
-	}
-
-	if err != nil {
-		panic(err)
+		configureWorker()
 	}
 
 	app.Start()

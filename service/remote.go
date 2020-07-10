@@ -37,6 +37,7 @@ import (
 	"github.com/topfreegames/pitaya/docgenerator"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
@@ -48,6 +49,7 @@ import (
 
 // RemoteService struct
 type RemoteService struct {
+	baseService
 	rpcServer              cluster.RPCServer
 	serviceDiscovery       cluster.ServiceDiscovery
 	serializer             serialize.Serializer
@@ -70,8 +72,9 @@ func NewRemoteService(
 	router *router.Router,
 	messageEncoder message.Encoder,
 	server *cluster.Server,
+	handlerHooks *pipeline.HandlerHooks,
 ) *RemoteService {
-	return &RemoteService{
+	remote := &RemoteService{
 		services:               make(map[string]*component.Service),
 		rpcClient:              rpcClient,
 		rpcServer:              rpcServer,
@@ -83,6 +86,10 @@ func NewRemoteService(
 		server:                 server,
 		remoteBindingListeners: make([]cluster.RemoteBindingListener, 0),
 	}
+
+	remote.handlerHooks = handlerHooks
+
+	return remote
 }
 
 var remotes = make(map[string]*component.Remote) // all remote method
@@ -392,7 +399,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		return response
 	}
 
-	ret, err := processHandlerMessage(ctx, rt, r.serializer, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
+	ret, err := processHandlerMessage(ctx, rt, r.serializer, r.handlerHooks, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
 	if err != nil {
 		logger.Log.Warnf(err.Error())
 		response = &protos.Response{

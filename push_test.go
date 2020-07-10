@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
 	"github.com/topfreegames/pitaya/constants"
@@ -43,7 +44,11 @@ func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	app.serializer = mockSerializer
+
+	config := viper.New()
+	builder := NewBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	builder.Serializer = mockSerializer
+	app := builder.Build()
 
 	route := "some.route.bla"
 	data := &someStruct{A: 10}
@@ -84,6 +89,9 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)
+
+			config := viper.New()
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
 
 			if table.err != nil {
@@ -111,6 +119,9 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
+
+			config := viper.New()
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 			app.rpcClient = mockRPCClient
 
 			route := "some.route.bla"

@@ -153,6 +153,7 @@ func StartServer(
 	}
 
 	err = cmd.Start()
+	fmt.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}

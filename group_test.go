@@ -25,16 +25,33 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/coreos/etcd/integration"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
+func createGroupTestApp() *App {
+	config := viper.New()
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
+	cli := c.RandClient()
+	gsi, err := groups.NewEtcdGroupService(app.config, cli)
+	if err != nil {
+		panic(err)
+	}
+	InitGroups(gsi)
+	return app
+}
+
 func TestCreateDuplicatedGroup(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testCreateDuplicatedGroup")
 	assert.NoError(t, err)
 	err = app.GroupCreate(ctx, "testCreateDuplicatedGroup")
@@ -45,6 +62,7 @@ func TestCreateDuplicatedGroup(t *testing.T) {
 func TestCreateGroup(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testCreateGroup")
 	assert.NoError(t, err)
 	count, err := app.GroupCountMembers(ctx, "testCreateGroup")
@@ -57,6 +75,7 @@ func TestCreateGroup(t *testing.T) {
 func TestCreateGroupWithTTL(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
+	app := createGroupTestApp()
 	err := app.GroupCreateWithTTL(ctx, "testCreateGroupWithTTL", 10)
 	assert.NoError(t, err)
 	count, err := app.GroupCountMembers(ctx, "testCreateGroupWithTTL")
@@ -81,6 +100,7 @@ func TestGroupAddMember(t *testing.T) {
 		{"backend_uid", false, "ola1", nil},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testGroupAddMember")
 	assert.NoError(t, err)
 
@@ -107,6 +127,7 @@ func TestGroupAddMember(t *testing.T) {
 func TestGroupAddDuplicatedMember(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testGroupAddDuplicatedMember")
 	assert.NoError(t, err)
 	err = app.GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
@@ -130,6 +151,7 @@ func TestGroupContainsMember(t *testing.T) {
 		{"backend_nouid", false, "", constants.ErrEmptyUID},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testGroupContainsMember")
 	assert.NoError(t, err)
 
@@ -171,6 +193,7 @@ func TestRemove(t *testing.T) {
 		{"backend_uid", false, "ola2", nil},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testRemove")
 	assert.NoError(t, err)
 
@@ -204,6 +227,7 @@ func TestDelete(t *testing.T) {
 		{"backend_uid", false, "leaveOla2", nil},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testDeleteSufix")
 	assert.NoError(t, err)
 
@@ -245,6 +269,7 @@ func TestRemoveAll(t *testing.T) {
 		{"backend_uid", false, "removeOla2", nil},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testRemoveAllSufix")
 	assert.NoError(t, err)
 	err = app.GroupCreate(ctx, "testRemoveAll")
@@ -286,6 +311,7 @@ func TestCount(t *testing.T) {
 		{"backend_uid", false, "ola2", nil},
 	}
 
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testCount")
 	assert.NoError(t, err)
 
@@ -312,6 +338,8 @@ func TestMembers(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testGroupMembers")
 	assert.NoError(t, err)
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
@@ -332,6 +360,8 @@ func TestBroadcast(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testBroadcast")
 	assert.NoError(t, err)
 	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)

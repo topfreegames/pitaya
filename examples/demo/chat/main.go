@@ -17,7 +17,6 @@ import (
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/groups"
 	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -108,13 +107,13 @@ var app pitaya.Pitaya
 
 func main() {
 	conf := configApp()
-	app := pitaya.NewApp(true, "chat", pitaya.Cluster, map[string]string{}, conf)
+
+	builder := pitaya.NewBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
+	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
+	app := builder.Build()
 
 	defer app.Shutdown()
 
-	s := json.NewSerializer()
-
-	app.SetSerializer(s)
 	gsi := groups.NewMemoryGroupService(config.NewConfig(conf))
 	pitaya.InitGroups(gsi)
 	err := app.GroupCreate(context.Background(), "room")
@@ -124,7 +123,7 @@ func main() {
 
 	// rewrite component and handler name
 	room := NewRoom(app)
-	pitaya.Register(room,
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -134,9 +133,6 @@ func main() {
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	go http.ListenAndServe(":3251", nil)
-
-	t := acceptor.NewWSAcceptor(":3250")
-	app.AddAcceptor(t)
 
 	app.Start()
 }

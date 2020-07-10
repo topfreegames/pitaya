@@ -83,5 +83,5 @@ func (app *App) doSendRPC(ctx context.Context, serverID, routeStr string, reply 
 		return constants.ErrNonsenseRPC
 	}
 
-	return remoteService.RPC(ctx, serverID, r, reply, arg)
+	return app.remoteService.RPC(ctx, serverID, r, reply, arg)
 }

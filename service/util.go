@@ -96,31 +96,6 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
-func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, error) {
-	var err error
-	res := data
-	if len(pipeline.BeforeHandler.Handlers) > 0 {
-		for _, h := range pipeline.BeforeHandler.Handlers {
-			res, err = h(ctx, res)
-			if err != nil {
-				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
-				return res, err
-			}
-		}
-	}
-	return res, nil
-}
-
-func executeAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
-	ret := res
-	if len(pipeline.AfterHandler.Handlers) > 0 {
-		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err = h(ctx, ret, err)
-		}
-	}
-	return ret, err
-}
-
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
 	res, err := util.SerializeOrRaw(ser, ret)
 	if err != nil {
@@ -138,6 +113,7 @@ func processHandlerMessage(
 	ctx context.Context,
 	rt *route.Route,
 	serializer serialize.Serializer,
+	handlerHooks *pipeline.HandlerHooks,
 	session *session.Session,
 	data []byte,
 	msgTypeIface interface{},
@@ -174,7 +150,7 @@ func processHandlerMessage(
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
-	if arg, err = executeBeforePipeline(ctx, arg); err != nil {
+	if arg, err = handlerHooks.BeforeHandler.ExecuteBeforePipeline(ctx, arg); err != nil {
 		return nil, err
 	}
 
@@ -194,7 +170,7 @@ func processHandlerMessage(
 		resp = []byte("ack")
 	}
 
-	resp, err = executeAfterPipeline(ctx, resp, err)
+	resp, err = handlerHooks.AfterHandler.ExecuteAfterPipeline(ctx, resp, err)
 	if err != nil {
 		return nil, err
 	}

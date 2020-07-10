@@ -42,6 +42,7 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
 	connmock "github.com/topfreegames/pitaya/mocks"
+	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/route"
@@ -80,7 +81,7 @@ func TestNewRemoteService(t *testing.T) {
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	router := router.New()
 	sv := &cluster.Server{}
-	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv)
+	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv, pipeline.NewHandlerHooks())
 
 	assert.NotNil(t, svc)
 	assert.Empty(t, svc.services)
@@ -94,7 +95,7 @@ func TestNewRemoteService(t *testing.T) {
 }
 
 func TestRemoteServiceRegister(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	defer func() { remotes = make(map[string]*component.Remote, 0) }()
@@ -117,7 +118,7 @@ func TestRemoteServiceRegister(t *testing.T) {
 }
 
 func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
@@ -127,7 +128,7 @@ func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
 }
 
 func TestRemoteServiceSessionBindRemote(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
@@ -148,7 +149,7 @@ func TestRemoteServiceSessionBindRemote(t *testing.T) {
 }
 
 func TestRemoteServicePushToUser(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -190,7 +191,7 @@ func TestRemoteServicePushToUser(t *testing.T) {
 }
 
 func TestRemoteServiceKickUser(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -230,7 +231,7 @@ func TestRemoteServiceKickUser(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -238,7 +239,7 @@ func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of remote type"), err)
 }
@@ -264,7 +265,7 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 			defer ctrl.Finish()
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil)
+			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, pipeline.NewHandlerHooks())
 			assert.NotNil(t, svc)
 
 			msg := &message.Message{}
@@ -329,7 +330,7 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, pipeline.NewHandlerHooks())
 			assert.NotNil(t, svc)
 			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
 			assert.NoError(t, err)
@@ -375,7 +376,7 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, pipeline.NewHandlerHooks())
 			assert.NotNil(t, svc)
 
 			if table.errSubstring == "" {
@@ -420,7 +421,7 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, pipeline.NewHandlerHooks())
 			assert.NotNil(t, svc)
 
 			expectedMsg := &message.Message{
@@ -477,7 +478,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, pipeline.NewHandlerHooks())
 			assert.NotNil(t, svc)
 
 			if table.serverID != "" {

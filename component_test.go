@@ -41,45 +41,41 @@ func (m *MyComp) Shutdown() {
 	m.running = false
 }
 
-func resetComps() {
-	handlerComp = make([]regComp, 0)
-	remoteComp = make([]regComp, 0)
-}
-
 func TestRegister(t *testing.T) {
-	resetComps()
+	config := viper.New()
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 	b := &component.Base{}
-	Register(b)
-	assert.Equal(t, 1, len(handlerComp))
-	assert.Equal(t, regComp{b, nil}, handlerComp[0])
+	app.Register(b)
+	assert.Equal(t, 1, len(app.handlerComp))
+	assert.Equal(t, regComp{b, nil}, app.handlerComp[0])
 }
 
 func TestRegisterRemote(t *testing.T) {
-	resetComps()
+	config := viper.New()
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	before := app.remoteComp
 	b := &component.Base{}
-	RegisterRemote(b)
-	assert.Equal(t, 1, len(remoteComp))
-	assert.Equal(t, regComp{b, nil}, remoteComp[0])
+	app.RegisterRemote(b)
+	assert.Equal(t, len(before)+1, len(app.remoteComp))
+	assert.Equal(t, regComp{b, nil}, app.remoteComp[len(before)])
 }
 
 func TestStartupComponents(t *testing.T) {
-	resetComps()
-	app = NewApp(true, "testtype", Standalone, map[string]string{}, viper.New())
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New())
 
-	Register(&MyComp{})
-	RegisterRemote(&MyComp{})
-	startupComponents()
-	assert.Equal(t, true, handlerComp[0].comp.(*MyComp).running)
+	app.Register(&MyComp{})
+	app.RegisterRemote(&MyComp{})
+	app.startupComponents()
+	assert.Equal(t, true, app.handlerComp[0].comp.(*MyComp).running)
 }
 
 func TestShutdownComponents(t *testing.T) {
-	resetComps()
-	app = NewApp(true, "testtype", Standalone, map[string]string{}, viper.New())
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New())
 
-	Register(&MyComp{})
-	RegisterRemote(&MyComp{})
-	startupComponents()
+	app.Register(&MyComp{})
+	app.RegisterRemote(&MyComp{})
+	app.startupComponents()
 
-	shutdownComponents()
-	assert.Equal(t, false, handlerComp[0].comp.(*MyComp).running)
+	app.shutdownComponents()
+	assert.Equal(t, false, app.handlerComp[0].comp.(*MyComp).running)
 }

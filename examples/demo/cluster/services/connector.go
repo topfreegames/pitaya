@@ -13,6 +13,7 @@ import (
 // ConnectorRemote is a remote that will receive rpc's
 type ConnectorRemote struct {
 	component.Base
+	app pitaya.Pitaya
 }
 
 // Connector struct
@@ -29,6 +30,11 @@ type SessionData struct {
 type Response struct {
 	Code int32
 	Msg  string
+}
+
+// NewConnectorRemote ctor
+func NewConnectorRemote(app pitaya.Pitaya) *ConnectorRemote {
+	return &ConnectorRemote{app: app}
 }
 
 func reply(code int32, msg string) (*Response, error) {
@@ -77,7 +83,7 @@ func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*
 
 // Docs returns documentation
 func (c *ConnectorRemote) Docs(ctx context.Context, ddd *protos.Doc) (*protos.Doc, error) {
-	d, err := pitaya.Documentation(true)
+	d, err := c.app.Documentation(true)
 	if err != nil {
 		return nil, err
 	}

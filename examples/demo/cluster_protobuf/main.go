@@ -15,29 +15,26 @@ import (
 
 func configureBackend() {
 	room := services.NewRoom(app)
-	pitaya.Register(room,
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.RegisterRemote(room,
+	app.RegisterRemote(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 }
 
 func configureFrontend(port int) {
-	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.Register(&services.Connector{},
+	app.Register(&services.Connector{},
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
-	pitaya.RegisterRemote(&services.ConnectorRemote{},
+	app.RegisterRemote(&services.ConnectorRemote{},
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
 	)
-
-	app.AddAcceptor(ws)
 }
 
 var app pitaya.Pitaya
@@ -49,12 +46,15 @@ func main() {
 
 	flag.Parse()
 
-	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	if *isFrontend {
+		ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
+		builder.AddAcceptor(ws)
+	}
+	builder.Serializer = protobuf.NewSerializer()
+	app := builder.Build()
 
 	defer app.Shutdown()
-
-	ser := protobuf.NewSerializer()
-	app.SetSerializer(ser)
 
 	if !*isFrontend {
 		configureBackend()

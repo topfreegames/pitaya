@@ -13,34 +13,32 @@ import (
 	"github.com/topfreegames/pitaya/acceptor"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
 
 func configureBackend() {
 	room := services.NewRoom(app)
-	pitaya.Register(room,
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.RegisterRemote(room,
+	app.RegisterRemote(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 }
 
 func configureFrontend(port int) {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-
-	pitaya.Register(services.NewConnector(app),
+	app.Register(services.NewConnector(app),
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
-	pitaya.RegisterRemote(&services.ConnectorRemote{},
+	app.RegisterRemote(&services.ConnectorRemote{},
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -73,8 +71,6 @@ func configureFrontend(port int) {
 	if err != nil {
 		fmt.Printf("error setting route dictionary %s\n", err.Error())
 	}
-
-	app.AddAcceptor(tcp)
 }
 
 var app pitaya.Pitaya
@@ -95,37 +91,47 @@ func main() {
 		constants.GRPCPortKey: *rpcServerPort,
 	}
 
-	app := pitaya.NewApp(*isFrontend, *svType, pitaya.Cluster, meta, confs)
+	app, bs := createApp(*port, *isFrontend, *svType, meta, confs)
 
 	defer app.Shutdown()
 
-	app.SetSerializer(json.NewSerializer())
-
+	app.RegisterModule(bs, "bindingsStorage")
 	if !*isFrontend {
 		configureBackend()
 	} else {
 		configureFrontend(*port)
 	}
+	app.Start()
+}
 
-	gs, err := cluster.NewGRPCServer(app.GetConfig(), app.GetServer(), app.GetMetricsReporters())
+func createApp(port int, isFrontend bool, svType string, meta map[string]string, confs ...*viper.Viper) (*pitaya.App, *modules.ETCDBindingStorage) {
+	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, meta, confs...)
+
+	config := config.NewConfig(builder.Configs...)
+	gs, err := cluster.NewGRPCServer(config, builder.Server, builder.MetricsReporters)
 	if err != nil {
 		panic(err)
 	}
+	builder.RPCServer = gs
 
-	bs := modules.NewETCDBindingStorage(app.GetServer(), app.GetConfig())
-	pitaya.RegisterModule(bs, "bindingsStorage")
+	bs := modules.NewETCDBindingStorage(builder.Server, config)
 
 	gc, err := cluster.NewGRPCClient(
-		app.GetConfig(),
-		app.GetServer(),
-		app.GetMetricsReporters(),
+		config,
+		builder.Server,
+		builder.MetricsReporters,
 		bs,
-		cluster.NewConfigInfoRetriever(app.GetConfig()),
+		cluster.NewConfigInfoRetriever(config),
 	)
 	if err != nil {
 		panic(err)
 	}
-	app.SetRPCServer(gs)
-	app.SetRPCClient(gc)
-	app.Start()
+	builder.RPCClient = gc
+
+	if isFrontend {
+		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+		builder.AddAcceptor(tcp)
+	}
+
+	return builder.Build(), bs
 }

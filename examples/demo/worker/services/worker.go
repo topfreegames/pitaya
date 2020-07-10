@@ -15,14 +15,9 @@ type Worker struct {
 }
 
 // Configure starts workers and register rpc job
-func (w *Worker) Configure(app pitaya.Pitaya) error {
-	err := app.StartWorker(app.GetConfig())
-	if err != nil {
-		return err
-	}
-
+func (w *Worker) Configure(app pitaya.Pitaya) {
+	app.StartWorker()
 	app.RegisterRPCJob(&RPCJob{app: app})
-	return nil
 }
 
 // RPCJob implements worker.RPCJob

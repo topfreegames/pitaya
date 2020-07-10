@@ -8,13 +8,12 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	proto "github.com/golang/protobuf/proto"
-	acceptor "github.com/topfreegames/pitaya/acceptor"
 	cluster "github.com/topfreegames/pitaya/cluster"
+	component "github.com/topfreegames/pitaya/component"
 	config "github.com/topfreegames/pitaya/config"
-	codec "github.com/topfreegames/pitaya/conn/codec"
+	interfaces "github.com/topfreegames/pitaya/interfaces"
 	metrics "github.com/topfreegames/pitaya/metrics"
 	router "github.com/topfreegames/pitaya/router"
-	serialize "github.com/topfreegames/pitaya/serialize"
 	worker "github.com/topfreegames/pitaya/worker"
 	reflect "reflect"
 	time "time"
@@ -43,26 +42,6 @@ func (m *MockPitaya) EXPECT() *MockPitayaMockRecorder {
 	return m.recorder
 }
 
-// AddAcceptor mocks base method
-func (m *MockPitaya) AddAcceptor(arg0 acceptor.Acceptor) {
-	m.ctrl.Call(m, "AddAcceptor", arg0)
-}
-
-// AddAcceptor indicates an expected call of AddAcceptor
-func (mr *MockPitayaMockRecorder) AddAcceptor(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAcceptor", reflect.TypeOf((*MockPitaya)(nil).AddAcceptor), arg0)
-}
-
-// AddMetricsReporter mocks base method
-func (m *MockPitaya) AddMetricsReporter(arg0 metrics.Reporter) {
-	m.ctrl.Call(m, "AddMetricsReporter", arg0)
-}
-
-// AddMetricsReporter indicates an expected call of AddMetricsReporter
-func (mr *MockPitayaMockRecorder) AddMetricsReporter(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetricsReporter", reflect.TypeOf((*MockPitaya)(nil).AddMetricsReporter), arg0)
-}
-
 // AddRoute mocks base method
 func (m *MockPitaya) AddRoute(arg0 string, arg1 router.RoutingFunc) error {
 	ret := m.ctrl.Call(m, "AddRoute", arg0, arg1)
@@ -73,6 +52,19 @@ func (m *MockPitaya) AddRoute(arg0 string, arg1 router.RoutingFunc) error {
 // AddRoute indicates an expected call of AddRoute
 func (mr *MockPitayaMockRecorder) AddRoute(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoute", reflect.TypeOf((*MockPitaya)(nil).AddRoute), arg0, arg1)
+}
+
+// Documentation mocks base method
+func (m *MockPitaya) Documentation(arg0 bool) (map[string]interface{}, error) {
+	ret := m.ctrl.Call(m, "Documentation", arg0)
+	ret0, _ := ret[0].(map[string]interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Documentation indicates an expected call of Documentation
+func (mr *MockPitayaMockRecorder) Documentation(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Documentation", reflect.TypeOf((*MockPitaya)(nil).Documentation), arg0)
 }
 
 // GetConfig mocks base method
@@ -111,16 +103,17 @@ func (mr *MockPitayaMockRecorder) GetMetricsReporters() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricsReporters", reflect.TypeOf((*MockPitaya)(nil).GetMetricsReporters))
 }
 
-// GetSerializer mocks base method
-func (m *MockPitaya) GetSerializer() serialize.Serializer {
-	ret := m.ctrl.Call(m, "GetSerializer")
-	ret0, _ := ret[0].(serialize.Serializer)
-	return ret0
+// GetModule mocks base method
+func (m *MockPitaya) GetModule(arg0 string) (interfaces.Module, error) {
+	ret := m.ctrl.Call(m, "GetModule", arg0)
+	ret0, _ := ret[0].(interfaces.Module)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// GetSerializer indicates an expected call of GetSerializer
-func (mr *MockPitayaMockRecorder) GetSerializer() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSerializer", reflect.TypeOf((*MockPitaya)(nil).GetSerializer))
+// GetModule indicates an expected call of GetModule
+func (mr *MockPitayaMockRecorder) GetModule(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModule", reflect.TypeOf((*MockPitaya)(nil).GetModule), arg0)
 }
 
 // GetServer mocks base method
@@ -344,6 +337,57 @@ func (mr *MockPitayaMockRecorder) RPCTo(arg0, arg1, arg2, arg3, arg4 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPCTo", reflect.TypeOf((*MockPitaya)(nil).RPCTo), arg0, arg1, arg2, arg3, arg4)
 }
 
+// Register mocks base method
+func (m *MockPitaya) Register(arg0 component.Component, arg1 ...component.Option) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Register", varargs...)
+}
+
+// Register indicates an expected call of Register
+func (mr *MockPitayaMockRecorder) Register(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockPitaya)(nil).Register), varargs...)
+}
+
+// RegisterModule mocks base method
+func (m *MockPitaya) RegisterModule(arg0 interfaces.Module, arg1 string) error {
+	ret := m.ctrl.Call(m, "RegisterModule", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterModule indicates an expected call of RegisterModule
+func (mr *MockPitayaMockRecorder) RegisterModule(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterModule", reflect.TypeOf((*MockPitaya)(nil).RegisterModule), arg0, arg1)
+}
+
+// RegisterModuleAfter mocks base method
+func (m *MockPitaya) RegisterModuleAfter(arg0 interfaces.Module, arg1 string) error {
+	ret := m.ctrl.Call(m, "RegisterModuleAfter", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterModuleAfter indicates an expected call of RegisterModuleAfter
+func (mr *MockPitayaMockRecorder) RegisterModuleAfter(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterModuleAfter", reflect.TypeOf((*MockPitaya)(nil).RegisterModuleAfter), arg0, arg1)
+}
+
+// RegisterModuleBefore mocks base method
+func (m *MockPitaya) RegisterModuleBefore(arg0 interfaces.Module, arg1 string) error {
+	ret := m.ctrl.Call(m, "RegisterModuleBefore", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterModuleBefore indicates an expected call of RegisterModuleBefore
+func (mr *MockPitayaMockRecorder) RegisterModuleBefore(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterModuleBefore", reflect.TypeOf((*MockPitaya)(nil).RegisterModuleBefore), arg0, arg1)
+}
+
 // RegisterRPCJob mocks base method
 func (m *MockPitaya) RegisterRPCJob(arg0 worker.RPCJob) error {
 	ret := m.ctrl.Call(m, "RegisterRPCJob", arg0)
@@ -354,6 +398,21 @@ func (m *MockPitaya) RegisterRPCJob(arg0 worker.RPCJob) error {
 // RegisterRPCJob indicates an expected call of RegisterRPCJob
 func (mr *MockPitayaMockRecorder) RegisterRPCJob(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterRPCJob", reflect.TypeOf((*MockPitaya)(nil).RegisterRPCJob), arg0)
+}
+
+// RegisterRemote mocks base method
+func (m *MockPitaya) RegisterRemote(arg0 component.Component, arg1 ...component.Option) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "RegisterRemote", varargs...)
+}
+
+// RegisterRemote indicates an expected call of RegisterRemote
+func (mr *MockPitayaMockRecorder) RegisterRemote(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterRemote", reflect.TypeOf((*MockPitaya)(nil).RegisterRemote), varargs...)
 }
 
 // ReliableRPC mocks base method
@@ -440,66 +499,6 @@ func (mr *MockPitayaMockRecorder) SetHeartbeatTime(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeartbeatTime", reflect.TypeOf((*MockPitaya)(nil).SetHeartbeatTime), arg0)
 }
 
-// SetPacketDecoder mocks base method
-func (m *MockPitaya) SetPacketDecoder(arg0 codec.PacketDecoder) {
-	m.ctrl.Call(m, "SetPacketDecoder", arg0)
-}
-
-// SetPacketDecoder indicates an expected call of SetPacketDecoder
-func (mr *MockPitayaMockRecorder) SetPacketDecoder(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPacketDecoder", reflect.TypeOf((*MockPitaya)(nil).SetPacketDecoder), arg0)
-}
-
-// SetPacketEncoder mocks base method
-func (m *MockPitaya) SetPacketEncoder(arg0 codec.PacketEncoder) {
-	m.ctrl.Call(m, "SetPacketEncoder", arg0)
-}
-
-// SetPacketEncoder indicates an expected call of SetPacketEncoder
-func (mr *MockPitayaMockRecorder) SetPacketEncoder(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPacketEncoder", reflect.TypeOf((*MockPitaya)(nil).SetPacketEncoder), arg0)
-}
-
-// SetRPCClient mocks base method
-func (m *MockPitaya) SetRPCClient(arg0 cluster.RPCClient) {
-	m.ctrl.Call(m, "SetRPCClient", arg0)
-}
-
-// SetRPCClient indicates an expected call of SetRPCClient
-func (mr *MockPitayaMockRecorder) SetRPCClient(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRPCClient", reflect.TypeOf((*MockPitaya)(nil).SetRPCClient), arg0)
-}
-
-// SetRPCServer mocks base method
-func (m *MockPitaya) SetRPCServer(arg0 cluster.RPCServer) {
-	m.ctrl.Call(m, "SetRPCServer", arg0)
-}
-
-// SetRPCServer indicates an expected call of SetRPCServer
-func (mr *MockPitayaMockRecorder) SetRPCServer(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRPCServer", reflect.TypeOf((*MockPitaya)(nil).SetRPCServer), arg0)
-}
-
-// SetSerializer mocks base method
-func (m *MockPitaya) SetSerializer(arg0 serialize.Serializer) {
-	m.ctrl.Call(m, "SetSerializer", arg0)
-}
-
-// SetSerializer indicates an expected call of SetSerializer
-func (mr *MockPitayaMockRecorder) SetSerializer(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSerializer", reflect.TypeOf((*MockPitaya)(nil).SetSerializer), arg0)
-}
-
-// SetServiceDiscoveryClient mocks base method
-func (m *MockPitaya) SetServiceDiscoveryClient(arg0 cluster.ServiceDiscovery) {
-	m.ctrl.Call(m, "SetServiceDiscoveryClient", arg0)
-}
-
-// SetServiceDiscoveryClient indicates an expected call of SetServiceDiscoveryClient
-func (mr *MockPitayaMockRecorder) SetServiceDiscoveryClient(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetServiceDiscoveryClient", reflect.TypeOf((*MockPitaya)(nil).SetServiceDiscoveryClient), arg0)
-}
-
 // Shutdown mocks base method
 func (m *MockPitaya) Shutdown() {
 	m.ctrl.Call(m, "Shutdown")
@@ -521,13 +520,11 @@ func (mr *MockPitayaMockRecorder) Start() *gomock.Call {
 }
 
 // StartWorker mocks base method
-func (m *MockPitaya) StartWorker(arg0 *config.Config) error {
-	ret := m.ctrl.Call(m, "StartWorker", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+func (m *MockPitaya) StartWorker() {
+	m.ctrl.Call(m, "StartWorker")
 }
 
 // StartWorker indicates an expected call of StartWorker
-func (mr *MockPitayaMockRecorder) StartWorker(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorker", reflect.TypeOf((*MockPitaya)(nil).StartWorker), arg0)
+func (mr *MockPitayaMockRecorder) StartWorker() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorker", reflect.TypeOf((*MockPitaya)(nil).StartWorker))
 }

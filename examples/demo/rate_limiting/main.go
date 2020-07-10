@@ -3,9 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya"
@@ -14,14 +13,9 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/examples/demo/rate_limiting/services"
-	"github.com/topfreegames/pitaya/serialize/json"
 )
 
-func configureFrontend(port int) {
-	room := services.NewRoom()
-	pitaya.Register(room,
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower))
+func createAcceptor(port int) acceptor.Acceptor {
 
 	// 5 requests in 1 minute. Doesn't make sense, just to test
 	// rate limiting
@@ -31,10 +25,9 @@ func configureFrontend(port int) {
 	pConfig := config.NewConfig(vConfig)
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	wrapped := acceptorwrapper.WithWrappers(
+	return acceptorwrapper.WithWrappers(
 		tcp,
 		acceptorwrapper.NewRateLimitingWrapper(app, pConfig))
-	app.AddAcceptor(wrapped)
 }
 
 var app pitaya.Pitaya
@@ -45,12 +38,18 @@ func main() {
 
 	flag.Parse()
 
-	app = pitaya.NewApp(true, svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewBuilder(true, svType, pitaya.Cluster, map[string]string{})
+	builder.AddAcceptor(createAcceptor(*port))
+
+	app = builder.Build()
 
 	defer app.Shutdown()
 
-	app.SetSerializer(json.NewSerializer())
-	configureFrontend(*port)
+	room := services.NewRoom()
+	app.Register(room,
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
 
 	app.Start()
 }
