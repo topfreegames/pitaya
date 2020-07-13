@@ -22,18 +22,16 @@ package pitaya
 
 import (
 	"context"
-	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
-func createGroupTestApp() *App {
+func createGroupTestApp() Pitaya {
 	config := viper.New()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 	return app
@@ -99,8 +97,9 @@ func TestGroupAddMember(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testGroupAddMember", s.UID())
 			assert.Equal(t, table.err, err)
 			if err == nil {
@@ -151,8 +150,9 @@ func TestGroupContainsMember(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testGroupContainsMember", s.UID())
 			if table.err == nil {
 				assert.NoError(t, err)
@@ -192,8 +192,9 @@ func TestRemove(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testRemove", s.UID())
 			assert.NoError(t, err)
 			err = app.GroupRemoveMember(ctx, "testRemove", s.UID())
@@ -228,8 +229,9 @@ func TestDelete(t *testing.T) {
 			defer ctrl.Finish()
 			err = app.GroupCreate(ctx, "testDelete")
 			assert.NoError(t, err)
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testDeleteSufix", s.UID())
 			assert.NoError(t, err)
 			err = app.GroupAddMember(ctx, "testDelete", s.UID())
@@ -270,8 +272,9 @@ func TestRemoveAll(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testRemoveAllSufix", s.UID())
 			assert.NoError(t, err)
 			err = app.GroupAddMember(ctx, "testRemoveAll", s.UID())
@@ -310,8 +313,9 @@ func TestCount(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
+			s := mocks.NewMockSession(ctrl)
+			s.EXPECT().GetIsFrontend().Return(table.frontend).AnyTimes()
+			s.EXPECT().UID().Return(table.UID).AnyTimes()
 			err = app.GroupAddMember(ctx, "testCount", s.UID())
 			assert.NoError(t, err)
 			res, err := app.GroupCountMembers(ctx, "testCount")
@@ -333,9 +337,14 @@ func TestMembers(t *testing.T) {
 	app := createGroupTestApp()
 	err := app.GroupCreate(ctx, "testGroupMembers")
 	assert.NoError(t, err)
-	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-	s1 := session.New(mockNetworkEntity, true, "someid1")
-	s2 := session.New(mockNetworkEntity, true, "someid2")
+	s1 := mocks.NewMockSession(ctrl)
+	s1.EXPECT().GetIsFrontend().Return(true).AnyTimes()
+	s1.EXPECT().UID().Return("someid1").AnyTimes()
+
+	s2 := mocks.NewMockSession(ctrl)
+	s2.EXPECT().GetIsFrontend().Return(true).AnyTimes()
+	s2.EXPECT().UID().Return("someid2").AnyTimes()
+
 	err = app.GroupAddMember(ctx, "testGroupMembers", s1.UID())
 	assert.NoError(t, err)
 	err = app.GroupAddMember(ctx, "testGroupMembers", s2.UID())
@@ -352,23 +361,40 @@ func TestBroadcast(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	app := createGroupTestApp()
+	id1 := int64(1)
+	id2 := int64(2)
+	uid1 := "uid1"
+	uid2 := "uid2"
+
+	s1 := mocks.NewMockSession(ctrl)
+	s1.EXPECT().GetIsFrontend().Return(true).AnyTimes()
+	s1.EXPECT().UID().Return("someid1").AnyTimes()
+	s1.EXPECT().ID().Return(id1).AnyTimes()
+
+	s2 := mocks.NewMockSession(ctrl)
+	s2.EXPECT().GetIsFrontend().Return(true).AnyTimes()
+	s2.EXPECT().ID().Return(id2).AnyTimes()
+
+	mockSessionPool := mocks.NewMockSessionPool(ctrl)
+	mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(s1).Times(1)
+	mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
+
+	config := viper.New()
+	builder := NewBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	builder.SessionPool = mockSessionPool
+	app := builder.Build()
+
 	err := app.GroupCreate(ctx, "testBroadcast")
 	assert.NoError(t, err)
-	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-	s1 := session.New(mockNetworkEntity, true)
-	s2 := session.New(mockNetworkEntity, true)
-	err = s1.Bind(ctx, strconv.Itoa(int(s1.ID())))
+
+	err = app.GroupAddMember(ctx, "testBroadcast", uid1)
 	assert.NoError(t, err)
-	err = s2.Bind(ctx, strconv.Itoa(int(s2.ID())))
-	assert.NoError(t, err)
-	err = app.GroupAddMember(ctx, "testBroadcast", s1.UID())
-	assert.NoError(t, err)
-	err = app.GroupAddMember(ctx, "testBroadcast", s2.UID())
+	err = app.GroupAddMember(ctx, "testBroadcast", uid2)
 	assert.NoError(t, err)
 	route := "some.route.bla"
 	data := []byte("hellow")
-	mockNetworkEntity.EXPECT().Push(route, data).Times(2)
+	s1.EXPECT().Push(route, data).Times(1)
+	s2.EXPECT().Push(route, data).Times(1)
 	err = app.GroupBroadcast(ctx, "testtype", "testBroadcast", route, data)
 	assert.NoError(t, err)
 }

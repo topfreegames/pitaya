@@ -32,8 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/protos"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/session/mocks"
+	sessionmocks "github.com/topfreegames/pitaya/session/mocks"
 )
 
 type someStruct struct {
@@ -74,24 +73,31 @@ func TestSendToUsersLocalSession(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
 
 			route := "some.route.bla"
 			data := []byte("hello")
 			uid1 := uuid.New().String()
 			uid2 := uuid.New().String()
 
-			s1 := session.New(mockNetworkEntity, true)
-			err := s1.Bind(nil, uid1)
-			assert.NoError(t, err)
-			s2 := session.New(mockNetworkEntity, true)
-			err = s2.Bind(nil, uid2)
-			assert.NoError(t, err)
+			s1 := sessionmocks.NewMockSession(ctrl)
+			s2 := sessionmocks.NewMockSession(ctrl)
+			if table.err != nil {
+				s1.EXPECT().ID().Times(1).Return(int64(1))
+				s2.EXPECT().ID().Times(1).Return(int64(2))
+				s1.EXPECT().UID().Times(1).Return(uid1)
+				s2.EXPECT().UID().Times(1).Return(uid2)
+			}
+			s1.EXPECT().Push(route, data).Times(1).Return(table.err)
+			s2.EXPECT().Push(route, data).Times(1).Return(table.err)
 
-			mockNetworkEntity.EXPECT().Push(route, data).Return(table.err).Times(2)
+			mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
+			mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(s1).Times(1)
+			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
 
 			config := viper.New()
-			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+			builder := NewBuilder(true, "testtype", Standalone, map[string]string{}, config)
+			builder.SessionPool = mockSessionPool
+			app := builder.Build().(*App)
 			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
 
 			if table.err != nil {
@@ -118,11 +124,6 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-
-			config := viper.New()
-			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
-			app.rpcClient = mockRPCClient
 
 			route := "some.route.bla"
 			data := []byte("hello")
@@ -140,8 +141,20 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 				Uid:   uid2,
 				Data:  data,
 			}
+			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			mockRPCClient.EXPECT().SendPush(uid1, gomock.Any(), expectedMsg1).Return(table.err)
 			mockRPCClient.EXPECT().SendPush(uid2, gomock.Any(), expectedMsg2).Return(table.err)
+
+			mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
+			mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(nil).Times(1)
+			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(nil).Times(1)
+
+			config := viper.New()
+			builder := NewBuilder(true, "testtype", Cluster, map[string]string{}, config)
+			builder.SessionPool = mockSessionPool
+			builder.RPCClient = mockRPCClient
+			app := builder.Build()
+
 			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, svType)
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())

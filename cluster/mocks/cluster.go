@@ -164,7 +164,7 @@ func (mr *MockRPCClientMockRecorder) BroadcastSessionBind(uid interface{}) *gomo
 }
 
 // Call mocks base method
-func (m *MockRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *cluster.Server) (*protos.Response, error) {
+func (m *MockRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session session.Session, msg *message.Message, server *cluster.Server) (*protos.Response, error) {
 	ret := m.ctrl.Call(m, "Call", ctx, rpcType, route, session, msg, server)
 	ret0, _ := ret[0].(*protos.Response)
 	ret1, _ := ret[1].(error)

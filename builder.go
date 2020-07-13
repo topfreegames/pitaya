@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/acceptor"
+	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/conn/codec"
@@ -17,6 +18,7 @@ import (
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/json"
 	"github.com/topfreegames/pitaya/service"
+	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/worker"
 )
 
@@ -37,8 +39,14 @@ type Builder struct {
 	ServerMode       ServerMode
 	ServiceDiscovery cluster.ServiceDiscovery
 	Groups           groups.GroupService
+	SessionPool      session.SessionPool
 	Worker           *worker.Worker
 	HandlerHooks     *pipeline.HandlerHooks
+}
+
+// PitayaBuilder Builder interface
+type PitayaBuilder interface {
+	Build() Pitaya
 }
 
 // NewBuilder return a builder instance with default dependency instances for a pitaya App
@@ -52,6 +60,8 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 	handlerHooks := pipeline.NewHandlerHooks()
 	configureDefaultPipelines(handlerHooks, config)
 
+	sessionPool := session.NewSessionPool()
+
 	var serviceDiscovery cluster.ServiceDiscovery
 	var rpcServer cluster.RPCServer
 	var rpcClient cluster.RPCClient
@@ -62,7 +72,7 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 			logger.Log.Fatalf("error creating default cluster service discovery component: %s", err.Error())
 		}
 
-		rpcServer, err = cluster.NewNatsRPCServer(config, server, metricsReporters, dieChan)
+		rpcServer, err = cluster.NewNatsRPCServer(config, server, metricsReporters, dieChan, sessionPool)
 		if err != nil {
 			logger.Log.Fatalf("error setting default cluster rpc server component: %s", err.Error())
 		}
@@ -100,6 +110,7 @@ func NewBuilder(isFrontend bool, serverType string, serverMode ServerMode, serve
 		Groups:           gsi,
 		HandlerHooks:     handlerHooks,
 		ServiceDiscovery: serviceDiscovery,
+		SessionPool:      sessionPool,
 		Worker:           worker,
 	}
 }
@@ -114,7 +125,7 @@ func (builder *Builder) AddAcceptor(ac acceptor.Acceptor) {
 }
 
 // Build returns a valid App instance
-func (builder *Builder) Build() *App {
+func (builder *Builder) Build() Pitaya {
 	var remoteService *service.RemoteService
 	if builder.ServerMode == Standalone {
 		if builder.ServiceDiscovery != nil || builder.RPCClient != nil || builder.RPCServer != nil {
@@ -136,6 +147,7 @@ func (builder *Builder) Build() *App {
 			builder.Router,
 			builder.MessageEncoder,
 			builder.Server,
+			builder.SessionPool,
 			builder.HandlerHooks,
 		)
 
@@ -143,18 +155,26 @@ func (builder *Builder) Build() *App {
 	}
 
 	config := config.NewConfig(builder.Configs...)
-	handlerService := service.NewHandlerService(
-		builder.DieChan,
+
+	agentFactory := agent.NewAgentFactory(builder.DieChan,
 		builder.PacketDecoder,
 		builder.PacketEncoder,
 		builder.Serializer,
 		config.GetDuration("pitaya.heartbeat.interval"),
+		builder.MessageEncoder,
 		config.GetInt("pitaya.buffer.agent.messages"),
+		builder.SessionPool,
+		builder.MetricsReporters,
+	)
+
+	handlerService := service.NewHandlerService(
+		builder.PacketDecoder,
+		builder.Serializer,
 		config.GetInt("pitaya.buffer.handler.localprocess"),
 		config.GetInt("pitaya.buffer.handler.remoteprocess"),
 		builder.Server,
 		remoteService,
-		builder.MessageEncoder,
+		agentFactory,
 		builder.MetricsReporters,
 		builder.HandlerHooks,
 	)
@@ -173,13 +193,14 @@ func (builder *Builder) Build() *App {
 		remoteService,
 		handlerService,
 		builder.Groups,
+		builder.SessionPool,
 		builder.MetricsReporters,
 		builder.Configs...,
 	)
 }
 
 // NewDefaultApp returns a default pitaya app instance
-func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, cfgs ...*viper.Viper) *App {
+func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, cfgs ...*viper.Viper) Pitaya {
 	builder := NewBuilder(isFrontend, serverType, serverMode, serverMetadata, cfgs...)
 	return builder.Build()
 }

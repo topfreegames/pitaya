@@ -25,7 +25,6 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util"
 )
 
@@ -45,7 +44,7 @@ func (app *App) SendPushToUsers(route string, v interface{}, uids []string, fron
 	logger.Log.Debugf("Type=PushToUsers Route=%s, Data=%+v, SvType=%s, #Users=%d", route, v, frontendType, len(uids))
 
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
+		if s := app.sessionPool.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
 			if err := s.Push(route, data); err != nil {
 				notPushedUids = append(notPushedUids, uid)
 				logger.Log.Errorf("Session push message error, ID=%d, UID=%d, Error=%s",

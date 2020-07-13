@@ -33,7 +33,7 @@ func configureBackend() {
 }
 
 func configureFrontend(port int) {
-	app.Register(&services.Connector{},
+	app.Register(services.NewConnector(app),
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)

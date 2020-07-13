@@ -60,6 +60,7 @@ type RemoteService struct {
 	messageEncoder         message.Encoder
 	server                 *cluster.Server // server obj
 	remoteBindingListeners []cluster.RemoteBindingListener
+	sessionPool            session.SessionPool
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -72,6 +73,7 @@ func NewRemoteService(
 	router *router.Router,
 	messageEncoder message.Encoder,
 	server *cluster.Server,
+	sessionPool session.SessionPool,
 	handlerHooks *pipeline.HandlerHooks,
 ) *RemoteService {
 	remote := &RemoteService{
@@ -85,6 +87,7 @@ func NewRemoteService(
 		messageEncoder:         messageEncoder,
 		server:                 server,
 		remoteBindingListeners: make([]cluster.RemoteBindingListener, 0),
+		sessionPool:            sessionPool,
 	}
 
 	remote.handlerHooks = handlerHooks
@@ -97,11 +100,11 @@ var remotes = make(map[string]*component.Remote) // all remote method
 func (r *RemoteService) remoteProcess(
 	ctx context.Context,
 	server *cluster.Server,
-	a *agent.Agent,
+	a agent.Agent,
 	route *route.Route,
 	msg *message.Message,
 ) {
-	res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
+	res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.GetSession(), msg)
 	switch msg.Type {
 	case message.Request:
 		if err != nil {
@@ -109,7 +112,7 @@ func (r *RemoteService) remoteProcess(
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
-		err := a.Session.ResponseMID(ctx, msg.ID, res.Data)
+		err := a.GetSession().ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
 			logger.Log.Errorf("Failed to respond remote: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
@@ -167,7 +170,7 @@ func (r *RemoteService) SessionBindRemote(ctx context.Context, msg *protos.BindM
 // PushToUser sends a push to user
 func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*protos.Response, error) {
 	logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
-	s := session.GetSessionByUID(push.GetUid())
+	s := r.sessionPool.GetSessionByUID(push.GetUid())
 	if s != nil {
 		err := s.Push(push.Route, push.Data)
 		if err != nil {
@@ -183,7 +186,7 @@ func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*pro
 // KickUser sends a kick to user
 func (r *RemoteService) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
 	logger.Log.Debugf("sending kick to user %s", kick.GetUserId())
-	s := session.GetSessionByUID(kick.GetUserId())
+	s := r.sessionPool.GetSessionByUID(kick.GetUserId())
 	if s != nil {
 		err := s.Kick(ctx)
 		if err != nil {
@@ -387,6 +390,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		r.serviceDiscovery,
 		req.FrontendID,
 		r.messageEncoder,
+		r.sessionPool,
 	)
 	if err != nil {
 		logger.Log.Warn("pitaya/handler: cannot instantiate remote agent")
@@ -425,7 +429,7 @@ func (r *RemoteService) remoteCall(
 	server *cluster.Server,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
+	session session.Session,
 	msg *message.Message,
 ) (*protos.Response, error) {
 	svType := route.SvType

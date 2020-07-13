@@ -74,7 +74,7 @@ func reply(code int32, msg string) *protos.Response {
 // Entry is the entrypoint
 func (r *Room) Entry(ctx context.Context) (*protos.Response, error) {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := s.Bind(ctx, fakeUID) // binding session uid
 	if err != nil {
 		return nil, pitaya.Error(err, "ENT-000")
@@ -84,7 +84,7 @@ func (r *Room) Entry(ctx context.Context) (*protos.Response, error) {
 
 // Join room
 func (r *Room) Join(ctx context.Context) (*protos.Response, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	members, err := r.app.GroupMembers(ctx, "room")
 	if err != nil {
 		return nil, err

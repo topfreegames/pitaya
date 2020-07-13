@@ -14,6 +14,7 @@ import (
 	interfaces "github.com/topfreegames/pitaya/interfaces"
 	metrics "github.com/topfreegames/pitaya/metrics"
 	router "github.com/topfreegames/pitaya/router"
+	session "github.com/topfreegames/pitaya/session"
 	worker "github.com/topfreegames/pitaya/worker"
 	reflect "reflect"
 	time "time"
@@ -176,6 +177,18 @@ func (m *MockPitaya) GetServersByType(arg0 string) (map[string]*cluster.Server, 
 // GetServersByType indicates an expected call of GetServersByType
 func (mr *MockPitayaMockRecorder) GetServersByType(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServersByType", reflect.TypeOf((*MockPitaya)(nil).GetServersByType), arg0)
+}
+
+// GetSessionFromCtx mocks base method
+func (m *MockPitaya) GetSessionFromCtx(arg0 context.Context) session.Session {
+	ret := m.ctrl.Call(m, "GetSessionFromCtx", arg0)
+	ret0, _ := ret[0].(session.Session)
+	return ret0
+}
+
+// GetSessionFromCtx indicates an expected call of GetSessionFromCtx
+func (mr *MockPitayaMockRecorder) GetSessionFromCtx(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionFromCtx", reflect.TypeOf((*MockPitaya)(nil).GetSessionFromCtx), arg0)
 }
 
 // GroupAddMember mocks base method

@@ -105,7 +105,7 @@ func main() {
 	app.Start()
 }
 
-func createApp(port int, isFrontend bool, svType string, meta map[string]string, confs ...*viper.Viper) (*pitaya.App, *modules.ETCDBindingStorage) {
+func createApp(port int, isFrontend bool, svType string, meta map[string]string, confs ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
 	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, meta, confs...)
 
 	config := config.NewConfig(builder.Configs...)
@@ -116,7 +116,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCServer = gs
 	builder.Groups = groups.NewMemoryGroupService(config)
 
-	bs := modules.NewETCDBindingStorage(builder.Server, config)
+	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config)
 
 	gc, err := cluster.NewGRPCClient(
 		config,

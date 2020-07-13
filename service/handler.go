@@ -60,24 +60,20 @@ type (
 	// HandlerService service
 	HandlerService struct {
 		baseService
-		appDieChan         chan bool             // die channel app
-		chLocalProcess     chan unhandledMessage // channel of messages that will be processed locally
-		chRemoteProcess    chan unhandledMessage // channel of messages that will be processed remotely
-		decoder            codec.PacketDecoder   // binary decoder
-		encoder            codec.PacketEncoder   // binary encoder
-		heartbeatTimeout   time.Duration
-		messagesBufferSize int
-		remoteService      *RemoteService
-		serializer         serialize.Serializer          // message serializer
-		server             *cluster.Server               // server obj
-		services           map[string]*component.Service // all registered service
-		messageEncoder     message.Encoder
-		metricsReporters   []metrics.Reporter
+		chLocalProcess   chan unhandledMessage // channel of messages that will be processed locally
+		chRemoteProcess  chan unhandledMessage // channel of messages that will be processed remotely
+		decoder          codec.PacketDecoder   // binary decoder
+		remoteService    *RemoteService
+		serializer       serialize.Serializer          // message serializer
+		server           *cluster.Server               // server obj
+		services         map[string]*component.Service // all registered service
+		metricsReporters []metrics.Reporter
+		agentFactory     agent.AgentFactory
 	}
 
 	unhandledMessage struct {
 		ctx   context.Context
-		agent *agent.Agent
+		agent agent.Agent
 		route *route.Route
 		msg   *message.Message
 	}
@@ -85,34 +81,26 @@ type (
 
 // NewHandlerService creates and returns a new handler service
 func NewHandlerService(
-	dieChan chan bool,
 	packetDecoder codec.PacketDecoder,
-	packetEncoder codec.PacketEncoder,
 	serializer serialize.Serializer,
-	heartbeatTime time.Duration,
-	messagesBufferSize,
-	localProcessBufferSize,
+	localProcessBufferSize int,
 	remoteProcessBufferSize int,
 	server *cluster.Server,
 	remoteService *RemoteService,
-	messageEncoder message.Encoder,
+	agentFactory agent.AgentFactory,
 	metricsReporters []metrics.Reporter,
 	handlerHooks *pipeline.HandlerHooks,
 ) *HandlerService {
 	h := &HandlerService{
-		services:           make(map[string]*component.Service),
-		chLocalProcess:     make(chan unhandledMessage, localProcessBufferSize),
-		chRemoteProcess:    make(chan unhandledMessage, remoteProcessBufferSize),
-		decoder:            packetDecoder,
-		encoder:            packetEncoder,
-		messagesBufferSize: messagesBufferSize,
-		serializer:         serializer,
-		heartbeatTimeout:   heartbeatTime,
-		appDieChan:         dieChan,
-		server:             server,
-		remoteService:      remoteService,
-		messageEncoder:     messageEncoder,
-		metricsReporters:   metricsReporters,
+		services:         make(map[string]*component.Service),
+		chLocalProcess:   make(chan unhandledMessage, localProcessBufferSize),
+		chRemoteProcess:  make(chan unhandledMessage, remoteProcessBufferSize),
+		decoder:          packetDecoder,
+		serializer:       serializer,
+		server:           server,
+		remoteService:    remoteService,
+		agentFactory:     agentFactory,
+		metricsReporters: metricsReporters,
 	}
 
 	h.handlerHooks = handlerHooks
@@ -171,7 +159,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 // Handle handles messages from a conn
 func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// create a client agent and startup write goroutine
-	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporters)
+	a := h.agentFactory.CreateAgent(conn)
 
 	// startup agent goroutine
 	go a.Handle()
@@ -180,8 +168,8 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 
 	// guarantee agent related resource is destroyed
 	defer func() {
-		a.Session.Close()
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		a.GetSession().Close()
+		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.GetSession().ID(), a.GetSession().UID())
 	}()
 
 	for {
@@ -213,7 +201,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	}
 }
 
-func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
+func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
 		logger.Log.Debug("Received handshake packet")
@@ -221,19 +209,19 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 			logger.Log.Errorf("Error sending handshake response: %s", err.Error())
 			return err
 		}
-		logger.Log.Debugf("Session handshake Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+		logger.Log.Debugf("Session handshake Id=%d, Remote=%s", a.GetSession().ID(), a.RemoteAddr())
 
 		// Parse the json sent with the handshake by the client
 		handshakeData := &session.HandshakeData{}
 		err := json.Unmarshal(p.Data, handshakeData)
 		if err != nil {
 			a.SetStatus(constants.StatusClosed)
-			return fmt.Errorf("Invalid handshake data. Id=%d", a.Session.ID())
+			return fmt.Errorf("Invalid handshake data. Id=%d", a.GetSession().ID())
 		}
 
-		a.Session.SetHandshakeData(handshakeData)
+		a.GetSession().SetHandshakeData(handshakeData)
 		a.SetStatus(constants.StatusHandshake)
-		err = a.Session.Set(constants.IPVersionKey, a.IPVersion())
+		err = a.GetSession().Set(constants.IPVersionKey, a.IPVersion())
 		if err != nil {
 			logger.Log.Warnf("failed to save ip version on session: %q\n", err)
 		}
@@ -242,7 +230,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
-		logger.Log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+		logger.Log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.GetSession().ID(), a.RemoteAddr())
 
 	case packet.Data:
 		if a.GetStatus() < constants.StatusWorking {
@@ -264,7 +252,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	return nil
 }
 
-func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
+func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 	requestID := uuid.New()
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
@@ -273,11 +261,11 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		"local.id":   h.server.ID,
 		"span.kind":  "server",
 		"msg.type":   strings.ToLower(msg.Type.String()),
-		"user.id":    a.Session.UID(),
+		"user.id":    a.GetSession().UID(),
 		"request.id": requestID.String(),
 	}
 	ctx = tracing.StartSpan(ctx, msg.Route, tags)
-	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.Session)
+	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.GetSession())
 
 	r, err := route.Decode(msg.Route)
 	if err != nil {
@@ -307,7 +295,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	}
 }
 
-func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route *route.Route, msg *message.Message) {
+func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route *route.Route, msg *message.Message) {
 	var mid uint
 	switch msg.Type {
 	case message.Request:
@@ -316,13 +304,13 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 		mid = 0
 	}
 
-	ret, err := processHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.Session, msg.Data, msg.Type, false)
+	ret, err := processHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.GetSession(), msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
 			logger.Log.Errorf("Failed to process handler message: %s", err.Error())
 			a.AnswerWithError(ctx, mid, err)
 		} else {
-			err := a.Session.ResponseMID(ctx, mid, ret)
+			err := a.GetSession().ResponseMID(ctx, mid, ret)
 			if err != nil {
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)

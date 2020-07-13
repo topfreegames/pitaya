@@ -59,6 +59,7 @@ type NatsRPCServer struct {
 	dropped                int
 	pitayaServer           protos.PitayaServer
 	metricsReporters       []metrics.Reporter
+	sessionPool            session.SessionPool
 	appDieChan             chan bool
 }
 
@@ -68,6 +69,7 @@ func NewNatsRPCServer(
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	appDieChan chan bool,
+	sessionPool session.SessionPool,
 ) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
 		config:            config,
@@ -78,6 +80,7 @@ func NewNatsRPCServer(
 		metricsReporters:  metricsReporters,
 		appDieChan:        appDieChan,
 		connectionTimeout: nats.DefaultTimeout,
+		sessionPool:       sessionPool,
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -131,7 +134,7 @@ func GetBindBroadcastTopic(svType string) string {
 }
 
 // onSessionBind should be called on each session bind
-func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s *session.Session) error {
+func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s session.Session) error {
 	if ns.server.Frontend {
 		subu, err := ns.subscribeToUserMessages(s.UID(), ns.server.Type)
 		if err != nil {
@@ -141,7 +144,7 @@ func (ns *NatsRPCServer) onSessionBind(ctx context.Context, s *session.Session) 
 		if err != nil {
 			return err
 		}
-		s.Subscriptions = []*nats.Subscription{subu, subk}
+		s.SetSubscriptions([]*nats.Subscription{subu, subk})
 	}
 	return nil
 }
@@ -338,7 +341,7 @@ func (ns *NatsRPCServer) Init() error {
 		go ns.processMessages(i)
 	}
 
-	session.OnSessionBind(ns.onSessionBind)
+	ns.sessionPool.OnSessionBind(ns.onSessionBind)
 
 	// this should be so fast that we shoudn't need concurrency
 	go ns.processPushes()

@@ -48,7 +48,8 @@ import (
 // TestSvc service for e2e tests
 type TestSvc struct {
 	component.Base
-	app pitaya.Pitaya
+	app         pitaya.Pitaya
+	sessionPool session.SessionPool
 }
 
 // TestRemoteSvc remote service for e2e tests
@@ -107,7 +108,7 @@ func (t *TestSvc) Init() {
 
 // TestRequestKickUser handler for e2e tests
 func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*test.TestResponse, error) {
-	s := session.GetSessionByUID(string(userID))
+	s := t.sessionPool.GetSessionByUID(string(userID))
 	if s == nil {
 		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
 	}
@@ -123,7 +124,7 @@ func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*test
 
 // TestRequestKickMe handler for e2e tests
 func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*test.TestResponse, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := t.app.GetSessionFromCtx(ctx)
 	if s == nil {
 		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
 	}
@@ -181,7 +182,7 @@ func (t *TestSvc) TestRequestReturnsError(ctx context.Context, in []byte) ([]byt
 // TestBind handler for e2e tests
 func (t *TestSvc) TestBind(ctx context.Context) ([]byte, error) {
 	uid := uuid.New().String()
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := t.app.GetSessionFromCtx(ctx)
 	err := s.Bind(ctx, uid)
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
@@ -195,7 +196,7 @@ func (t *TestSvc) TestBind(ctx context.Context) ([]byte, error) {
 
 // TestBindID handler for e2e tests
 func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := t.app.GetSessionFromCtx(ctx)
 	err := s.Bind(ctx, string(byteUID))
 	if err != nil {
 		return nil, pitaya.Error(err, "PIT-444")
@@ -269,7 +270,7 @@ func main() {
 
 	pitaya.SetLogger(l)
 
-	app, bs := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
+	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
 		constants.GRPCHostKey: "127.0.0.1",
 		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
 	}, cfg)
@@ -279,7 +280,10 @@ func main() {
 	}
 
 	app.Register(
-		&TestSvc{app: app},
+		&TestSvc{
+			app:         app,
+			sessionPool: sessionPool,
+		},
 		component.WithName("testsvc"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -293,7 +297,7 @@ func main() {
 	app.Start()
 }
 
-func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (*pitaya.App, *modules.ETCDBindingStorage) {
+func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
 	builder := pitaya.NewBuilder(isFrontend, svType, serverMode, metadata, cfg...)
 
 	if isFrontend {
@@ -320,7 +324,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, config)
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config)
 
 		gc, err := cluster.NewGRPCClient(
 			config,
@@ -336,5 +340,5 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		builder.RPCClient = gc
 	}
 
-	return builder.Build(), bs
+	return builder.Build(), bs, builder.SessionPool
 }

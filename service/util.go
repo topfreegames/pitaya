@@ -114,7 +114,7 @@ func processHandlerMessage(
 	rt *route.Route,
 	serializer serialize.Serializer,
 	handlerHooks *pipeline.HandlerHooks,
-	session *session.Session,
+	session session.Session,
 	data []byte,
 	msgTypeIface interface{},
 	remote bool,

@@ -88,7 +88,7 @@ func (r *Room) AfterInit() {
 // Entry is the entrypoint
 func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx) // The default logger contains a requestId, the route being executed and the sessionId
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 
 	err := s.Bind(ctx, "helroow")
 	if err != nil {
@@ -101,7 +101,7 @@ func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // GetSessionData gets the session data
 func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	return &SessionData{
 		Data: s.GetData(),
 	}, nil
@@ -110,7 +110,7 @@ func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
 // SetSessionData sets the session data
 func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		logger.Error("Failed to set session data")
@@ -127,7 +127,7 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 // Join room
 func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := r.app.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		logger.Error("Failed to join room")

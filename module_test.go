@@ -52,7 +52,7 @@ func TestRegisterModule(t *testing.T) {
 	b := &MyMod{}
 
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 
 	err := app.RegisterModule(b, "mod")
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestGetModule(t *testing.T) {
 
 func TestStartupModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New())
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)
@@ -103,7 +103,7 @@ func TestStartupModules(t *testing.T) {
 
 func TestShutdownModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New())
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, viper.New()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)

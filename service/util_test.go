@@ -44,7 +44,7 @@ import (
 	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/serialize/mocks"
-	"github.com/topfreegames/pitaya/session"
+	session_mocks "github.com/topfreegames/pitaya/session/mocks"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -361,8 +361,6 @@ func TestProcessHandlerMessage(t *testing.T) {
 	handlers[rtSt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 	defer func() { handlers = make(map[string]*component.Handler, 0) }()
 
-	ss := session.New(nil, false)
-
 	tables := []struct {
 		name         string
 		route        *route.Route
@@ -391,6 +389,9 @@ func TestProcessHandlerMessage(t *testing.T) {
 			handlers[rt.Short()].MessageType = table.handlerType
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
+			ss := session_mocks.NewMockSession(ctrl)
+			ss.EXPECT().UID().Return("uid").AnyTimes()
+			ss.EXPECT().ID().Return(int64(1)).AnyTimes()
 			mockSerializer := mocks.NewMockSerializer(ctrl)
 			if table.outSerialize != nil {
 				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(table.errSerialize).Do(
@@ -412,6 +413,7 @@ func TestProcessHandlerMessage(t *testing.T) {
 }
 
 func TestProcessHandlerMessageBrokenBeforePipeline(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())
 	handlers[rt.Short()] = &component.Handler{}
 	defer func() { delete(handlers, rt.Short()) }()
@@ -425,7 +427,9 @@ func TestProcessHandlerMessageBrokenBeforePipeline(t *testing.T) {
 
 	handlerHooks := pipeline.NewHandlerHooks()
 	handlerHooks.BeforeHandler = beforeHandler
-	ss := session.New(nil, false)
+	ss := session_mocks.NewMockSession(ctrl)
+	ss.EXPECT().UID().Return("uid").AnyTimes()
+	ss.EXPECT().ID().Return(int64(1)).AnyTimes()
 	out, err := processHandlerMessage(nil, rt, nil, handlerHooks, ss, nil, message.Request, false)
 	assert.Nil(t, out)
 	assert.Equal(t, expected, err)
@@ -450,7 +454,10 @@ func TestProcessHandlerMessageBrokenAfterPipeline(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ss := session.New(nil, false)
+	ss := session_mocks.NewMockSession(ctrl)
+	ss.EXPECT().UID().Return("uid").AnyTimes()
+	ss.EXPECT().ID().Return(int64(1)).AnyTimes()
+
 	mockSerializer := mocks.NewMockSerializer(ctrl)
 	mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil).Do(
 		func(p []byte, arg interface{}) {

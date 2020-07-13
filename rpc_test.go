@@ -40,18 +40,19 @@ import (
 	"github.com/topfreegames/pitaya/router"
 	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
 	"github.com/topfreegames/pitaya/service"
+	sessionmocks "github.com/topfreegames/pitaya/session/mocks"
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config).(*App)
 	err := app.doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
 func TestDoSendRPC(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.server.ID = "myserver"
 	app.rpcServer = &cluster.NatsRPCServer{}
 	tables := []struct {
@@ -79,8 +80,9 @@ func TestDoSendRPC(t *testing.T) {
 				mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 				mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
 				messageEncoder := message.NewMessagesEncoder(false)
+				sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 				router := router.New()
-				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, pipeline.NewHandlerHooks())
+				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
 				assert.NotNil(t, svc)
 				app.remoteService = svc
 				app.server.ID = "notmyserver"

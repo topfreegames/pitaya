@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -45,7 +46,7 @@ import (
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/route"
 	"github.com/topfreegames/pitaya/router"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/session/mocks"
 	"github.com/topfreegames/pitaya/timer"
 )
 
@@ -71,7 +72,7 @@ func TestNewApp(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.serverType, func(t *testing.T) {
 			config := viper.New()
-			app := NewDefaultApp(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, config)
+			app := NewDefaultApp(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, config).(*App)
 			assert.Equal(t, table.isFrontend, app.server.Frontend)
 			assert.Equal(t, table.serverType, app.server.Type)
 			assert.Equal(t, table.serverMode, app.serverMode)
@@ -87,7 +88,7 @@ func TestAddAcceptor(t *testing.T) {
 			config := viper.New()
 			builder := NewBuilder(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, config)
 			builder.AddAcceptor(acc)
-			app := builder.Build()
+			app := builder.Build().(*App)
 			if table.isFrontend {
 				assert.Equal(t, acc, app.acceptors[0])
 			} else {
@@ -99,7 +100,7 @@ func TestAddAcceptor(t *testing.T) {
 
 func TestSetDebug(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.SetDebug(true)
 	assert.Equal(t, true, app.debug)
 	app.SetDebug(false)
@@ -114,25 +115,25 @@ func TestSetLogger(t *testing.T) {
 
 func TestGetDieChan(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.Equal(t, app.dieChan, app.GetDieChan())
 }
 
 func TestGetConfig(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.Equal(t, app.config, app.GetConfig())
 }
 
 func TestGetSever(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.Equal(t, app.server, app.GetServer())
 }
 
 func TestGetMetricsReporters(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.Equal(t, app.metricsReporters, app.GetMetricsReporters())
 }
 func TestGetServerByID(t *testing.T) {
@@ -154,21 +155,21 @@ func TestGetServersByType(t *testing.T) {
 func TestSetHeartbeatInterval(t *testing.T) {
 	inter := 35 * time.Millisecond
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.SetHeartbeatTime(inter)
 	assert.Equal(t, inter, app.heartbeat)
 }
 
 func TestInitSysRemotes(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.initSysRemotes()
 	assert.NotNil(t, app.remoteComp[0])
 }
 
 func TestSetDictionary(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 
 	dict := map[string]uint16{"someroute": 12}
 	err := app.SetDictionary(dict)
@@ -182,7 +183,7 @@ func TestSetDictionary(t *testing.T) {
 
 func TestAddRoute(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.router = nil
 	err := app.AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
 		return nil, nil
@@ -204,7 +205,7 @@ func TestAddRoute(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	go func() {
 		app.Shutdown()
 	}()
@@ -224,7 +225,7 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 			config := viper.New()
 			config.Set("pitaya.metrics.prometheus.enabled", table.enabled)
 			config.Set("pitaya.metrics.statsd.enabled", table.enabled)
-			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 			// if statsd is enabled there are 2 metricsReporters, prometheus and statsd
 			assert.Equal(t, table.enabled, len(app.metricsReporters) == 2)
 		})
@@ -233,7 +234,7 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 
 func TestDefaultSD(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.NotNil(t, app.serviceDiscovery)
 
 	etcdSD, err := cluster.NewEtcdServiceDiscovery(app.config, app.server, app.dieChan)
@@ -244,11 +245,15 @@ func TestDefaultSD(t *testing.T) {
 }
 
 func TestDefaultRPCServer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.NotNil(t, app.rpcServer)
 
-	natsRPCServer, err := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan)
+	sessionPool := mocks.NewMockSessionPool(ctrl)
+
+	natsRPCServer, err := cluster.NewNatsRPCServer(app.config, app.server, nil, app.dieChan, sessionPool)
 	assert.NoError(t, err)
 	typeOfNatsRPCServer := reflect.TypeOf(natsRPCServer)
 
@@ -257,7 +262,7 @@ func TestDefaultRPCServer(t *testing.T) {
 
 func TestDefaultRPCClient(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	assert.NotNil(t, app.rpcClient)
 
 	natsRPCClient, err := cluster.NewNatsRPCClient(app.config, app.server, nil, app.dieChan)
@@ -273,7 +278,7 @@ func TestStartAndListenStandalone(t *testing.T) {
 	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	builder := NewBuilder(true, "testtype", Standalone, map[string]string{}, config)
 	builder.AddAcceptor(acc)
-	app := builder.Build()
+	app := builder.Build().(*App)
 
 	go func() {
 		app.Start()
@@ -310,7 +315,7 @@ func TestStartAndListenCluster(t *testing.T) {
 	assert.NoError(t, err)
 	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	builder.AddAcceptor(acc)
-	app := builder.Build()
+	app := builder.Build().(*App)
 
 	go func() {
 		app.Start()
@@ -361,9 +366,12 @@ func TestError(t *testing.T) {
 }
 
 func TestGetSessionFromCtx(t *testing.T) {
-	ss := &session.Session{}
+	ctrl := gomock.NewController(t)
+	ss := mocks.NewMockSession(ctrl)
+
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, viper.New())
 	ctx := context.WithValue(context.Background(), constants.SessionCtxKey, ss)
-	s := GetSessionFromCtx(ctx)
+	s := app.GetSessionFromCtx(ctx)
 	assert.Equal(t, ss, s)
 }
 
@@ -411,7 +419,7 @@ func TestDescriptor(t *testing.T) {
 
 func TestDocumentation(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.startupComponents()
 	doc, err := app.Documentation(false)
 	assert.NoError(t, err)
@@ -471,7 +479,7 @@ func TestDocumentation(t *testing.T) {
 
 func TestDocumentationTrue(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.startupComponents()
 	doc, err := app.Documentation(true)
 	assert.NoError(t, err)
@@ -567,7 +575,7 @@ func TestAddGRPCInfoToMetadata(t *testing.T) {
 
 func TestStartWorker(t *testing.T) {
 	config := viper.New()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 
 	app.StartWorker()
 	assert.True(t, app.worker.Started())

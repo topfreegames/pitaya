@@ -41,8 +41,8 @@ import (
 
 // Remote corresponding to another server
 type Remote struct {
-	Session          *session.Session // session
-	chDie            chan struct{}    // wait for close
+	Session          session.Session // session
+	chDie            chan struct{}   // wait for close
 	messageEncoder   message.Encoder
 	encoder          codec.PacketEncoder      // binary encoder
 	frontendID       string                   // the frontend that sent the request
@@ -62,6 +62,7 @@ func NewRemote(
 	serviceDiscovery cluster.ServiceDiscovery,
 	frontendID string,
 	messageEncoder message.Encoder,
+	sessionPool session.SessionPool,
 ) (*Remote, error) {
 	a := &Remote{
 		chDie:            make(chan struct{}),
@@ -75,7 +76,7 @@ func NewRemote(
 	}
 
 	// binding session
-	s := session.New(a, false, sess.GetUid())
+	s := sessionPool.NewSession(a, false, sess.GetUid())
 	s.SetFrontendData(frontendID, sess.GetId())
 	err := s.SetDataEncoded(sess.GetData())
 	if err != nil {

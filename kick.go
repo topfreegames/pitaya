@@ -26,7 +26,6 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/logger"
 	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session"
 )
 
 // SendKickToUsers sends kick to an user array
@@ -38,7 +37,7 @@ func (app *App) SendKickToUsers(uids []string, frontendType string) ([]string, e
 	var notKickedUids []string
 
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil {
+		if s := app.sessionPool.GetSessionByUID(uid); s != nil {
 			if err := s.Kick(context.Background()); err != nil {
 				notKickedUids = append(notKickedUids, uid)
 				logger.Log.Errorf("Session kick error, ID=%d, UID=%d, ERROR=%s", s.ID(), s.UID(), err.Error())

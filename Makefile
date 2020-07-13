@@ -138,6 +138,15 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
 
+agent-mock:
+	@mockgen github.com/topfreegames/pitaya/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
+
+session-mock:
+	@mockgen github.com/topfreegames/pitaya/session Session,SessionPool | sed 's/mock_session/mocks/' > session/mocks/session.go
+
+networkentity-mock:
+	@mockgen github.com/topfreegames/pitaya/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > networkentity/mocks/networkentity.go
+
 pitaya-mock:
 	@mockgen github.com/topfreegames/pitaya Pitaya | sed 's/mock_pitaya/mocks/' > mocks/app.go
 

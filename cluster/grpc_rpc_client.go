@@ -97,7 +97,7 @@ func (gs *GRPCClient) Call(
 	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
+	session session.Session,
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
