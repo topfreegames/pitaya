@@ -32,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/logger/interfaces"
 	"github.com/topfreegames/pitaya/pipeline"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/route"
@@ -159,7 +160,7 @@ func processHandlerMessage(
 		return nil, e.NewError(err, e.ErrInternalCode)
 	}
 
-	logger := ctx.Value(constants.LoggerCtxKey).(logger.Logger)
+	logger := ctx.Value(constants.LoggerCtxKey).(interfaces.Logger)
 	exit, err := h.ValidateMessageType(msgType)
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)

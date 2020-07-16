@@ -33,6 +33,7 @@ import (
 	pcontext "github.com/topfreegames/pitaya/context"
 	e "github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/logger/interfaces"
 	"github.com/topfreegames/pitaya/protos"
 	"github.com/topfreegames/pitaya/serialize"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -41,10 +42,9 @@ import (
 
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 )
 
-func getLoggerFromArgs(args []reflect.Value) logger.Logger {
+func getLoggerFromArgs(args []reflect.Value) interfaces.Logger {
 	for _, a := range args {
 		if !a.IsValid() {
 			continue
@@ -52,7 +52,7 @@ func getLoggerFromArgs(args []reflect.Value) logger.Logger {
 		if ctx, ok := a.Interface().(context.Context); ok {
 			logVal := ctx.Value(constants.LoggerCtxKey)
 			if logVal != nil {
-				log := logVal.(logger.Logger)
+				log := logVal.(interfaces.Logger)
 				return log
 			}
 		}
@@ -168,26 +168,21 @@ func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
 // If using logrus, userId, route and requestId will be added as fields.
 // Otherwise the pitaya logger will be used as it is.
 func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Context {
-	var defaultLogger logger.Logger
-	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
-	if ok {
-		requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
-		if rID, ok := requestID.(string); ok {
-			if rID == "" {
-				requestID = uuid.New()
-			}
-		} else {
+	requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
+	if rID, ok := requestID.(string); ok {
+		if rID == "" {
 			requestID = uuid.New()
 		}
-		defaultLogger = logrusLogger.WithFields(
-			logrus.Fields{
-				"route":     route,
-				"requestId": requestID,
-				"userId":    userID,
-			})
 	} else {
-		defaultLogger = logger.Log
+		requestID = uuid.New()
 	}
+	defaultLogger := logger.Log.WithFields(
+		map[string]interface{}{
+			"route":     route,
+			"requestId": requestID,
+			"userId":    userID,
+		},
+	)
 
 	return context.WithValue(ctx, constants.LoggerCtxKey, defaultLogger)
 }

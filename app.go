@@ -45,6 +45,7 @@ import (
 	"github.com/topfreegames/pitaya/docgenerator"
 	"github.com/topfreegames/pitaya/errors"
 	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/logger/interfaces"
 	"github.com/topfreegames/pitaya/metrics"
 	mods "github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/remote"
@@ -217,7 +218,7 @@ func SetHeartbeatTime(interval time.Duration) {
 }
 
 // SetLogger logger setter
-func SetLogger(l logger.Logger) {
+func SetLogger(l interfaces.Logger) {
 	logger.Log = l
 }
 
@@ -531,13 +532,13 @@ func GetSessionFromCtx(ctx context.Context) *session.Session {
 }
 
 // GetDefaultLoggerFromCtx returns the default logger from the given context
-func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
+func GetDefaultLoggerFromCtx(ctx context.Context) interfaces.Logger {
 	l := ctx.Value(constants.LoggerCtxKey)
 	if l == nil {
 		return logger.Log
 	}
 
-	return l.(logger.Logger)
+	return l.(interfaces.Logger)
 }
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will

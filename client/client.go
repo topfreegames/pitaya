@@ -41,6 +41,7 @@ import (
 	"github.com/topfreegames/pitaya/conn/message"
 	"github.com/topfreegames/pitaya/conn/packet"
 	"github.com/topfreegames/pitaya/logger"
+	logruswrapper "github.com/topfreegames/pitaya/logger/logrus"
 	"github.com/topfreegames/pitaya/session"
 	"github.com/topfreegames/pitaya/util/compression"
 )
@@ -97,7 +98,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logLevel)
 
-	logger.Log = l
+	logger.Log = logruswrapper.NewWithLogger(l)
 
 	reqTimeout := 5 * time.Second
 	if len(requestTimeout) > 0 {

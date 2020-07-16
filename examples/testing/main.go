@@ -38,6 +38,7 @@ import (
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/examples/testing/protos"
 	"github.com/topfreegames/pitaya/groups"
+	logruswrapper "github.com/topfreegames/pitaya/logger/logrus"
 	"github.com/topfreegames/pitaya/modules"
 	"github.com/topfreegames/pitaya/protos/test"
 	"github.com/topfreegames/pitaya/serialize/json"
@@ -262,7 +263,7 @@ func main() {
 		l.SetLevel(logrus.DebugLevel)
 	}
 
-	pitaya.SetLogger(l)
+	pitaya.SetLogger(logruswrapper.NewWithLogger(l))
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
