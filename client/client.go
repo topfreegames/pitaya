@@ -79,6 +79,7 @@ type Client struct {
 	nextID              uint32
 	messageEncoder      message.Encoder
 	clientHandshakeData *session.HandshakeData
+	Metrics             *Metrics
 }
 
 // MsgChannel return the incoming message channel
@@ -126,6 +127,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 				"age": 30,
 			},
 		},
+		Metrics: NewMetrics(),
 	}
 }
 
@@ -248,7 +250,8 @@ func (c *Client) handlePackets() {
 				}
 				if m.Type == message.Response {
 					c.pendingReqMutex.Lock()
-					if _, ok := c.pendingRequests[m.ID]; ok {
+					if req, ok := c.pendingRequests[m.ID]; ok {
+						c.Metrics.Ping.ReceivedPing(time.Now().Sub(req.sentAt).Microseconds())
 						delete(c.pendingRequests, m.ID)
 						<-c.pendingChan
 					} else {
