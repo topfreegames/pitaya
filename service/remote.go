@@ -61,6 +61,8 @@ type RemoteService struct {
 	server                 *cluster.Server // server obj
 	remoteBindingListeners []cluster.RemoteBindingListener
 	sessionPool            session.SessionPool
+	handlerPool            *HandlerPool
+	remotes                map[string]*component.Remote // all remote method
 }
 
 // NewRemoteService creates and return a new RemoteService
@@ -75,6 +77,7 @@ func NewRemoteService(
 	server *cluster.Server,
 	sessionPool session.SessionPool,
 	handlerHooks *pipeline.HandlerHooks,
+	handlerPool *HandlerPool,
 ) *RemoteService {
 	remote := &RemoteService{
 		services:               make(map[string]*component.Service),
@@ -88,14 +91,14 @@ func NewRemoteService(
 		server:                 server,
 		remoteBindingListeners: make([]cluster.RemoteBindingListener, 0),
 		sessionPool:            sessionPool,
+		handlerPool:            handlerPool,
+		remotes:                make(map[string]*component.Remote),
 	}
 
 	remote.handlerHooks = handlerHooks
 
 	return remote
 }
-
-var remotes = make(map[string]*component.Remote) // all remote method
 
 func (r *RemoteService) remoteProcess(
 	ctx context.Context,
@@ -262,7 +265,7 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 	r.services[s.Name] = s
 	// register all remotes
 	for name, remote := range s.Remotes {
-		remotes[fmt.Sprintf("%s.%s", s.Name, name)] = remote
+		r.remotes[fmt.Sprintf("%s.%s", s.Name, name)] = remote
 	}
 
 	return nil
@@ -304,7 +307,7 @@ func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteSer
 func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
 	response := &protos.Response{}
 
-	remote, ok := remotes[rt.Short()]
+	remote, ok := r.remotes[rt.Short()]
 	if !ok {
 		logger.Log.Warnf("pitaya/remote: %s not found", rt.Short())
 		response := &protos.Response{
@@ -403,7 +406,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		return response
 	}
 
-	ret, err := processHandlerMessage(ctx, rt, r.serializer, r.handlerHooks, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
+	ret, err := r.handlerPool.ProcessHandlerMessage(ctx, rt, r.serializer, r.handlerHooks, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
 	if err != nil {
 		logger.Log.Warnf(err.Error())
 		response = &protos.Response{
@@ -453,7 +456,7 @@ func (r *RemoteService) remoteCall(
 
 // DumpServices outputs all registered services
 func (r *RemoteService) DumpServices() {
-	for name := range remotes {
+	for name := range r.remotes {
 		logger.Log.Infof("registered remote %s", name)
 	}
 }

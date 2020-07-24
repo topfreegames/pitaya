@@ -23,7 +23,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -41,16 +40,6 @@ import (
 )
 
 var errInvalidMsg = errors.New("invalid message type provided")
-
-func getHandler(rt *route.Route) (*component.Handler, error) {
-	handler, ok := handlers[rt.Short()]
-	if !ok {
-		e := fmt.Errorf("pitaya/handler: %s not found", rt.String())
-		return nil, e
-	}
-	return handler, nil
-
-}
 
 func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serializer, payload []byte) (interface{}, error) {
 	if handler.IsRawArg {
@@ -112,6 +101,7 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 func processHandlerMessage(
 	ctx context.Context,
 	rt *route.Route,
+	handler *component.Handler,
 	serializer serialize.Serializer,
 	handlerHooks *pipeline.HandlerHooks,
 	session session.Session,
@@ -125,18 +115,13 @@ func processHandlerMessage(
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
 	ctx = util.CtxWithDefaultLogger(ctx, rt.String(), session.UID())
 
-	h, err := getHandler(rt)
-	if err != nil {
-		return nil, e.NewError(err, e.ErrNotFoundCode)
-	}
-
 	msgType, err := getMsgType(msgTypeIface)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrInternalCode)
 	}
 
 	logger := ctx.Value(constants.LoggerCtxKey).(logger.Logger)
-	exit, err := h.ValidateMessageType(msgType)
+	exit, err := handler.ValidateMessageType(msgType)
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
@@ -145,7 +130,7 @@ func processHandlerMessage(
 
 	// First unmarshal the handler arg that will be passed to
 	// both handler and pipeline functions
-	arg, err := unmarshalHandlerArg(h, serializer, data)
+	arg, err := unmarshalHandlerArg(handler, serializer, data)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
@@ -155,12 +140,12 @@ func processHandlerMessage(
 	}
 
 	logger.Debugf("SID=%d, Data=%s", session.ID(), data)
-	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
+	args := []reflect.Value{handler.Receiver, reflect.ValueOf(ctx)}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))
 	}
 
-	resp, err := util.Pcall(h.Method, args)
+	resp, err := util.Pcall(handler.Method, args)
 	if remote && msgType == message.Notify {
 		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout

@@ -80,7 +80,9 @@ func TestNewRemoteService(t *testing.T) {
 	router := router.New()
 	sv := &cluster.Server{}
 	sessionPool := session.NewSessionPool()
-	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv, sessionPool, pipeline.NewHandlerHooks())
+	handlerHooks := pipeline.NewHandlerHooks()
+	handlerPool := NewHandlerPool()
+	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv, sessionPool, handlerHooks, handlerPool)
 
 	assert.NotNil(t, svc)
 	assert.Empty(t, svc.services)
@@ -91,33 +93,36 @@ func TestNewRemoteService(t *testing.T) {
 	assert.Equal(t, mockSerializer, svc.serializer)
 	assert.Equal(t, router, svc.router)
 	assert.Equal(t, sv, svc.server)
+	assert.Equal(t, sessionPool, svc.sessionPool)
+	assert.Equal(t, handlerHooks, svc.handlerHooks)
+	assert.Equal(t, handlerPool, svc.handlerPool)
 }
 
 func TestRemoteServiceRegister(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
-	defer func() { remotes = make(map[string]*component.Remote, 0) }()
+	defer func() { svc.remotes = make(map[string]*component.Remote, 0) }()
 	assert.Len(t, svc.services, 1)
 	val, ok := svc.services["MyComp"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
-	val2, ok := remotes["MyComp.Remote1"]
+	val2, ok := svc.remotes["MyComp.Remote1"]
 	assert.True(t, ok)
 	assert.NotNil(t, val2)
-	val2, ok = remotes["MyComp.Remote2"]
+	val2, ok = svc.remotes["MyComp.Remote2"]
 	assert.True(t, ok)
 	assert.NotNil(t, val2)
-	val2, ok = remotes["MyComp.RemoteErr"]
+	val2, ok = svc.remotes["MyComp.RemoteErr"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
-	val2, ok = remotes["MyComp.RemoteRes"]
+	val2, ok = svc.remotes["MyComp.RemoteRes"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
 }
 
 func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
@@ -127,7 +132,7 @@ func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
 }
 
 func TestRemoteServiceSessionBindRemote(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
@@ -180,7 +185,7 @@ func TestRemoteServicePushToUser(t *testing.T) {
 	}
 
 	mockSession.EXPECT().Push(tables[0].p.Route, tables[0].p.Data).Times(1)
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil, nil)
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
@@ -197,7 +202,7 @@ func TestRemoteServicePushToUser(t *testing.T) {
 func TestRemoteServiceKickUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil, nil)
 
 	existingUID := "uid1"
 	nonexistingUID := "uid2"
@@ -239,7 +244,7 @@ func TestRemoteServiceKickUser(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -247,7 +252,7 @@ func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of remote type"), err)
 }
@@ -274,7 +279,7 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, pipeline.NewHandlerHooks())
+			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
 			msg := &message.Message{}
@@ -290,28 +295,32 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 }
 
 func TestRemoteServiceHandleRPCUser(t *testing.T) {
+	handlerPool := NewHandlerPool()
+
 	tObj := &MyComp{}
 	m, ok := reflect.TypeOf(tObj).MethodByName("Remote1")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rt.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	comp := &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("RemoteErr")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtErr := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtErr.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	compErr := &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("Remote2")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtStr := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtStr.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	compStr := &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("RemoteRes")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtRes := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtRes.Short()] = &component.Remote{
-		Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2, Type: reflect.TypeOf(&test.SomeStruct{B: "aa"})}
+	compRes := &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2, Type: reflect.TypeOf(&test.SomeStruct{B: "aa"})}
 
 	b, err := proto.Marshal(&test.SomeStruct{B: "aa"})
 	assert.NoError(t, err)
@@ -340,7 +349,13 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
 			sessionPool := session.NewSessionPool()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
+
+			svc.remotes[rt.Short()] = comp
+			svc.remotes[rtErr.Short()] = compErr
+			svc.remotes[rtStr.Short()] = compStr
+			svc.remotes[rtRes.Short()] = compRes
+
 			assert.NotNil(t, svc)
 			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
 			assert.NoError(t, err)
@@ -359,7 +374,6 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	handlers[rt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 
 	tables := []struct {
 		name         string
@@ -387,7 +401,9 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
 			sessionPool := session.NewSessionPool()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+			handlerPool := NewHandlerPool()
+			handlerPool.handlers[rt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
 			assert.NotNil(t, svc)
 
 			if table.errSubstring == "" {
@@ -459,7 +475,7 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, table.responseMIDErr)
 			}
 
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), nil)
 			svc.remoteProcess(ctx, sv, mockAgent, rt, expectedMsg)
 		})
 	}
@@ -493,7 +509,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
 			sessionPool := session.NewSessionPool()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
 			if table.serverID != "" {

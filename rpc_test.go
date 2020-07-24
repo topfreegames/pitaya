@@ -82,7 +82,8 @@ func TestDoSendRPC(t *testing.T) {
 				messageEncoder := message.NewMessagesEncoder(false)
 				sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 				router := router.New()
-				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+				handlerPool := service.NewHandlerPool()
+				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
 				assert.NotNil(t, svc)
 				app.remoteService = svc
 				app.server.ID = "notmyserver"

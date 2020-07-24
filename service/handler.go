@@ -52,7 +52,6 @@ import (
 )
 
 var (
-	handlers    = make(map[string]*component.Handler) // all handler method
 	handlerType = "handler"
 )
 
@@ -69,6 +68,8 @@ type (
 		services         map[string]*component.Service // all registered service
 		metricsReporters []metrics.Reporter
 		agentFactory     agent.AgentFactory
+		handlerPool      *HandlerPool
+		handlers         map[string]*component.Handler // all handler method
 	}
 
 	unhandledMessage struct {
@@ -90,6 +91,7 @@ func NewHandlerService(
 	agentFactory agent.AgentFactory,
 	metricsReporters []metrics.Reporter,
 	handlerHooks *pipeline.HandlerHooks,
+	handlerPool *HandlerPool,
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
@@ -101,6 +103,8 @@ func NewHandlerService(
 		remoteService:    remoteService,
 		agentFactory:     agentFactory,
 		metricsReporters: metricsReporters,
+		handlerPool:      handlerPool,
+		handlers:         make(map[string]*component.Handler),
 	}
 
 	h.handlerHooks = handlerHooks
@@ -151,7 +155,7 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 	// register all handlers
 	h.services[s.Name] = s
 	for name, handler := range s.Handlers {
-		handlers[fmt.Sprintf("%s.%s", s.Name, name)] = handler
+		h.handlerPool.Register(s.Name, name, handler)
 	}
 	return nil
 }
@@ -304,7 +308,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 		mid = 0
 	}
 
-	ret, err := processHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.GetSession(), msg.Data, msg.Type, false)
+	ret, err := h.handlerPool.ProcessHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.GetSession(), msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
 			logger.Log.Errorf("Failed to process handler message: %s", err.Error())
@@ -324,6 +328,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
+	handlers := h.handlerPool.GetHandlers()
 	for name := range handlers {
 		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
 	}

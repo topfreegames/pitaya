@@ -126,6 +126,7 @@ func (builder *Builder) AddAcceptor(ac acceptor.Acceptor) {
 
 // Build returns a valid App instance
 func (builder *Builder) Build() Pitaya {
+	handlerPool := service.NewHandlerPool()
 	var remoteService *service.RemoteService
 	if builder.ServerMode == Standalone {
 		if builder.ServiceDiscovery != nil || builder.RPCClient != nil || builder.RPCServer != nil {
@@ -149,6 +150,7 @@ func (builder *Builder) Build() Pitaya {
 			builder.Server,
 			builder.SessionPool,
 			builder.HandlerHooks,
+			handlerPool,
 		)
 
 		builder.RPCServer.SetPitayaServer(remoteService)
@@ -177,6 +179,7 @@ func (builder *Builder) Build() Pitaya {
 		agentFactory,
 		builder.MetricsReporters,
 		builder.HandlerHooks,
+		handlerPool,
 	)
 
 	return NewApp(
