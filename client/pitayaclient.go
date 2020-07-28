@@ -37,4 +37,11 @@ type PitayaClient interface {
 	SendNotify(route string, data []byte) error
 	SendRequest(route string, data []byte) (uint, error)
 	SetClientHandshakeData(data *session.HandshakeData)
+	GetPing() int
+	GetLifetimeConnectionPingPercentile(percentile float32) int
+	GetJitter() int
+	GetLifetimeConnectionJitterPercentile(percentile float32) int
+	GetNumRequestsSent() int64
+	GetNumRequestsConfirmed() int64
+	GetNumRequestsLost() int64
 }

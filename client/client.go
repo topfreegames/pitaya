@@ -79,7 +79,7 @@ type Client struct {
 	nextID              uint32
 	messageEncoder      message.Encoder
 	clientHandshakeData *session.HandshakeData
-	Metrics             *Metrics
+	metrics             *metrics
 }
 
 // MsgChannel return the incoming message channel
@@ -127,7 +127,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 				"age": 30,
 			},
 		},
-		Metrics: NewMetrics(),
+		metrics: newMetrics(),
 	}
 }
 
@@ -225,6 +225,7 @@ func (c *Client) pendingRequestsReaper() {
 					Data:  errMarshalled,
 					Err:   true,
 				}
+				c.metrics.nPacketsLost++
 				delete(c.pendingRequests, pendingReq.msg.ID)
 				<-c.pendingChan
 				c.IncomingMsgChan <- m
@@ -251,7 +252,8 @@ func (c *Client) handlePackets() {
 				if m.Type == message.Response {
 					c.pendingReqMutex.Lock()
 					if req, ok := c.pendingRequests[m.ID]; ok {
-						c.Metrics.Ping.ReceivedPing(time.Now().Sub(req.sentAt).Microseconds())
+						ping := time.Now().Sub(req.sentAt).Milliseconds()
+						c.metrics.addMeasurement(int(ping))
 						delete(c.pendingRequests, m.ID)
 						<-c.pendingChan
 					} else {
@@ -454,6 +456,7 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 				sentAt: time.Now(),
 			}
 		}
+		c.metrics.nPacketsSent++
 		c.pendingReqMutex.Unlock()
 	}
 
@@ -462,4 +465,39 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 	}
 	_, err = c.conn.Write(p)
 	return m.ID, err
+}
+
+// GetRTT returns the current round trip time
+func (c *Client) GetRTT() int {
+	return c.metrics.GetCurrentPing()
+}
+
+// GetLifetimeRTTPercentile returns the lifetime connection rtt percentile
+func (c *Client) GetLifetimeRTTPercentile(percentile float32) int {
+	return c.metrics.GetPingPercentile(percentile)
+}
+
+// GetJitter returns the current jitter
+func (c *Client) GetJitter() int {
+	return c.metrics.GetCurrentJitter()
+}
+
+// GetLifetimeJitterPercentile returns the lifetime connection jitter percentile
+func (c *Client) GetLifetimeJitterPercentile(percentile float32) int {
+	return c.metrics.GetJitterPercentile(percentile)
+}
+
+// GetNumRequestsSent returns the number of requests sent by this client
+func (c *Client) GetNumRequestsSent() int64 {
+	return c.metrics.GetPackagesSent()
+}
+
+// GetNumRequestsConfirmed returns the number of requests acknowledged by the server to this client
+func (c *Client) GetNumRequestsConfirmed() int64 {
+	return c.metrics.GetPackagesConfirmed()
+}
+
+// GetNumRequestsLost returns the number of requests not acknowledged by the server to this client
+func (c *Client) GetNumRequestsLost() int64 {
+	return c.metrics.GetPackagesLost()
 }
