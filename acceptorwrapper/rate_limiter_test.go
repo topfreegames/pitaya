@@ -27,7 +27,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/mocks"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/mocks"
 )
 
 func TestRateLimiterGetNextMessage(t *testing.T) {
@@ -106,8 +107,10 @@ func TestRateLimiterGetNextMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockConn = mocks.NewMockPlayerConn(ctrl)
+			mockedApp := mocks.NewMockPitaya(ctrl)
+			mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
 
-			r = NewRateLimiter(mockConn, limit, interval, table.forceDisable)
+			r = NewRateLimiter(mockedApp, mockConn, limit, interval, table.forceDisable)
 
 			table.mock()
 			buf, err := r.GetNextMessage()
@@ -162,7 +165,10 @@ func TestRateLimiterShouldRateLimit(t *testing.T) {
 
 	for name, table := range tables {
 		t.Run(name, func(t *testing.T) {
-			r = NewRateLimiter(nil, limit, interval, false)
+			ctrl := gomock.NewController(t)
+			mockedApp := mocks.NewMockPitaya(ctrl)
+			mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
+			r = NewRateLimiter(mockedApp, nil, limit, interval, false)
 
 			table.before()
 			should := r.shouldRateLimit(now)

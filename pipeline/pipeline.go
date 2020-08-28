@@ -20,13 +20,10 @@
 
 package pipeline
 
-import "context"
+import (
+	"context"
 
-var (
-	// BeforeHandler contains the functions to be called before the handler method is executed
-	BeforeHandler = &pipelineChannel{}
-	// AfterHandler contains the functions to be called after the handler method is executed
-	AfterHandler = &pipelineAfterChannel{}
+	"github.com/topfreegames/pitaya/v2/logger"
 )
 
 type (
@@ -38,17 +35,70 @@ type (
 	// and the error returned
 	AfterHandlerTempl func(ctx context.Context, out interface{}, err error) (interface{}, error)
 
-	pipelineChannel struct {
+	// Channel contains the functions to be called before the handler method is executed
+	Channel struct {
 		Handlers []HandlerTempl
 	}
 
-	pipelineAfterChannel struct {
+	// AfterChannel contains the functions to be called after the handler method is executed
+	AfterChannel struct {
 		Handlers []AfterHandlerTempl
+	}
+
+	// HandlerHooks contains before and after channels
+	HandlerHooks struct {
+		BeforeHandler *Channel
+		AfterHandler  *AfterChannel
 	}
 )
 
+// NewHandlerHooks ctor
+func NewHandlerHooks() *HandlerHooks {
+	return &HandlerHooks{
+		BeforeHandler: NewChannel(),
+		AfterHandler:  NewAfterChannel(),
+	}
+}
+
+// NewChannel ctor
+func NewChannel() *Channel {
+	return &Channel{Handlers: []HandlerTempl{}}
+}
+
+// NewAfterChannel ctor
+func NewAfterChannel() *AfterChannel {
+	return &AfterChannel{Handlers: []AfterHandlerTempl{}}
+}
+
+// ExecuteBeforePipeline calls registered handlers
+func (p *Channel) ExecuteBeforePipeline(ctx context.Context, data interface{}) (interface{}, error) {
+	var err error
+	res := data
+	if len(p.Handlers) > 0 {
+		for _, h := range p.Handlers {
+			res, err = h(ctx, res)
+			if err != nil {
+				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
+				return res, err
+			}
+		}
+	}
+	return res, nil
+}
+
+// ExecuteAfterPipeline calls registered handlers
+func (p *AfterChannel) ExecuteAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
+	ret := res
+	if len(p.Handlers) > 0 {
+		for _, h := range p.Handlers {
+			ret, err = h(ctx, ret, err)
+		}
+	}
+	return ret, err
+}
+
 // PushFront should not be used after pitaya is running
-func (p *pipelineChannel) PushFront(h HandlerTempl) {
+func (p *Channel) PushFront(h HandlerTempl) {
 	Handlers := make([]HandlerTempl, len(p.Handlers)+1)
 	Handlers[0] = h
 	copy(Handlers[1:], p.Handlers)
@@ -56,17 +106,17 @@ func (p *pipelineChannel) PushFront(h HandlerTempl) {
 }
 
 // PushBack should not be used after pitaya is running
-func (p *pipelineChannel) PushBack(h HandlerTempl) {
+func (p *Channel) PushBack(h HandlerTempl) {
 	p.Handlers = append(p.Handlers, h)
 }
 
 // Clear should not be used after pitaya is running
-func (p *pipelineChannel) Clear() {
+func (p *Channel) Clear() {
 	p.Handlers = make([]HandlerTempl, 0)
 }
 
 // PushFront should not be used after pitaya is running
-func (p *pipelineAfterChannel) PushFront(h AfterHandlerTempl) {
+func (p *AfterChannel) PushFront(h AfterHandlerTempl) {
 	Handlers := make([]AfterHandlerTempl, len(p.Handlers)+1)
 	Handlers[0] = h
 	copy(Handlers[1:], p.Handlers)
@@ -74,11 +124,11 @@ func (p *pipelineAfterChannel) PushFront(h AfterHandlerTempl) {
 }
 
 // PushBack should not be used after pitaya is running
-func (p *pipelineAfterChannel) PushBack(h AfterHandlerTempl) {
+func (p *AfterChannel) PushBack(h AfterHandlerTempl) {
 	p.Handlers = append(p.Handlers, h)
 }
 
 // Clear should not be used after pitaya is running
-func (p *pipelineAfterChannel) Clear() {
+func (p *AfterChannel) Clear() {
 	p.Handlers = make([]AfterHandlerTempl, 0)
 }

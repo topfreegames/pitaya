@@ -8,17 +8,17 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/interfaces"
-	"github.com/topfreegames/pitaya/interfaces/mocks"
-	"github.com/topfreegames/pitaya/metrics"
-	"github.com/topfreegames/pitaya/protos"
-	protosmocks "github.com/topfreegames/pitaya/protos/mocks"
-	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/conn/message"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/interfaces"
+	"github.com/topfreegames/pitaya/v2/interfaces/mocks"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/protos"
+	protosmocks "github.com/topfreegames/pitaya/v2/protos/mocks"
+	"github.com/topfreegames/pitaya/v2/route"
+	sessionmocks "github.com/topfreegames/pitaya/v2/session/mocks"
 	"google.golang.org/grpc"
 )
 
@@ -46,10 +46,7 @@ func TestCall(t *testing.T) {
 		connected: true,
 	})
 
-	ctx := context.Background()
-	rpcType := protos.RPCType_Sys
-	r := route.NewRoute("sv", "svc", "meth")
-	sess := session.New(nil, true, "someuid")
+	uid := "someuid"
 	msg := &message.Message{
 		Type:  0,
 		ID:    0,
@@ -57,6 +54,15 @@ func TestCall(t *testing.T) {
 		Data:  []byte{0x01},
 		Err:   false,
 	}
+
+	ctx := context.Background()
+	rpcType := protos.RPCType_Sys
+	r := route.NewRoute("sv", "svc", "meth")
+
+	sess := sessionmocks.NewMockSession(ctrl)
+	sess.EXPECT().ID().Return(int64(1)).Times(2)
+	sess.EXPECT().UID().Return(uid).Times(2)
+	sess.EXPECT().GetDataEncoded().Return(nil).Times(2)
 
 	expected, err := buildRequest(ctx, rpcType, r, sess, msg, g.server)
 	assert.NoError(t, err)

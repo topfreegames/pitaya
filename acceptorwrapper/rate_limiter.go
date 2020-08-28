@@ -24,11 +24,11 @@ import (
 	"container/list"
 	"time"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/metrics"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/metrics"
 )
 
 // RateLimiter wraps net.Conn by applying rate limiting and return empty
@@ -42,6 +42,7 @@ import (
 // be prepared to handle it.
 type RateLimiter struct {
 	acceptor.PlayerConn
+	app          pitaya.Pitaya
 	limit        int
 	interval     time.Duration
 	times        list.List
@@ -50,6 +51,7 @@ type RateLimiter struct {
 
 // NewRateLimiter returns an initialized *RateLimiting
 func NewRateLimiter(
+	app pitaya.Pitaya,
 	conn acceptor.PlayerConn,
 	limit int,
 	interval time.Duration,
@@ -57,6 +59,7 @@ func NewRateLimiter(
 ) *RateLimiter {
 	r := &RateLimiter{
 		PlayerConn:   conn,
+		app:          app,
 		limit:        limit,
 		interval:     interval,
 		forceDisable: forceDisable,
@@ -82,7 +85,7 @@ func (r *RateLimiter) GetNextMessage() (msg []byte, err error) {
 		now := time.Now()
 		if r.shouldRateLimit(now) {
 			logger.Log.Errorf("Data=%s, Error=%s", msg, constants.ErrRateLimitExceeded)
-			metrics.ReportExceededRateLimiting(pitaya.GetMetricsReporters())
+			metrics.ReportExceededRateLimiting(r.app.GetMetricsReporters())
 			continue
 		}
 

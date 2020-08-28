@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/protos"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
 )
 
 // ConnectorRemote is a remote that will receive rpc's
@@ -17,6 +17,7 @@ type ConnectorRemote struct {
 // Connector struct
 type Connector struct {
 	component.Base
+	app pitaya.Pitaya
 }
 
 // SessionData struct
@@ -30,6 +31,11 @@ type Response struct {
 	Msg  string
 }
 
+// NewConnector ctor
+func NewConnector(app pitaya.Pitaya) *Connector {
+	return &Connector{app: app}
+}
+
 func reply(code int32, msg string) (*Response, error) {
 	res := &Response{
 		Code: code,
@@ -40,7 +46,7 @@ func reply(code int32, msg string) (*Response, error) {
 
 // GetSessionData gets the session data
 func (c *Connector) GetSessionData(ctx context.Context) (*SessionData, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := c.app.GetSessionFromCtx(ctx)
 	res := &SessionData{
 		Data: s.GetData(),
 	}
@@ -49,7 +55,7 @@ func (c *Connector) GetSessionData(ctx context.Context) (*SessionData, error) {
 
 // SetSessionData sets the session data
 func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*Response, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := c.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		return nil, pitaya.Error(err, "CN-000", map[string]string{"failed": "set data"})
@@ -59,7 +65,7 @@ func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*Res
 
 // NotifySessionData sets the session data
 func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := c.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		fmt.Println("got error on notify", err)
@@ -68,7 +74,7 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 
 // SendPushToUser sends a push to a user
 func (c *Connector) SendPushToUser(ctx context.Context, msg *UserMessage) (*Response, error) {
-	_, err := pitaya.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
+	_, err := c.app.SendPushToUsers("onMessage", msg, []string{"2"}, "connector")
 	if err != nil {
 		return nil, err
 	}

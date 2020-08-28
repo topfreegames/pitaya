@@ -11,14 +11,13 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/serialize/json"
-	"github.com/topfreegames/pitaya/timer"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/groups"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/timer"
 )
 
 type (
@@ -27,6 +26,7 @@ type (
 	Room struct {
 		component.Base
 		timer *timer.Timer
+		app   pitaya.Pitaya
 	}
 
 	// UserMessage represents a message that user sent
@@ -53,21 +53,23 @@ type (
 )
 
 // NewRoom returns a Handler Base implementation
-func NewRoom() *Room {
-	return &Room{}
+func NewRoom(app pitaya.Pitaya) *Room {
+	return &Room{
+		app: app,
+	}
 }
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		count, err := r.app.GroupCountMembers(context.Background(), "room")
 		logger.Log.Debugf("UserCount: Time=> %s, Count=> %d, Error=> %q", time.Now().String(), count, err)
 	})
 }
 
 // Join room
 func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	fakeUID := s.ID()                              // just use s.ID as uid !!!
 	err := s.Bind(ctx, strconv.Itoa(int(fakeUID))) // binding session uid
 
@@ -75,19 +77,19 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
 
-	uids, err := pitaya.GroupMembers(ctx, "room")
+	uids, err := r.app.GroupMembers(ctx, "room")
 	if err != nil {
 		return nil, err
 	}
 	s.Push("onMembers", &AllMembers{Members: uids})
 	// notify others
-	pitaya.GroupBroadcast(ctx, "chat", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
+	r.app.GroupBroadcast(ctx, "chat", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %s", s.UID())})
 	// new user join group
-	pitaya.GroupAddMember(ctx, "room", s.UID()) // add session to group
+	r.app.GroupAddMember(ctx, "room", s.UID()) // add session to group
 
 	// on session close, remove it from group
 	s.OnClose(func() {
-		pitaya.GroupRemoveMember(ctx, "room", s.UID())
+		r.app.GroupRemoveMember(ctx, "room", s.UID())
 	})
 
 	return &JoinResponse{Result: "success"}, nil
@@ -95,29 +97,32 @@ func (r *Room) Join(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := pitaya.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
+	err := r.app.GroupBroadcast(ctx, "chat", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
 }
 
-func main() {
-	defer pitaya.Shutdown()
+var app pitaya.Pitaya
 
-	s := json.NewSerializer()
+func main() {
 	conf := configApp()
 
-	pitaya.SetSerializer(s)
-	gsi := groups.NewMemoryGroupService(config.NewConfig(conf))
-	pitaya.InitGroups(gsi)
-	err := pitaya.GroupCreate(context.Background(), "room")
+	builder := pitaya.NewBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
+	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
+	builder.Groups = groups.NewMemoryGroupService(config.NewConfig(conf))
+	app := builder.Build()
+
+	defer app.Shutdown()
+
+	err := app.GroupCreate(context.Background(), "room")
 	if err != nil {
 		panic(err)
 	}
 
 	// rewrite component and handler name
-	room := NewRoom()
-	pitaya.Register(room,
+	room := NewRoom(app)
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
@@ -128,11 +133,7 @@ func main() {
 
 	go http.ListenAndServe(":3251", nil)
 
-	t := acceptor.NewWSAcceptor(":3250")
-	pitaya.AddAcceptor(t)
-
-	pitaya.Configure(true, "chat", pitaya.Cluster, map[string]string{}, conf)
-	pitaya.Start()
+	app.Start()
 }
 
 func configApp() *viper.Viper {

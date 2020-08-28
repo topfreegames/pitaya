@@ -36,10 +36,10 @@ import (
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session/mocks"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/networkentity/mocks"
+	"github.com/topfreegames/pitaya/v2/protos"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -79,19 +79,20 @@ func TestSessionIDServiceSessionID(t *testing.T) {
 
 func TestCloseAll(t *testing.T) {
 	var (
-		entity *mocks.MockNetworkEntity
+		entity      *mocks.MockNetworkEntity
+		sessionPool = NewSessionPool().(*sessionPoolImpl)
 	)
 
 	tables := map[string]struct {
-		sessions func() []*Session
+		sessions func() []Session
 		mock     func()
 	}{
 		"test_close_many_sessions": {
-			sessions: func() []*Session {
-				return []*Session{
-					New(entity, true, uuid.New().String()),
-					New(entity, true, uuid.New().String()),
-					New(entity, true, uuid.New().String()),
+			sessions: func() []Session {
+				return []Session{
+					sessionPool.NewSession(entity, true, uuid.New().String()),
+					sessionPool.NewSession(entity, true, uuid.New().String()),
+					sessionPool.NewSession(entity, true, uuid.New().String()),
 				}
 			},
 			mock: func() {
@@ -100,7 +101,7 @@ func TestCloseAll(t *testing.T) {
 		},
 
 		"test_close_no_sessions": {
-			sessions: func() []*Session { return []*Session{} },
+			sessions: func() []Session { return []Session{} },
 			mock:     func() {},
 		},
 	}
@@ -112,13 +113,13 @@ func TestCloseAll(t *testing.T) {
 
 			entity = mocks.NewMockNetworkEntity(ctrl)
 			for _, s := range table.sessions() {
-				sessionsByID.Store(s.ID(), s)
-				sessionsByUID.Store(s.UID(), s)
+				sessionPool.sessionsByID.Store(s.ID(), s)
+				sessionPool.sessionsByUID.Store(s.UID(), s)
 			}
 
 			table.mock()
 
-			CloseAll()
+			sessionPool.CloseAll()
 		})
 	}
 }
@@ -140,11 +141,12 @@ func TestNew(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			entity := mocks.NewMockNetworkEntity(ctrl)
-			var ss *Session
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			var ss *sessionImpl
 			if table.uid != "" {
-				ss = New(entity, table.frontend, table.uid)
+				ss = sessionPool.NewSession(entity, table.frontend, table.uid).(*sessionImpl)
 			} else {
-				ss = New(entity, table.frontend)
+				ss = sessionPool.NewSession(entity, table.frontend).(*sessionImpl)
 			}
 			assert.NotZero(t, ss.id)
 			assert.Equal(t, entity, ss.entity)
@@ -158,7 +160,7 @@ func TestNew(t *testing.T) {
 			}
 
 			if table.frontend {
-				val, ok := sessionsByID.Load(ss.id)
+				val, ok := sessionPool.sessionsByID.Load(ss.id)
 				assert.True(t, ok)
 				assert.Equal(t, val, ss)
 			}
@@ -169,31 +171,35 @@ func TestNew(t *testing.T) {
 func TestGetSessionByIDExists(t *testing.T) {
 	t.Parallel()
 
-	expectedSS := New(nil, true)
-	ss := GetSessionByID(expectedSS.id)
+	sessionPool := NewSessionPool()
+	expectedSS := sessionPool.NewSession(nil, true)
+	ss := sessionPool.GetSessionByID(expectedSS.ID())
 	assert.Equal(t, expectedSS, ss)
 }
 
 func TestGetSessionByIDDoenstExist(t *testing.T) {
 	t.Parallel()
-
-	ss := GetSessionByID(123456) // huge number to make sure no session with this id
+	sessionPool := NewSessionPool()
+	ss := sessionPool.GetSessionByID(123456) // huge number to make sure no session with this id
 	assert.Nil(t, ss)
 }
 
 func TestGetSessionByUIDExists(t *testing.T) {
 	uid := uuid.New().String()
-	expectedSS := New(nil, true, uid)
-	sessionsByUID.Store(uid, expectedSS)
 
-	ss := GetSessionByUID(uid)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	expectedSS := sessionPool.NewSession(nil, true, uid)
+	sessionPool.sessionsByUID.Store(uid, expectedSS)
+
+	ss := sessionPool.GetSessionByUID(uid)
 	assert.Equal(t, expectedSS, ss)
 }
 
 func TestGetSessionByUIDDoenstExist(t *testing.T) {
 	t.Parallel()
 
-	ss := GetSessionByUID(uuid.New().String())
+	sessionPool := NewSessionPool()
+	ss := sessionPool.GetSessionByUID(uuid.New().String())
 	assert.Nil(t, ss)
 }
 
@@ -201,7 +207,8 @@ func TestKick(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	entity := mocks.NewMockNetworkEntity(ctrl)
-	ss := New(entity, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(entity, true)
 	c := context.Background()
 	entity.EXPECT().Kick(c)
 	entity.EXPECT().Close()
@@ -223,7 +230,8 @@ func TestSessionUpdateEncodedData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			ss.data = table.data
@@ -248,7 +256,8 @@ func TestSessionPush(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
-	ss := New(mockEntity, false)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(mockEntity, false)
 	route := uuid.New().String()
 	v := someStruct{A: 1, B: "aaa"}
 
@@ -263,7 +272,8 @@ func TestSessionResponseMID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
-	ss := New(mockEntity, false)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(mockEntity, false)
 	mid := uint(rand.Int())
 	v := someStruct{A: 1, B: "aaa"}
 	ctx := context.Background()
@@ -276,7 +286,8 @@ func TestSessionResponseMID(t *testing.T) {
 func TestSessionID(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 	ss.id = int64(rand.Uint64())
 
 	id := ss.ID()
@@ -286,7 +297,8 @@ func TestSessionID(t *testing.T) {
 func TestSessionUID(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 	ss.uid = uuid.New().String()
 
 	uid := ss.UID()
@@ -308,7 +320,8 @@ func TestSessionGetData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			ss.data = table.data
 
 			data := ss.GetData()
@@ -333,7 +346,8 @@ func TestSessionSetData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			err := ss.SetData(table.data)
 			assert.NoError(t, err)
 			assert.Equal(t, table.data, ss.data)
@@ -363,7 +377,8 @@ func TestSessionGetEncodedData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			gp := filepath.Join("fixtures", table.name+".golden")
@@ -391,7 +406,8 @@ func TestSessionSetEncodedData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			gp := filepath.Join("fixtures", table.name+".golden")
@@ -411,7 +427,8 @@ func TestSessionSetFrontendData(t *testing.T) {
 	frontendID := uuid.New().String()
 	frontendSessionID := int64(rand.Uint64())
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 	assert.NotNil(t, ss)
 	ss.SetFrontendData(frontendID, frontendSessionID)
 
@@ -422,7 +439,8 @@ func TestSessionSetFrontendData(t *testing.T) {
 func TestSessionBindFailsWithoutUID(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(nil, false)
 	assert.NotNil(t, ss)
 
 	err := ss.Bind(nil, "")
@@ -432,7 +450,8 @@ func TestSessionBindFailsWithoutUID(t *testing.T) {
 func TestSessionBindFailsIfAlreadyBound(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 	ss.uid = uuid.New().String()
 	assert.NotNil(t, ss)
 
@@ -445,24 +464,25 @@ func TestSessionBindRunsOnSessionBind(t *testing.T) {
 	err := errors.New("some error occured")
 	tables := []struct {
 		name          string
-		onSessionBind func(ctx context.Context, s *Session) error
+		onSessionBind func(ctx context.Context, s Session) error
 		err           error
 	}{
-		{"successful_on_session_bind", func(ctx context.Context, s *Session) error {
-			affectedVar = s.uid
+		{"successful_on_session_bind", func(ctx context.Context, s Session) error {
+			affectedVar = s.UID()
 			return nil
 		}, nil},
-		{"failed_on_session_bind", func(ctx context.Context, s *Session) error { return err }, err},
+		{"failed_on_session_bind", func(ctx context.Context, s Session) error { return err }, err},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			affectedVar = ""
-			ss := New(nil, true)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(nil, true)
 			assert.NotNil(t, ss)
 
-			OnSessionBind(table.onSessionBind)
-			defer func() { sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0) }()
+			sessionPool.OnSessionBind(table.onSessionBind)
+			defer func() { sessionPool.sessionBindCallbacks = make([]func(ctx context.Context, s Session) error, 0) }()
 
 			uid := uuid.New().String()
 			err := ss.Bind(nil, uid)
@@ -470,26 +490,27 @@ func TestSessionBindRunsOnSessionBind(t *testing.T) {
 			if table.err != nil {
 				assert.Equal(t, table.err, err)
 				assert.Empty(t, affectedVar)
-				assert.Empty(t, ss.uid)
+				assert.Empty(t, ss.UID())
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, uid, affectedVar)
-				assert.Equal(t, uid, ss.uid)
+				assert.Equal(t, uid, ss.UID())
 			}
 		})
 	}
 }
 
 func TestSessionBindFrontend(t *testing.T) {
-	ss := New(nil, true)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(nil, true)
 	assert.NotNil(t, ss)
 
 	uid := uuid.New().String()
 	err := ss.Bind(nil, uid)
 	assert.NoError(t, err)
-	assert.Equal(t, uid, ss.uid)
+	assert.Equal(t, uid, ss.UID())
 
-	val, ok := sessionsByUID.Load(uid)
+	val, ok := sessionPool.sessionsByUID.Load(uid)
 	assert.True(t, ok)
 	assert.Equal(t, val, ss)
 }
@@ -508,7 +529,8 @@ func TestSessionBindBackend(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockEntity := mocks.NewMockNetworkEntity(ctrl)
-			ss := New(mockEntity, false)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(mockEntity, false).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			uid := uuid.New().String()
@@ -531,7 +553,7 @@ func TestSessionBindBackend(t *testing.T) {
 				assert.Empty(t, ss.uid)
 			}
 
-			_, ok := sessionsByUID.Load(uid)
+			_, ok := sessionPool.sessionsByUID.Load(uid)
 			assert.False(t, ok)
 		})
 	}
@@ -540,7 +562,8 @@ func TestSessionBindBackend(t *testing.T) {
 func TestSessionOnCloseFailsIfBackend(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, false)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(nil, false)
 	assert.NotNil(t, ss)
 
 	err := ss.OnClose(nil)
@@ -550,16 +573,17 @@ func TestSessionOnCloseFailsIfBackend(t *testing.T) {
 func TestSessionOnClose(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(nil, true)
 	assert.NotNil(t, ss)
 
 	expected := false
 	f := func() { expected = true }
 	err := ss.OnClose(f)
 	assert.NoError(t, err)
-	assert.Len(t, ss.OnCloseCallbacks, 1)
+	assert.Len(t, ss.GetOnCloseCallbacks(), 1)
 
-	ss.OnCloseCallbacks[0]()
+	ss.GetOnCloseCallbacks()[0]()
 	assert.True(t, expected)
 }
 
@@ -577,22 +601,23 @@ func TestSessionClose(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockEntity := mocks.NewMockNetworkEntity(ctrl)
-			ss := New(mockEntity, true)
+			sessionPool := NewSessionPool().(*sessionPoolImpl)
+			ss := sessionPool.NewSession(mockEntity, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.uid != "" {
-				sessionsByUID.Store(table.uid, ss)
+				sessionPool.sessionsByUID.Store(table.uid, ss)
 				ss.uid = table.uid
 			}
 
 			mockEntity.EXPECT().Close()
 			ss.Close()
 
-			_, ok := sessionsByID.Load(ss.id)
+			_, ok := sessionPool.sessionsByID.Load(ss.id)
 			assert.False(t, ok)
 
 			if table.uid != "" {
-				_, ok = sessionsByUID.Load(table.uid)
+				_, ok = sessionPool.sessionsByUID.Load(table.uid)
 				assert.False(t, ok)
 			}
 		})
@@ -615,9 +640,10 @@ func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
-	ss := New(mockEntity, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(mockEntity, true)
 	assert.NotNil(t, ss)
-	ss.Subscriptions = []*nats.Subscription{subs}
+	ss.SetSubscriptions([]*nats.Subscription{subs})
 
 	mockEntity.EXPECT().Close()
 	ss.Close()
@@ -632,7 +658,8 @@ func TestSessionRemoteAddr(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockEntity := mocks.NewMockNetworkEntity(ctrl)
-	ss := New(mockEntity, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(mockEntity, true)
 	assert.NotNil(t, ss)
 
 	expectedAddr := &mockAddr{}
@@ -654,7 +681,8 @@ func TestSessionSet(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 			err := ss.Set("key", table.val)
 			if table.errStr == "" {
@@ -681,7 +709,8 @@ func TestSessionRemove(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -703,15 +732,16 @@ func TestSessionRemove(t *testing.T) {
 
 func TestOnSessionBind(t *testing.T) {
 	expected := false
-	f := func(context.Context, *Session) error {
+	f := func(context.Context, Session) error {
 		expected = true
 		return nil
 	}
-	OnSessionBind(f)
-	defer func() { sessionBindCallbacks = make([]func(ctx context.Context, s *Session) error, 0) }()
-	assert.NotNil(t, OnSessionBind)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	sessionPool.OnSessionBind(f)
+	defer func() { sessionPool.sessionBindCallbacks = make([]func(ctx context.Context, s Session) error, 0) }()
+	assert.NotNil(t, sessionPool.OnSessionBind)
 
-	sessionBindCallbacks[0](context.Background(), nil)
+	sessionPool.sessionBindCallbacks[0](context.Background(), nil)
 	assert.True(t, expected)
 }
 
@@ -728,7 +758,8 @@ func TestSessionHasKey(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -756,7 +787,8 @@ func TestSessionGet(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -786,7 +818,8 @@ func TestSessionInt(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -820,7 +853,8 @@ func TestSessionInt8(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -854,7 +888,8 @@ func TestSessionInt16(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -888,7 +923,8 @@ func TestSessionInt32(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -922,7 +958,8 @@ func TestSessionInt64(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -956,7 +993,8 @@ func TestSessionUint(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -990,7 +1028,8 @@ func TestSessionUint8(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1024,7 +1063,8 @@ func TestSessionUint16(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1058,7 +1098,8 @@ func TestSessionUint32(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1092,7 +1133,8 @@ func TestSessionUint64(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1126,7 +1168,8 @@ func TestSessionFloat32(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1160,7 +1203,8 @@ func TestSessionFloat64(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1194,7 +1238,8 @@ func TestSessionString(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1226,7 +1271,8 @@ func TestSessionValue(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, true)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 			assert.NotNil(t, ss)
 
 			if table.val != nil {
@@ -1244,7 +1290,8 @@ func TestSessionValue(t *testing.T) {
 func TestSessionPushToFrontFailsIfFrontend(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(nil, true)
 	assert.NotNil(t, ss)
 
 	err := ss.PushToFront(nil)
@@ -1267,7 +1314,8 @@ func TestSessionPushToFront(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			mockEntity := mocks.NewMockNetworkEntity(ctrl)
-			ss := New(mockEntity, false)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(mockEntity, false).(*sessionImpl)
 			assert.NotNil(t, ss)
 			ss.Set("key", "val")
 			uid := uuid.New().String()
@@ -1292,7 +1340,8 @@ func TestSessionPushToFront(t *testing.T) {
 func TestSessionClear(t *testing.T) {
 	t.Parallel()
 
-	ss := New(nil, true)
+	sessionPool := NewSessionPool()
+	ss := sessionPool.NewSession(nil, true).(*sessionImpl)
 	assert.NotNil(t, ss)
 
 	ss.uid = uuid.New().String()
@@ -1342,7 +1391,8 @@ func TestSessionGetHandshakeData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 
 			assert.Nil(t, ss.GetHandshakeData())
 
@@ -1387,7 +1437,8 @@ func TestSessionSetHandshakeData(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			ss := New(nil, false)
+			sessionPool := NewSessionPool()
+			ss := sessionPool.NewSession(nil, false).(*sessionImpl)
 			ss.SetHandshakeData(table.data)
 			assert.Equal(t, table.data, ss.handshakeData)
 		})

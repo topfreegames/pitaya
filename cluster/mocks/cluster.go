@@ -7,11 +7,11 @@ package mocks
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	cluster "github.com/topfreegames/pitaya/cluster"
-	message "github.com/topfreegames/pitaya/conn/message"
-	protos "github.com/topfreegames/pitaya/protos"
-	route "github.com/topfreegames/pitaya/route"
-	session "github.com/topfreegames/pitaya/session"
+	cluster "github.com/topfreegames/pitaya/v2/cluster"
+	message "github.com/topfreegames/pitaya/v2/conn/message"
+	protos "github.com/topfreegames/pitaya/v2/protos"
+	route "github.com/topfreegames/pitaya/v2/route"
+	session "github.com/topfreegames/pitaya/v2/session"
 	reflect "reflect"
 )
 
@@ -164,7 +164,7 @@ func (mr *MockRPCClientMockRecorder) BroadcastSessionBind(uid interface{}) *gomo
 }
 
 // Call mocks base method
-func (m *MockRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *cluster.Server) (*protos.Response, error) {
+func (m *MockRPCClient) Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session session.Session, msg *message.Message, server *cluster.Server) (*protos.Response, error) {
 	ret := m.ctrl.Call(m, "Call", ctx, rpcType, route, session, msg, server)
 	ret0, _ := ret[0].(*protos.Response)
 	ret1, _ := ret[1].(error)

@@ -23,14 +23,13 @@ package pitaya
 import (
 	"context"
 
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/protos"
 )
 
 // SendKickToUsers sends kick to an user array
-func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
+func (app *App) SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	if !app.server.Frontend && frontendType == "" {
 		return uids, constants.ErrFrontendTypeNotSpecified
 	}
@@ -38,7 +37,7 @@ func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	var notKickedUids []string
 
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil {
+		if s := app.sessionPool.GetSessionByUID(uid); s != nil {
 			if err := s.Kick(context.Background()); err != nil {
 				notKickedUids = append(notKickedUids, uid)
 				logger.Log.Errorf("Session kick error, ID=%d, UID=%d, ERROR=%s", s.ID(), s.UID(), err.Error())

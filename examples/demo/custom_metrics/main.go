@@ -3,26 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/custom_metrics/services"
-	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/examples/demo/custom_metrics/services"
 )
 
-func configureRoom(port int) {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.AddAcceptor(tcp)
-
-	pitaya.Register(&services.Room{},
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower),
-	)
-}
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -30,10 +20,6 @@ func main() {
 	isFrontend := true
 
 	flag.Parse()
-
-	defer pitaya.Shutdown()
-
-	pitaya.SetSerializer(json.NewSerializer())
 
 	config := viper.New()
 	config.AddConfigPath(".")
@@ -43,7 +29,18 @@ func main() {
 		panic(err)
 	}
 
-	pitaya.Configure(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
-	configureRoom(*port)
-	pitaya.Start()
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
+
+	builder := pitaya.NewBuilder(isFrontend, svType, pitaya.Cluster, map[string]string{}, config)
+	builder.AddAcceptor(tcp)
+	app = builder.Build()
+
+	defer app.Shutdown()
+
+	app.Register(services.NewRoom(app),
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
+
+	app.Start()
 }

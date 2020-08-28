@@ -27,18 +27,18 @@ import (
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/constants"
-	pcontext "github.com/topfreegames/pitaya/context"
-	pitErrors "github.com/topfreegames/pitaya/errors"
-	"github.com/topfreegames/pitaya/interfaces"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/metrics"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/tracing"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/conn/message"
+	"github.com/topfreegames/pitaya/v2/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/context"
+	pitErrors "github.com/topfreegames/pitaya/v2/errors"
+	"github.com/topfreegames/pitaya/v2/interfaces"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/protos"
+	"github.com/topfreegames/pitaya/v2/route"
+	"github.com/topfreegames/pitaya/v2/session"
+	"github.com/topfreegames/pitaya/v2/tracing"
 	"google.golang.org/grpc"
 )
 
@@ -97,7 +97,7 @@ func (gs *GRPCClient) Call(
 	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
+	session session.Session,
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
