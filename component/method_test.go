@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/protos/test"
+	"github.com/topfreegames/pitaya/v2/protos/test"
 )
 
 type TestType struct {

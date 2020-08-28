@@ -23,7 +23,7 @@ package message
 import (
 	"encoding/binary"
 
-	"github.com/topfreegames/pitaya/util/compression"
+	"github.com/topfreegames/pitaya/v2/util/compression"
 )
 
 // Encoder interface
@@ -60,7 +60,7 @@ func (me *MessagesEncoder) IsCompressionEnabled() bool {
 // | push     |----011-|<route>             |
 // ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
-// See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/topfreegames/pitaya/v2/blob/master/docs/communication_protocol.md
 func (me *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	if invalidType(message.Type) {
 		return nil, ErrWrongMessageType
@@ -127,7 +127,7 @@ func (me *MessagesEncoder) Decode(data []byte) (*Message, error) {
 }
 
 // Decode unmarshal the bytes slice to a message
-// See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/topfreegames/pitaya/v2/blob/master/docs/communication_protocol.md
 func Decode(data []byte) (*Message, error) {
 	if len(data) < msgHeadLength {
 		return nil, ErrInvalidMessage

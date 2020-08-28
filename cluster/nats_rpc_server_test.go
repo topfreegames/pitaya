@@ -32,13 +32,13 @@ import (
 	nats "github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
-	"github.com/topfreegames/pitaya/metrics"
-	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
-	"github.com/topfreegames/pitaya/protos"
-	protosmocks "github.com/topfreegames/pitaya/protos/mocks"
-	sessionmocks "github.com/topfreegames/pitaya/session/mocks"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	metricsmocks "github.com/topfreegames/pitaya/v2/metrics/mocks"
+	"github.com/topfreegames/pitaya/v2/protos"
+	protosmocks "github.com/topfreegames/pitaya/v2/protos/mocks"
+	sessionmocks "github.com/topfreegames/pitaya/v2/session/mocks"
 )
 
 type funcPtrMatcher struct {

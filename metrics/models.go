@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/topfreegames/pitaya/config"
+	"github.com/topfreegames/pitaya/v2/config"
 )
 
 // Summary defines a summary metric
