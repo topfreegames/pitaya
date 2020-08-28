@@ -27,6 +27,7 @@ import (
 	"os"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
@@ -65,9 +66,11 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 	defer func() {
 		if rec := recover(); rec != nil {
 			// Try to use logger from context here to help trace error cause
+			stackTrace := debug.Stack()
+			stackTraceAsRawStringLiteral := strconv.Quote(string(stackTrace))
 			log := getLoggerFromArgs(args)
-			log.Errorf("panic - pitaya/dispatch: %s: %v", method.Name, rec)
-			log.Debugf("%s", debug.Stack())
+			log.Errorf("panic - pitaya/dispatch: methodName=%s panicData=%v stackTrace=%s", method.Name, rec, stackTraceAsRawStringLiteral)
+
 			if s, ok := rec.(string); ok {
 				err = errors.New(s)
 			} else {

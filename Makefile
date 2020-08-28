@@ -1,7 +1,7 @@
 TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
 setup: init-submodules
-	@dep ensure
+	@go get ./...
 
 init-submodules:
 	@git submodule init
