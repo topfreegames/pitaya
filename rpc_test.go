@@ -27,19 +27,19 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/cluster"
-	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
-	"github.com/topfreegames/pitaya/conn/codec"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/pipeline"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/protos/test"
-	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/router"
-	serializemocks "github.com/topfreegames/pitaya/serialize/mocks"
-	"github.com/topfreegames/pitaya/service"
-	sessionmocks "github.com/topfreegames/pitaya/session/mocks"
+	"github.com/topfreegames/pitaya/v2/cluster"
+	clustermocks "github.com/topfreegames/pitaya/v2/cluster/mocks"
+	"github.com/topfreegames/pitaya/v2/conn/codec"
+	"github.com/topfreegames/pitaya/v2/conn/message"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/pipeline"
+	"github.com/topfreegames/pitaya/v2/protos"
+	"github.com/topfreegames/pitaya/v2/protos/test"
+	"github.com/topfreegames/pitaya/v2/route"
+	"github.com/topfreegames/pitaya/v2/router"
+	serializemocks "github.com/topfreegames/pitaya/v2/serialize/mocks"
+	"github.com/topfreegames/pitaya/v2/service"
+	sessionmocks "github.com/topfreegames/pitaya/v2/session/mocks"
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
@@ -81,7 +81,8 @@ func TestDoSendRPC(t *testing.T) {
 				messageEncoder := message.NewMessagesEncoder(false)
 				sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 				router := router.New()
-				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks())
+				handlerPool := service.NewHandlerPool()
+				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
 				assert.NotNil(t, svc)
 				app.remoteService = svc
 				app.server.ID = "notmyserver"

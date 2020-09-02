@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/acceptorwrapper"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/examples/demo/rate_limiting/services"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/acceptorwrapper"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/examples/demo/rate_limiting/services"
 )
 
 func createAcceptor(port int) acceptor.Acceptor {

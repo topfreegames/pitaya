@@ -9,9 +9,9 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/logger"
 )
 
 var (

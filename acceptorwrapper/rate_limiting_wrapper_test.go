@@ -26,8 +26,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/metrics"
-	"github.com/topfreegames/pitaya/mocks"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/mocks"
 )
 
 func TestNewRateLimitingWrapper(t *testing.T) {

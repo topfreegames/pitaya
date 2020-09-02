@@ -6,12 +6,12 @@ import (
 
 	"strings"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/examples/demo/cluster_protobuf/services"
+	"github.com/topfreegames/pitaya/v2/groups"
+	"github.com/topfreegames/pitaya/v2/serialize/protobuf"
 )
 
 func configureBackend() {

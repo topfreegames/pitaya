@@ -28,7 +28,7 @@ import (
 	"github.com/coreos/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/v2/constants"
 )
 
 var etcdGroupService *EtcdGroupService

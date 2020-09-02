@@ -2,23 +2,23 @@ package pitaya
 
 import (
 	"github.com/google/uuid"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/agent"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/conn/codec"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/defaultpipelines"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/metrics"
-	"github.com/topfreegames/pitaya/pipeline"
-	"github.com/topfreegames/pitaya/router"
-	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/serialize/json"
-	"github.com/topfreegames/pitaya/service"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/worker"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/agent"
+	"github.com/topfreegames/pitaya/v2/cluster"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/conn/codec"
+	"github.com/topfreegames/pitaya/v2/conn/message"
+	"github.com/topfreegames/pitaya/v2/defaultpipelines"
+	"github.com/topfreegames/pitaya/v2/groups"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/pipeline"
+	"github.com/topfreegames/pitaya/v2/router"
+	"github.com/topfreegames/pitaya/v2/serialize"
+	"github.com/topfreegames/pitaya/v2/serialize/json"
+	"github.com/topfreegames/pitaya/v2/service"
+	"github.com/topfreegames/pitaya/v2/session"
+	"github.com/topfreegames/pitaya/v2/worker"
 )
 
 // Builder holds dependency instances for a pitaya App
@@ -243,6 +243,7 @@ func (builder *Builder) AddAcceptor(ac acceptor.Acceptor) {
 
 // Build returns a valid App instance
 func (builder *Builder) Build() Pitaya {
+	handlerPool := service.NewHandlerPool()
 	var remoteService *service.RemoteService
 	if builder.ServerMode == Standalone {
 		if builder.ServiceDiscovery != nil || builder.RPCClient != nil || builder.RPCServer != nil {
@@ -266,6 +267,7 @@ func (builder *Builder) Build() Pitaya {
 			builder.Server,
 			builder.SessionPool,
 			builder.HandlerHooks,
+			handlerPool,
 		)
 
 		builder.RPCServer.SetPitayaServer(remoteService)
@@ -292,6 +294,7 @@ func (builder *Builder) Build() Pitaya {
 		agentFactory,
 		builder.MetricsReporters,
 		builder.HandlerHooks,
+		handlerPool,
 	)
 
 	return NewApp(

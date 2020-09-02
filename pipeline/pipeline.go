@@ -23,7 +23,7 @@ package pipeline
 import (
 	"context"
 
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/topfreegames/pitaya/v2/logger"
 )
 
 type (
