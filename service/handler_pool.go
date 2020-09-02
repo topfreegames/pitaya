@@ -9,7 +9,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
 	e "github.com/topfreegames/pitaya/v2/errors"
-	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/logger/interfaces"
 	"github.com/topfreegames/pitaya/v2/pipeline"
 	"github.com/topfreegames/pitaya/v2/route"
 	"github.com/topfreegames/pitaya/v2/serialize"
@@ -66,7 +66,7 @@ func (h *HandlerPool) ProcessHandlerMessage(
 		return nil, e.NewError(err, e.ErrInternalCode)
 	}
 
-	logger := ctx.Value(constants.LoggerCtxKey).(logger.Logger)
+	logger := ctx.Value(constants.LoggerCtxKey).(interfaces.Logger)
 	exit, err := handler.ValidateMessageType(msgType)
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)

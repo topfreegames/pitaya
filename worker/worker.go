@@ -29,6 +29,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/logger/interfaces"
 
 	workers "github.com/topfreegames/go-workers"
 )
@@ -65,7 +66,7 @@ func NewWorker(config *config.Config) (*Worker, error) {
 }
 
 // SetLogger overwrites worker logger
-func (w *Worker) SetLogger(logger logger.Logger) {
+func (w *Worker) SetLogger(logger interfaces.Logger) {
 	workers.Logger = logger
 }
 

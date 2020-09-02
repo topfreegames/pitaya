@@ -45,6 +45,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/groups"
 	"github.com/topfreegames/pitaya/v2/interfaces"
 	"github.com/topfreegames/pitaya/v2/logger"
+	logging "github.com/topfreegames/pitaya/v2/logger/interfaces"
 	"github.com/topfreegames/pitaya/v2/metrics"
 	mods "github.com/topfreegames/pitaya/v2/modules"
 	"github.com/topfreegames/pitaya/v2/remote"
@@ -259,7 +260,7 @@ func (app *App) GetServers() []*cluster.Server {
 }
 
 // SetLogger logger setter
-func SetLogger(l logger.Logger) {
+func SetLogger(l logging.Logger) {
 	logger.Log = l
 }
 
@@ -424,13 +425,13 @@ func (app *App) GetSessionFromCtx(ctx context.Context) session.Session {
 }
 
 // GetDefaultLoggerFromCtx returns the default logger from the given context
-func GetDefaultLoggerFromCtx(ctx context.Context) logger.Logger {
+func GetDefaultLoggerFromCtx(ctx context.Context) logging.Logger {
 	l := ctx.Value(constants.LoggerCtxKey)
 	if l == nil {
 		return logger.Log
 	}
 
-	return l.(logger.Logger)
+	return l.(logging.Logger)
 }
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will

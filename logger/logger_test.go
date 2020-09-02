@@ -23,8 +23,8 @@ package logger
 import (
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
 )
 
 func TestInitLogger(t *testing.T) {
@@ -33,7 +33,7 @@ func TestInitLogger(t *testing.T) {
 }
 
 func TestSetLogger(t *testing.T) {
-	l := logrus.New()
+	l := logruswrapper.New()
 	SetLogger(l)
 	assert.Equal(t, l, Log)
 }
