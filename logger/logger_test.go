@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	logruswrapper "github.com/topfreegames/pitaya/logger/logrus"
+	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
 )
 
 func TestInitLogger(t *testing.T) {

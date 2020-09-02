@@ -23,13 +23,8 @@ package pitaya
 import (
 	"fmt"
 
-	"github.com/topfreegames/pitaya/interfaces"
-	"github.com/topfreegames/pitaya/logger"
-)
-
-var (
-	modulesMap = make(map[string]interfaces.Module)
-	modulesArr = []moduleWrapper{}
+	"github.com/topfreegames/pitaya/v2/interfaces"
+	"github.com/topfreegames/pitaya/v2/logger"
 )
 
 type moduleWrapper struct {
@@ -38,18 +33,18 @@ type moduleWrapper struct {
 }
 
 // RegisterModule registers a module, by default it register after registered modules
-func RegisterModule(module interfaces.Module, name string) error {
-	return RegisterModuleAfter(module, name)
+func (app *App) RegisterModule(module interfaces.Module, name string) error {
+	return app.RegisterModuleAfter(module, name)
 }
 
 // RegisterModuleAfter registers a module after all registered modules
-func RegisterModuleAfter(module interfaces.Module, name string) error {
-	if err := alreadyRegistered(name); err != nil {
+func (app *App) RegisterModuleAfter(module interfaces.Module, name string) error {
+	if err := app.alreadyRegistered(name); err != nil {
 		return err
 	}
 
-	modulesMap[name] = module
-	modulesArr = append(modulesArr, moduleWrapper{
+	app.modulesMap[name] = module
+	app.modulesArr = append(app.modulesArr, moduleWrapper{
 		module: module,
 		name:   name,
 	})
@@ -58,32 +53,32 @@ func RegisterModuleAfter(module interfaces.Module, name string) error {
 }
 
 // RegisterModuleBefore registers a module before all registered modules
-func RegisterModuleBefore(module interfaces.Module, name string) error {
-	if err := alreadyRegistered(name); err != nil {
+func (app *App) RegisterModuleBefore(module interfaces.Module, name string) error {
+	if err := app.alreadyRegistered(name); err != nil {
 		return err
 	}
 
-	modulesMap[name] = module
-	modulesArr = append([]moduleWrapper{
+	app.modulesMap[name] = module
+	app.modulesArr = append([]moduleWrapper{
 		{
 			module: module,
 			name:   name,
 		},
-	}, modulesArr...)
+	}, app.modulesArr...)
 
 	return nil
 }
 
 // GetModule gets a module with a name
-func GetModule(name string) (interfaces.Module, error) {
-	if m, ok := modulesMap[name]; ok {
+func (app *App) GetModule(name string) (interfaces.Module, error) {
+	if m, ok := app.modulesMap[name]; ok {
 		return m, nil
 	}
 	return nil, fmt.Errorf("module with name %s not found", name)
 }
 
-func alreadyRegistered(name string) error {
-	if _, ok := modulesMap[name]; ok {
+func (app *App) alreadyRegistered(name string) error {
+	if _, ok := app.modulesMap[name]; ok {
 		return fmt.Errorf("module with name %s already exists", name)
 	}
 
@@ -91,30 +86,30 @@ func alreadyRegistered(name string) error {
 }
 
 // startModules starts all modules in order
-func startModules() {
+func (app *App) startModules() {
 	logger.Log.Debug("initializing all modules")
-	for _, modWrapper := range modulesArr {
+	for _, modWrapper := range app.modulesArr {
 		logger.Log.Debugf("initializing module: %s", modWrapper.name)
 		if err := modWrapper.module.Init(); err != nil {
 			logger.Log.Fatalf("error starting module %s, error: %s", modWrapper.name, err.Error())
 		}
 	}
 
-	for _, modWrapper := range modulesArr {
+	for _, modWrapper := range app.modulesArr {
 		modWrapper.module.AfterInit()
 		logger.Log.Infof("module: %s successfully loaded", modWrapper.name)
 	}
 }
 
 // shutdownModules starts all modules in reverse order
-func shutdownModules() {
-	for i := len(modulesArr) - 1; i >= 0; i-- {
-		modulesArr[i].module.BeforeShutdown()
+func (app *App) shutdownModules() {
+	for i := len(app.modulesArr) - 1; i >= 0; i-- {
+		app.modulesArr[i].module.BeforeShutdown()
 	}
 
-	for i := len(modulesArr) - 1; i >= 0; i-- {
-		name := modulesArr[i].name
-		mod := modulesArr[i].module
+	for i := len(app.modulesArr) - 1; i >= 0; i-- {
+		name := app.modulesArr[i].name
+		mod := app.modulesArr[i].module
 
 		logger.Log.Debugf("stopping module: %s", name)
 		if err := mod.Shutdown(); err != nil {

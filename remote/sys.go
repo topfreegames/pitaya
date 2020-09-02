@@ -23,20 +23,26 @@ package remote
 import (
 	"context"
 
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/protos"
+	"github.com/topfreegames/pitaya/v2/session"
 )
 
 // Sys contains logic for handling sys remotes
 type Sys struct {
 	component.Base
+	sessionPool session.SessionPool
+}
+
+// NewSys returns a new Sys instance
+func NewSys(sessionPool session.SessionPool) *Sys {
+	return &Sys{sessionPool: sessionPool}
 }
 
 // BindSession binds the local session
 func (s *Sys) BindSession(ctx context.Context, sessionData *protos.Session) (*protos.Response, error) {
-	sess := session.GetSessionByID(sessionData.Id)
+	sess := s.sessionPool.GetSessionByID(sessionData.Id)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound
 	}
@@ -48,7 +54,7 @@ func (s *Sys) BindSession(ctx context.Context, sessionData *protos.Session) (*pr
 
 // PushSession updates the local session
 func (s *Sys) PushSession(ctx context.Context, sessionData *protos.Session) (*protos.Response, error) {
-	sess := session.GetSessionByID(sessionData.Id)
+	sess := s.sessionPool.GetSessionByID(sessionData.Id)
 	if sess == nil {
 		return nil, constants.ErrSessionNotFound
 	}
@@ -63,7 +69,7 @@ func (s *Sys) Kick(ctx context.Context, msg *protos.KickMsg) (*protos.KickAnswer
 	res := &protos.KickAnswer{
 		Kicked: false,
 	}
-	sess := session.GetSessionByUID(msg.GetUserId())
+	sess := s.sessionPool.GetSessionByUID(msg.GetUserId())
 	if sess == nil {
 		return res, constants.ErrSessionNotFound
 	}

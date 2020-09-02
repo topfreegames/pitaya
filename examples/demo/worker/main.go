@@ -7,37 +7,17 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/worker/services"
-	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/examples/demo/worker/services"
 )
 
-func configureMetagame() {
-	pitaya.RegisterRemote(&services.Metagame{},
-		component.WithName("metagame"),
-		component.WithNameFunc(strings.ToLower),
-	)
-}
+var app pitaya.Pitaya
 
-func configureRoom(port int) error {
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.AddAcceptor(tcp)
-
-	pitaya.Register(&services.Room{},
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower),
-	)
-
-	err := pitaya.StartWorker(pitaya.GetConfig())
-	return err
-}
-
-func configureWorker() error {
+func configureWorker() {
 	worker := services.Worker{}
-	err := worker.Configure()
-	return err
+	worker.Configure(app)
 }
 
 func main() {
@@ -47,29 +27,36 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
-
-	pitaya.SetSerializer(json.NewSerializer())
-
 	config := viper.New()
 	config.SetDefault("pitaya.worker.redis.url", "localhost:6379")
 	config.SetDefault("pitaya.worker.redis.pool", "3")
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
-	var err error
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	if *isFrontend {
+		builder.AddAcceptor(tcp)
+	}
+	app = builder.Build()
+
+	defer app.Shutdown()
+
+	defer app.Shutdown()
+
 	switch *svType {
 	case "metagame":
-		configureMetagame()
+		app.RegisterRemote(&services.Metagame{},
+			component.WithName("metagame"),
+			component.WithNameFunc(strings.ToLower),
+		)
 	case "room":
-		err = configureRoom(*port)
+		app.Register(services.NewRoom(app),
+			component.WithName("room"),
+			component.WithNameFunc(strings.ToLower),
+		)
 	case "worker":
-		err = configureWorker()
+		configureWorker()
 	}
 
-	if err != nil {
-		panic(err)
-	}
-
-	pitaya.Start()
+	app.Start()
 }

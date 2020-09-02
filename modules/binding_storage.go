@@ -27,11 +27,11 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/topfreegames/pitaya/v2/cluster"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/session"
 )
 
 // ETCDBindingStorage module that uses etcd to keep in which frontend server each user is bound
@@ -45,15 +45,17 @@ type ETCDBindingStorage struct {
 	leaseTTL        time.Duration
 	leaseID         clientv3.LeaseID
 	thisServer      *cluster.Server
+	sessionPool     session.SessionPool
 	stopChan        chan struct{}
 }
 
 // NewETCDBindingStorage returns a new instance of BindingStorage
-func NewETCDBindingStorage(server *cluster.Server, conf *config.Config) *ETCDBindingStorage {
+func NewETCDBindingStorage(server *cluster.Server, sessionPool session.SessionPool, conf *config.Config) *ETCDBindingStorage {
 	b := &ETCDBindingStorage{
-		config:     conf,
-		thisServer: server,
-		stopChan:   make(chan struct{}),
+		config:      conf,
+		thisServer:  server,
+		sessionPool: sessionPool,
+		stopChan:    make(chan struct{}),
 	}
 	b.configure()
 	return b
@@ -96,7 +98,7 @@ func (b *ETCDBindingStorage) GetUserFrontendID(uid, frontendType string) (string
 }
 
 func (b *ETCDBindingStorage) setupOnSessionCloseCB() {
-	session.OnSessionClose(func(s *session.Session) {
+	b.sessionPool.OnSessionClose(func(s session.Session) {
 		if s.UID() != "" {
 			err := b.removeBinding(s.UID())
 			if err != nil {
@@ -107,7 +109,7 @@ func (b *ETCDBindingStorage) setupOnSessionCloseCB() {
 }
 
 func (b *ETCDBindingStorage) setupOnAfterSessionBindCB() {
-	session.OnAfterSessionBind(func(ctx context.Context, s *session.Session) error {
+	b.sessionPool.OnAfterSessionBind(func(ctx context.Context, s session.Session) error {
 		return b.PutBinding(s.UID())
 	})
 }

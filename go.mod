@@ -1,4 +1,4 @@
-module github.com/topfreegames/pitaya
+module github.com/topfreegames/pitaya/v2
 
 go 1.12
 
@@ -23,7 +23,7 @@ require (
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20180203143532-66deaeb636df // indirect
-	github.com/golang/mock v1.3.1
+	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.3.1
 	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a // indirect
 	github.com/google/uuid v1.0.0

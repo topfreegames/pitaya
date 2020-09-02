@@ -7,12 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/examples/demo/protos"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/timer"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
+	"github.com/topfreegames/pitaya/v2/timer"
 )
 
 type (
@@ -21,6 +19,7 @@ type (
 	Room struct {
 		component.Base
 		timer *timer.Timer
+		app   pitaya.Pitaya
 		Stats *Stats
 	}
 
@@ -73,17 +72,16 @@ func (Stats *Stats) Inbound(ctx context.Context, in []byte) ([]byte, error) {
 }
 
 // NewRoom returns a new room
-func NewRoom() *Room {
+func NewRoom(app pitaya.Pitaya) *Room {
 	return &Room{
+		app:   app,
 		Stats: &Stats{},
 	}
 }
 
 // Init runs on service initialization
 func (r *Room) Init() {
-	gsi := groups.NewMemoryGroupService(config.NewConfig())
-	pitaya.InitGroups(gsi)
-	pitaya.GroupCreate(context.Background(), "room")
+	r.app.GroupCreate(context.Background(), "room")
 	// It is necessary to register all structs that will be used in RPC calls
 	// This must be done both in the caller and callee servers
 	gob.Register(&UserMessage{})
@@ -92,7 +90,7 @@ func (r *Room) Init() {
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		count, err := r.app.GroupCountMembers(context.Background(), "room")
 		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "Error=>", err)
 		println("OutboundBytes", r.Stats.outboundBytes)
 		println("InboundBytes", r.Stats.outboundBytes)
@@ -101,7 +99,7 @@ func (r *Room) AfterInit() {
 
 // Entry is the entrypoint
 func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := s.Bind(ctx, strconv.Itoa(int(s.ID())))
 	if err != nil {
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
@@ -111,7 +109,7 @@ func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
 
 // GetSessionData gets the session data
 func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	return &SessionData{
 		Data: s.GetData(),
 	}, nil
@@ -119,7 +117,7 @@ func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
 
 // SetSessionData sets the session data
 func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		return nil, err
@@ -133,19 +131,19 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 
 // Join room
 func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
-	err := pitaya.GroupAddMember(ctx, "room", s.UID())
+	s := r.app.GetSessionFromCtx(ctx)
+	err := r.app.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		return nil, err
 	}
-	members, err := pitaya.GroupMembers(ctx, "room")
+	members, err := r.app.GroupMembers(ctx, "room")
 	if err != nil {
 		return nil, err
 	}
 	s.Push("onMembers", &AllMembers{Members: members})
-	pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	r.app.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	err = s.OnClose(func() {
-		pitaya.GroupRemoveMember(ctx, "room", s.UID())
+		r.app.GroupRemoveMember(ctx, "room", s.UID())
 	})
 	if err != nil {
 		return nil, err
@@ -155,7 +153,7 @@ func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 
 // Message sync last message to all members
 func (r *Room) Message(ctx context.Context, msg *UserMessage) {
-	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
+	err := r.app.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
 	}
@@ -164,7 +162,7 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 // SendRPC sends rpc
 func (r *Room) SendRPC(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
 	ret := &protos.RPCRes{}
-	err := pitaya.RPC(ctx, "connector.connectorremote.remotefunc", ret, msg)
+	err := r.app.RPC(ctx, "connector.connectorremote.remotefunc", ret, msg)
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
 	}

@@ -29,8 +29,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
-	metricsmocks "github.com/topfreegames/pitaya/metrics/mocks"
+	"github.com/topfreegames/pitaya/v2/config"
+	metricsmocks "github.com/topfreegames/pitaya/v2/metrics/mocks"
 )
 
 func TestNewStatsdReporter(t *testing.T) {

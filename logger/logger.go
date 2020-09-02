@@ -22,8 +22,8 @@ package logger
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/logger/interfaces"
-	logruswrapper "github.com/topfreegames/pitaya/logger/logrus"
+	"github.com/topfreegames/pitaya/v2/logger/interfaces"
+	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
 )
 
 // Log is the default logger

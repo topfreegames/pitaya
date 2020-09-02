@@ -6,39 +6,40 @@ import (
 
 	"strings"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/services"
-	"github.com/topfreegames/pitaya/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v2"
+	"github.com/topfreegames/pitaya/v2/acceptor"
+	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/examples/demo/cluster_protobuf/services"
+	"github.com/topfreegames/pitaya/v2/groups"
+	"github.com/topfreegames/pitaya/v2/serialize/protobuf"
 )
 
 func configureBackend() {
-	room := services.NewRoom()
-	pitaya.Register(room,
+	room := services.NewRoom(app)
+	app.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 
-	pitaya.RegisterRemote(room,
+	app.RegisterRemote(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
 }
 
 func configureFrontend(port int) {
-	ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
-	pitaya.Register(&services.Connector{},
+	app.Register(&services.Connector{},
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
-	pitaya.RegisterRemote(&services.ConnectorRemote{},
+	app.RegisterRemote(&services.ConnectorRemote{},
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
 	)
-
-	pitaya.AddAcceptor(ws)
 }
+
+var app pitaya.Pitaya
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -47,11 +48,16 @@ func main() {
 
 	flag.Parse()
 
-	defer pitaya.Shutdown()
+	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	if *isFrontend {
+		ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", port))
+		builder.AddAcceptor(ws)
+	}
+	builder.Serializer = protobuf.NewSerializer()
+	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
+	app := builder.Build()
 
-	ser := protobuf.NewSerializer()
-
-	pitaya.SetSerializer(ser)
+	defer app.Shutdown()
 
 	if !*isFrontend {
 		configureBackend()
@@ -59,6 +65,5 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
-	pitaya.Start()
+	app.Start()
 }
