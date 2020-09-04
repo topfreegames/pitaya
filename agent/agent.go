@@ -215,10 +215,10 @@ func (a *Agent) Push(route string, v interface{}) error {
 
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
+		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
 			a.Session.ID(), a.Session.UID(), route, len(d))
 	default:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
 			a.Session.ID(), a.Session.UID(), route, v)
 	}
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
@@ -241,10 +241,10 @@ func (a *Agent) ResponseMID(ctx context.Context, mid uint, v interface{}, isErro
 
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
+		logger.Log.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
 			a.Session.ID(), a.Session.UID(), mid, len(d))
 	default:
-		logger.Log.Infof("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
+		logger.Log.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
 			a.Session.ID(), a.Session.UID(), mid, v)
 	}
 
@@ -321,7 +321,7 @@ func (a *Agent) SetStatus(state int32) {
 func (a *Agent) Handle() {
 	defer func() {
 		a.Close()
-		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 	}()
 
 	go a.write()

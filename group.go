@@ -74,7 +74,7 @@ func GroupBroadcast(ctx context.Context, frontendType, groupName, route string, 
 func sendDataToMembers(uids []string, frontendType, route string, v interface{}) error {
 	errUids, err := SendPushToUsers(route, v, uids, frontendType)
 	if err != nil {
-		logger.Log.Errorf("Group push message error, UID=%d, Error=%s", errUids, err.Error())
+		logger.Log.Errorf("Group push message error, UID=%v, Error=%s", errUids, err.Error())
 		return err
 	}
 	return nil
@@ -93,13 +93,13 @@ func GroupAddMember(ctx context.Context, groupName, uid string) error {
 	if uid == "" {
 		return constants.ErrEmptyUID
 	}
-	logger.Log.Debugf("Add user to group %s, UID=%d", groupName, uid)
+	logger.Log.Debugf("Add user to group %s, UID=%s", groupName, uid)
 	return groupServiceInstance.GroupAddMember(ctx, groupName, uid)
 }
 
 // GroupRemoveMember removes specified UID from group
 func GroupRemoveMember(ctx context.Context, groupName, uid string) error {
-	logger.Log.Debugf("Remove user from group %s, UID=%d", groupName, uid)
+	logger.Log.Debugf("Remove user from group %s, UID=%s", groupName, uid)
 	return groupServiceInstance.GroupRemoveMember(ctx, groupName, uid)
 }
 
