@@ -176,7 +176,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// guarantee agent related resource is destroyed
 	defer func() {
 		a.Session.Close()
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 	}()
 
 	for {
