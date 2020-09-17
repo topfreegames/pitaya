@@ -392,9 +392,9 @@ func TestGetServerHost(t *testing.T) {
 
 	for name, table := range tables {
 		t.Run(name, func(t *testing.T) {
-			config := config.NewDefaultConfigInfoRetrieverConfig()
+			config := config.NewDefaultInfoRetrieverConfig()
 			config.Region = table.clientRegion
-			infoRetriever := NewConfigInfoRetriever(config)
+			infoRetriever := NewInfoRetriever(config)
 			gs := &GRPCClient{infoRetriever: infoRetriever}
 
 			host, portKey := gs.getServerHost(&Server{

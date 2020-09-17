@@ -64,7 +64,7 @@ func (c *Config) fillDefaultValues() {
 	groupServiceConfig := NewDefaultMemoryGroupConfig()
 	etcdGroupServiceConfig := NewDefaultEtcdGroupServiceConfig()
 	rateLimitingConfig := NewDefaultRateLimitingConfig()
-	configInfoRetrieverConfig := NewDefaultConfigInfoRetrieverConfig()
+	infoRetrieverConfig := NewDefaultInfoRetrieverConfig()
 	etcdBindingConfig := NewDefaultETCDBindingConfig()
 
 	defaultsMap := map[string]interface{}{
@@ -74,7 +74,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.buffer.cluster.rpc.server.nats.push":            natsRPCServerConfig.Push,
 		"pitaya.buffer.handler.localprocess":                    pitayaConfig.BufferHandlerLocalProcess,
 		"pitaya.buffer.handler.remoteprocess":                   pitayaConfig.BufferHandlerRemoteProcess,
-		"pitaya.cluster.info.region":                            configInfoRetrieverConfig.Region,
+		"pitaya.cluster.info.region":                            infoRetrieverConfig.Region,
 		"pitaya.cluster.rpc.client.grpc.dialtimeout":            grpcRPCClientConfig.DialTimeout,
 		"pitaya.cluster.rpc.client.grpc.requesttimeout":         grpcRPCClientConfig.RequestTimeout,
 		"pitaya.cluster.rpc.client.grpc.lazyconnection":         grpcRPCClientConfig.LazyConnection,

@@ -120,7 +120,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 		builder.Server,
 		builder.MetricsReporters,
 		bs,
-		cluster.NewConfigInfoRetriever(config.NewDefaultConfigInfoRetrieverConfig()),
+		cluster.NewInfoRetriever(config.NewDefaultInfoRetrieverConfig()),
 	)
 	if err != nil {
 		panic(err)

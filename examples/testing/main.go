@@ -331,7 +331,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 			builder.Server,
 			builder.MetricsReporters,
 			bs,
-			cluster.NewConfigInfoRetriever(config.NewConfigInfoRetrieverConfig(conf)),
+			cluster.NewInfoRetriever(config.NewInfoRetrieverConfig(conf)),
 		)
 		if err != nil {
 			panic(err)

@@ -181,21 +181,21 @@ func NewNatsRPCServerConfig(config *Config) NatsRPCServerConfig {
 	}
 }
 
-// ConfigInfoRetrieverConfig provides ConfigInfoRetriever configuration
-type ConfigInfoRetrieverConfig struct {
+// InfoRetrieverConfig provides InfoRetriever configuration
+type InfoRetrieverConfig struct {
 	Region string
 }
 
-// NewDefaultConfigInfoRetrieverConfig provides default configuration for ConfigInfoRetriever
-func NewDefaultConfigInfoRetrieverConfig() ConfigInfoRetrieverConfig {
-	return ConfigInfoRetrieverConfig{
+// NewDefaultInfoRetrieverConfig provides default configuration for InfoRetriever
+func NewDefaultInfoRetrieverConfig() InfoRetrieverConfig {
+	return InfoRetrieverConfig{
 		Region: "",
 	}
 }
 
-// NewConfigInfoRetrieverConfig reads from config to build configuration for ConfigInfoRetriever
-func NewConfigInfoRetrieverConfig(c *Config) ConfigInfoRetrieverConfig {
-	return ConfigInfoRetrieverConfig{
+// NewInfoRetrieverConfig reads from config to build configuration for InfoRetriever
+func NewInfoRetrieverConfig(c *Config) InfoRetrieverConfig {
+	return InfoRetrieverConfig{
 		Region: c.GetString("pitaya.cluster.info.region"),
 	}
 }
