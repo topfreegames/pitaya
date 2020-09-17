@@ -38,6 +38,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/examples/testing/protos"
 	"github.com/topfreegames/pitaya/v2/groups"
+	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
 	"github.com/topfreegames/pitaya/v2/modules"
 	"github.com/topfreegames/pitaya/v2/protos/test"
 	"github.com/topfreegames/pitaya/v2/serialize/json"
@@ -268,7 +269,7 @@ func main() {
 		l.SetLevel(logrus.DebugLevel)
 	}
 
-	pitaya.SetLogger(l)
+	pitaya.SetLogger(logruswrapper.NewWithLogger(l))
 
 	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
 		constants.GRPCHostKey: "127.0.0.1",
