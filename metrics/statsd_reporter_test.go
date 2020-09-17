@@ -29,6 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/v2/config"
 	metricsmocks "github.com/topfreegames/pitaya/v2/metrics/mocks"
 )
 
@@ -37,7 +38,7 @@ func TestNewStatsdReporter(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := NewDefaultStatsdConfig()
+	cfg := config.NewDefaultStatsdConfig()
 	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClient, sr.client)
@@ -50,7 +51,7 @@ func TestReportLatency(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := NewDefaultStatsdConfig()
+	cfg := config.NewDefaultStatsdConfig()
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
@@ -85,7 +86,7 @@ func TestReportLatencyError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := NewDefaultStatsdConfig()
+	cfg := config.NewDefaultStatsdConfig()
 	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
@@ -101,7 +102,7 @@ func TestReportCount(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := NewDefaultStatsdConfig()
+	cfg := config.NewDefaultStatsdConfig()
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
@@ -131,7 +132,7 @@ func TestReportCountError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := NewDefaultStatsdConfig()
+	cfg := config.NewDefaultStatsdConfig()
 	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 

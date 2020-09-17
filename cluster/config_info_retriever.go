@@ -8,27 +8,8 @@ type ConfigInfoRetriever struct {
 	region string
 }
 
-// ConfigInfoRetrieverConfig provides ConfigInfoRetriever configuration
-type ConfigInfoRetrieverConfig struct {
-	Region string
-}
-
-// NewDefaultConfigInfoRetrieverConfig provides default configuration for ConfigInfoRetriever
-func NewDefaultConfigInfoRetrieverConfig() ConfigInfoRetrieverConfig {
-	return ConfigInfoRetrieverConfig{
-		Region: "",
-	}
-}
-
-// NewConfigInfoRetrieverConfig reads from config to build configuration for ConfigInfoRetriever
-func NewConfigInfoRetrieverConfig(c *config.Config) ConfigInfoRetrieverConfig {
-	return ConfigInfoRetrieverConfig{
-		Region: c.GetString("pitaya.cluster.info.region"),
-	}
-}
-
 // NewConfigInfoRetriever returns a *ConfigInfoRetriever
-func NewConfigInfoRetriever(config ConfigInfoRetrieverConfig) *ConfigInfoRetriever {
+func NewConfigInfoRetriever(config config.ConfigInfoRetrieverConfig) *ConfigInfoRetriever {
 	return &ConfigInfoRetriever{
 		region: config.Region,
 	}

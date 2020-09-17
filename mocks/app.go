@@ -10,6 +10,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	cluster "github.com/topfreegames/pitaya/v2/cluster"
 	component "github.com/topfreegames/pitaya/v2/component"
+	config "github.com/topfreegames/pitaya/v2/config"
 	interfaces "github.com/topfreegames/pitaya/v2/interfaces"
 	metrics "github.com/topfreegames/pitaya/v2/metrics"
 	router "github.com/topfreegames/pitaya/v2/router"
@@ -491,7 +492,7 @@ func (mr *MockPitayaMockRecorder) ReliableRPC(arg0, arg1, arg2, arg3 interface{}
 }
 
 // ReliableRPCWithOptions mocks base method
-func (m *MockPitaya) ReliableRPCWithOptions(arg0 string, arg1 map[string]interface{}, arg2, arg3 proto.Message, arg4 *worker.EnqueueOpts) (string, error) {
+func (m *MockPitaya) ReliableRPCWithOptions(arg0 string, arg1 map[string]interface{}, arg2, arg3 proto.Message, arg4 *config.EnqueueOpts) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReliableRPCWithOptions", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(string)

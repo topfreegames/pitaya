@@ -13,6 +13,7 @@ import (
 	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/groups"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/timer"
@@ -107,7 +108,7 @@ func main() {
 	conf := configApp()
 	builder := pitaya.NewDefaultBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
 	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
-	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()
@@ -133,8 +134,8 @@ func main() {
 	app.Start()
 }
 
-func configApp() pitaya.BuilderConfig {
-	conf := pitaya.NewDefaultBuilderConfig()
+func configApp() config.BuilderConfig {
+	conf := config.NewDefaultBuilderConfig()
 	conf.PitayaConfig.BufferHandlerLocalProcess = 15
 	conf.PitayaConfig.HearbeatInterval = time.Duration(15 * time.Second)
 	conf.PitayaConfig.BufferAgentMessages = 32

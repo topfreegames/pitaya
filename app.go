@@ -99,7 +99,7 @@ type Pitaya interface {
 		routeStr string,
 		metadata map[string]interface{},
 		reply, arg proto.Message,
-		opts *worker.EnqueueOpts,
+		opts *config.EnqueueOpts,
 	) (jid string, err error)
 
 	SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error)
@@ -126,22 +126,10 @@ type Pitaya interface {
 	GetModule(name string) (interfaces.Module, error)
 }
 
-// PitayaConfig provides configuration for a pitaya app
-type PitayaConfig struct {
-	HearbeatInterval           time.Duration
-	MessageCompression         bool
-	BufferAgentMessages        int
-	BufferHandlerLocalProcess  int
-	BufferHandlerRemoteProcess int
-	ConcurrencyHandlerDispatch int
-	SessionUnique              bool
-	MetricsPeriod              time.Duration
-}
-
 // App is the base app struct
 type App struct {
 	acceptors        []acceptor.Acceptor
-	config           PitayaConfig
+	config           config.PitayaConfig
 	debug            bool
 	dieChan          chan bool
 	heartbeat        time.Duration
@@ -167,34 +155,6 @@ type App struct {
 	sessionPool      session.SessionPool
 }
 
-// NewDefaultPitayaConfig provides default configuration for Pitaya App
-func NewDefaultPitayaConfig() PitayaConfig {
-	return PitayaConfig{
-		HearbeatInterval:           time.Duration(30 * time.Second),
-		MessageCompression:         true,
-		BufferAgentMessages:        100,
-		BufferHandlerLocalProcess:  20,
-		BufferHandlerRemoteProcess: 20,
-		ConcurrencyHandlerDispatch: 25,
-		SessionUnique:              true,
-		MetricsPeriod:              time.Duration(15 * time.Second),
-	}
-}
-
-// NewPitayaConfig returns a config instance with values extracted from default config paths
-func NewPitayaConfig(config *config.Config) PitayaConfig {
-	return PitayaConfig{
-		HearbeatInterval:           config.GetDuration("pitaya.heartbeat.interval"),
-		MessageCompression:         config.GetBool("pitaya.handler.messages.compression"),
-		BufferAgentMessages:        config.GetInt("pitaya.buffer.agent.messages"),
-		BufferHandlerLocalProcess:  config.GetInt("pitaya.buffer.handler.localprocess"),
-		BufferHandlerRemoteProcess: config.GetInt("pitaya.buffer.handler.remoteprocess"),
-		ConcurrencyHandlerDispatch: config.GetInt("pitaya.concurrency.handler.dispatch"),
-		SessionUnique:              config.GetBool("pitaya.session.unique"),
-		MetricsPeriod:              config.GetDuration("pitaya.metrics.periodicMetrics.period"),
-	}
-}
-
 // NewApp is the base constructor for a pitaya app instance
 func NewApp(
 	serverMode ServerMode,
@@ -212,7 +172,7 @@ func NewApp(
 	groups groups.GroupService,
 	sessionPool session.SessionPool,
 	metricsReporters []metrics.Reporter,
-	config PitayaConfig,
+	config config.PitayaConfig,
 ) *App {
 	app := &App{
 		server:           server,

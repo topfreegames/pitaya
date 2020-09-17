@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/helpers"
@@ -20,20 +21,20 @@ import (
 	"google.golang.org/grpc"
 )
 
-func getRPCClient(c GRPCClientConfig) (*GRPCClient, error) {
+func getRPCClient(c config.GRPCClientConfig) (*GRPCClient, error) {
 	sv := getServer()
 	return NewGRPCClient(c, sv, []metrics.Reporter{}, nil, nil)
 }
 
 func TestNewGRPCClient(t *testing.T) {
-	c := NewDefaultGRPCClientConfig()
+	c := config.NewDefaultGRPCClientConfig()
 	g, err := getRPCClient(c)
 	assert.NoError(t, err)
 	assert.NotNil(t, g)
 }
 
 func TestCall(t *testing.T) {
-	c := NewDefaultGRPCClientConfig()
+	c := config.NewDefaultGRPCClientConfig()
 	g, err := getRPCClient(c)
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
@@ -94,7 +95,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c := NewDefaultGRPCClientConfig()
+			c := config.NewDefaultGRPCClientConfig()
 			g, err := getRPCClient(c)
 			assert.NoError(t, err)
 			uid := "someuid"
@@ -154,7 +155,7 @@ func TestSendKick(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c := NewDefaultGRPCClientConfig()
+			c := config.NewDefaultGRPCClientConfig()
 			g, err := getRPCClient(c)
 			assert.NoError(t, err)
 
@@ -214,7 +215,7 @@ func TestSendPush(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g, err := getRPCClient(NewDefaultGRPCClientConfig())
+			g, err := getRPCClient(config.NewDefaultGRPCClientConfig())
 			assert.NoError(t, err)
 			uid := "someuid"
 
@@ -261,9 +262,9 @@ func TestSendPush(t *testing.T) {
 func TestAddServer(t *testing.T) {
 	t.Run("try-connect", func(t *testing.T) {
 		// listen
-		clientConfig := NewDefaultGRPCClientConfig()
+		clientConfig := config.NewDefaultGRPCClientConfig()
 
-		serverConfig := NewDefaultGRPCServerConfig()
+		serverConfig := config.NewDefaultGRPCServerConfig()
 		serverConfig.Port = helpers.GetFreePort(t)
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -300,10 +301,10 @@ func TestAddServer(t *testing.T) {
 
 	t.Run("lazy", func(t *testing.T) {
 		// listen
-		clientConfig := NewDefaultGRPCClientConfig()
+		clientConfig := config.NewDefaultGRPCClientConfig()
 		clientConfig.LazyConnection = true
 
-		serverConfig := NewDefaultGRPCServerConfig()
+		serverConfig := config.NewDefaultGRPCServerConfig()
 		serverConfig.Port = helpers.GetFreePort(t)
 
 		ctrl := gomock.NewController(t)
@@ -391,7 +392,7 @@ func TestGetServerHost(t *testing.T) {
 
 	for name, table := range tables {
 		t.Run(name, func(t *testing.T) {
-			config := NewDefaultConfigInfoRetrieverConfig()
+			config := config.NewDefaultConfigInfoRetrieverConfig()
 			config.Region = table.clientRegion
 			infoRetriever := NewConfigInfoRetriever(config)
 			gs := &GRPCClient{infoRetriever: infoRetriever}
@@ -410,9 +411,9 @@ func TestRemoveServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	clientConfig := NewDefaultGRPCClientConfig()
+	clientConfig := config.NewDefaultGRPCClientConfig()
 
-	serverConfig := NewDefaultGRPCServerConfig()
+	serverConfig := config.NewDefaultGRPCServerConfig()
 	serverConfig.Port = helpers.GetFreePort(t)
 
 	server := &Server{

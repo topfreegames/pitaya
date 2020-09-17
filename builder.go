@@ -12,6 +12,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/groups"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/metrics/models"
 	"github.com/topfreegames/pitaya/v2/pipeline"
 	"github.com/topfreegames/pitaya/v2/router"
 	"github.com/topfreegames/pitaya/v2/serialize"
@@ -24,7 +25,7 @@ import (
 // Builder holds dependency instances for a pitaya App
 type Builder struct {
 	acceptors        []acceptor.Acceptor
-	Config           BuilderConfig
+	Config           config.BuilderConfig
 	DieChan          chan bool
 	PacketDecoder    codec.PacketDecoder
 	PacketEncoder    codec.PacketEncoder
@@ -48,34 +49,6 @@ type PitayaBuilder interface {
 	Build() Pitaya
 }
 
-// BuilderConfig provides configuration for Builder
-type BuilderConfig struct {
-	PitayaConfig             PitayaConfig
-	IsPrometheusEnabled      bool
-	IsStatsdEnabled          bool
-	IsDefaultPipelineEnabled bool
-}
-
-// NewDefaultBuilderConfig provides default builder configuration
-func NewDefaultBuilderConfig() BuilderConfig {
-	return BuilderConfig{
-		PitayaConfig:             NewDefaultPitayaConfig(),
-		IsPrometheusEnabled:      false,
-		IsStatsdEnabled:          false,
-		IsDefaultPipelineEnabled: false,
-	}
-}
-
-// NewBuilderConfig reads from config to build builder configuration
-func NewBuilderConfig(config *config.Config) BuilderConfig {
-	return BuilderConfig{
-		PitayaConfig:             NewPitayaConfig(config),
-		IsPrometheusEnabled:      config.GetBool("pitaya.metrics.prometheus.enabled"),
-		IsStatsdEnabled:          config.GetBool("pitaya.metrics.statsd.enabled"),
-		IsDefaultPipelineEnabled: config.GetBool("pitaya.defaultpipelines.structvalidation.enabled"),
-	}
-}
-
 // NewBuilderWithConfigs return a builder instance with default dependency instances for a pitaya App
 // with configs defined by a config file (config.Config) and default paths (see documentation).
 func NewBuilderWithConfigs(
@@ -85,22 +58,22 @@ func NewBuilderWithConfigs(
 	serverMetadata map[string]string,
 	conf *config.Config,
 ) *Builder {
-	config := NewBuilderConfig(conf)
-	customMetrics := metrics.NewCustomMetricsSpec(conf)
-	prometheusConfig := metrics.NewPrometheusConfig(conf)
-	statsdConfig := metrics.NewStatsdConfig(conf)
-	etcdSDConfig := cluster.NewEtcdServiceDiscoveryConfig(conf)
-	natsRPCServerConfig := cluster.NewNatsRPCServerConfig(conf)
-	natsRPCClientConfig := cluster.NewNatsRPCClientConfig(conf)
-	workerConfig := worker.NewWorkerConfig(conf)
-	enqueueOpts := worker.NewEnqueueOpts(conf)
-	groupServiceConfig := groups.NewMemoryGroupConfig(conf)
+	builderConfig := config.NewBuilderConfig(conf)
+	customMetrics := config.NewCustomMetricsSpec(conf)
+	prometheusConfig := config.NewPrometheusConfig(conf)
+	statsdConfig := config.NewStatsdConfig(conf)
+	etcdSDConfig := config.NewEtcdServiceDiscoveryConfig(conf)
+	natsRPCServerConfig := config.NewNatsRPCServerConfig(conf)
+	natsRPCClientConfig := config.NewNatsRPCClientConfig(conf)
+	workerConfig := config.NewWorkerConfig(conf)
+	enqueueOpts := config.NewEnqueueOpts(conf)
+	groupServiceConfig := config.NewMemoryGroupConfig(conf)
 	return NewBuilder(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
-		config,
+		builderConfig,
 		customMetrics,
 		prometheusConfig,
 		statsdConfig,
@@ -115,22 +88,22 @@ func NewBuilderWithConfigs(
 
 // NewDefaultBuilder return a builder instance with default dependency instances for a pitaya App,
 // with default configs
-func NewDefaultBuilder(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, config BuilderConfig) *Builder {
-	customMetrics := metrics.NewDefaultCustomMetricsSpec()
-	prometheusConfig := metrics.NewDefaultPrometheusConfig()
-	statsdConfig := metrics.NewDefaultStatsdConfig()
-	etcdSDConfig := cluster.NewDefaultEtcdServiceDiscoveryConfig()
-	natsRPCServerConfig := cluster.NewDefaultNatsRPCServerConfig()
-	natsRPCClientConfig := cluster.NewDefaultNatsRPCClientConfig()
-	workerConfig := worker.NewDefaultWorkerConfig()
-	enqueueOpts := worker.NewDefaultEnqueueOpts()
-	groupServiceConfig := groups.NewDefaultMemoryGroupConfig()
+func NewDefaultBuilder(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, builderConfig config.BuilderConfig) *Builder {
+	customMetrics := config.NewDefaultCustomMetricsSpec()
+	prometheusConfig := config.NewDefaultPrometheusConfig()
+	statsdConfig := config.NewDefaultStatsdConfig()
+	etcdSDConfig := config.NewDefaultEtcdServiceDiscoveryConfig()
+	natsRPCServerConfig := config.NewDefaultNatsRPCServerConfig()
+	natsRPCClientConfig := config.NewDefaultNatsRPCClientConfig()
+	workerConfig := config.NewDefaultWorkerConfig()
+	enqueueOpts := config.NewDefaultEnqueueOpts()
+	groupServiceConfig := config.NewDefaultMemoryGroupConfig()
 	return NewBuilder(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
-		config,
+		builderConfig,
 		customMetrics,
 		prometheusConfig,
 		statsdConfig,
@@ -149,16 +122,16 @@ func NewBuilder(isFrontend bool,
 	serverType string,
 	serverMode ServerMode,
 	serverMetadata map[string]string,
-	config BuilderConfig,
-	customMetrics metrics.CustomMetricsSpec,
-	prometheusConfig metrics.PrometheusConfig,
-	statsdConfig metrics.StatsdConfig,
-	etcdSDConfig cluster.EtcdServiceDiscoveryConfig,
-	natsRPCServerConfig cluster.NatsRPCServerConfig,
-	natsRPCClientConfig cluster.NatsRPCClientConfig,
-	workerConfig worker.WorkerConfig,
-	enqueueOpts worker.EnqueueOpts,
-	groupServiceConfig groups.MemoryGroupConfig,
+	config config.BuilderConfig,
+	customMetrics models.CustomMetricsSpec,
+	prometheusConfig config.PrometheusConfig,
+	statsdConfig config.StatsdConfig,
+	etcdSDConfig config.EtcdServiceDiscoveryConfig,
+	natsRPCServerConfig config.NatsRPCServerConfig,
+	natsRPCClientConfig config.NatsRPCClientConfig,
+	workerConfig config.WorkerConfig,
+	enqueueOpts config.EnqueueOpts,
+	groupServiceConfig config.MemoryGroupConfig,
 ) *Builder {
 	server := cluster.NewServer(uuid.New().String(), serverType, isFrontend, serverMetadata)
 	dieChan := make(chan bool)
@@ -318,7 +291,7 @@ func (builder *Builder) Build() Pitaya {
 }
 
 // NewDefaultApp returns a default pitaya app instance
-func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, config BuilderConfig) Pitaya {
+func NewDefaultApp(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, config config.BuilderConfig) Pitaya {
 	builder := NewDefaultBuilder(isFrontend, serverType, serverMode, serverMetadata, config)
 	return builder.Build()
 }
@@ -327,7 +300,7 @@ func configureDefaultPipelines(handlerHooks *pipeline.HandlerHooks) {
 	handlerHooks.BeforeHandler.PushBack(defaultpipelines.StructValidatorInstance.Validate)
 }
 
-func addDefaultPrometheus(config metrics.PrometheusConfig, customMetrics metrics.CustomMetricsSpec, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
+func addDefaultPrometheus(config config.PrometheusConfig, customMetrics models.CustomMetricsSpec, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
 	prometheus, err := CreatePrometheusReporter(serverType, config, customMetrics)
 	if err != nil {
 		logger.Log.Errorf("failed to start prometheus metrics reporter, skipping %v", err)
@@ -337,7 +310,7 @@ func addDefaultPrometheus(config metrics.PrometheusConfig, customMetrics metrics
 	return reporters
 }
 
-func addDefaultStatsd(config metrics.StatsdConfig, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
+func addDefaultStatsd(config config.StatsdConfig, reporters []metrics.Reporter, serverType string) []metrics.Reporter {
 	statsd, err := CreateStatsdReporter(serverType, config)
 	if err != nil {
 		logger.Log.Errorf("failed to start statsd metrics reporter, skipping %v", err)

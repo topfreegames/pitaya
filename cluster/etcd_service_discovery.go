@@ -67,70 +67,9 @@ type etcdServiceDiscovery struct {
 	syncServersParallelism int
 }
 
-// EtcdServiceDiscoveryConfig Etcd service discovery config
-type EtcdServiceDiscoveryConfig struct {
-	EtcdEndpoints          []string
-	EtcdUser               string
-	EtcdPass               string
-	EtcdDialTimeout        time.Duration
-	EtcdPrefix             string
-	HeartbeatTTL           time.Duration
-	LogHeartbeat           bool
-	SyncServersInterval    time.Duration
-	RevokeTimeout          time.Duration
-	GrantLeaseTimeout      time.Duration
-	GrantLeaseMaxRetries   int
-	GrantLeaseInterval     time.Duration
-	ShutdownDelay          time.Duration
-	ServerTypesBlacklist   []string
-	SyncServersParallelism int
-}
-
-// NewDefaultEtcdServiceDiscoveryConfig Etcd service discovery default config
-func NewDefaultEtcdServiceDiscoveryConfig() EtcdServiceDiscoveryConfig {
-	return EtcdServiceDiscoveryConfig{
-		EtcdEndpoints:          []string{"localhost:2379"},
-		EtcdUser:               "",
-		EtcdPass:               "",
-		EtcdDialTimeout:        time.Duration(5 * time.Second),
-		EtcdPrefix:             "pitaya/",
-		HeartbeatTTL:           time.Duration(60 * time.Second),
-		LogHeartbeat:           false,
-		SyncServersInterval:    time.Duration(120 * time.Second),
-		RevokeTimeout:          time.Duration(5 * time.Second),
-		GrantLeaseTimeout:      time.Duration(60 * time.Second),
-		GrantLeaseMaxRetries:   15,
-		GrantLeaseInterval:     time.Duration(5 * time.Second),
-		ShutdownDelay:          time.Duration(10 * time.Millisecond),
-		ServerTypesBlacklist:   nil,
-		SyncServersParallelism: 10,
-	}
-}
-
-// NewEtcdServiceDiscoveryConfig Etcd service discovery config with default config paths
-func NewEtcdServiceDiscoveryConfig(config *config.Config) EtcdServiceDiscoveryConfig {
-	return EtcdServiceDiscoveryConfig{
-		EtcdEndpoints:          config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints"),
-		EtcdUser:               config.GetString("pitaya.cluster.sd.etcd.user"),
-		EtcdPass:               config.GetString("pitaya.cluster.sd.etcd.pass"),
-		EtcdDialTimeout:        config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout"),
-		EtcdPrefix:             config.GetString("pitaya.cluster.sd.etcd.prefix"),
-		HeartbeatTTL:           config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl"),
-		LogHeartbeat:           config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log"),
-		SyncServersInterval:    config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval"),
-		RevokeTimeout:          config.GetDuration("pitaya.cluster.sd.etcd.revoke.timeout"),
-		GrantLeaseTimeout:      config.GetDuration("pitaya.cluster.sd.etcd.grantlease.timeout"),
-		GrantLeaseMaxRetries:   config.GetInt("pitaya.cluster.sd.etcd.grantlease.maxretries"),
-		GrantLeaseInterval:     config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval"),
-		ShutdownDelay:          config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay"),
-		ServerTypesBlacklist:   config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist"),
-		SyncServersParallelism: config.GetInt("pitaya.cluster.sd.etcd.syncserversparallelism"),
-	}
-}
-
 // NewEtcdServiceDiscovery ctor
 func NewEtcdServiceDiscovery(
-	config EtcdServiceDiscoveryConfig,
+	config config.EtcdServiceDiscoveryConfig,
 	server *Server,
 	appDieChan chan bool,
 	cli ...*clientv3.Client,
@@ -155,7 +94,7 @@ func NewEtcdServiceDiscovery(
 	return sd, nil
 }
 
-func (sd *etcdServiceDiscovery) configure(config EtcdServiceDiscoveryConfig) {
+func (sd *etcdServiceDiscovery) configure(config config.EtcdServiceDiscoveryConfig) {
 	sd.etcdEndpoints = config.EtcdEndpoints
 	sd.etcdUser = config.EtcdUser
 	sd.etcdPass = config.EtcdPass

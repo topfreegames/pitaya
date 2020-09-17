@@ -26,12 +26,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/session/mocks"
 )
 
 func createGroupTestApp() Pitaya {
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 	return app
 }
@@ -378,7 +379,7 @@ func TestBroadcast(t *testing.T) {
 	mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(s1).Times(1)
 	mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 	builder.SessionPool = mockSessionPool
 	app := builder.Build()

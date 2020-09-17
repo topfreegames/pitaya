@@ -12,6 +12,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/examples/demo/cluster_grpc/services"
 	"github.com/topfreegames/pitaya/v2/groups"
@@ -101,25 +102,25 @@ func main() {
 }
 
 func createApp(port int, isFrontend bool, svType string, meta map[string]string, rpcServerPort int) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
-	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, pitaya.NewDefaultBuilderConfig())
+	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, config.NewDefaultBuilderConfig())
 
-	grpcServerConfig := cluster.NewDefaultGRPCServerConfig()
+	grpcServerConfig := config.NewDefaultGRPCServerConfig()
 	grpcServerConfig.Port = rpcServerPort
 	gs, err := cluster.NewGRPCServer(grpcServerConfig, builder.Server, builder.MetricsReporters)
 	if err != nil {
 		panic(err)
 	}
 	builder.RPCServer = gs
-	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
 
-	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, modules.NewDefaultETCDBindingConfig())
+	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config.NewDefaultETCDBindingConfig())
 
 	gc, err := cluster.NewGRPCClient(
-		cluster.NewDefaultGRPCClientConfig(),
+		config.NewDefaultGRPCClientConfig(),
 		builder.Server,
 		builder.MetricsReporters,
 		bs,
-		cluster.NewConfigInfoRetriever(cluster.NewDefaultConfigInfoRetrieverConfig()),
+		cluster.NewConfigInfoRetriever(config.NewDefaultConfigInfoRetrieverConfig()),
 	)
 	if err != nil {
 		panic(err)

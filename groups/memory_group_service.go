@@ -26,23 +26,8 @@ type MemoryGroup struct {
 	TTL         int64
 }
 
-// MemoryGroupConfig provides configuration for MemoryGroup
-type MemoryGroupConfig struct {
-	TickDuration time.Duration
-}
-
-// NewDefaultMemoryGroupConfig returns a new, default group instance
-func NewDefaultMemoryGroupConfig() MemoryGroupConfig {
-	return MemoryGroupConfig{TickDuration: time.Duration(30 * time.Second)}
-}
-
-// NewMemoryGroupConfig returns a new, default group instance
-func NewMemoryGroupConfig(conf *config.Config) MemoryGroupConfig {
-	return MemoryGroupConfig{TickDuration: conf.GetDuration("pitaya.groups.memory.tickduration")}
-}
-
 // NewMemoryGroupService returns a new group instance
-func NewMemoryGroupService(config MemoryGroupConfig) *MemoryGroupService {
+func NewMemoryGroupService(config config.MemoryGroupConfig) *MemoryGroupService {
 	memoryOnce.Do(func() {
 		memoryGroups = make(map[string]*MemoryGroup)
 		go groupTTLCleanup(config.TickDuration)

@@ -8,6 +8,7 @@ import (
 	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 )
 
 // MetagameServer ...
@@ -96,7 +97,7 @@ func main() {
 	port := 3251
 	metagameServer := NewMetagameMock()
 
-	config := pitaya.NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	config.IsDefaultPipelineEnabled = true
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)

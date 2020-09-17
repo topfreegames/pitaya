@@ -48,36 +48,8 @@ type ETCDBindingStorage struct {
 	stopChan        chan struct{}
 }
 
-// ETCDBindingConfig provides configuration for ETCDBindingStorage
-type ETCDBindingConfig struct {
-	DialTimeout time.Duration
-	Endpoints   []string
-	Prefix      string
-	LeaseTTL    time.Duration
-}
-
-// NewDefaultETCDBindingConfig provides default configuration for ETCDBindingStorage
-func NewDefaultETCDBindingConfig() ETCDBindingConfig {
-	return ETCDBindingConfig{
-		DialTimeout: time.Duration(5 * time.Second),
-		Endpoints:   []string{"localhost:2379"},
-		Prefix:      "pitaya/",
-		LeaseTTL:    time.Duration(5 * time.Hour),
-	}
-}
-
-// NewETCDBindingConfig reads from config to build ETCDBindingStorage configuration
-func NewETCDBindingConfig(config *config.Config) ETCDBindingConfig {
-	return ETCDBindingConfig{
-		DialTimeout: config.GetDuration("pitaya.modules.bindingstorage.etcd.dialtimeout"),
-		Endpoints:   config.GetStringSlice("pitaya.modules.bindingstorage.etcd.endpoints"),
-		Prefix:      config.GetString("pitaya.modules.bindingstorage.etcd.prefix"),
-		LeaseTTL:    config.GetDuration("pitaya.modules.bindingstorage.etcd.leasettl"),
-	}
-}
-
 // NewETCDBindingStorage returns a new instance of BindingStorage
-func NewETCDBindingStorage(server *cluster.Server, sessionPool session.SessionPool, conf ETCDBindingConfig) *ETCDBindingStorage {
+func NewETCDBindingStorage(server *cluster.Server, sessionPool session.SessionPool, conf config.ETCDBindingConfig) *ETCDBindingStorage {
 	b := &ETCDBindingStorage{
 		thisServer:  server,
 		sessionPool: sessionPool,

@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 )
 
 type MyMod struct {
@@ -50,7 +51,7 @@ func (m *MyMod) Shutdown() error {
 func TestRegisterModule(t *testing.T) {
 	b := &MyMod{}
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 
 	err := app.RegisterModule(b, "mod")
@@ -67,7 +68,7 @@ func TestRegisterModule(t *testing.T) {
 func TestGetModule(t *testing.T) {
 	b := &MyMod{}
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
 
 	app.RegisterModule(b, "mod")
@@ -81,7 +82,7 @@ func TestGetModule(t *testing.T) {
 
 func TestStartupModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)
@@ -102,7 +103,7 @@ func TestStartupModules(t *testing.T) {
 
 func TestShutdownModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)

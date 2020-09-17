@@ -30,6 +30,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/metrics/models"
 )
 
 var (
@@ -47,37 +48,10 @@ type PrometheusReporter struct {
 	additionalLabels    map[string]string
 }
 
-// PrometheusConfig provides configuration for PrometheusReporter
-type PrometheusConfig struct {
-	Port             int
-	Game             string
-	AdditionalLabels map[string]string
-	ConstLabels      map[string]string
-}
-
-// NewDefaultPrometheusConfig provides default configuration for PrometheusReporter
-func NewDefaultPrometheusConfig() PrometheusConfig {
-	return PrometheusConfig{
-		Port:             9090,
-		AdditionalLabels: map[string]string{},
-		ConstLabels:      map[string]string{},
-	}
-}
-
-// NewPrometheusConfig reads from config to build configuration for PrometheusReporter
-func NewPrometheusConfig(config *config.Config) PrometheusConfig {
-	return PrometheusConfig{
-		Port:             config.GetInt("pitaya.metrics.prometheus.port"),
-		Game:             config.GetString("pitaya.game"),
-		AdditionalLabels: config.GetStringMapString("pitaya.metrics.additionalTags"),
-		ConstLabels:      config.GetStringMapString("pitaya.metrics.constTags"),
-	}
-}
-
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
 	additionalLabelsKeys []string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 	for _, summary := range spec.Summaries {
 		p.summaryReportersMap[summary.Name] = prometheus.NewSummaryVec(
@@ -122,7 +96,7 @@ func (p *PrometheusReporter) registerCustomMetrics(
 
 func (p *PrometheusReporter) registerMetrics(
 	constLabels, additionalLabels map[string]string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 
 	constLabels["game"] = p.game
@@ -303,16 +277,16 @@ func (p *PrometheusReporter) registerMetrics(
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
 	serverType string,
-	config PrometheusConfig,
-	metricsSpecs CustomMetricsSpec,
+	config config.PrometheusConfig,
+	metricsSpecs models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
 	return getPrometheusReporter(serverType, config, &metricsSpecs)
 }
 
 func getPrometheusReporter(
 	serverType string,
-	config PrometheusConfig,
-	metricsSpecs *CustomMetricsSpec,
+	config config.PrometheusConfig,
+	metricsSpecs *models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{

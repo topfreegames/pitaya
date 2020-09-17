@@ -54,34 +54,9 @@ type GRPCClient struct {
 	server           *Server
 }
 
-// GRPCClientConfig rpc client config struct
-type GRPCClientConfig struct {
-	DialTimeout    time.Duration
-	LazyConnection bool
-	RequestTimeout time.Duration
-}
-
-// NewDefaultGRPCClientConfig rpc client default config struct
-func NewDefaultGRPCClientConfig() GRPCClientConfig {
-	return GRPCClientConfig{
-		DialTimeout:    time.Duration(5 * time.Second),
-		LazyConnection: false,
-		RequestTimeout: time.Duration(5 * time.Second),
-	}
-}
-
-// NewGRPCClientConfig reads from config to build GRPCCLientConfig
-func NewGRPCClientConfig(config *config.Config) GRPCClientConfig {
-	return GRPCClientConfig{
-		DialTimeout:    config.GetDuration("pitaya.cluster.rpc.client.grpc.dialtimeout"),
-		LazyConnection: config.GetBool("pitaya.cluster.rpc.client.grpc.lazyconnection"),
-		RequestTimeout: config.GetDuration("pitaya.cluster.rpc.client.grpc.requesttimeout"),
-	}
-}
-
 // NewGRPCClient returns a new instance of GRPCClient
 func NewGRPCClient(
-	config GRPCClientConfig,
+	config config.GRPCClientConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	bindingStorage interfaces.BindingStorage,

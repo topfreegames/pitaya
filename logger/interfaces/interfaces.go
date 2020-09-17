@@ -22,6 +22,10 @@ type Logger interface {
 	Warnf(format string, args ...interface{})
 	Warnln(args ...interface{})
 
+	Panic(args ...interface{})
+	Panicf(format string, args ...interface{})
+	Panicln(args ...interface{})
+
 	WithFields(fields map[string]interface{}) Logger
 	WithField(key string, value interface{}) Logger
 	WithError(err error) Logger

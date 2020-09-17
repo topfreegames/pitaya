@@ -40,27 +40,8 @@ type GRPCServer struct {
 	pitayaServer     protos.PitayaServer
 }
 
-// GRPCServerConfig provides configuration for GRPCServer
-type GRPCServerConfig struct {
-	Port int
-}
-
-// NewDefaultGRPCServerConfig returns a default GRPCServerConfig
-func NewDefaultGRPCServerConfig() GRPCServerConfig {
-	return GRPCServerConfig{
-		Port: 3434,
-	}
-}
-
-// NewGRPCServerConfig reads from config to build GRPCServerConfig
-func NewGRPCServerConfig(config *config.Config) GRPCServerConfig {
-	return GRPCServerConfig{
-		Port: config.GetInt("pitaya.cluster.rpc.server.grpc.port"),
-	}
-}
-
 // NewGRPCServer constructor
-func NewGRPCServer(config GRPCServerConfig, server *Server, metricsReporters []metrics.Reporter) (*GRPCServer, error) {
+func NewGRPCServer(config config.GRPCServerConfig, server *Server, metricsReporters []metrics.Reporter) (*GRPCServer, error) {
 	gs := &GRPCServer{
 		port:             config.Port,
 		server:           server,

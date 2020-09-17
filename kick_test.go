@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/v2/cluster/mocks"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/protos"
 	sessionmocks "github.com/topfreegames/pitaya/v2/session/mocks"
@@ -55,7 +56,7 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 	mockSessionPool.EXPECT().GetSessionByUID(table.uid1).Return(s1).Times(1)
 	mockSessionPool.EXPECT().GetSessionByUID(table.uid2).Return(s2).Times(1)
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 	builder.SessionPool = mockSessionPool
 	app := builder.Build()
@@ -88,7 +89,7 @@ func TestSendKickToUsersFail(t *testing.T) {
 	mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 	mockRPCClient.EXPECT().SendKick(table.uid2, table.frontendType, &protos.KickMsg{UserId: table.uid2}).Return(table.err).Times(1)
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 	builder.SessionPool = mockSessionPool
 	builder.RPCClient = mockRPCClient
@@ -117,7 +118,7 @@ func TestSendKickToUsersRemoteSession(t *testing.T) {
 			defer ctrl.Finish()
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 
-			config := NewDefaultBuilderConfig()
+			config := config.NewDefaultBuilderConfig()
 			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 			app.rpcClient = mockRPCClient
 

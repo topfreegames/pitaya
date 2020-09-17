@@ -22,7 +22,6 @@ package metrics
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/v2/config"
@@ -44,45 +43,10 @@ type StatsdReporter struct {
 	defaultTags []string
 }
 
-// StatsdConfig provides configuration for statsd
-type StatsdConfig struct {
-	Host        string
-	Prefix      string
-	Rate        float64
-	ConstLabels map[string]string
-}
-
-// NewDefaultStatsdConfig provides default configuration for statsd
-func NewDefaultStatsdConfig() StatsdConfig {
-	return StatsdConfig{
-		Host:        "localhost:9125",
-		Prefix:      "pitaya.",
-		Rate:        1,
-		ConstLabels: map[string]string{},
-	}
-}
-
-// NewStatsdConfig reads from config to build configuration for statsd
-func NewStatsdConfig(config *config.Config) StatsdConfig {
-	rate, err := strconv.ParseFloat(config.GetString("pitaya.metrics.statsd.rate"), 64)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	statsdConfig := StatsdConfig{
-		Host:        config.GetString("pitaya.metrics.statsd.host"),
-		Prefix:      config.GetString("pitaya.metrics.statsd.prefix"),
-		Rate:        rate,
-		ConstLabels: config.GetStringMapString("pitaya.metrics.constTags"),
-	}
-
-	return statsdConfig
-}
-
 // NewStatsdReporter returns an instance of statsd reportar and an
 // error if something fails
 func NewStatsdReporter(
-	config StatsdConfig,
+	config config.StatsdConfig,
 	serverType string,
 	clientOrNil ...Client,
 ) (*StatsdReporter, error) {
@@ -90,7 +54,7 @@ func NewStatsdReporter(
 }
 
 func newStatsdReporter(
-	config StatsdConfig,
+	config config.StatsdConfig,
 	serverType string,
 	clientOrNil ...Client) (*StatsdReporter, error) {
 	sr := &StatsdReporter{

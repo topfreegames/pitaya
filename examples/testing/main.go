@@ -299,15 +299,15 @@ func main() {
 }
 
 func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
-	config := config.NewConfig(cfg...)
-	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, serverMode, metadata, config)
+	conf := config.NewConfig(cfg...)
+	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, serverMode, metadata, conf)
 
 	if isFrontend {
 		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 		builder.AddAcceptor(tcp)
 	}
 
-	builder.Groups = groups.NewMemoryGroupService(groups.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
 
 	if serializer == "json" {
 		builder.Serializer = json.NewSerializer()
@@ -319,19 +319,19 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 
 	var bs *modules.ETCDBindingStorage
 	if grpc {
-		gs, err := cluster.NewGRPCServer(cluster.NewGRPCServerConfig(config), builder.Server, builder.MetricsReporters)
+		gs, err := cluster.NewGRPCServer(config.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
 		if err != nil {
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, modules.NewETCDBindingConfig(config))
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config.NewETCDBindingConfig(conf))
 
 		gc, err := cluster.NewGRPCClient(
-			cluster.NewGRPCClientConfig(config),
+			config.NewGRPCClientConfig(conf),
 			builder.Server,
 			builder.MetricsReporters,
 			bs,
-			cluster.NewConfigInfoRetriever(cluster.NewConfigInfoRetrieverConfig(config)),
+			cluster.NewConfigInfoRetriever(config.NewConfigInfoRetrieverConfig(conf)),
 		)
 		if err != nil {
 			panic(err)

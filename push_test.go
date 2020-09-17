@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	clustermocks "github.com/topfreegames/pitaya/v2/cluster/mocks"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/protos"
 	serializemocks "github.com/topfreegames/pitaya/v2/serialize/mocks"
@@ -43,7 +44,7 @@ func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	defer ctrl.Finish()
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 
-	config := NewDefaultBuilderConfig()
+	config := config.NewDefaultBuilderConfig()
 	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 	builder.Serializer = mockSerializer
 	app := builder.Build()
@@ -93,7 +94,7 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(s1).Times(1)
 			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
 
-			config := NewDefaultBuilderConfig()
+			config := config.NewDefaultBuilderConfig()
 			builder := NewDefaultBuilder(true, "testtype", Standalone, map[string]string{}, config)
 			builder.SessionPool = mockSessionPool
 			app := builder.Build().(*App)
@@ -148,7 +149,7 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			mockSessionPool.EXPECT().GetSessionByUID(uid1).Return(nil).Times(1)
 			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(nil).Times(1)
 
-			config := NewDefaultBuilderConfig()
+			config := config.NewDefaultBuilderConfig()
 			builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
 			builder.SessionPool = mockSessionPool
 			builder.RPCClient = mockRPCClient

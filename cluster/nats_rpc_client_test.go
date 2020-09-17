@@ -32,6 +32,7 @@ import (
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
 	e "github.com/topfreegames/pitaya/v2/errors"
@@ -50,7 +51,7 @@ func TestNewNatsRPCClient(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, err := NewNatsRPCClient(cfg, sv, mockMetricsReporters, nil)
 	assert.NoError(t, err)
@@ -74,7 +75,7 @@ func TestNatsRPCClientConfigure(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("%s-%s", table.natsConnect, table.reqTimeout), func(t *testing.T) {
-			cfg := NewDefaultNatsRPCClientConfig()
+			cfg := config.NewDefaultNatsRPCClientConfig()
 			cfg.Connect = table.natsConnect
 			cfg.RequestTimeout = table.reqTimeout
 			_, err := NewNatsRPCClient(cfg, getServer(), nil, nil)
@@ -85,7 +86,7 @@ func TestNatsRPCClientConfigure(t *testing.T) {
 
 func TestNatsRPCClientGetSubscribeChannel(t *testing.T) {
 	t.Parallel()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	assert.Equal(t, fmt.Sprintf("pitaya/servers/%s/%s", n.server.Type, n.server.ID), n.getSubscribeChannel())
@@ -93,7 +94,7 @@ func TestNatsRPCClientGetSubscribeChannel(t *testing.T) {
 
 func TestNatsRPCClientStop(t *testing.T) {
 	t.Parallel()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	n, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	// change it to true to ensure it goes to false
@@ -105,7 +106,7 @@ func TestNatsRPCClientStop(t *testing.T) {
 func TestNatsRPCClientInitShouldFailIfConnFails(t *testing.T) {
 	t.Parallel()
 	sv := getServer()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = "nats://localhost:1"
 	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)
 	err := rpcClient.Init()
@@ -115,7 +116,7 @@ func TestNatsRPCClientInitShouldFailIfConnFails(t *testing.T) {
 func TestNatsRPCClientInit(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
@@ -133,7 +134,7 @@ func TestNatsRPCClientBroadcastSessionBind(t *testing.T) {
 	uid := "testuid123"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
@@ -165,7 +166,7 @@ func TestNatsRPCClientSendKick(t *testing.T) {
 	uid := "testuid"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
@@ -200,7 +201,7 @@ func TestNatsRPCClientSendPush(t *testing.T) {
 	uid := "testuid123"
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
@@ -237,7 +238,7 @@ func TestNatsRPCClientSendPush(t *testing.T) {
 }
 
 func TestNatsRPCClientSendShouldFailIfNotRunning(t *testing.T) {
-	config := NewDefaultNatsRPCClientConfig()
+	config := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 	err := rpcClient.Send("topic", []byte("data"))
@@ -247,7 +248,7 @@ func TestNatsRPCClientSendShouldFailIfNotRunning(t *testing.T) {
 func TestNatsRPCClientSend(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 
@@ -281,7 +282,7 @@ func TestNatsRPCClientSend(t *testing.T) {
 }
 
 func TestNatsRPCClientBuildRequest(t *testing.T) {
-	config := NewDefaultNatsRPCClientConfig()
+	config := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 
@@ -391,7 +392,7 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 }
 
 func TestNatsRPCClientCallShouldFailIfNotRunning(t *testing.T) {
-	config := NewDefaultNatsRPCClientConfig()
+	config := config.NewDefaultNatsRPCClientConfig()
 	sv := getServer()
 	rpcClient, _ := NewNatsRPCClient(config, sv, nil, nil)
 	res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, nil, nil, nil, sv)
@@ -403,7 +404,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	sv := getServer()
 	defer s.Shutdown()
-	cfg := NewDefaultNatsRPCClientConfig()
+	cfg := config.NewDefaultNatsRPCClientConfig()
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	cfg.RequestTimeout = time.Duration(300 * time.Millisecond)
 	rpcClient, _ := NewNatsRPCClient(cfg, sv, nil, nil)

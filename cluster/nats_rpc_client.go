@@ -54,37 +54,9 @@ type NatsRPCClient struct {
 	appDieChan             chan bool
 }
 
-// NatsRPCClientConfig provides nats client configuration
-type NatsRPCClientConfig struct {
-	Connect                string
-	MaxReconnectionRetries int
-	RequestTimeout         time.Duration
-	ConnectionTimeout      time.Duration
-}
-
-// NewDefaultNatsRPCClientConfig provides default nats client configuration
-func NewDefaultNatsRPCClientConfig() NatsRPCClientConfig {
-	return NatsRPCClientConfig{
-		Connect:                "nats://localhost:4222",
-		MaxReconnectionRetries: 15,
-		RequestTimeout:         time.Duration(5 * time.Second),
-		ConnectionTimeout:      time.Duration(2 * time.Second),
-	}
-}
-
-// NewNatsRPCClientConfig reads from config to build nats client configuration
-func NewNatsRPCClientConfig(config *config.Config) NatsRPCClientConfig {
-	return NatsRPCClientConfig{
-		Connect:                config.GetString("pitaya.cluster.rpc.client.nats.connect"),
-		MaxReconnectionRetries: config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries"),
-		RequestTimeout:         config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout"),
-		ConnectionTimeout:      config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout"),
-	}
-}
-
 // NewNatsRPCClient ctor
 func NewNatsRPCClient(
-	config NatsRPCClientConfig,
+	config config.NatsRPCClientConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	appDieChan chan bool,
@@ -102,7 +74,7 @@ func NewNatsRPCClient(
 	return ns, nil
 }
 
-func (ns *NatsRPCClient) configure(config NatsRPCClientConfig) error {
+func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
 	ns.connString = config.Connect
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString

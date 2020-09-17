@@ -13,9 +13,9 @@ func TestConfigInfoRetrieverRegion(t *testing.T) {
 
 	c := viper.New()
 	c.Set("pitaya.cluster.info.region", "us")
-	config := config.NewConfig(c)
+	conf := config.NewConfig(c)
 
-	infoRetriever := NewConfigInfoRetriever(NewConfigInfoRetrieverConfig(config))
+	infoRetriever := NewConfigInfoRetriever(config.NewConfigInfoRetrieverConfig(conf))
 
 	assert.Equal(t, "us", infoRetriever.Region())
 }
