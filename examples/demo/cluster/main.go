@@ -79,12 +79,12 @@ func main() {
 
 	flag.Parse()
 
-	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config.NewDefaultBuilderConfig())
 	if *isFrontend {
 		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 		builder.AddAcceptor(tcp)
 	}
-	builder.Groups = groups.NewMemoryGroupService(config.NewConfig())
+	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()

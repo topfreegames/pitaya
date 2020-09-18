@@ -34,6 +34,7 @@ func (m *MockSerializer) EXPECT() *MockSerializerMockRecorder {
 
 // GetName mocks base method
 func (m *MockSerializer) GetName() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetName")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -41,11 +42,13 @@ func (m *MockSerializer) GetName() string {
 
 // GetName indicates an expected call of GetName
 func (mr *MockSerializerMockRecorder) GetName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockSerializer)(nil).GetName))
 }
 
 // Marshal mocks base method
 func (m *MockSerializer) Marshal(arg0 interface{}) ([]byte, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Marshal", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
@@ -54,11 +57,13 @@ func (m *MockSerializer) Marshal(arg0 interface{}) ([]byte, error) {
 
 // Marshal indicates an expected call of Marshal
 func (mr *MockSerializerMockRecorder) Marshal(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Marshal", reflect.TypeOf((*MockSerializer)(nil).Marshal), arg0)
 }
 
 // Unmarshal mocks base method
 func (m *MockSerializer) Unmarshal(arg0 []byte, arg1 interface{}) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unmarshal", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -66,5 +71,6 @@ func (m *MockSerializer) Unmarshal(arg0 []byte, arg1 interface{}) error {
 
 // Unmarshal indicates an expected call of Unmarshal
 func (mr *MockSerializerMockRecorder) Unmarshal(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*MockSerializer)(nil).Unmarshal), arg0, arg1)
 }

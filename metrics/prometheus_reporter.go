@@ -30,6 +30,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
+	"github.com/topfreegames/pitaya/v2/metrics/models"
 )
 
 var (
@@ -50,7 +51,7 @@ type PrometheusReporter struct {
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
 	additionalLabelsKeys []string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 	for _, summary := range spec.Summaries {
 		p.summaryReportersMap[summary.Name] = prometheus.NewSummaryVec(
@@ -95,7 +96,7 @@ func (p *PrometheusReporter) registerCustomMetrics(
 
 func (p *PrometheusReporter) registerMetrics(
 	constLabels, additionalLabels map[string]string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 
 	constLabels["game"] = p.game
@@ -276,32 +277,29 @@ func (p *PrometheusReporter) registerMetrics(
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
 	serverType string,
-	config *config.Config,
-	constLabels map[string]string,
+	config config.PrometheusConfig,
+	metricsSpecs models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
-	var (
-		port             = config.GetInt("pitaya.metrics.prometheus.port")
-		game             = config.GetString("pitaya.game")
-		additionalLabels = config.GetStringMapString("pitaya.metrics.additionalTags")
-	)
+	return getPrometheusReporter(serverType, config, &metricsSpecs)
+}
 
-	spec, err := NewCustomMetricsSpec(config)
-	if err != nil {
-		return nil, err
-	}
-
+func getPrometheusReporter(
+	serverType string,
+	config config.PrometheusConfig,
+	metricsSpecs *models.CustomMetricsSpec,
+) (*PrometheusReporter, error) {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:          serverType,
-			game:                game,
+			game:                config.Game,
 			countReportersMap:   make(map[string]*prometheus.CounterVec),
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(constLabels, additionalLabels, spec)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil))
 		})()
 	})
 

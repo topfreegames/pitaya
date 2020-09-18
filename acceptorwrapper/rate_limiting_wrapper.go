@@ -33,17 +33,11 @@ type RateLimitingWrapper struct {
 }
 
 // NewRateLimitingWrapper returns an instance of *RateLimitingWrapper
-func NewRateLimitingWrapper(app pitaya.Pitaya, c *config.Config) *RateLimitingWrapper {
+func NewRateLimitingWrapper(app pitaya.Pitaya, c config.RateLimitingConfig) *RateLimitingWrapper {
 	r := &RateLimitingWrapper{}
 
 	r.BaseWrapper = NewBaseWrapper(func(conn acceptor.PlayerConn) acceptor.PlayerConn {
-		var (
-			limit        = c.GetInt("pitaya.conn.ratelimiting.limit")
-			interval     = c.GetDuration("pitaya.conn.ratelimiting.interval")
-			forceDisable = c.GetBool("pitaya.conn.ratelimiting.forcedisable")
-		)
-
-		return NewRateLimiter(app, conn, limit, interval, forceDisable)
+		return NewRateLimiter(app, conn, c.Limit, c.Interval, c.ForceDisable)
 	})
 
 	return r

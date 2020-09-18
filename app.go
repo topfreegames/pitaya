@@ -32,7 +32,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
@@ -75,7 +74,6 @@ type Pitaya interface {
 	SetDebug(debug bool)
 	SetHeartbeatTime(interval time.Duration)
 	GetServerID() string
-	GetConfig() *config.Config
 	GetMetricsReporters() []metrics.Reporter
 	GetServer() *cluster.Server
 	GetServerByID(id string) (*cluster.Server, error)
@@ -101,7 +99,7 @@ type Pitaya interface {
 		routeStr string,
 		metadata map[string]interface{},
 		reply, arg proto.Message,
-		opts *worker.EnqueueOpts,
+		opts *config.EnqueueOpts,
 	) (jid string, err error)
 
 	SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error)
@@ -131,7 +129,7 @@ type Pitaya interface {
 // App is the base app struct
 type App struct {
 	acceptors        []acceptor.Acceptor
-	config           *config.Config
+	config           config.PitayaConfig
 	debug            bool
 	dieChan          chan bool
 	heartbeat        time.Duration
@@ -174,10 +172,11 @@ func NewApp(
 	groups groups.GroupService,
 	sessionPool session.SessionPool,
 	metricsReporters []metrics.Reporter,
-	cfgs ...*viper.Viper,
+	config config.PitayaConfig,
 ) *App {
 	app := &App{
 		server:           server,
+		config:           config,
 		rpcClient:        rpcClient,
 		rpcServer:        rpcServer,
 		worker:           worker,
@@ -200,9 +199,8 @@ func NewApp(
 		modulesArr:       []moduleWrapper{},
 		sessionPool:      sessionPool,
 	}
-	app.config = config.NewConfig(cfgs...)
 	if app.heartbeat == time.Duration(0) {
-		app.heartbeat = app.config.GetDuration("pitaya.heartbeat.interval")
+		app.heartbeat = config.HearbeatInterval
 	}
 
 	app.initSysRemotes()
@@ -227,11 +225,6 @@ func (app *App) SetHeartbeatTime(interval time.Duration) {
 // GetServerID returns the generated server id
 func (app *App) GetServerID() string {
 	return app.server.ID
-}
-
-// GetConfig gets the pitaya config instance
-func (app *App) GetConfig() *config.Config {
-	return app.config
 }
 
 // GetMetricsReporters gets registered metrics reporters
@@ -273,7 +266,7 @@ func (app *App) initSysRemotes() {
 }
 
 func (app *App) periodicMetrics() {
-	period := app.config.GetDuration("pitaya.metrics.periodicMetrics.period")
+	period := app.config.MetricsPeriod
 	go metrics.ReportSysMetrics(app.metricsReporters, period)
 
 	if app.worker.Started() {
@@ -345,7 +338,7 @@ func (app *App) listen() {
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	logger.Log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	for i := 0; i < app.config.GetInt("pitaya.concurrency.handler.dispatch"); i++ {
+	for i := 0; i < app.config.ConcurrencyHandlerDispatch; i++ {
 		go app.handlerService.Dispatch(i)
 	}
 	for _, acc := range app.acceptors {
@@ -363,7 +356,7 @@ func (app *App) listen() {
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 
-	if app.serverMode == Cluster && app.server.Frontend && app.config.GetBool("pitaya.session.unique") {
+	if app.serverMode == Cluster && app.server.Frontend && app.config.SessionUnique {
 		unique := mods.NewUniqueSession(app.server, app.rpcServer, app.rpcClient, app.sessionPool)
 		app.remoteService.AddRemoteBindingListener(unique)
 		app.RegisterModule(unique, "uniqueSession")

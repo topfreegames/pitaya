@@ -110,15 +110,15 @@ func TestGetString(t *testing.T) {
 	c := NewConfig()
 	tables := []struct {
 		key string
-		val string
+		val []string
 	}{
-		{"pitaya.cluster.sd.etcd.endpoints", "localhost:2379"},
-		{"unexistent", ""},
+		{"pitaya.cluster.sd.etcd.endpoints", []string{"localhost:2379"}},
+		{"unexistent", nil},
 	}
 
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("key:%s val:%s", table.key, table.val), func(t *testing.T) {
-			assert.Equal(t, table.val, c.GetString(table.key))
+			assert.Equal(t, table.val, c.GetStringSlice(table.key))
 		})
 	}
 }

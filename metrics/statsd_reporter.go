@@ -22,7 +22,6 @@ package metrics
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/v2/config"
@@ -44,34 +43,35 @@ type StatsdReporter struct {
 	defaultTags []string
 }
 
-// NewStatsdReporter returns an instance of statsd reportar and an error if something fails
+// NewStatsdReporter returns an instance of statsd reportar and an
+// error if something fails
 func NewStatsdReporter(
-	config *config.Config,
+	config config.StatsdConfig,
 	serverType string,
-	tagsMap map[string]string,
 	clientOrNil ...Client,
 ) (*StatsdReporter, error) {
-	host := config.GetString("pitaya.metrics.statsd.host")
-	prefix := config.GetString("pitaya.metrics.statsd.prefix")
-	rate, err := strconv.ParseFloat(config.GetString("pitaya.metrics.statsd.rate"), 64)
-	if err != nil {
-		return nil, err
-	}
+	return newStatsdReporter(config, serverType, clientOrNil...)
+}
+
+func newStatsdReporter(
+	config config.StatsdConfig,
+	serverType string,
+	clientOrNil ...Client) (*StatsdReporter, error) {
 	sr := &StatsdReporter{
-		rate:       rate,
+		rate:       config.Rate,
 		serverType: serverType,
 	}
 
-	sr.buildDefaultTags(tagsMap)
+	sr.buildDefaultTags(config.ConstLabels)
 
 	if len(clientOrNil) > 0 {
 		sr.client = clientOrNil[0]
 	} else {
-		c, err := statsd.New(host)
+		c, err := statsd.New(config.Host)
 		if err != nil {
 			return nil, err
 		}
-		c.Namespace = prefix
+		c.Namespace = config.Prefix
 		sr.client = c
 	}
 	return sr, nil

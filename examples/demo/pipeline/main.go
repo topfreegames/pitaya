@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 )
 
 // MetagameServer ...
@@ -94,15 +94,13 @@ func main() {
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 	flag.Parse()
 
-	config := viper.New()
-
-	// Enable default validator
-	config.Set("pitaya.defaultpipelines.structvalidation.enabled", true)
-
 	port := 3251
 	metagameServer := NewMetagameMock()
 
-	builder := pitaya.NewBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	config := config.NewDefaultBuilderConfig()
+	config.IsDefaultPipelineEnabled = true
+
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	builder.AddAcceptor(tcp)
 	builder.HandlerHooks.BeforeHandler.PushBack(metagameServer.simpleBefore)

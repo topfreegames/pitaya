@@ -43,14 +43,13 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	var err error
-	conf := config.NewConfig()
 	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(conf, cli)
+	etcdGroupService, err = NewEtcdGroupService(config.NewDefaultEtcdGroupServiceConfig(), cli)
 	if err != nil {
 		panic(err)
 	}
-	memoryGroupService = NewMemoryGroupService(conf)
+	memoryGroupService = NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
 }
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {

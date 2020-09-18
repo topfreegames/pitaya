@@ -41,6 +41,7 @@ import (
 
 // NatsRPCServer struct
 type NatsRPCServer struct {
+	service                int
 	connString             string
 	connectionTimeout      time.Duration
 	maxReconnectionRetries int
@@ -48,7 +49,6 @@ type NatsRPCServer struct {
 	conn                   *nats.Conn
 	pushBufferSize         int
 	messagesBufferSize     int
-	config                 *config.Config
 	stopChan               chan bool
 	subChan                chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
 	bindingsChan           chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
@@ -65,14 +65,13 @@ type NatsRPCServer struct {
 
 // NewNatsRPCServer ctor
 func NewNatsRPCServer(
-	config *config.Config,
+	config config.NatsRPCServerConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	appDieChan chan bool,
 	sessionPool session.SessionPool,
 ) (*NatsRPCServer, error) {
 	ns := &NatsRPCServer{
-		config:            config,
 		server:            server,
 		stopChan:          make(chan bool),
 		unhandledReqCh:    make(chan *protos.Request),
@@ -82,25 +81,26 @@ func NewNatsRPCServer(
 		connectionTimeout: nats.DefaultTimeout,
 		sessionPool:       sessionPool,
 	}
-	if err := ns.configure(); err != nil {
+	if err := ns.configure(config); err != nil {
 		return nil, err
 	}
 
 	return ns, nil
 }
 
-func (ns *NatsRPCServer) configure() error {
-	ns.connString = ns.config.GetString("pitaya.cluster.rpc.server.nats.connect")
+func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
+	ns.service = config.Service
+	ns.connString = config.Connect
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
-	ns.connectionTimeout = ns.config.GetDuration("pitaya.cluster.rpc.server.nats.connectiontimeout")
-	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.server.nats.maxreconnectionretries")
-	ns.messagesBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.nats.messages")
+	ns.connectionTimeout = config.ConnectionTimeout
+	ns.maxReconnectionRetries = config.MaxReconnectionRetries
+	ns.messagesBufferSize = config.Messages
 	if ns.messagesBufferSize == 0 {
 		return constants.ErrNatsMessagesBufferSizeZero
 	}
-	ns.pushBufferSize = ns.config.GetInt("pitaya.buffer.cluster.rpc.server.nats.push")
+	ns.pushBufferSize = config.Push
 	if ns.pushBufferSize == 0 {
 		return constants.ErrNatsPushBufferSizeZero
 	}
@@ -337,7 +337,7 @@ func (ns *NatsRPCServer) Init() error {
 		return err
 	}
 	// this handles remote messages
-	for i := 0; i < ns.config.GetInt("pitaya.concurrency.remote.service"); i++ {
+	for i := 0; i < ns.service; i++ {
 		go ns.processMessages(i)
 	}
 

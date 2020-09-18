@@ -38,11 +38,11 @@ func TestNewStatsdReporter(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
+	cfg := config.NewDefaultStatsdConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClient, sr.client)
-	assert.Equal(t, float64(cfg.GetInt("pitaya.metrics.statsd.rate")), sr.rate)
+	assert.Equal(t, float64(cfg.Rate), sr.rate)
 	assert.Equal(t, "svType", sr.serverType)
 }
 
@@ -51,10 +51,11 @@ func TestReportLatency(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+	cfg := config.NewDefaultStatsdConfig()
+	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
-	}, mockClient)
+	}
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedDuration, err := time.ParseDuration("200ms")
@@ -85,8 +86,8 @@ func TestReportLatencyError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
+	cfg := config.NewDefaultStatsdConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
@@ -101,10 +102,11 @@ func TestReportCount(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+	cfg := config.NewDefaultStatsdConfig()
+	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
-	}, mockClient)
+	}
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedCount := 123
@@ -130,8 +132,8 @@ func TestReportCountError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewConfig()
-	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
+	cfg := config.NewDefaultStatsdConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")

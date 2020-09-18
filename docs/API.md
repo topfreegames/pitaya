@@ -86,7 +86,7 @@ func (h *Handler) TestPush(ctx context.Context, msg *UserPushMessage) {
 }
 
 func main() {
-  builder := pitaya.NewBuilder()
+  builder := pitaya.NewDefaultBuilder()
   ...
   app := builder.Build()
 

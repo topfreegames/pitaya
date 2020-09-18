@@ -85,10 +85,22 @@ func (l *logrusImpl) Warnln(args ...interface{}) {
 	l.impl.Warnln(args...)
 }
 
+func (l *logrusImpl) Panic(args ...interface{}) {
+	l.impl.Panic(args...)
+}
+
+func (l *logrusImpl) Panicf(format string, args ...interface{}) {
+	l.impl.Panicf(format, args...)
+}
+
+func (l *logrusImpl) Panicln(args ...interface{}) {
+	l.impl.Panicln(args...)
+}
+
 func (l *logrusImpl) WithFields(fields map[string]interface{}) interfaces.Logger {
 	return &logrusImpl{impl: l.impl.WithFields(fields)}
-
 }
+
 func (l *logrusImpl) WithField(key string, value interface{}) interfaces.Logger {
 	return &logrusImpl{impl: l.impl.WithField(key, value)}
 }

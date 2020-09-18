@@ -27,16 +27,16 @@ type MemoryGroup struct {
 }
 
 // NewMemoryGroupService returns a new group instance
-func NewMemoryGroupService(conf *config.Config) *MemoryGroupService {
+func NewMemoryGroupService(config config.MemoryGroupConfig) *MemoryGroupService {
 	memoryOnce.Do(func() {
 		memoryGroups = make(map[string]*MemoryGroup)
-		go groupTTLCleanup(conf)
+		go groupTTLCleanup(config.TickDuration)
 	})
 	return &MemoryGroupService{}
 }
 
-func groupTTLCleanup(conf *config.Config) {
-	for now := range time.Tick(conf.GetDuration("pitaya.groups.memory.tickduration")) {
+func groupTTLCleanup(duration time.Duration) {
+	for now := range time.Tick(duration) {
 		memoryGroupsMu.Lock()
 		for groupName, mg := range memoryGroups {
 			if mg.TTL != 0 && now.UnixNano()-mg.LastRefresh > mg.TTL {

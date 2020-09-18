@@ -26,10 +26,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	clustermocks "github.com/topfreegames/pitaya/v2/cluster/mocks"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/codec"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
@@ -44,14 +44,14 @@ import (
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
-	config := viper.New()
+	config := config.NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config).(*App)
 	err := app.doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
 func TestDoSendRPC(t *testing.T) {
-	config := viper.New()
+	config := config.NewDefaultBuilderConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
 	app.server.ID = "myserver"
 	app.rpcServer = &cluster.NatsRPCServer{}

@@ -43,7 +43,6 @@ import (
 
 // NatsRPCClient struct
 type NatsRPCClient struct {
-	config                 *config.Config
 	conn                   *nats.Conn
 	connString             string
 	connectionTimeout      time.Duration
@@ -57,33 +56,32 @@ type NatsRPCClient struct {
 
 // NewNatsRPCClient ctor
 func NewNatsRPCClient(
-	config *config.Config,
+	config config.NatsRPCClientConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	appDieChan chan bool,
 ) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		config:            config,
 		server:            server,
 		running:           false,
 		metricsReporters:  metricsReporters,
 		appDieChan:        appDieChan,
 		connectionTimeout: nats.DefaultTimeout,
 	}
-	if err := ns.configure(); err != nil {
+	if err := ns.configure(config); err != nil {
 		return nil, err
 	}
 	return ns, nil
 }
 
-func (ns *NatsRPCClient) configure() error {
-	ns.connString = ns.config.GetString("pitaya.cluster.rpc.client.nats.connect")
+func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
+	ns.connString = config.Connect
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
-	ns.connectionTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout")
-	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries")
-	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
+	ns.connectionTimeout = config.ConnectionTimeout
+	ns.maxReconnectionRetries = config.MaxReconnectionRetries
+	ns.reqTimeout = config.RequestTimeout
 	if ns.reqTimeout == 0 {
 		return constants.ErrNatsNoRequestTimeout
 	}

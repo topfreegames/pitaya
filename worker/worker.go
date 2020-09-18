@@ -26,42 +26,39 @@ import (
 	"os"
 
 	"github.com/golang/protobuf/proto"
+	workers "github.com/topfreegames/go-workers"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/logger/interfaces"
-
-	workers "github.com/topfreegames/go-workers"
 )
 
 // Worker executes RPCs with retry and backoff time
 type Worker struct {
 	concurrency int
 	registered  bool
-	opts        *EnqueueOpts
-	config      *config.Config
+	opts        *config.EnqueueOpts
 	started     bool
 }
 
 // NewWorker configures and returns a *Worker
-func NewWorker(config *config.Config) (*Worker, error) {
+func NewWorker(config config.WorkerConfig, opts config.EnqueueOpts) (*Worker, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
 	workers.Configure(map[string]string{
-		"server":    config.GetString("pitaya.worker.redis.url"),
-		"pool":      config.GetString("pitaya.worker.redis.pool"),
-		"password":  config.GetString("pitaya.worker.redis.password"),
-		"namespace": config.GetString("pitaya.worker.namespace"),
+		"server":    config.ServerURL,
+		"pool":      config.Pool,
+		"password":  config.Password,
+		"namespace": config.Namespace,
 		"process":   hostname,
 	})
 
 	return &Worker{
-		concurrency: config.GetInt("pitaya.worker.concurrency"),
-		opts:        NewEnqueueOpts(config),
-		config:      config,
+		concurrency: config.Concurrency,
+		opts:        &opts,
 	}, nil
 }
 
@@ -101,7 +98,7 @@ func (w *Worker) EnqueueRPCWithOptions(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
-	opts *EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) (jid string, err error) {
 	return workers.EnqueueWithOptions(rpcQueue, class, &rpcInfo{
 		Route:    routeStr,
@@ -171,7 +168,7 @@ func (w *Worker) parsedRPCJob(rpcJob RPCJob) func(*workers.Msg) {
 }
 
 func (w *Worker) enqueueOptions(
-	opts *EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) workers.EnqueueOptions {
 	return workers.EnqueueOptions{
 		Retry:    opts.RetryEnabled,

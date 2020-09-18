@@ -38,7 +38,6 @@ import (
 
 type etcdServiceDiscovery struct {
 	cli                    *clientv3.Client
-	config                 *config.Config
 	syncServersInterval    time.Duration
 	heartbeatTTL           time.Duration
 	logHeartbeat           bool
@@ -70,7 +69,7 @@ type etcdServiceDiscovery struct {
 
 // NewEtcdServiceDiscovery ctor
 func NewEtcdServiceDiscovery(
-	config *config.Config,
+	config config.EtcdServiceDiscoveryConfig,
 	server *Server,
 	appDieChan chan bool,
 	cli ...*clientv3.Client,
@@ -80,7 +79,6 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:          config,
 		running:         false,
 		server:          server,
 		serverMapByType: make(map[string]map[string]*Server),
@@ -91,31 +89,27 @@ func NewEtcdServiceDiscovery(
 		cli:             client,
 	}
 
-	sd.configure()
+	sd.configure(config)
 
 	return sd, nil
 }
 
-func (sd *etcdServiceDiscovery) configure() {
-	sd.etcdEndpoints = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.endpoints")
-	sd.etcdUser = sd.config.GetString("pitaya.cluster.sd.etcd.user")
-	sd.etcdPass = sd.config.GetString("pitaya.cluster.sd.etcd.pass")
-	sd.etcdDialTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
-	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
-	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
-	sd.logHeartbeat = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
-	sd.syncServersInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.syncservers.interval")
-	sd.revokeTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.revoke.timeout")
-	sd.grantLeaseTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.timeout")
-	sd.grantLeaseMaxRetries = sd.config.GetInt("pitaya.cluster.sd.etcd.grantlease.maxretries")
-	sd.grantLeaseInterval = sd.config.GetDuration("pitaya.cluster.sd.etcd.grantlease.retryinterval")
-	sd.shutdownDelay = sd.config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay")
-	sd.serverTypesBlacklist = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist")
-	sd.syncServersParallelism = sd.config.GetInt("pitaya.cluster.sd.etcd.syncserversparallelism")
-
-	if len(sd.serverTypesBlacklist) > 0 {
-		logger.Log.Warnf("using server types blacklist: %s", sd.serverTypesBlacklist)
-	}
+func (sd *etcdServiceDiscovery) configure(config config.EtcdServiceDiscoveryConfig) {
+	sd.etcdEndpoints = config.EtcdEndpoints
+	sd.etcdUser = config.EtcdUser
+	sd.etcdPass = config.EtcdPass
+	sd.etcdDialTimeout = config.EtcdDialTimeout
+	sd.etcdPrefix = config.EtcdPrefix
+	sd.heartbeatTTL = config.HeartbeatTTL
+	sd.logHeartbeat = config.LogHeartbeat
+	sd.syncServersInterval = config.SyncServersInterval
+	sd.revokeTimeout = config.RevokeTimeout
+	sd.grantLeaseTimeout = config.GrantLeaseTimeout
+	sd.grantLeaseMaxRetries = config.GrantLeaseMaxRetries
+	sd.grantLeaseInterval = config.GrantLeaseInterval
+	sd.shutdownDelay = config.ShutdownDelay
+	sd.serverTypesBlacklist = config.ServerTypesBlacklist
+	sd.syncServersParallelism = config.SyncServersParallelism
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {

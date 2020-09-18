@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/metrics"
@@ -39,15 +38,7 @@ func TestNewRateLimitingWrapper(t *testing.T) {
 	mockedApp := mocks.NewMockPitaya(ctrl)
 	mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
 
-	getConfig := func() *config.Config {
-		c := viper.New()
-		c.Set("pitaya.router.ratelimiting.limit", 20)
-		c.Set("pitaya.router.ratelimiting.interval", time.Second)
-		c.Set("pitaya.router.ratelimiting.forceDisable", false)
-		return config.NewConfig(c)
-	}
-
-	rateLimitingWrapper := NewRateLimitingWrapper(mockedApp, getConfig())
+	rateLimitingWrapper := NewRateLimitingWrapper(mockedApp, config.NewDefaultRateLimitingConfig())
 	expected := NewRateLimiter(mockedApp, nil, 20, time.Second, false)
 	assert.Equal(t, expected, rateLimitingWrapper.wrapConn(nil))
 }

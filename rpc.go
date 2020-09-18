@@ -25,9 +25,9 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/route"
-	"github.com/topfreegames/pitaya/v2/worker"
 )
 
 // RPC calls a method in a different server
@@ -56,7 +56,7 @@ func (app *App) ReliableRPCWithOptions(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
-	opts *worker.EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) (jid string, err error) {
 	return app.worker.EnqueueRPCWithOptions(routeStr, metadata, reply, arg, opts)
 }
