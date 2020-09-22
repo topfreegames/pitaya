@@ -71,7 +71,26 @@ This module implements functionality needed by the gRPC RPC implementation to en
 
 Pitaya has support for metrics reporting, it comes with Prometheus and Statsd support already implemented and has support for custom reporters that implement the `Reporter` interface. Pitaya also comes with support for open tracing compatible frameworks, allowing the easy integration of Jaeger and others.
 
-Some of the reported metrics reported by the `Reporter` include: number of connected clients, request duration and dropped messages.
+The list of metrics reported by the `Reporter` is: 
+
+- Response time: the time to process a message, in nanoseconds. It is segmented
+  by route, status, server type and response code;
+- Process delay time: the delay to start processing a message, in nanoseconds;
+  It is segmented by route and server type;
+- Exceeded Rate Limit: the number of blocked requests by exceeded rate limiting;
+- Connected clients: number of clients connected at the moment;
+- Server count: the number of discovered servers by service discovery. It is
+  segmented by server type;
+- Channel capacity: the available capacity of the channel;
+- Dropped messages: the number of rpc server dropped messages, that is, messages that are not handled;
+- Goroutines count: the current number Goroutines;
+- Heap size: the current heap size;
+- Heap objects count: the current number of objects at the heap;
+- Worker jobs retry: the current amount of RPC reliability worker job retries; 
+- Worker jobs total: the current amount of RPC reliability worker jobs. It is
+  segmented by job status;
+- Worker queue size: the current size of RPC reliability worker job queues. It
+  is segmented by each available queue.
 
 ## Custom Metrics
 
