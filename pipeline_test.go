@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pipeline"
+	"github.com/tutumagi/pitaya/pipeline"
 )
 
 func resetPipelines() {

@@ -29,9 +29,9 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
+	"github.com/tutumagi/pitaya/config"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/helpers"
 )
 
 var etcdSDTables = []struct {

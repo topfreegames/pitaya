@@ -51,7 +51,7 @@ Messages can be pushed to users without previous information about either sessio
 
 ## Modules
 
-Modules are entities that can be registered to the Pitaya application and must implement the defined [interface](https://github.com/topfreegames/pitaya/tree/master/interfaces/interfaces.go#L24). Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
+Modules are entities that can be registered to the Pitaya application and must implement the defined [interface](https://github.com/tutumagi/pitaya/tree/master/interfaces/interfaces.go#L24). Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
 
 Pitaya comes with a few already implemented modules, and more modules can be implemented as needed. The modules Pitaya has currently are:
 
@@ -94,7 +94,7 @@ The list of metrics reported by the `Reporter` is:
 
 ### Custom Metrics
 
-Besides pitaya default monitoring, it is possible to create new metrics. If using only Statsd reporter, no configuration is needed. If using Prometheus, it is necessary do add a configuration specifying the metrics parameters. More details on [doc](configuration.html#metrics-reporting) and this [example](https://github.com/topfreegames/pitaya/tree/master/examples/demo/custom_metrics).
+Besides pitaya default monitoring, it is possible to create new metrics. If using only Statsd reporter, no configuration is needed. If using Prometheus, it is necessary do add a configuration specifying the metrics parameters. More details on [doc](configuration.html#metrics-reporting) and this [example](https://github.com/tutumagi/pitaya/tree/master/examples/demo/custom_metrics).
 
 ## Pipelines
 

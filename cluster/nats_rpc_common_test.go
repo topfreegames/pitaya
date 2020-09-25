@@ -27,7 +27,7 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/helpers"
+	"github.com/tutumagi/pitaya/helpers"
 )
 
 func getServer() *Server {

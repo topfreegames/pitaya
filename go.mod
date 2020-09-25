@@ -1,4 +1,4 @@
-module github.com/topfreegames/pitaya
+module github.com/tutumagi/pitaya
 
 go 1.12
 

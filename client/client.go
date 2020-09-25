@@ -32,17 +32,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/topfreegames/pitaya/acceptor"
+	"github.com/tutumagi/pitaya/acceptor"
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/conn/codec"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/conn/packet"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/util/compression"
+	"github.com/tutumagi/pitaya"
+	"github.com/tutumagi/pitaya/conn/codec"
+	"github.com/tutumagi/pitaya/conn/message"
+	"github.com/tutumagi/pitaya/conn/packet"
+	"github.com/tutumagi/pitaya/logger"
+	"github.com/tutumagi/pitaya/session"
+	"github.com/tutumagi/pitaya/util/compression"
 )
 
 // HandshakeSys struct

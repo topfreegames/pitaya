@@ -27,11 +27,11 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/namespace"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/session"
+	"github.com/tutumagi/pitaya/cluster"
+	"github.com/tutumagi/pitaya/config"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/logger"
+	"github.com/tutumagi/pitaya/session"
 )
 
 // ETCDBindingStorage module that uses etcd to keep in which frontend server each user is bound

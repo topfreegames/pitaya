@@ -24,7 +24,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/tutumagi/pitaya/logger"
 )
 
 // Server struct

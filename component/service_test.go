@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/constants"
+	"github.com/tutumagi/pitaya/conn/message"
+	"github.com/tutumagi/pitaya/constants"
 )
 
 type unexportedTestType struct {

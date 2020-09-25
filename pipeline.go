@@ -20,7 +20,7 @@
 
 package pitaya
 
-import "github.com/topfreegames/pitaya/pipeline"
+import "github.com/tutumagi/pitaya/pipeline"
 
 // BeforeHandler pushs a function to the back of the functions pipeline that will
 // be executed before the handler method

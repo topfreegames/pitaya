@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/conn/packet"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/helpers"
+	"github.com/tutumagi/pitaya/conn/packet"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/helpers"
 )
 
 var tcpAcceptorTables = []struct {

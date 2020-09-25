@@ -25,9 +25,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/groups"
+	"github.com/tutumagi/pitaya/logger"
 )
 
 // Group represents an agglomeration of UIDs which is used to manage

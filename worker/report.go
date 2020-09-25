@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/metrics"
+	"github.com/tutumagi/pitaya/logger"
+	"github.com/tutumagi/pitaya/metrics"
 
 	workers "github.com/topfreegames/go-workers"
 )

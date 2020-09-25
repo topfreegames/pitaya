@@ -25,8 +25,8 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/interfaces"
+	"github.com/tutumagi/pitaya/component"
+	"github.com/tutumagi/pitaya/interfaces"
 )
 
 type MyMod struct {

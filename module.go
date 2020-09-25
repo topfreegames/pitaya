@@ -23,8 +23,8 @@ package pitaya
 import (
 	"fmt"
 
-	"github.com/topfreegames/pitaya/interfaces"
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/tutumagi/pitaya/interfaces"
+	"github.com/tutumagi/pitaya/logger"
 )
 
 var (

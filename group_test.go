@@ -27,9 +27,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/session/mocks"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/session"
+	"github.com/tutumagi/pitaya/session/mocks"
 )
 
 func TestCreateDuplicatedGroup(t *testing.T) {

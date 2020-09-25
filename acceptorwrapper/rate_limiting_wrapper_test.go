@@ -26,7 +26,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/config"
+	"github.com/tutumagi/pitaya/config"
 )
 
 func TestNewRateLimitingWrapper(t *testing.T) {

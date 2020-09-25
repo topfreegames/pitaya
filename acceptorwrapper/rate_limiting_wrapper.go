@@ -21,8 +21,8 @@
 package acceptorwrapper
 
 import (
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/config"
+	"github.com/tutumagi/pitaya/acceptor"
+	"github.com/tutumagi/pitaya/config"
 )
 
 // RateLimitingWrapper rate limits for each connection

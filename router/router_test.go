@@ -7,11 +7,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/cluster/mocks"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/route"
+	"github.com/tutumagi/pitaya/cluster"
+	"github.com/tutumagi/pitaya/cluster/mocks"
+	"github.com/tutumagi/pitaya/conn/message"
+	"github.com/tutumagi/pitaya/protos"
+	"github.com/tutumagi/pitaya/route"
 )
 
 var (

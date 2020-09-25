@@ -28,8 +28,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/constants"
+	"github.com/tutumagi/pitaya/config"
+	"github.com/tutumagi/pitaya/constants"
 )
 
 var (

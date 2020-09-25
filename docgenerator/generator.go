@@ -26,8 +26,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/route"
+	"github.com/tutumagi/pitaya/component"
+	"github.com/tutumagi/pitaya/route"
 )
 
 type docs struct {

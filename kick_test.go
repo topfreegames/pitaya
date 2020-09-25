@@ -27,11 +27,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	clustermocks "github.com/topfreegames/pitaya/cluster/mocks"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/session/mocks"
+	clustermocks "github.com/tutumagi/pitaya/cluster/mocks"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/protos"
+	"github.com/tutumagi/pitaya/session"
+	"github.com/tutumagi/pitaya/session/mocks"
 )
 
 func TestSendKickToUsersLocalSession(t *testing.T) {

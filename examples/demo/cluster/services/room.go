@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/config"
-	"github.com/topfreegames/pitaya/examples/demo/protos"
-	"github.com/topfreegames/pitaya/groups"
-	"github.com/topfreegames/pitaya/timer"
+	"github.com/tutumagi/pitaya"
+	"github.com/tutumagi/pitaya/component"
+	"github.com/tutumagi/pitaya/config"
+	"github.com/tutumagi/pitaya/examples/demo/protos"
+	"github.com/tutumagi/pitaya/groups"
+	"github.com/tutumagi/pitaya/timer"
 )
 
 type (

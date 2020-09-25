@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/topfreegames/pitaya/conn/codec"
-	"github.com/topfreegames/pitaya/conn/packet"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
+	"github.com/tutumagi/pitaya/conn/codec"
+	"github.com/tutumagi/pitaya/conn/packet"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/logger"
 )
 
 // WSAcceptor struct

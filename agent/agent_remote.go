@@ -26,17 +26,17 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/conn/codec"
-	"github.com/topfreegames/pitaya/conn/message"
-	"github.com/topfreegames/pitaya/conn/packet"
-	"github.com/topfreegames/pitaya/constants"
-	"github.com/topfreegames/pitaya/logger"
-	"github.com/topfreegames/pitaya/protos"
-	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/serialize"
-	"github.com/topfreegames/pitaya/session"
-	"github.com/topfreegames/pitaya/util"
+	"github.com/tutumagi/pitaya/cluster"
+	"github.com/tutumagi/pitaya/conn/codec"
+	"github.com/tutumagi/pitaya/conn/message"
+	"github.com/tutumagi/pitaya/conn/packet"
+	"github.com/tutumagi/pitaya/constants"
+	"github.com/tutumagi/pitaya/logger"
+	"github.com/tutumagi/pitaya/protos"
+	"github.com/tutumagi/pitaya/route"
+	"github.com/tutumagi/pitaya/serialize"
+	"github.com/tutumagi/pitaya/session"
+	"github.com/tutumagi/pitaya/util"
 )
 
 // Remote corresponding to another server
