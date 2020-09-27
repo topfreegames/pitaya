@@ -83,7 +83,7 @@ type Session struct {
 	id                int64                  // session global unique id
 	uid               string                 // binding user id
 	lastTime          int64                  // last heartbeat time
-	entity            NetworkEntity          // low-level network entity
+	network           NetworkEntity          // low-level network entity
 	data              map[string]interface{} // session data store
 	handshakeData     *HandshakeData         // handshake data received by the client
 	encodedData       []byte                 // session data encoded as a byte array
@@ -114,7 +114,7 @@ func (c *sessionIDService) sessionID() int64 {
 func New(entity NetworkEntity, frontend bool, UID ...string) *Session {
 	s := &Session{
 		id:               sessionIDSvc.sessionID(),
-		entity:           entity,
+		network:          entity,
 		data:             make(map[string]interface{}),
 		handshakeData:    nil,
 		lastTime:         time.Now().Unix(),
@@ -211,13 +211,13 @@ func (s *Session) updateEncodedData() error {
 
 // Push message to client
 func (s *Session) Push(route string, v interface{}) error {
-	return s.entity.Push(route, v)
+	return s.network.Push(route, v)
 }
 
 // ResponseMID responses message to client, mid is
 // request message ID
 func (s *Session) ResponseMID(ctx context.Context, mid uint, v interface{}, err ...bool) error {
-	return s.entity.ResponseMID(ctx, mid, v, err...)
+	return s.network.ResponseMID(ctx, mid, v, err...)
 }
 
 // ID returns the session id
@@ -316,11 +316,11 @@ func (s *Session) Bind(ctx context.Context, uid string) error {
 
 // Kick kicks the user
 func (s *Session) Kick(ctx context.Context) error {
-	err := s.entity.Kick(ctx)
+	err := s.network.Kick(ctx)
 	if err != nil {
 		return err
 	}
-	return s.entity.Close()
+	return s.network.Close()
 }
 
 // OnClose adds the function it receives to the callbacks that will be called
@@ -351,12 +351,12 @@ func (s *Session) Close() {
 			}
 		}
 	}
-	s.entity.Close()
+	s.network.Close()
 }
 
 // RemoteAddr returns the remote network address.
 func (s *Session) RemoteAddr() net.Addr {
-	return s.entity.RemoteAddr()
+	return s.network.RemoteAddr()
 }
 
 // Remove delete data associated with the key from session storage
@@ -674,7 +674,7 @@ func (s *Session) sendRequestToFront(ctx context.Context, route string, includeD
 	if err != nil {
 		return err
 	}
-	res, err := s.entity.SendRequest(ctx, s.frontendID, route, b)
+	res, err := s.network.SendRequest(ctx, s.frontendID, route, b)
 	if err != nil {
 		return err
 	}

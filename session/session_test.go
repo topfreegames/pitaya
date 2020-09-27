@@ -147,7 +147,7 @@ func TestNew(t *testing.T) {
 				ss = New(entity, table.frontend)
 			}
 			assert.NotZero(t, ss.id)
-			assert.Equal(t, entity, ss.entity)
+			assert.Equal(t, entity, ss.network)
 			assert.Empty(t, ss.data)
 			assert.InDelta(t, time.Now().Unix(), ss.lastTime, 1)
 			assert.Empty(t, ss.OnCloseCallbacks)
