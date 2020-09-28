@@ -31,6 +31,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
+	"github.com/tutumagi/pitaya/common"
 	"github.com/tutumagi/pitaya/constants"
 	"github.com/tutumagi/pitaya/logger"
 	"github.com/tutumagi/pitaya/protos"
@@ -92,6 +93,8 @@ type Session struct {
 	frontendID        string                 // the id of the frontend that owns the session
 	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscriptions     []*nats.Subscription   // subscription created on bind when using nats rpc server
+
+	entity *common.Entity
 }
 
 type sessionIDService struct {
@@ -228,6 +231,16 @@ func (s *Session) ID() int64 {
 // UID returns uid that bind to current session
 func (s *Session) UID() string {
 	return s.uid
+}
+
+// Entity get entiti
+func (s *Session) Entity() *common.Entity {
+	return s.entity
+}
+
+// SetEntity set entity
+func (s *Session) SetEntity(entity *common.Entity) {
+	s.entity = entity
 }
 
 // GetData gets the data
