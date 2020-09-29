@@ -1,3 +1,4 @@
 [submodule "protos"]
 	path = pitaya-protos
-	url = https://github.com/topfreegames/pitaya-protos
+	url = git@github.com:tutumagi/pitaya-protos.git
+	branch = master
