@@ -136,7 +136,7 @@ func getOutputInputNames(command map[string]interface{}) (string, string, error)
 	inputDocs, ok := in.(map[string]interface{})
 	if ok {
 		for k := range inputDocs {
-			if strings.Contains(k, "proto") {
+			if checkPBType(k) {
 				inputName = strings.Replace(k, "*", "", 1)
 			}
 		}
@@ -147,13 +147,23 @@ func getOutputInputNames(command map[string]interface{}) (string, string, error)
 	outputDocs, ok := outputDocsArr[0].(map[string]interface{})
 	if ok {
 		for k := range outputDocs {
-			if strings.Contains(k, "proto") {
+			if checkPBType(k) {
 				outputName = strings.Replace(k, "*", "", 1)
 			}
 		}
 	}
 
 	return inputName, outputName, nil
+}
+
+// checkPBType 检查是否属于proto的协议类型，默认的都是 protos. 见 Pitaya.protos
+//	游戏业务层用的是 pb.
+//	TODO 后续可以考虑这里扩展为 外部传入检测方法，而不是写死
+func checkPBType(name string) bool {
+	if strings.Contains(name, "proto") || strings.Contains(name, "pb.") {
+		return true
+	}
+	return false
 }
 
 // Get recursively all protos needed in a Unmarshal json.
