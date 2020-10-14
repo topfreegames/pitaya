@@ -124,6 +124,10 @@ func buildRequest(
 			Uid:  session.UID(),
 			Data: session.GetDataEncoded(),
 		}
+		if entity := session.Entity(); entity != nil {
+			req.Session.EntityID = string(session.Entity().ID)
+			req.Session.EntityLabel = session.Entity().Label
+		}
 	}
 
 	return req, nil
