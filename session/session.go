@@ -235,12 +235,25 @@ func (s *Session) UID() string {
 
 // Entity get entiti
 func (s *Session) Entity() *common.Entity {
+	if s.entity != nil {
+		if v := s.Value("__entity"); v != nil {
+			if err := json.Unmarshal(v.([]byte), &s.entity); err != nil {
+				logger.Log.Error("error unmarshal json to entity: ", err, v)
+			}
+		}
+	}
 	return s.entity
 }
 
 // SetEntity set entity
 func (s *Session) SetEntity(entity *common.Entity) {
+	// if entitybytes, err := json.Marshal(entity); err != nil {
+	// 	logger.Log.Error("error marshal entity to json: ", err)
+	// 	return
+	// } else {
+	s.Set("__entity", entity)
 	s.entity = entity
+	// }
 }
 
 // GetData gets the data
