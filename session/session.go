@@ -235,7 +235,7 @@ func (s *Session) UID() string {
 
 // Entity get entiti
 func (s *Session) Entity() *common.Entity {
-	if s.entity != nil {
+	if s.entity == nil {
 		if v := s.Value("__entity"); v != nil {
 			if err := json.Unmarshal(v.([]byte), &s.entity); err != nil {
 				logger.Log.Error("error unmarshal json to entity: ", err, v)
