@@ -312,6 +312,7 @@ func (ns *NatsRPCServer) processKick() {
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
 	// TODO should we have concurrency here? it feels like we should
+	// 消息解包 并放到 unhandledReqCh channel buffer 中去
 	go ns.handleMessages()
 
 	logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
@@ -334,6 +335,7 @@ func (ns *NatsRPCServer) Init() error {
 		return err
 	}
 	// this handles remote messages
+	// 处理 RPC 消息
 	for i := 0; i < ns.config.GetInt("pitaya.concurrency.remote.service"); i++ {
 		go ns.processMessages(i)
 	}

@@ -63,6 +63,16 @@ func startupComponents() {
 		}
 	}
 
+	// component initialize hooks
+	for _, c := range remoteComp {
+		c.comp.Init()
+	}
+
+	// component after initialize hooks
+	for _, c := range remoteComp {
+		c.comp.AfterInit()
+	}
+
 	// register all remote components
 	for _, c := range remoteComp {
 		if remoteService == nil {
