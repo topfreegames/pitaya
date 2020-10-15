@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/tutumagi/pitaya/config"
@@ -39,6 +38,7 @@ import (
 	"github.com/tutumagi/pitaya/route"
 	"github.com/tutumagi/pitaya/session"
 	"github.com/tutumagi/pitaya/tracing"
+	"google.golang.org/protobuf/proto"
 )
 
 // NatsRPCClient struct

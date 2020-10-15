@@ -26,8 +26,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/tutumagi/pitaya/conn/message"
+	"google.golang.org/protobuf/proto"
 )
 
 var (

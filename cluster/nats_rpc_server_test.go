@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +37,7 @@ import (
 	"github.com/tutumagi/pitaya/protos"
 	protosmocks "github.com/tutumagi/pitaya/protos/mocks"
 	"github.com/tutumagi/pitaya/session"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewNatsRPCServer(t *testing.T) {

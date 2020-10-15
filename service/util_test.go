@@ -30,7 +30,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +44,7 @@ import (
 	"github.com/tutumagi/pitaya/route"
 	"github.com/tutumagi/pitaya/serialize/mocks"
 	"github.com/tutumagi/pitaya/session"
+	"google.golang.org/protobuf/proto"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
