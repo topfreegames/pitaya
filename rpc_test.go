@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/tutumagi/pitaya/cluster"
 	clustermocks "github.com/tutumagi/pitaya/cluster/mocks"
@@ -37,7 +38,6 @@ import (
 	"github.com/tutumagi/pitaya/router"
 	serializemocks "github.com/tutumagi/pitaya/serialize/mocks"
 	"github.com/tutumagi/pitaya/service"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {

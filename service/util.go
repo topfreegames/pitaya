@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/tutumagi/pitaya/component"
 	"github.com/tutumagi/pitaya/conn/message"
 	"github.com/tutumagi/pitaya/constants"
@@ -37,7 +38,6 @@ import (
 	"github.com/tutumagi/pitaya/serialize"
 	"github.com/tutumagi/pitaya/session"
 	"github.com/tutumagi/pitaya/util"
-	"google.golang.org/protobuf/proto"
 )
 
 var errInvalidMsg = errors.New("invalid message type provided")

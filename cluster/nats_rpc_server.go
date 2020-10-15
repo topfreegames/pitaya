@@ -27,6 +27,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	"github.com/tutumagi/pitaya/config"
 	"github.com/tutumagi/pitaya/constants"
@@ -36,7 +37,6 @@ import (
 	"github.com/tutumagi/pitaya/protos"
 	"github.com/tutumagi/pitaya/session"
 	"github.com/tutumagi/pitaya/util"
-	"google.golang.org/protobuf/proto"
 )
 
 // NatsRPCServer struct

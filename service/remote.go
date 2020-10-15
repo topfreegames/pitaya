@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"google.golang.org/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/tutumagi/pitaya/agent"
 	"github.com/tutumagi/pitaya/cluster"

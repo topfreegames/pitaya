@@ -20,7 +20,7 @@
 
 package worker
 
-import "google.golang.org/protobuf/proto"
+import "github.com/golang/protobuf/proto"
 
 type rpcInfo struct {
 	Route    string

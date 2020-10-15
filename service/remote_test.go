@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tutumagi/pitaya/agent"
@@ -48,7 +49,6 @@ import (
 	serializemocks "github.com/tutumagi/pitaya/serialize/mocks"
 	"github.com/tutumagi/pitaya/session"
 	sessionmocks "github.com/tutumagi/pitaya/session/mocks"
-	"google.golang.org/protobuf/proto"
 )
 
 func (m *MyComp) Remote1(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {

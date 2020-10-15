@@ -25,6 +25,7 @@ import (
 	"net"
 	"reflect"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/tutumagi/pitaya/cluster"
 	"github.com/tutumagi/pitaya/common"
 	"github.com/tutumagi/pitaya/conn/codec"
@@ -37,7 +38,6 @@ import (
 	"github.com/tutumagi/pitaya/serialize"
 	"github.com/tutumagi/pitaya/session"
 	"github.com/tutumagi/pitaya/util"
-	"google.golang.org/protobuf/proto"
 )
 
 // Remote corresponding to another server

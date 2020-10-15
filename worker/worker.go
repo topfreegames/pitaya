@@ -25,10 +25,10 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/tutumagi/pitaya/config"
 	"github.com/tutumagi/pitaya/constants"
 	"github.com/tutumagi/pitaya/logger"
-	"google.golang.org/protobuf/proto"
 
 	workers "github.com/topfreegames/go-workers"
 )
