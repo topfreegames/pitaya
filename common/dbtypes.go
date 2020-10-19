@@ -40,7 +40,7 @@ type MetaComponent struct {
 
 // Entity 实际的实体
 type Entity struct {
-	ID EntityID `bson:"id" json:"id"` // 实体 id，唯一 id
+	ID string `bson:"id" json:"id"` // 实体 id，唯一 id
 	// 因为前端不使用 ecs，这里 Label 用来表示该 entity 是什么类型的 entity
 	// 在 entityType 中 typeName 赋值到该 Label 上
 	Label string `bson:"label" json:"label"`

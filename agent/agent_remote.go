@@ -80,7 +80,7 @@ func NewRemote(
 	s.SetFrontendData(frontendID, sess.GetId())
 	if sess.EntityID != "" {
 		s.SetEntity(&common.Entity{
-			ID:    common.EntityID(sess.EntityID),
+			ID:    sess.EntityID,
 			Label: sess.EntityLabel,
 		})
 	}
