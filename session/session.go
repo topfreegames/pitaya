@@ -204,12 +204,28 @@ func CloseAll() {
 
 func (s *Session) updateEncodedData() error {
 	var b []byte
-	b, err := json.Marshal(s.data)
+	b, err := dataEncoder(s.data)
 	if err != nil {
 		return err
 	}
 	s.encodedData = b
 	return nil
+}
+
+// DataEncoder 自定义session data encoder
+type DataEncoder func(data interface{}) ([]byte, error)
+
+// DataDecoder 自定义session data encoder
+type DataDecoder func(bytes []byte, data interface{}) error
+
+var dataEncoder DataEncoder = json.Marshal
+var dataDecoder DataDecoder = json.Unmarshal
+
+// SetCustomEncodeDecode 设置自定义的session data encoder和decoder
+// 	默认为 json.Marshal 和 json.Unmarshal
+func SetCustomEncodeDecode(encoder DataEncoder, decoder DataDecoder) {
+	dataEncoder = encoder
+	dataDecoder = decoder
 }
 
 // Push message to client
@@ -271,7 +287,7 @@ func (s *Session) SetDataEncoded(encodedData []byte) error {
 		return nil
 	}
 	var data map[string]interface{}
-	err := json.Unmarshal(encodedData, &data)
+	err := dataDecoder(encodedData, &data)
 	if err != nil {
 		return err
 	}
