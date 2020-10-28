@@ -167,13 +167,22 @@ func Cron() {
 
 		// execute job
 		if t.createAt+t.elapse <= unn {
-			pexec(id, t.fn)
-			t.elapse += int64(t.interval)
+			// pexec(id, t.fn)
+			// t.elapse += int64(t.interval)
+
+			// // update timer counter
+			// if t.counter != LoopForever && t.counter > 0 {
+			// 	t.counter--
+			// }
 
 			// update timer counter
 			if t.counter != LoopForever && t.counter > 0 {
 				t.counter--
 			}
+
+			pexec(id, t.fn)
+			t.elapse += int64(t.interval)
+
 		}
 		return true
 	})
