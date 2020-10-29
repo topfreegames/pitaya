@@ -185,7 +185,8 @@ func processHandlerMessage(
 	}
 
 	resp, err := util.Pcall(h.Method, args)
-	if remote && msgType == message.Notify {
+	// if remote && msgType == message.Notify {
+	if msgType == message.Notify { // 不管是不是remote，notify的消息返回值都可能时nil, by tufei
 		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout
 		// will happen in the caller server and will be returned to the client

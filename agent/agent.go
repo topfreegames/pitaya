@@ -218,8 +218,10 @@ func (a *Agent) Push(route string, v interface{}) error {
 		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
 			a.Session.ID(), a.Session.UID(), route, len(d))
 	default:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
-			a.Session.ID(), a.Session.UID(), route, v)
+		// logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+		// 	a.Session.ID(), a.Session.UID(), route, v)
+		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s",
+			a.Session.ID(), a.Session.UID(), route)
 	}
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
