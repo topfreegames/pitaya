@@ -94,24 +94,24 @@ func (r *RemoteService) remoteProcess(
 	route *route.Route,
 	msg *message.Message,
 ) {
-	res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
+
 	switch msg.Type {
 	case message.Request:
+		res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
 		if err != nil {
 			logger.Log.Errorf("Failed to process remote: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
-		err := a.Session.ResponseMID(ctx, msg.ID, res.Data)
+		err = a.Session.ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
 			logger.Log.Errorf("Failed to respond remote: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
 	case message.Notify:
+		err := r.remoteSend(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
 		defer tracing.FinishSpan(ctx, err)
-		if err == nil && res.Error != nil {
-			err = errors.New(res.Error.GetMsg())
-		}
+
 		if err != nil {
 			logger.Log.Errorf("error while sending a notify: %s", err.Error())
 		}
@@ -203,6 +203,43 @@ func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route
 	}
 
 	return r.remoteCall(ctx, target, protos.RPCType_User, route, nil, msg)
+}
+
+// DoSend do send and not wait for reponse
+func (r *RemoteService) DoSend(ctx context.Context, serverID string, route *route.Route, protoData []byte) error {
+	msg := &message.Message{
+		Type:  message.Request,
+		Route: route.Short(),
+		Data:  protoData,
+	}
+
+	target, _ := r.serviceDiscovery.GetServer(serverID)
+	if serverID != "" && target == nil {
+		return constants.ErrServerNotFound
+	}
+
+	return r.remoteSend(ctx, target, protos.RPCType_User, route, nil, msg)
+}
+
+// Send makes sends
+func (r *RemoteService) Send(ctx context.Context, serverID string, route *route.Route, reply proto.Message, arg proto.Message) error {
+	var data []byte
+	var err error
+	if arg != nil {
+		data, err = proto.Marshal(arg)
+		if err != nil {
+			return err
+		}
+	}
+	return r.DoSend(ctx, serverID, route, data)
+
+	// if res.Error != nil {
+	// 	return &e.Error{
+	// 		Code:     res.Error.Code,
+	// 		Message:  res.Error.Msg,
+	// 		Metadata: res.Error.Metadata,
+	// 	}
+	// }
 }
 
 // RPC makes rpcs
@@ -438,6 +475,29 @@ func (r *RemoteService) remoteCall(
 		return nil, err
 	}
 	return res, err
+}
+
+func (r *RemoteService) remoteSend(
+	ctx context.Context,
+	server *cluster.Server,
+	rpcType protos.RPCType,
+	route *route.Route,
+	session *session.Session,
+	msg *message.Message,
+) error {
+	svType := route.SvType
+
+	var err error
+	target := server
+
+	if target == nil {
+		target, err = r.router.Route(ctx, rpcType, svType, route, msg)
+		if err != nil {
+			return e.NewError(err, e.ErrInternalCode)
+		}
+	}
+
+	return r.rpcClient.Post(ctx, rpcType, route, session, msg, target)
 }
 
 // DumpServices outputs all registered services

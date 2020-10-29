@@ -40,6 +40,16 @@ func RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, 
 	return doSendRPC(ctx, serverID, routeStr, reply, arg)
 }
 
+// Send calls a method in a different server
+func Send(ctx context.Context, routeStr string, arg proto.Message) error {
+	return doSendRPC(ctx, "", routeStr, nil, arg)
+}
+
+// SendTo send a rpc to a specific server
+func SendTo(ctx context.Context, serverID, routeStr string, arg proto.Message) error {
+	return doSendRPC(ctx, serverID, routeStr, nil, arg)
+}
+
 // ReliableRPC enqueues RPC to worker so it's executed asynchronously
 // Default enqueue options are used
 func ReliableRPC(
@@ -66,8 +76,10 @@ func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Messa
 		return constants.ErrRPCServerNotInitialized
 	}
 
-	if reflect.TypeOf(reply).Kind() != reflect.Ptr {
-		return constants.ErrReplyShouldBePtr
+	if reply != nil {
+		if reflect.TypeOf(reply).Kind() != reflect.Ptr {
+			return constants.ErrReplyShouldBePtr
+		}
 	}
 
 	r, err := route.Decode(routeStr)
@@ -83,5 +95,11 @@ func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Messa
 		return constants.ErrNonsenseRPC
 	}
 
-	return remoteService.RPC(ctx, serverID, r, reply, arg)
+	if reply == nil {
+		// 如果没有reply 则使用 rpc send
+		return remoteService.Send(ctx, serverID, r, reply, arg)
+	} else {
+		// 如果有reply 则使用 rpc call
+		return remoteService.RPC(ctx, serverID, r, reply, arg)
+	}
 }

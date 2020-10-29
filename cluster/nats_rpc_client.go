@@ -202,6 +202,53 @@ func (ns *NatsRPCClient) Call(
 	return res, nil
 }
 
+// Post calls a method remotelly
+func (ns *NatsRPCClient) Post(
+	ctx context.Context,
+	rpcType protos.RPCType,
+	route *route.Route,
+	session *session.Session,
+	msg *message.Message,
+	server *Server,
+) error {
+	parent, err := tracing.ExtractSpan(ctx)
+	if err != nil {
+		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+	}
+	tags := opentracing.Tags{
+		"span.kind":       "client",
+		"local.id":        ns.server.ID,
+		"peer.serverType": server.Type,
+		"peer.id":         server.ID,
+	}
+	ctx = tracing.StartSpan(ctx, "RPC Send", tags, parent)
+	defer tracing.FinishSpan(ctx, err)
+
+	if !ns.running {
+		err = constants.ErrRPCClientNotInitialized
+		return err
+	}
+	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
+	if err != nil {
+		return err
+	}
+	marshalledData, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+
+	if ns.metricsReporters != nil {
+		startTime := time.Now()
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.StartTimeKey, startTime.UnixNano())
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, route.String())
+		defer func() {
+			typ := "rpc send"
+			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, err)
+		}()
+	}
+	return ns.conn.Publish(getChannel(server.Type, server.ID), marshalledData)
+}
+
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
 	ns.running = true

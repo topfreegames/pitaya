@@ -32,13 +32,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tutumagi/pitaya"
 	"github.com/tutumagi/pitaya/acceptor"
-	"github.com/tutumagi/pitaya/cluster"
 	"github.com/tutumagi/pitaya/component"
 	"github.com/tutumagi/pitaya/config"
 	"github.com/tutumagi/pitaya/constants"
 	"github.com/tutumagi/pitaya/examples/testing/protos"
 	"github.com/tutumagi/pitaya/groups"
-	"github.com/tutumagi/pitaya/modules"
 	"github.com/tutumagi/pitaya/protos/test"
 	"github.com/tutumagi/pitaya/serialize/json"
 	"github.com/tutumagi/pitaya/serialize/protobuf"
@@ -299,26 +297,27 @@ func main() {
 		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
 	}, cfg)
 	if *grpc {
-		gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
-		if err != nil {
-			panic(err)
-		}
+		// 注释 by 涂飞，grpc 没有实现send2
+		// gs, err := cluster.NewGRPCServer(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetMetricsReporters())
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-		bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
-		pitaya.RegisterModule(bs, "bindingsStorage")
+		// bs := modules.NewETCDBindingStorage(pitaya.GetServer(), pitaya.GetConfig())
+		// pitaya.RegisterModule(bs, "bindingsStorage")
 
-		gc, err := cluster.NewGRPCClient(
-			pitaya.GetConfig(),
-			pitaya.GetServer(),
-			pitaya.GetMetricsReporters(),
-			bs,
-			cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
-		)
-		if err != nil {
-			panic(err)
-		}
-		pitaya.SetRPCServer(gs)
-		pitaya.SetRPCClient(gc)
+		// gc, err := cluster.NewGRPCClient(
+		// 	pitaya.GetConfig(),
+		// 	pitaya.GetServer(),
+		// 	pitaya.GetMetricsReporters(),
+		// 	bs,
+		// 	cluster.NewConfigInfoRetriever(pitaya.GetConfig()),
+		// )
+		// if err != nil {
+		// 	panic(err)
+		// }
+		// pitaya.SetRPCServer(gs)
+		// pitaya.SetRPCClient(gc)
 	}
 
 	pitaya.Start()

@@ -366,9 +366,10 @@ func Start() {
 			startDefaultRPCClient()
 		}
 
-		if reflect.TypeOf(app.rpcClient) == reflect.TypeOf(&cluster.GRPCClient{}) {
-			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
-		}
+		// by tufei 暂不使用grpc
+		// if reflect.TypeOf(app.rpcClient) == reflect.TypeOf(&cluster.GRPCClient{}) {
+		// 	app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
+		// }
 
 		if err := RegisterModuleBefore(app.rpcServer, "rpcServer"); err != nil {
 			logger.Log.Fatal("failed to register rpc server module: %s", err.Error())
