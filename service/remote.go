@@ -159,7 +159,8 @@ func (r *RemoteService) SessionBindRemote(ctx context.Context, msg *protos.BindM
 
 // PushToUser sends a push to user
 func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*protos.Response, error) {
-	logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+	// 去掉这个日志打印 by 涂飞
+	// logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
 	s := session.GetSessionByUID(push.GetUid())
 	if s != nil {
 		err := s.Push(push.Route, push.Data)

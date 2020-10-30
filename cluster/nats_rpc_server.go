@@ -291,7 +291,8 @@ func (ns *NatsRPCServer) processSessionBindings() {
 
 func (ns *NatsRPCServer) processPushes() {
 	for push := range ns.getUserPushChannel() {
-		logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
+		// 去掉这个日志打印 by tufei
+		// logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
 		_, err := ns.pitayaServer.PushToUser(context.Background(), push)
 		if err != nil {
 			logger.Log.Errorf("error sending push to user: %v", err)
