@@ -122,13 +122,10 @@ func buildRequest(
 		}
 		req.Msg.Id = uint64(mid)
 		req.Session = &protos.Session{
-			Id:   session.ID(),
-			Uid:  session.UID(),
-			Data: session.GetDataEncoded(),
-		}
-		if entity := session.Entity(); entity != nil {
-			req.Session.EntityID = session.Entity().ID
-			req.Session.EntityLabel = session.Entity().Label
+			Id:     session.ID(),
+			Uid:    session.UID(),
+			Data:   session.GetDataEncoded(),
+			RoleID: session.RoleID(),
 		}
 	}
 

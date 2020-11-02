@@ -31,7 +31,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
-	"github.com/tutumagi/pitaya/common"
 	"github.com/tutumagi/pitaya/constants"
 	"github.com/tutumagi/pitaya/logger"
 	"github.com/tutumagi/pitaya/protos"
@@ -54,6 +53,7 @@ var (
 	SessionCloseCallbacks = make([]func(s *Session), 0)
 	sessionsByUID         sync.Map
 	sessionsByID          sync.Map
+	sessionsByRoleID      sync.Map
 	sessionIDSvc          = newSessionIDService()
 	// SessionCount keeps the current number of sessions
 	SessionCount int64
@@ -94,7 +94,7 @@ type Session struct {
 	frontendSessionID int64                  // the id of the session on the frontend server
 	Subscriptions     []*nats.Subscription   // subscription created on bind when using nats rpc server
 
-	entity *common.Entity
+	roleID string // 角色ID
 }
 
 type sessionIDService struct {
@@ -147,6 +147,15 @@ func GetSessionByUID(uid string) *Session {
 func GetSessionByID(id int64) *Session {
 	// TODO: Block this operation in backend servers
 	if val, ok := sessionsByID.Load(id); ok {
+		return val.(*Session)
+	}
+	return nil
+}
+
+// GetSessionByRoleID 根据角色id 返回session
+func GetSessionByRoleID(roleID string) *Session {
+	// TODO: Block this operation in backend servers
+	if val, ok := sessionsByRoleID.Load(roleID); ok {
 		return val.(*Session)
 	}
 	return nil
@@ -249,14 +258,16 @@ func (s *Session) UID() string {
 	return s.uid
 }
 
-// Entity get entiti
-func (s *Session) Entity() *common.Entity {
-	return s.entity
+// RoleID 返回角色ID
+func (s *Session) RoleID() string {
+	return s.roleID
 }
 
-// SetEntity set entity
-func (s *Session) SetEntity(entity *common.Entity) {
-	s.entity = entity
+// SetRoleID 设置角色ID
+func (s *Session) SetRoleID(rid string) {
+	s.roleID = rid
+
+	sessionsByRoleID.Store(rid, s)
 }
 
 // GetData gets the data
@@ -368,6 +379,7 @@ func (s *Session) Close() {
 	atomic.AddInt64(&SessionCount, -1)
 	sessionsByID.Delete(s.ID())
 	sessionsByUID.Delete(s.UID())
+	sessionsByRoleID.Delete(s.RoleID())
 	// TODO: this logic should be moved to nats rpc server
 	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
@@ -693,8 +705,9 @@ func (s *Session) GetHandshakeData() *HandshakeData {
 
 func (s *Session) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
 	sessionData := &protos.Session{
-		Id:  s.frontendSessionID,
-		Uid: s.uid,
+		Id:     s.frontendSessionID,
+		Uid:    s.uid,
+		RoleID: s.roleID,
 	}
 	if includeData {
 		sessionData.Data = s.encodedData
