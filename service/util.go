@@ -178,7 +178,8 @@ func processHandlerMessage(
 		return nil, err
 	}
 
-	logger.Debugf("SID=%d, Data=%s", session.ID(), data)
+	// 注释 by 涂飞 日志太多了
+	// logger.Debugf("SID=%d, Data=%s", session.ID(), data)
 	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))
