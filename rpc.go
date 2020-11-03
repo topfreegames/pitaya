@@ -87,7 +87,8 @@ func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Messa
 		return err
 	}
 
-	if r.SvType == "" {
+	// 如果既没有serverID 又没有 serverType 则返回 by 涂飞
+	if serverID == "" && r.SvType == "" {
 		return constants.ErrNoServerTypeChosenForRPC
 	}
 
