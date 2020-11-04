@@ -130,6 +130,11 @@ func Configure(
 	if app.heartbeat == time.Duration(0) {
 		app.heartbeat = app.config.GetDuration("pitaya.heartbeat.interval")
 	}
+
+	logger.Log.Debugf("begin heartbeat interval:%d sec timeout:%d sec",
+		app.heartbeat/time.Second,
+		2*app.heartbeat/time.Second)
+
 	app.server.Frontend = isFrontend
 	app.server.Type = serverType
 	app.serverMode = serverMode
