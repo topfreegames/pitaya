@@ -205,7 +205,7 @@ func (ns *NatsRPCServer) handleMessages() {
 			}
 			subsChanLen := float64(len(ns.subChan))
 			maxPending = math.Max(float64(maxPending), subsChanLen)
-			logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", subsChanLen, maxPending, dropped)
+			logger.Log.Debugf("subs channel size: %f, max: %f, dropped: %d", subsChanLen, maxPending, dropped)
 			req := &protos.Request{}
 			// TODO: Add tracing here to report delay to start processing message in spans
 			err = proto.Unmarshal(msg.Data, req)
@@ -255,7 +255,8 @@ func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 
 func (ns *NatsRPCServer) processMessages(threadID int) {
 	for req := range ns.GetUnhandledRequestsChannel() {
-		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
+		// 注释 by 涂飞，日志太多
+		// logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
 		reply := req.GetMsg().GetReply()
 		var response *protos.Response
 		ctx, err := util.GetContextFromRequest(req, ns.server.ID)
@@ -270,10 +271,14 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 			response, _ = ns.pitayaServer.Call(ctx, req)
 		}
 		p, err := ns.marshalResponse(response)
-		err = ns.conn.Publish(reply, p)
-		if err != nil {
-			logger.Log.Error("error sending message response")
+		// if 语句 判断， 如果是一些不需要response的rpc消息，则无需reply  by 涂飞
+		if reply != "" {
+			err = ns.conn.Publish(reply, p)
+			if err != nil {
+				logger.Log.Errorf("error sending message response err:%s %s", err, req.String())
+			}
 		}
+
 	}
 }
 
