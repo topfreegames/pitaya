@@ -90,6 +90,7 @@ func AddTimer(t *Timer) {
 
 // RemoveTimer removes a timer to the manager
 func RemoveTimer(id int64) {
+	logger.Log.Debugf("remove timer %d", id)
 	Manager.timers.Delete(id)
 }
 
@@ -154,6 +155,11 @@ func Cron() {
 			if len(Manager.ChClosingTimer) < timerBacklog {
 				t.Stop()
 			}
+			return true
+		}
+
+		if t.closed > 0 {
+			logger.Log.Errorf("timer closed but still do time callback id:%d", id)
 			return true
 		}
 
