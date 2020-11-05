@@ -44,6 +44,7 @@ func NewUniqueSession(server *cluster.Server, rpcServer cluster.RPCServer, rpcCl
 
 // OnUserBind method should be called when a user binds a session in remote servers
 func (u *UniqueSession) OnUserBind(uid, fid string) {
+	// 如果是 frontend Server 收到了 则return掉，因为 在 Init 已经处理 sessionBind 后的逻辑
 	if u.server.ID == fid {
 		return
 	}
