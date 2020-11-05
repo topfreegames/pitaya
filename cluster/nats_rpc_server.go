@@ -254,31 +254,36 @@ func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 }
 
 func (ns *NatsRPCServer) processMessages(threadID int) {
-	for req := range ns.GetUnhandledRequestsChannel() {
-		// 注释 by 涂飞，日志太多
-		// logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
-		reply := req.GetMsg().GetReply()
-		var response *protos.Response
-		ctx, err := util.GetContextFromRequest(req, ns.server.ID)
-		if err != nil {
-			response = &protos.Response{
-				Error: &protos.Error{
-					Code: e.ErrInternalCode,
-					Msg:  err.Error(),
-				},
-			}
-		} else {
-			response, _ = ns.pitayaServer.Call(ctx, req)
-		}
-		p, err := ns.marshalResponse(response)
-		// if 语句 判断， 如果是一些不需要response的rpc消息，则无需reply  by 涂飞
-		if reply != "" {
-			err = ns.conn.Publish(reply, p)
-			if err != nil {
-				logger.Log.Errorf("error sending message response err:%s %s", err, req.String())
-			}
-		}
+	// 注释by 涂飞
+	// for req := range ns.GetUnhandledRequestsChannel() {
+	// 	ns.ProcessSingleMessage(req)
+	// }
+}
 
+// ProcessSingleMessage 处理单个 rpc 到的消息
+func (ns *NatsRPCServer) ProcessSingleMessage(req *protos.Request) {
+	// 注释 by 涂飞，日志太多
+	// logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
+	reply := req.GetMsg().GetReply()
+	var response *protos.Response
+	ctx, err := util.GetContextFromRequest(req, ns.server.ID)
+	if err != nil {
+		response = &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrInternalCode,
+				Msg:  err.Error(),
+			},
+		}
+	} else {
+		response, _ = ns.pitayaServer.Call(ctx, req)
+	}
+	// if 语句 判断， 如果是一些不需要response的rpc消息，则无需reply  by 涂飞
+	if reply != "" {
+		p, err := ns.marshalResponse(response)
+		err = ns.conn.Publish(reply, p)
+		if err != nil {
+			logger.Log.Errorf("error sending message response err:%s %s", err, req.String())
+		}
 	}
 }
 
@@ -342,15 +347,18 @@ func (ns *NatsRPCServer) Init() error {
 	}
 	// this handles remote messages
 	// 处理 RPC 消息
-	for i := 0; i < ns.config.GetInt("pitaya.concurrency.remote.service"); i++ {
-		go ns.processMessages(i)
-	}
+	// 注释 by 涂飞
+	// for i := 0; i < ns.config.GetInt("pitaya.concurrency.remote.service"); i++ {
+	// 	go ns.processMessages(i)
+	// }
 
 	session.OnSessionBind(ns.onSessionBind)
 
 	// this should be so fast that we shoudn't need concurrency
+	// 处理玩家的push消息，不会再跑到业务逻辑，放到单独协程
 	go ns.processPushes()
 	go ns.processSessionBindings()
+	// TODO 处理玩家被t消息，会触发onSessionClose，会触发业务逻辑，需要考虑放到单个协程处理
 	go ns.processKick()
 
 	return nil

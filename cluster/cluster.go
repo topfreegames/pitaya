@@ -37,6 +37,11 @@ import (
 // RPCServer interface
 type RPCServer interface {
 	SetPitayaServer(protos.PitayaServer)
+
+	// 下面这两条 interface 是为了让 所有消息处理放在同一个协程处理
+	GetUnhandledRequestsChannel() chan *protos.Request
+	ProcessSingleMessage(req *protos.Request)
+
 	interfaces.Module
 }
 

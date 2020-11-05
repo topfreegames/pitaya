@@ -123,20 +123,29 @@ func (h *HandlerService) Dispatch(thread int) {
 	for {
 		// Calls to remote servers block calls to local server
 		select {
+		// 玩家来的消息，在当前app 可以route到，会走到这里
 		case lm := <-h.chLocalProcess:
 			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
 
+		// 玩家来的消息，在当前app route不到，会走到这里，去rpc call/post 其他消息
 		case rm := <-h.chRemoteProcess:
 			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
 
+		// 收到 rpc call/post 后，处理消息
+		case rpcReq := <-h.remoteService.rpcServer.GetUnhandledRequestsChannel():
+			h.remoteService.rpcServer.ProcessSingleMessage(rpcReq)
+
+		// timer tick
 		case <-timer.GlobalTicker.C: // execute cron task
 			timer.Cron()
 
+		// timer create
 		case t := <-timer.Manager.ChCreatedTimer: // new Timers
 			timer.AddTimer(t)
 
+		// timer close
 		case id := <-timer.Manager.ChClosingTimer: // closing Timers
 			timer.RemoveTimer(id)
 		}

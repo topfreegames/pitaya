@@ -50,6 +50,32 @@ func (mr *MockRPCServerMockRecorder) SetPitayaServer(arg0 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPitayaServer", reflect.TypeOf((*MockRPCServer)(nil).SetPitayaServer), arg0)
 }
 
+// GetUnhandledRequestsChannel mocks base method
+func (m *MockRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnhandledRequestsChannel")
+	ret0, _ := ret[0].(chan *protos.Request)
+	return ret0
+}
+
+// GetUnhandledRequestsChannel indicates an expected call of GetUnhandledRequestsChannel
+func (mr *MockRPCServerMockRecorder) GetUnhandledRequestsChannel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnhandledRequestsChannel", reflect.TypeOf((*MockRPCServer)(nil).GetUnhandledRequestsChannel))
+}
+
+// ProcessSingleMessage mocks base method
+func (m *MockRPCServer) ProcessSingleMessage(req *protos.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ProcessSingleMessage", req)
+}
+
+// ProcessSingleMessage indicates an expected call of ProcessSingleMessage
+func (mr *MockRPCServerMockRecorder) ProcessSingleMessage(req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSingleMessage", reflect.TypeOf((*MockRPCServer)(nil).ProcessSingleMessage), req)
+}
+
 // Init mocks base method
 func (m *MockRPCServer) Init() error {
 	m.ctrl.T.Helper()
