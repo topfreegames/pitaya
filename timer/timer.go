@@ -159,7 +159,8 @@ func Cron() {
 		}
 
 		if t.closed > 0 {
-			logger.Log.Errorf("timer closed but still do time callback id:%d", id)
+			// TODO 这里已经移除了 timer 仍然会跑到 time callback， 先return，原因待查
+			// logger.Log.Errorf("timer closed but still do time callback id:%d", id)
 			return true
 		}
 

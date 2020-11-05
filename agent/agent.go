@@ -213,16 +213,17 @@ func (a *Agent) Push(route string, v interface{}) error {
 		return errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 	}
 
-	switch d := v.(type) {
-	case []byte:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
-			a.Session.ID(), a.Session.UID(), route, len(d))
-	default:
-		// logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
-		// 	a.Session.ID(), a.Session.UID(), route, v)
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s",
-			a.Session.ID(), a.Session.UID(), route)
-	}
+	// 注释 by 涂飞，日志打印太多
+	// switch d := v.(type) {
+	// case []byte:
+	// 	logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
+	// 		a.Session.ID(), a.Session.UID(), route, len(d))
+	// default:
+	// 	// logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+	// 	// 	a.Session.ID(), a.Session.UID(), route, v)
+	// 	logger.Log.Debugf("Type=Push, ID=%d, UID=%d, Route=%s",
+	// 		a.Session.ID(), a.Session.UID(), route)
+	// }
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 

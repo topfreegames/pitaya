@@ -205,7 +205,9 @@ func (ns *NatsRPCServer) handleMessages() {
 			}
 			subsChanLen := float64(len(ns.subChan))
 			maxPending = math.Max(float64(maxPending), subsChanLen)
-			logger.Log.Debugf("subs channel size: %f, max: %f, dropped: %d", subsChanLen, maxPending, dropped)
+			// 注释by 涂飞，日志打印太多
+			// logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", int(subsChanLen), int(maxPending), dropped)
+
 			req := &protos.Request{}
 			// TODO: Add tracing here to report delay to start processing message in spans
 			err = proto.Unmarshal(msg.Data, req)
