@@ -51,7 +51,7 @@ import (
 
 var (
 	// hbd contains the heartbeat packet data 8个字节，装64位整型的时间戳
-	hbd []byte = make([]byte, 0, 8)
+	hbd []byte = make([]byte, 8)
 	// hrd contains the handshake response data
 	hrd  []byte
 	once sync.Once
