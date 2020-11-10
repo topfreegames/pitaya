@@ -52,7 +52,7 @@ func TestRegisterModule(t *testing.T) {
 	b := &MyMod{}
 
 	config := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 
 	err := app.RegisterModule(b, "mod")
 	assert.NoError(t, err)
@@ -69,7 +69,7 @@ func TestGetModule(t *testing.T) {
 	b := &MyMod{}
 
 	config := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config)
 
 	app.RegisterModule(b, "mod")
 	m, err := app.GetModule("mod")
@@ -82,7 +82,7 @@ func TestGetModule(t *testing.T) {
 
 func TestStartupModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, *config.NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)
@@ -103,7 +103,7 @@ func TestStartupModules(t *testing.T) {
 
 func TestShutdownModules(t *testing.T) {
 	modulesOrder = []string{}
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, *config.NewDefaultBuilderConfig()).(*App)
 
 	err := app.RegisterModule(&MyMod{name: "mod1"}, "mod1")
 	assert.NoError(t, err)

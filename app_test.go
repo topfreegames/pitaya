@@ -72,7 +72,7 @@ func TestNewApp(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.serverType, func(t *testing.T) {
 			builderConfig := config.NewDefaultBuilderConfig()
-			app := NewDefaultApp(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, builderConfig).(*App)
+			app := NewDefaultApp(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, *builderConfig).(*App)
 			assert.Equal(t, table.isFrontend, app.server.Frontend)
 			assert.Equal(t, table.serverType, app.server.Type)
 			assert.Equal(t, table.serverMode, app.serverMode)
@@ -86,7 +86,7 @@ func TestAddAcceptor(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.serverType, func(t *testing.T) {
 			builderConfig := config.NewDefaultBuilderConfig()
-			builder := NewDefaultBuilder(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, builderConfig)
+			builder := NewDefaultBuilder(table.isFrontend, table.serverType, table.serverMode, table.serverMetadata, *builderConfig)
 			builder.AddAcceptor(acc)
 			app := builder.Build().(*App)
 			if table.isFrontend {
@@ -100,7 +100,7 @@ func TestAddAcceptor(t *testing.T) {
 
 func TestSetDebug(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.SetDebug(true)
 	assert.Equal(t, true, app.debug)
 	app.SetDebug(false)
@@ -115,24 +115,24 @@ func TestSetLogger(t *testing.T) {
 
 func TestGetDieChan(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.Equal(t, app.dieChan, app.GetDieChan())
 }
 
 func TestGetSever(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.Equal(t, app.server, app.GetServer())
 }
 
 func TestGetMetricsReporters(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.Equal(t, app.metricsReporters, app.GetMetricsReporters())
 }
 func TestGetServerByID(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig)
 	s, err := app.GetServerByID("id")
 	assert.Nil(t, s)
 	assert.EqualError(t, constants.ErrNoServerWithID, err.Error())
@@ -140,7 +140,7 @@ func TestGetServerByID(t *testing.T) {
 
 func TestGetServersByType(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig)
 	s, err := app.GetServersByType("id")
 	assert.Nil(t, s)
 	assert.EqualError(t, constants.ErrNoServersAvailableOfType, err.Error())
@@ -149,21 +149,21 @@ func TestGetServersByType(t *testing.T) {
 func TestSetHeartbeatInterval(t *testing.T) {
 	inter := 35 * time.Millisecond
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.SetHeartbeatTime(inter)
 	assert.Equal(t, inter, app.heartbeat)
 }
 
 func TestInitSysRemotes(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.initSysRemotes()
 	assert.NotNil(t, app.remoteComp[0])
 }
 
 func TestSetDictionary(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 
 	dict := map[string]uint16{"someroute": 12}
 	err := app.SetDictionary(dict)
@@ -177,7 +177,7 @@ func TestSetDictionary(t *testing.T) {
 
 func TestAddRoute(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.router = nil
 	err := app.AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
 		return nil, nil
@@ -199,7 +199,7 @@ func TestAddRoute(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	go func() {
 		app.Shutdown()
 	}()
@@ -219,7 +219,7 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 			builderConfig := config.NewDefaultBuilderConfig()
 			builderConfig.Metrics.Prometheus.Enabled = table.enabled
 			builderConfig.Metrics.Statsd.Enabled = table.enabled
-			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 			// if statsd is enabled there are 2 metricsReporters, prometheus and statsd
 			assert.Equal(t, table.enabled, len(app.metricsReporters) == 2)
 		})
@@ -228,10 +228,10 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 
 func TestDefaultSD(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.NotNil(t, app.serviceDiscovery)
 
-	etcdSD, err := cluster.NewEtcdServiceDiscovery(config.NewDefaultEtcdServiceDiscoveryConfig(), app.server, app.dieChan)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(*config.NewDefaultEtcdServiceDiscoveryConfig(), app.server, app.dieChan)
 	assert.NoError(t, err)
 	typeOfetcdSD := reflect.TypeOf(etcdSD)
 
@@ -242,12 +242,12 @@ func TestDefaultRPCServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.NotNil(t, app.rpcServer)
 
 	sessionPool := mocks.NewMockSessionPool(ctrl)
 
-	natsRPCServer, err := cluster.NewNatsRPCServer(config.NewDefaultNatsRPCServerConfig(), app.server, nil, app.dieChan, sessionPool)
+	natsRPCServer, err := cluster.NewNatsRPCServer(*config.NewDefaultNatsRPCServerConfig(), app.server, nil, app.dieChan, sessionPool)
 	assert.NoError(t, err)
 	typeOfNatsRPCServer := reflect.TypeOf(natsRPCServer)
 
@@ -256,10 +256,10 @@ func TestDefaultRPCServer(t *testing.T) {
 
 func TestDefaultRPCClient(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	assert.NotNil(t, app.rpcClient)
 
-	natsRPCClient, err := cluster.NewNatsRPCClient(config.NewDefaultNatsRPCClientConfig(), app.server, nil, app.dieChan)
+	natsRPCClient, err := cluster.NewNatsRPCClient(*config.NewDefaultNatsRPCClientConfig(), app.server, nil, app.dieChan)
 	assert.NoError(t, err)
 	typeOfNatsRPCClient := reflect.TypeOf(natsRPCClient)
 
@@ -270,7 +270,7 @@ func TestStartAndListenStandalone(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
 
 	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
-	builder := NewDefaultBuilder(true, "testtype", Standalone, map[string]string{}, builderConfig)
+	builder := NewDefaultBuilder(true, "testtype", Standalone, map[string]string{}, *builderConfig)
 	builder.AddAcceptor(acc)
 	app := builder.Build().(*App)
 
@@ -299,24 +299,24 @@ func TestStartAndListenCluster(t *testing.T) {
 	ns := helpers.GetTestNatsServer(t)
 	nsAddr := ns.Addr().String()
 
-	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config.NewDefaultBuilderConfig())
+	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, *config.NewDefaultBuilderConfig())
 
 	var err error
-	natsClientConfig := config.NewDefaultNatsRPCClientConfig()
+	natsClientConfig := *config.NewDefaultNatsRPCClientConfig()
 	natsClientConfig.Connect = fmt.Sprintf("nats://%s", nsAddr)
 	builder.RPCClient, err = cluster.NewNatsRPCClient(natsClientConfig, builder.Server, builder.MetricsReporters, builder.DieChan)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	natsServerConfig := config.NewDefaultNatsRPCServerConfig()
+	natsServerConfig := *config.NewDefaultNatsRPCServerConfig()
 	natsServerConfig.Connect = fmt.Sprintf("nats://%s", nsAddr)
 	builder.RPCServer, err = cluster.NewNatsRPCServer(natsServerConfig, builder.Server, builder.MetricsReporters, builder.DieChan, builder.SessionPool)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	etcdSD, err := cluster.NewEtcdServiceDiscovery(config.NewDefaultEtcdServiceDiscoveryConfig(), builder.Server, builder.DieChan, cli)
+	etcdSD, err := cluster.NewEtcdServiceDiscovery(*config.NewDefaultEtcdServiceDiscoveryConfig(), builder.Server, builder.DieChan, cli)
 	builder.ServiceDiscovery = etcdSD
 	assert.NoError(t, err)
 	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
@@ -375,7 +375,7 @@ func TestGetSessionFromCtx(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ss := mocks.NewMockSession(ctrl)
 
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config.NewDefaultBuilderConfig())
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config.NewDefaultBuilderConfig())
 	ctx := context.WithValue(context.Background(), constants.SessionCtxKey, ss)
 	s := app.GetSessionFromCtx(ctx)
 	assert.Equal(t, ss, s)
@@ -425,7 +425,7 @@ func TestDescriptor(t *testing.T) {
 
 func TestDocumentation(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.startupComponents()
 	doc, err := app.Documentation(false)
 	assert.NoError(t, err)
@@ -485,7 +485,7 @@ func TestDocumentation(t *testing.T) {
 
 func TestDocumentationTrue(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 	app.startupComponents()
 	doc, err := app.Documentation(true)
 	assert.NoError(t, err)
@@ -581,7 +581,7 @@ func TestAddGRPCInfoToMetadata(t *testing.T) {
 
 func TestStartWorker(t *testing.T) {
 	builderConfig := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
 
 	app.StartWorker()
 	assert.True(t, app.worker.Started())
@@ -590,7 +590,7 @@ func TestStartWorker(t *testing.T) {
 func TestRegisterRPCJob(t *testing.T) {
 	t.Run("register_once", func(t *testing.T) {
 		builderConfig := config.NewDefaultBuilderConfig()
-		app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig)
+		app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig)
 		app.StartWorker()
 
 		err := app.RegisterRPCJob(nil)
@@ -599,7 +599,7 @@ func TestRegisterRPCJob(t *testing.T) {
 
 	t.Run("register_twice", func(t *testing.T) {
 		builderConfig := config.NewDefaultBuilderConfig()
-		app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig)
+		app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig)
 		app.StartWorker()
 
 		err := app.RegisterRPCJob(nil)

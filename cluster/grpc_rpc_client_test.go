@@ -28,14 +28,14 @@ func getRPCClient(c config.GRPCClientConfig) (*GRPCClient, error) {
 
 func TestNewGRPCClient(t *testing.T) {
 	c := config.NewDefaultGRPCClientConfig()
-	g, err := getRPCClient(c)
+	g, err := getRPCClient(*c)
 	assert.NoError(t, err)
 	assert.NotNil(t, g)
 }
 
 func TestCall(t *testing.T) {
 	c := config.NewDefaultGRPCClientConfig()
-	g, err := getRPCClient(c)
+	g, err := getRPCClient(*c)
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -96,7 +96,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			c := config.NewDefaultGRPCClientConfig()
-			g, err := getRPCClient(c)
+			g, err := getRPCClient(*c)
 			assert.NoError(t, err)
 			uid := "someuid"
 			//mockPitayaClient := protosmocks.NewMockPitayaClient(ctrl)
@@ -156,7 +156,7 @@ func TestSendKick(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			c := config.NewDefaultGRPCClientConfig()
-			g, err := getRPCClient(c)
+			g, err := getRPCClient(*c)
 			assert.NoError(t, err)
 
 			if table.bindingStorage != nil {
@@ -215,7 +215,7 @@ func TestSendPush(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			g, err := getRPCClient(config.NewDefaultGRPCClientConfig())
+			g, err := getRPCClient(*config.NewDefaultGRPCClientConfig())
 			assert.NoError(t, err)
 			uid := "someuid"
 
@@ -278,7 +278,7 @@ func TestAddServer(t *testing.T) {
 			},
 			Frontend: false,
 		}
-		gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
+		gs, err := NewGRPCServer(*serverConfig, server, []metrics.Reporter{})
 		assert.NoError(t, err)
 
 		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
@@ -287,7 +287,7 @@ func TestAddServer(t *testing.T) {
 		err = gs.Init()
 		assert.NoError(t, err)
 		// --- should connect to the server and add it to the client map
-		g, err := getRPCClient(clientConfig)
+		g, err := getRPCClient(*clientConfig)
 		assert.NoError(t, err)
 		g.AddServer(server)
 
@@ -319,7 +319,7 @@ func TestAddServer(t *testing.T) {
 			},
 			Frontend: false,
 		}
-		gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
+		gs, err := NewGRPCServer(*serverConfig, server, []metrics.Reporter{})
 		assert.NoError(t, err)
 
 		mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
@@ -327,7 +327,7 @@ func TestAddServer(t *testing.T) {
 
 		err = gs.Init()
 		assert.NoError(t, err)
-		g, err := getRPCClient(clientConfig)
+		g, err := getRPCClient(*clientConfig)
 		assert.NoError(t, err)
 		// --- should not connect to the server and add it to the client map
 		g.AddServer(server)
@@ -394,7 +394,7 @@ func TestGetServerHost(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			config := config.NewDefaultInfoRetrieverConfig()
 			config.Region = table.clientRegion
-			infoRetriever := NewInfoRetriever(config)
+			infoRetriever := NewInfoRetriever(*config)
 			gs := &GRPCClient{infoRetriever: infoRetriever}
 
 			host, portKey := gs.getServerHost(&Server{
@@ -425,14 +425,14 @@ func TestRemoveServer(t *testing.T) {
 		},
 		Frontend: false,
 	}
-	gs, err := NewGRPCServer(serverConfig, server, []metrics.Reporter{})
+	gs, err := NewGRPCServer(*serverConfig, server, []metrics.Reporter{})
 	assert.NoError(t, err)
 	mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
 	gs.SetPitayaServer(mockPitayaServer)
 	err = gs.Init()
 	assert.NoError(t, err)
 
-	gc, err := NewGRPCClient(clientConfig, server, []metrics.Reporter{}, nil, nil)
+	gc, err := NewGRPCClient(*clientConfig, server, []metrics.Reporter{}, nil, nil)
 	assert.NoError(t, err)
 	gc.AddServer(server)
 

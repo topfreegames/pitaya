@@ -38,7 +38,7 @@ func TestNewRateLimitingWrapper(t *testing.T) {
 	mockedApp := mocks.NewMockPitaya(ctrl)
 	mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
 
-	rateLimitingWrapper := NewRateLimitingWrapper(mockedApp, config.NewDefaultRateLimitingConfig())
+	rateLimitingWrapper := NewRateLimitingWrapper(mockedApp, *config.NewDefaultRateLimitingConfig())
 	expected := NewRateLimiter(mockedApp, nil, 20, time.Second, false)
 	assert.Equal(t, expected, rateLimitingWrapper.wrapConn(nil))
 }

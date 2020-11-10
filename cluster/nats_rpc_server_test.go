@@ -79,7 +79,7 @@ func TestNewNatsRPCServer(t *testing.T) {
 
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	n, err := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil, mockSessionPool)
+	n, err := NewNatsRPCServer(*cfg, sv, mockMetricsReporters, nil, mockSessionPool)
 	assert.NoError(t, err)
 	assert.NotNil(t, n)
 	assert.Equal(t, sv, n.server)
@@ -106,7 +106,7 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 			cfg.Connect = table.natsConnect
 			cfg.Buffer.Messages = table.messagesBufferSize
 			cfg.Buffer.Push = table.pushBufferSize
-			_, err := NewNatsRPCServer(cfg, getServer(), nil, nil, nil)
+			_, err := NewNatsRPCServer(*cfg, getServer(), nil, nil, nil)
 			assert.Equal(t, table.err, err)
 		})
 	}
@@ -131,7 +131,7 @@ func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	n, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	assert.NotNil(t, n.GetUnhandledRequestsChannel())
 	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
 }
@@ -140,7 +140,7 @@ func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	n, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	assert.Equal(t, n.bindingsChan, n.GetBindingsChannel())
 }
 
@@ -154,7 +154,7 @@ func TestNatsRPCServerOnSessionBind(t *testing.T) {
 	mockSession.EXPECT().UID().Return("uid").Times(2)
 	mockSession.EXPECT().SetSubscriptions(gomock.Len(2)).Times(1)
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -169,7 +169,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -187,7 +187,7 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -209,7 +209,7 @@ func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	n, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	assert.NotNil(t, n.getUserPushChannel())
 	assert.IsType(t, make(chan *protos.Push), n.getUserPushChannel())
 }
@@ -218,7 +218,7 @@ func TestNatsRPCServerGetUserKickChannel(t *testing.T) {
 	t.Parallel()
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	n, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	assert.NotNil(t, n.getUserKickChannel())
 	assert.IsType(t, make(chan *protos.KickMsg), n.getUserKickChannel())
 }
@@ -226,7 +226,7 @@ func TestNatsRPCServerGetUserKickChannel(t *testing.T) {
 func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -256,7 +256,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 func TestNatsRPCServerSubscribe(t *testing.T) {
 	cfg := config.NewDefaultNatsRPCServerConfig()
 	sv := getServer()
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -291,7 +291,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, mockMetricsReporters, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
@@ -334,7 +334,7 @@ func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, mockSessionPool)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
 	mockSessionPool.EXPECT().OnSessionBind(rpcServer.onSessionBind)
 	err := rpcServer.Init()
 	assert.Error(t, err)
@@ -349,7 +349,7 @@ func TestNatsRPCServerInit(t *testing.T) {
 	sv := getServer()
 
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, mockSessionPool)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
 	mockSessionPool.EXPECT().OnSessionBind(newFuncPtrMatcher(rpcServer.onSessionBind))
 	err := rpcServer.Init()
 	assert.NoError(t, err)
@@ -386,7 +386,7 @@ func TestNatsRPCServerProcessBindings(t *testing.T) {
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, mockSessionPool)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
 	mockSessionPool.EXPECT().OnSessionBind(newFuncPtrMatcher(rpcServer.onSessionBind))
 	err := rpcServer.Init()
 
@@ -429,7 +429,7 @@ func TestNatsRPCServerProcessPushes(t *testing.T) {
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, mockSessionPool)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
 	mockSessionPool.EXPECT().OnSessionBind(newFuncPtrMatcher(rpcServer.onSessionBind))
 	err := rpcServer.Init()
 
@@ -464,7 +464,7 @@ func TestNatsRPCServerProcessKick(t *testing.T) {
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, mockSessionPool)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
 	mockSessionPool.EXPECT().OnSessionBind(newFuncPtrMatcher(rpcServer.onSessionBind))
 	err := rpcServer.Init()
 
@@ -495,7 +495,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 
-	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil, nil)
+	rpcServer, _ := NewNatsRPCServer(*cfg, sv, mockMetricsReporters, nil, nil)
 	rpcServer.dropped = 100
 	rpcServer.messagesBufferSize = 100
 	rpcServer.pushBufferSize = 100

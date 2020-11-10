@@ -106,9 +106,9 @@ var app pitaya.Pitaya
 
 func main() {
 	conf := configApp()
-	builder := pitaya.NewDefaultBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
+	builder := pitaya.NewDefaultBuilder(true, "chat", pitaya.Cluster, map[string]string{}, *conf)
 	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
-	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
 	app := builder.Build()
 
 	defer app.Shutdown()
@@ -134,7 +134,7 @@ func main() {
 	app.Start()
 }
 
-func configApp() config.BuilderConfig {
+func configApp() *config.BuilderConfig {
 	conf := config.NewDefaultBuilderConfig()
 	conf.Pitaya.Buffer.Handler.LocalProcess = 15
 	conf.Pitaya.Heartbeat.Interval = time.Duration(15 * time.Second)

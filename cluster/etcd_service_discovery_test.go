@@ -109,7 +109,7 @@ func TestNewEtcdServiceDiscovery(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			assert.NotNil(t, e)
 		})
 	}
@@ -122,7 +122,7 @@ func TestEtcdSDBootstrapLease(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			err := e.grantLease()
 			assert.NoError(t, err)
 			assert.NotEmpty(t, e.leaseID)
@@ -137,7 +137,7 @@ func TestEtcdSDBootstrapLeaseError(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			err := e.grantLease()
 			assert.Error(t, err)
 		})
@@ -151,7 +151,7 @@ func TestEtcdSDBootstrapServer(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.grantLease()
 			err := e.bootstrapServer(table.server)
 			assert.NoError(t, err)
@@ -176,7 +176,7 @@ func TestEtcdSDDeleteServer(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.grantLease()
 			err := e.bootstrapServer(table.server)
 			assert.NoError(t, err)
@@ -215,7 +215,7 @@ func TestEtcdSDDeleteLocalInvalidServers(t *testing.T) {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			_, cli := helpers.GetTestEtcd(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			invalidServer := &Server{
 				ID:   "invalid",
 				Type: "bla",
@@ -236,7 +236,7 @@ func TestEtcdSDGetServer(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.grantLease()
 			e.bootstrapServer(table.server)
 			sv, err := e.GetServer(table.server.ID)
@@ -252,7 +252,7 @@ func TestEtcdSDGetServers(t *testing.T) {
 		config := config.NewDefaultEtcdServiceDiscoveryConfig()
 		c, cli := helpers.GetTestEtcd(t)
 		defer c.Terminate(t)
-		e := getEtcdSD(t, config, &Server{}, cli)
+		e := getEtcdSD(t, *config, &Server{}, cli)
 		e.grantLease()
 		for _, server := range table.servers {
 			e.bootstrapServer(server)
@@ -270,7 +270,7 @@ func TestEtcdSDInit(t *testing.T) {
 			config.SyncServers.Interval = time.Duration(30 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.Init()
 			// should set running
 			assert.True(t, e.running)
@@ -297,7 +297,7 @@ func TestEtcdBeforeShutdown(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.Init()
 			assert.True(t, e.running)
 			e.BeforeShutdown()
@@ -315,7 +315,7 @@ func TestEtcdShutdown(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.Init()
 			assert.True(t, e.running)
 			e.Shutdown()
@@ -332,7 +332,7 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 			config.SyncServers.Interval = time.Duration(10 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.running = true
 			e.bootstrapServer(table.server)
 			e.watchEtcdChanges()
@@ -365,7 +365,7 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 			config.SyncServers.Interval = time.Duration(10 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.running = true
 			e.bootstrapServer(table.server)
 			e.watchEtcdChanges()
@@ -405,7 +405,7 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 			config.ServerTypesBlacklist = table.serverTypeBlacklist
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
-			e := getEtcdSD(t, config, table.server, cli)
+			e := getEtcdSD(t, *config, table.server, cli)
 			e.running = true
 			_ = e.bootstrapServer(table.server)
 			e.watchEtcdChanges()
