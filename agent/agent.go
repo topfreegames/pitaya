@@ -22,6 +22,7 @@ package agent
 
 import (
 	"context"
+	"encoding/binary"
 	gojson "encoding/json"
 	e "errors"
 	"fmt"
@@ -49,8 +50,8 @@ import (
 )
 
 var (
-	// hbd contains the heartbeat packet data
-	hbd []byte
+	// hbd contains the heartbeat packet data 8个字节，装64位整型的时间戳
+	hbd []byte = make([]byte, 0, 8)
 	// hrd contains the handshake response data
 	hrd  []byte
 	once sync.Once
@@ -363,12 +364,22 @@ func (a *Agent) heartbeat() {
 	for {
 		select {
 		case <-ticker.C:
-			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
+			now := time.Now()
+			deadline := now.Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
 				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
 				return
 			}
-			a.chSend <- pendingWrite{data: hbd}
+
+			// 时间戳，毫秒
+			ts := uint64(now.UnixNano() / int64(time.Millisecond))
+			binary.BigEndian.PutUint64(hbd, ts)
+
+			bytes, err := a.encoder.Encode(packet.Heartbeat, hbd)
+			if err != nil {
+				logger.Log.Warn("encode heartbeat err %s", err)
+			}
+			a.chSend <- pendingWrite{data: bytes}
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
@@ -486,10 +497,10 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		panic(err)
 	}
 
-	hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
-	if err != nil {
-		panic(err)
-	}
+	// hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 func (a *Agent) reportChannelSize() {
