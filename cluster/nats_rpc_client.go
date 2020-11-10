@@ -213,7 +213,8 @@ func (ns *NatsRPCClient) Post(
 ) error {
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		// 注释 by 涂飞，后面查下 为什么 Post 这里会报这个警告，目前 前端发送位置同步 会触发该问题
+		// logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
 	tags := opentracing.Tags{
 		"span.kind":       "client",

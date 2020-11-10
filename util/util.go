@@ -212,7 +212,8 @@ func StartSpanFromRequest(
 	}
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		// 注释 by 涂飞 这里日志有点多，注释掉，待查 为啥有这个警告
+		// logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
 	ctx = tracing.StartSpan(ctx, route, tags, parent)
 	return ctx
