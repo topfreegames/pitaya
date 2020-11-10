@@ -217,8 +217,8 @@ func TestConfigureDefaultMetricsReporter(t *testing.T) {
 	for _, table := range tables {
 		t.Run(fmt.Sprintf("%t", table.enabled), func(t *testing.T) {
 			builderConfig := config.NewDefaultBuilderConfig()
-			builderConfig.IsPrometheusEnabled = table.enabled
-			builderConfig.IsStatsdEnabled = table.enabled
+			builderConfig.Metrics.Prometheus.Enabled = table.enabled
+			builderConfig.Metrics.Statsd.Enabled = table.enabled
 			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, builderConfig).(*App)
 			// if statsd is enabled there are 2 metricsReporters, prometheus and statsd
 			assert.Equal(t, table.enabled, len(app.metricsReporters) == 2)

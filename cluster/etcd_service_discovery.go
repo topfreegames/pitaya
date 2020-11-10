@@ -95,21 +95,21 @@ func NewEtcdServiceDiscovery(
 }
 
 func (sd *etcdServiceDiscovery) configure(config config.EtcdServiceDiscoveryConfig) {
-	sd.etcdEndpoints = config.EtcdEndpoints
-	sd.etcdUser = config.EtcdUser
-	sd.etcdPass = config.EtcdPass
-	sd.etcdDialTimeout = config.EtcdDialTimeout
-	sd.etcdPrefix = config.EtcdPrefix
-	sd.heartbeatTTL = config.HeartbeatTTL
-	sd.logHeartbeat = config.LogHeartbeat
-	sd.syncServersInterval = config.SyncServersInterval
-	sd.revokeTimeout = config.RevokeTimeout
-	sd.grantLeaseTimeout = config.GrantLeaseTimeout
-	sd.grantLeaseMaxRetries = config.GrantLeaseMaxRetries
-	sd.grantLeaseInterval = config.GrantLeaseInterval
-	sd.shutdownDelay = config.ShutdownDelay
+	sd.etcdEndpoints = config.Endpoints
+	sd.etcdUser = config.User
+	sd.etcdPass = config.Pass
+	sd.etcdDialTimeout = config.DialTimeout
+	sd.etcdPrefix = config.Prefix
+	sd.heartbeatTTL = config.Heartbeat.TTL
+	sd.logHeartbeat = config.Heartbeat.Log
+	sd.syncServersInterval = config.SyncServers.Interval
+	sd.revokeTimeout = config.Revoke.Timeout
+	sd.grantLeaseTimeout = config.GrantLease.Timeout
+	sd.grantLeaseMaxRetries = config.GrantLease.MaxRetries
+	sd.grantLeaseInterval = config.GrantLease.Interval
+	sd.shutdownDelay = config.Shutdown.Delay
 	sd.serverTypesBlacklist = config.ServerTypesBlacklist
-	sd.syncServersParallelism = config.SyncServersParallelism
+	sd.syncServersParallelism = config.SyncServers.Parallelism
 }
 
 func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAliveResponse) {

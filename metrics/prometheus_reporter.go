@@ -296,10 +296,10 @@ func getPrometheusReporter(
 			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, metricsSpecs)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.Prometheus.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil))
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil))
 		})()
 	})
 

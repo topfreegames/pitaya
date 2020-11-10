@@ -42,7 +42,7 @@ func TestNewStatsdReporter(t *testing.T) {
 	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClient, sr.client)
-	assert.Equal(t, float64(cfg.Rate), sr.rate)
+	assert.Equal(t, float64(cfg.Statsd.Rate), sr.rate)
 	assert.Equal(t, "svType", sr.serverType)
 }
 

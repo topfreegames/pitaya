@@ -104,8 +104,8 @@ func TestNatsRPCServerConfigure(t *testing.T) {
 		t.Run(fmt.Sprintf("%s-%d-%d", table.natsConnect, table.messagesBufferSize, table.pushBufferSize), func(t *testing.T) {
 			cfg := config.NewDefaultNatsRPCServerConfig()
 			cfg.Connect = table.natsConnect
-			cfg.Messages = table.messagesBufferSize
-			cfg.Push = table.pushBufferSize
+			cfg.Buffer.Messages = table.messagesBufferSize
+			cfg.Buffer.Push = table.pushBufferSize
 			_, err := NewNatsRPCServer(cfg, getServer(), nil, nil, nil)
 			assert.Equal(t, table.err, err)
 		})

@@ -49,9 +49,9 @@ func NewWorker(config config.WorkerConfig, opts config.EnqueueOpts) (*Worker, er
 	}
 
 	workers.Configure(map[string]string{
-		"server":    config.ServerURL,
-		"pool":      config.Pool,
-		"password":  config.Password,
+		"server":    config.Redis.ServerURL,
+		"pool":      config.Redis.Pool,
+		"password":  config.Redis.Password,
 		"namespace": config.Namespace,
 		"process":   hostname,
 	})
@@ -171,12 +171,12 @@ func (w *Worker) enqueueOptions(
 	opts *config.EnqueueOpts,
 ) workers.EnqueueOptions {
 	return workers.EnqueueOptions{
-		Retry:    opts.RetryEnabled,
-		RetryMax: opts.MaxRetries,
+		Retry:    opts.Enabled,
+		RetryMax: opts.Max,
 		RetryOptions: workers.RetryOptions{
-			Exp:      opts.ExponentialFactor,
-			MinDelay: opts.MinDelayToRetry,
-			MaxDelay: opts.MaxDelayToRetry,
+			Exp:      opts.Exponential,
+			MinDelay: opts.MinDelay,
+			MaxDelay: opts.MaxDelay,
 			MaxRand:  opts.MaxRandom,
 		},
 	}

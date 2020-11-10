@@ -267,7 +267,7 @@ func TestEtcdSDInit(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
-			config.SyncServersInterval = time.Duration(30 * time.Millisecond)
+			config.SyncServers.Interval = time.Duration(30 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
@@ -329,7 +329,7 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
-			config.SyncServersInterval = time.Duration(10 * time.Millisecond)
+			config.SyncServers.Interval = time.Duration(10 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
@@ -362,7 +362,7 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
-			config.SyncServersInterval = time.Duration(10 * time.Millisecond)
+			config.SyncServers.Interval = time.Duration(10 * time.Millisecond)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
@@ -401,7 +401,7 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 	for _, table := range etcdSDBlacklistTables {
 		t.Run(table.name, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
-			config.SyncServersInterval = time.Duration(10 * time.Millisecond)
+			config.SyncServers.Interval = time.Duration(10 * time.Millisecond)
 			config.ServerTypesBlacklist = table.serverTypeBlacklist
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)

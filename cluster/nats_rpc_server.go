@@ -89,18 +89,18 @@ func NewNatsRPCServer(
 }
 
 func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
-	ns.service = config.Service
+	ns.service = config.Services
 	ns.connString = config.Connect
 	if ns.connString == "" {
 		return constants.ErrNoNatsConnectionString
 	}
 	ns.connectionTimeout = config.ConnectionTimeout
 	ns.maxReconnectionRetries = config.MaxReconnectionRetries
-	ns.messagesBufferSize = config.Messages
+	ns.messagesBufferSize = config.Buffer.Messages
 	if ns.messagesBufferSize == 0 {
 		return constants.ErrNatsMessagesBufferSizeZero
 	}
-	ns.pushBufferSize = config.Push
+	ns.pushBufferSize = config.Buffer.Push
 	if ns.pushBufferSize == 0 {
 		return constants.ErrNatsPushBufferSizeZero
 	}

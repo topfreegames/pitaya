@@ -137,16 +137,16 @@ func NewBuilder(isFrontend bool,
 	dieChan := make(chan bool)
 
 	metricsReporters := []metrics.Reporter{}
-	if config.IsPrometheusEnabled {
+	if config.Metrics.Prometheus.Enabled {
 		metricsReporters = addDefaultPrometheus(prometheusConfig, customMetrics, metricsReporters, serverType)
 	}
 
-	if config.IsStatsdEnabled {
+	if config.Metrics.Statsd.Enabled {
 		metricsReporters = addDefaultStatsd(statsdConfig, metricsReporters, serverType)
 	}
 
 	handlerHooks := pipeline.NewHandlerHooks()
-	if config.IsDefaultPipelineEnabled {
+	if config.DefaultPipelines.StructValidation.Enabled {
 		configureDefaultPipelines(handlerHooks)
 	}
 
@@ -189,7 +189,7 @@ func NewBuilder(isFrontend bool,
 		DieChan:          dieChan,
 		PacketDecoder:    codec.NewPomeloPacketDecoder(),
 		PacketEncoder:    codec.NewPomeloPacketEncoder(),
-		MessageEncoder:   message.NewMessagesEncoder(config.PitayaConfig.MessageCompression),
+		MessageEncoder:   message.NewMessagesEncoder(config.Pitaya.Handler.Messages.Compression),
 		Serializer:       json.NewSerializer(),
 		Router:           router.New(),
 		RPCClient:        rpcClient,
@@ -250,9 +250,9 @@ func (builder *Builder) Build() Pitaya {
 		builder.PacketDecoder,
 		builder.PacketEncoder,
 		builder.Serializer,
-		builder.Config.PitayaConfig.HearbeatInterval,
+		builder.Config.Pitaya.Heartbeat.Interval,
 		builder.MessageEncoder,
-		builder.Config.PitayaConfig.BufferAgentMessages,
+		builder.Config.Pitaya.Buffer.Agent.Messages,
 		builder.SessionPool,
 		builder.MetricsReporters,
 	)
@@ -260,8 +260,8 @@ func (builder *Builder) Build() Pitaya {
 	handlerService := service.NewHandlerService(
 		builder.PacketDecoder,
 		builder.Serializer,
-		builder.Config.PitayaConfig.BufferHandlerLocalProcess,
-		builder.Config.PitayaConfig.BufferHandlerRemoteProcess,
+		builder.Config.Pitaya.Buffer.Handler.LocalProcess,
+		builder.Config.Pitaya.Buffer.Handler.RemoteProcess,
 		builder.Server,
 		remoteService,
 		agentFactory,
@@ -286,7 +286,7 @@ func (builder *Builder) Build() Pitaya {
 		builder.Groups,
 		builder.SessionPool,
 		builder.MetricsReporters,
-		builder.Config.PitayaConfig,
+		builder.Config.Pitaya,
 	)
 }
 

@@ -75,7 +75,7 @@ These configuration values configure service discovery for the default etcd serv
     - nil
     - []string
     - A list of server types that should be ignored by the service discovery
-  * - pitaya.cluster.sd.etcd.syncserversparallelism
+  * - pitaya.cluster.sd.etcd.syncservers.parallelism
     - 10
     - int
     - The number of goroutines that should be used while getting server information on etcd initialization
@@ -94,11 +94,11 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - Default value
     - Type
     - Description
-  * - pitaya.buffer.cluster.rpc.server.nats.messages
+  * - pitaya.cluster.rpc.server.nats.buffer.messages
     - 75
     - int
     - Size of the buffer that for the nats RPC server accepts before starting to drop incoming messages
-  * - pitaya.buffer.cluster.rpc.server.nats.push
+  * - pitaya.cluster.rpc.server.nats.buffer.push
     - 100
     - int
     - Size of the buffer that the nats RPC server creates for push messages
@@ -146,7 +146,7 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 3434
     - int
     - The port that the gRPC server listens to
-  * - pitaya.concurrency.remote.service
+  * - pitaya.cluster.rpc.server.nats.services
     - 30
     - int
     - Number of goroutines processing messages at the remote service for the nats RPC service
@@ -268,11 +268,11 @@ Metrics Reporting
     - map[string]string{}
     - map[string]string
     - Constant tags to be added to reported metrics
-  * - pitaya.metrics.additionalTags
+  * - pitaya.metrics.prometheus.additionalTags
     - map[string]string{}
     - map[string]string
     - Additional tags to reported metrics, the map is from tag to default value
-  * - pitaya.metrics.periodicMetrics.period
+  * - pitaya.metrics.period
     - 15s
     - string
     - Period that system metrics will be reported

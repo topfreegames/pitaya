@@ -58,7 +58,7 @@ func newStatsdReporter(
 	serverType string,
 	clientOrNil ...Client) (*StatsdReporter, error) {
 	sr := &StatsdReporter{
-		rate:       config.Rate,
+		rate:       config.Statsd.Rate,
 		serverType: serverType,
 	}
 
@@ -67,11 +67,11 @@ func newStatsdReporter(
 	if len(clientOrNil) > 0 {
 		sr.client = clientOrNil[0]
 	} else {
-		c, err := statsd.New(config.Host)
+		c, err := statsd.New(config.Statsd.Host)
 		if err != nil {
 			return nil, err
 		}
-		c.Namespace = config.Prefix
+		c.Namespace = config.Statsd.Prefix
 		sr.client = c
 	}
 	return sr, nil
