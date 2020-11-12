@@ -106,7 +106,7 @@ func (sd *etcdServiceDiscovery) configure(config config.EtcdServiceDiscoveryConf
 	sd.revokeTimeout = config.Revoke.Timeout
 	sd.grantLeaseTimeout = config.GrantLease.Timeout
 	sd.grantLeaseMaxRetries = config.GrantLease.MaxRetries
-	sd.grantLeaseInterval = config.GrantLease.Interval
+	sd.grantLeaseInterval = config.GrantLease.RetryInterval
 	sd.shutdownDelay = config.Shutdown.Delay
 	sd.serverTypesBlacklist = config.ServerTypesBlacklist
 	sd.syncServersParallelism = config.SyncServers.Parallelism

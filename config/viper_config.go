@@ -91,7 +91,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.endpoints":                      etcdSDConfig.Endpoints,
 		"pitaya.cluster.sd.etcd.prefix":                         etcdSDConfig.Prefix,
 		"pitaya.cluster.sd.etcd.grantlease.maxretries":          etcdSDConfig.GrantLease.MaxRetries,
-		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       etcdSDConfig.GrantLease.Interval,
+		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       etcdSDConfig.GrantLease.RetryInterval,
 		"pitaya.cluster.sd.etcd.grantlease.timeout":             etcdSDConfig.GrantLease.Timeout,
 		"pitaya.cluster.sd.etcd.heartbeat.log":                  etcdSDConfig.Heartbeat.Log,
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  etcdSDConfig.Heartbeat.TTL,

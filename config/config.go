@@ -325,9 +325,9 @@ type EtcdServiceDiscoveryConfig struct {
 		Timeout time.Duration
 	}
 	GrantLease struct {
-		Timeout    time.Duration
-		MaxRetries int
-		Interval   time.Duration
+		Timeout       time.Duration
+		MaxRetries    int
+		RetryInterval time.Duration
 	}
 	Shutdown struct {
 		Delay time.Duration
@@ -363,13 +363,13 @@ func NewDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
 			Timeout: time.Duration(5 * time.Second),
 		},
 		GrantLease: struct {
-			Timeout    time.Duration
-			MaxRetries int
-			Interval   time.Duration
+			Timeout       time.Duration
+			MaxRetries    int
+			RetryInterval time.Duration
 		}{
-			Timeout:    time.Duration(60 * time.Second),
-			MaxRetries: 15,
-			Interval:   time.Duration(5 * time.Second),
+			Timeout:       time.Duration(60 * time.Second),
+			MaxRetries:    15,
+			RetryInterval: time.Duration(5 * time.Second),
 		},
 		Shutdown: struct {
 			Delay time.Duration
@@ -402,8 +402,7 @@ func NewDefaultCustomMetricsSpec() *models.CustomMetricsSpec {
 func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
 	spec := &models.CustomMetricsSpec{}
 
-	err := config.UnmarshalKey("&pitaya.metrics.custom", &spec)
-	if err != nil {
+	if err := config.UnmarshalKey("pitaya.metrics.custom", &spec); err != nil {
 		return NewDefaultCustomMetricsSpec()
 	}
 
