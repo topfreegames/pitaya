@@ -22,19 +22,19 @@ package errors
 
 // ErrUnknownCode is a string code representing an unknown error
 // This will be used when no error code is sent by the handler
-const ErrUnknownCode = "PIT-000"
+const ErrUnknownCode = "PIT_000"
 
 // ErrInternalCode is a string code representing an internal Pitaya error
-const ErrInternalCode = "PIT-500"
+const ErrInternalCode = "PIT_500"
 
 // ErrNotFoundCode is a string code representing a not found related error
-const ErrNotFoundCode = "PIT-404"
+const ErrNotFoundCode = "PIT_404"
 
 // ErrBadRequestCode is a string code representing a bad request related error
-const ErrBadRequestCode = "PIT-400"
+const ErrBadRequestCode = "PIT_400"
 
 // ErrClientClosedRequest is a string code representing the client closed request error
-const ErrClientClosedRequest = "PIT-499"
+const ErrClientClosedRequest = "PIT_499"
 
 // Error is an error with a code, message and metadata
 type Error struct {
