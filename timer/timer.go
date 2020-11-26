@@ -90,7 +90,7 @@ func AddTimer(t *Timer) {
 
 // RemoveTimer removes a timer to the manager
 func RemoveTimer(id int64) {
-	logger.Log.Debugf("remove timer %d", id)
+	// logger.Log.Debugf("remove timer %d", id)
 	Manager.timers.Delete(id)
 }
 
