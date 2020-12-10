@@ -242,7 +242,30 @@ func TestGetNextMessageEOF(t *testing.T) {
 
 	_, err = playerConn.GetNextMessage()
 	assert.EqualError(t, err, constants.ErrReceivedMsgSmallerThanExpected.Error())
+}
 
+func TestGetNextMessageEmptyEOF(t *testing.T) {
+	a := NewTCPAcceptor("0.0.0.0:0")
+	go a.ListenAndServe()
+	defer a.Stop()
+	c := a.GetConnChan()
+	// should be able to connect within 100 milliseconds
+	var conn net.Conn
+	var err error
+	helpers.ShouldEventuallyReturn(t, func() error {
+		conn, err = net.Dial("tcp", a.GetAddr())
+		return err
+	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+
+	playerConn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond).(PlayerConn)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		conn.Close()
+	}()
+
+	_, err = playerConn.GetNextMessage()
+	assert.EqualError(t, err, constants.ErrConnectionClosed.Error())
 }
 
 func TestGetNextMessageInParts(t *testing.T) {
