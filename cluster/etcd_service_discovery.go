@@ -590,7 +590,13 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 	go func(chn clientv3.WatchChan) {
 		for sd.running {
 			select {
-			case wResp := <-chn:
+			case wResp, ok := <-chn:
+				if wResp.Err() != nil {
+					logger.Log.Warnf("etcd watcher response error: %s", wResp.Err())
+				}
+				if !ok {
+					logger.Log.Error("etcd watcher died")
+				}
 				for _, ev := range wResp.Events {
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
 					if err != nil {
