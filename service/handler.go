@@ -183,7 +183,10 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			if err != constants.ErrConnectionClosed {
+				logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			}
+
 			return
 		}
 
