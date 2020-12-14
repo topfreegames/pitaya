@@ -207,7 +207,7 @@ func TestGetMsgType(t *testing.T) {
 
 func TestExecuteBeforePipelineEmpty(t *testing.T) {
 	expected := []byte("ok")
-	res, err := executeBeforePipeline(nil, expected)
+	_, res, err := executeBeforePipeline(nil, expected)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, res)
 }
@@ -217,21 +217,21 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 	data := []byte("ok")
 	expected1 := []byte("oh noes 1")
 	expected2 := []byte("oh noes 2")
-	before1 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before1 := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, data, in)
-		return expected1, nil
+		return ctx, expected1, nil
 	}
-	before2 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before2 := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, expected1, in)
-		return expected2, nil
+		return ctx, expected2, nil
 	}
 	pipeline.BeforeHandler.PushBack(before1)
 	pipeline.BeforeHandler.PushBack(before2)
 	defer pipeline.BeforeHandler.Clear()
 
-	res, err := executeBeforePipeline(c, data)
+	_, res, err := executeBeforePipeline(c, data)
 	assert.NoError(t, err)
 	assert.Equal(t, expected2, res)
 }
@@ -239,14 +239,14 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 func TestExecuteBeforePipelineError(t *testing.T) {
 	c := context.Background()
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
-		return nil, expected
+		return ctx, nil, expected
 	}
 	pipeline.BeforeHandler.PushFront(before)
 	defer pipeline.BeforeHandler.Clear()
 
-	_, err := executeBeforePipeline(c, []byte("ok"))
+	_, _, err := executeBeforePipeline(c, []byte("ok"))
 	assert.Equal(t, expected, err)
 }
 
@@ -408,8 +408,8 @@ func TestProcessHandlerMessageBrokenBeforePipeline(t *testing.T) {
 	handlers[rt.Short()] = &component.Handler{}
 	defer func() { delete(handlers, rt.Short()) }()
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in interface{}) (interface{}, error) {
-		return nil, expected
+	before := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
+		return ctx, nil, expected
 	}
 	pipeline.BeforeHandler.PushFront(before)
 	defer pipeline.BeforeHandler.Clear()
