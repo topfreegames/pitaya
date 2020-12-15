@@ -23,6 +23,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -68,6 +69,12 @@ func (m *MyComp) RemoteErr(ctx context.Context) (*test.SomeStruct, error) {
 }
 
 type unregisteredStruct struct{}
+
+func errorIs(t *testing.T, err1 error, err2 error)  {
+	if !assert.ObjectsAreEqual(err1, err2) && !errors.Is(err1, err2) {
+		assert.Fail(t, fmt.Sprintf("Error does not match target:\nactual: %s\nexpected: %s", err1, err2))
+	}
+}
 
 func TestNewRemoteService(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
@@ -181,7 +188,7 @@ func TestRemoteServicePushToUser(t *testing.T) {
 			}
 			_, err := svc.PushToUser(context.Background(), table.p)
 			if table.err != nil {
-				assert.EqualError(t, err, table.err.Error())
+				errorIs(t, err, table.err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -273,7 +280,7 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, ss, msg, sv).Return(table.res, table.err)
 			}
 			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, ss, msg)
-			assert.Equal(t, table.err, err)
+			errorIs(t, err, table.err)
 			assert.Equal(t, table.res, res)
 		})
 	}
@@ -483,7 +490,9 @@ func TestRemoteServiceRPC(t *testing.T) {
 			if table.serverID != "" {
 				var sdRet *cluster.Server
 				if table.foundServer {
-					sdRet = &cluster.Server{}
+					sdRet = &cluster.Server{
+						ID: table.serverID,
+					}
 				}
 				mockSD.EXPECT().GetServer(table.serverID).Return(sdRet, nil)
 			}
@@ -504,7 +513,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: b}, table.err)
 			}
 			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.arg)
-			assert.Equal(t, table.err, err)
+			errorIs(t, err, table.err)
 			if table.reply != nil {
 				assert.Equal(t, table.reply, expected)
 			}
