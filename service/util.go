@@ -101,7 +101,7 @@ func executeBeforePipeline(ctx context.Context, data interface{}) (context.Conte
 	res := data
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
 		for _, h := range pipeline.BeforeHandler.Handlers {
-			ctx, _, err = h(ctx, res)
+			ctx, res, err = h(ctx, res)
 			if err != nil {
 				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
 				return ctx, res, err
