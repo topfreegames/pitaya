@@ -45,7 +45,7 @@ var myAfterHandler = func(ctx context.Context, out interface{}, err error) (inte
 func TestBeforeHandler(t *testing.T) {
 	resetPipelines()
 	BeforeHandler(myHandler)
-	ctx, r, err := pipeline.BeforeHandler.Handlers[0](nil, nil)
+	ctx, r, err := pipeline.BeforeHandler.Handlers[0](context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test"), r)
 	assert.Equal(t, "123456", ctx.Value("traceID").(string))
