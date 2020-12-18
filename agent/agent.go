@@ -40,6 +40,7 @@ import (
 	"github.com/tutumagi/pitaya/logger"
 	"github.com/tutumagi/pitaya/metrics"
 	"github.com/tutumagi/pitaya/protos"
+	"github.com/tutumagi/pitaya/route"
 	"github.com/tutumagi/pitaya/serialize"
 	"github.com/tutumagi/pitaya/session"
 	"github.com/tutumagi/pitaya/tracing"
@@ -68,6 +69,10 @@ type (
 		chSend             chan pendingWrite // push message queue
 		chStopHeartbeat    chan struct{}     // stop heartbeats
 		chStopWrite        chan struct{}     // stop writing messages
+		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
+		ChAgentDie         chan struct{}         // 
+		handleFlag         bool
+		handleMutex        sync.Mutex
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -94,6 +99,12 @@ type (
 		ctx  context.Context
 		data []byte
 		err  error
+	}
+
+	UnhandledRoleMessage struct {
+		Ctx   context.Context
+		Route *route.Route
+		Msg   *message.Message
 	}
 )
 
@@ -132,6 +143,8 @@ func NewAgent(
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
+		handleFlag:         false,
+		ChAgentDie:         make(chan struct{}),
 	}
 
 	// binding session
@@ -276,6 +289,8 @@ func (a *Agent) Close() error {
 		close(a.chStopWrite)
 		close(a.chStopHeartbeat)
 		close(a.chDie)
+		close(a.ChRoleMessages)
+		close(a.ChAgentDie)
 		onSessionClosed(a.Session)
 	}
 
@@ -513,4 +528,25 @@ func (a *Agent) reportChannelSize() {
 			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}
+}
+
+//设置处理消息标识
+func (a *Agent) SetHandleFlagIfNeed() bool {
+	a.handleMutex.Lock()
+	defer a.handleMutex.Unlock()
+
+	if !a.handleFlag && len(a.ChRoleMessages) > 0 {
+		a.handleFlag = true;
+		return true
+	}
+
+	return false
+}
+
+func (a *Agent) HandleMessagesFinish() {
+	a.handleMutex.Lock()
+	defer a.handleMutex.Unlock()
+
+	a.handleFlag = false;
+	logger.Log.Debugf("HandleMessagesFinish uid =%s", a.Session.UID())
 }

@@ -61,6 +61,7 @@ type (
 		appDieChan         chan bool             // die channel app
 		chLocalProcess     chan unhandledMessage // channel of messages that will be processed locally
 		chRemoteProcess    chan unhandledMessage // channel of messages that will be processed remotely
+		MessageChanSize    int
 		decoder            codec.PacketDecoder   // binary decoder
 		encoder            codec.PacketEncoder   // binary encoder
 		heartbeatTimeout   time.Duration
@@ -100,6 +101,7 @@ func NewHandlerService(
 		services:           make(map[string]*component.Service),
 		chLocalProcess:     make(chan unhandledMessage, localProcessBufferSize),
 		chRemoteProcess:    make(chan unhandledMessage, remoteProcessBufferSize),
+		MessageChanSize:    localProcessBufferSize + remoteProcessBufferSize,
 		decoder:            packetDecoder,
 		encoder:            packetEncoder,
 		messagesBufferSize: messagesBufferSize,
@@ -125,17 +127,25 @@ func (h *HandlerService) Dispatch(thread int) {
 		select {
 		// 玩家来的消息，在当前app 可以route到，会走到这里
 		case lm := <-h.chLocalProcess:
+			logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <0> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
 			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
+			logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <1> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
 
 		// 玩家来的消息，在当前app route不到，会走到这里，去rpc call/post 其他消息
 		case rm := <-h.chRemoteProcess:
+			logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
 			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
+			logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
 
 		// 收到 rpc call/post 后，处理消息
 		case rpcReq := <-h.remoteService.rpcServer.GetUnhandledRequestsChannel():
+			// logger.Log.Infof("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <0> for ", zap.Any("rpcReq", rpcReq))
+			logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <0> for route=%s", rpcReq.Msg.Route)
 			h.remoteService.rpcServer.ProcessSingleMessage(rpcReq)
+			// logger.Log.Infof("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <1> for ", zap.Any("rpcReq", rpcReq))
+			logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <1> for route=%s", rpcReq.Msg.Route)
 
 		// timer tick
 		case <-timer.GlobalTicker.C: // execute cron task
@@ -176,9 +186,13 @@ func (h *HandlerService) Register(comp component.Component, opts []component.Opt
 func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// create a client agent and startup write goroutine
 	a := agent.NewAgent(conn, h.decoder, h.encoder, h.serializer, h.heartbeatTimeout, h.messagesBufferSize, h.appDieChan, h.messageEncoder, h.metricsReporters)
+	if a.ChRoleMessages == nil {
+		a.ChRoleMessages = make(chan agent.UnhandledRoleMessage, h.MessageChanSize)
+	}
 
 	// startup agent goroutine
 	go a.Handle()
+	go h.processGameMessage(a)
 
 	logger.Log.Debugf("New session established: %s", a.String())
 
@@ -189,6 +203,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	}()
 
 	for {
+		// logger.Log.Debugf("pitaya.handler begin to get nextmessage for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
@@ -207,6 +222,8 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 			continue
 		}
 
+		// logger.Log.Debugf("pitaya.handler end to decode nextmessage for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
+
 		// process all packet
 		for i := range packets {
 			if err := h.processPacket(a, packets[i]); err != nil {
@@ -221,6 +238,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
 		logger.Log.Debug("Received handshake packet")
+		// logger.Log.Infof("pitaya.handler end to processPacket :handshake packet for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 		if err := a.SendHandshakeResponse(); err != nil {
 			logger.Log.Errorf("Error sending handshake response: %s", err.Error())
 			return err
@@ -247,6 +265,7 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	case packet.HandshakeAck:
 		a.SetStatus(constants.StatusWorking)
 		logger.Log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
+		// logger.Log.Infof("pitaya.handler end to processPacket :handshake ACK for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 
 	case packet.Data:
 		if a.GetStatus() < constants.StatusWorking {
@@ -258,7 +277,10 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		if err != nil {
 			return err
 		}
+
+		// logger.Log.Debugf("pitaya.handler begin to processMessage for SessionID=%d, UID=%s, route=%s", a.Session.ID(), a.Session.UID(), msg.Route)
 		h.processMessage(a, msg)
+		// logger.Log.Debugf("pitaya.handler end to processMessage for SessionID=%d, UID=%s, route=%s", a.Session.ID(), a.Session.UID(), msg.Route)
 
 	case packet.Heartbeat:
 		// expected
@@ -294,19 +316,84 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 		r.SvType = h.server.Type
 	}
 
-	message := unhandledMessage{
-		ctx:   ctx,
-		agent: a,
-		route: r,
-		msg:   msg,
+	// 若走 Dispatch() 协程池， 则打开以下代码 (玩家消息执行顺序无法保证!)
+	// message := unhandledMessage{
+	// 	ctx:   ctx,
+	// 	agent: a,
+	// 	route: r,
+	// 	msg:   msg,
+	// }
+	// if r.SvType == h.server.Type {
+	// 	h.chLocalProcess <- message
+	// } else {
+	// 	if h.remoteService != nil {
+	// 		h.chRemoteProcess <- message
+	// 	} else {
+	// 		logger.Log.Warnf("request made to another server type but no remoteService running")
+	// 	}
+	// }
+
+	message := agent.UnhandledRoleMessage {
+		Ctx:   ctx,
+		Route: r,
+		Msg:   msg,
 	}
-	if r.SvType == h.server.Type {
-		h.chLocalProcess <- message
-	} else {
-		if h.remoteService != nil {
-			h.chRemoteProcess <- message
-		} else {
-			logger.Log.Warnf("request made to another server type but no remoteService running")
+
+	a.ChRoleMessages <- message
+}
+
+// func (h *HandlerService) processGameMessageByGoIfNeed(a *agent.Agent) {
+// 	if a == nil {
+// 		return
+// 	}
+
+// 	if a.SetHandleFlagIfNeed() {
+// 		go h.processGameMessage(a)
+// 	}
+// }
+
+func (h *HandlerService) processGameMessage(a *agent.Agent) {
+
+	// defer a.HandleMessagesFinish()
+	uid := a.Session.UID();
+
+	for {
+		select {
+		case n := <-a.ChRoleMessages:
+
+			m := unhandledMessage{
+				ctx:   n.Ctx,
+				agent: a,
+				route: n.Route,
+				msg:   n.Msg,
+			}
+
+			uid = a.Session.UID()
+
+			if m.route.SvType == h.server.Type {
+
+				logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+				metrics.ReportMessageProcessDelayFromCtx(m.ctx, h.metricsReporters, "local")
+				h.localProcess(m.ctx, m.agent, m.route, m.msg)
+				logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+
+			} else {
+				if h.remoteService != nil {
+
+					logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+					metrics.ReportMessageProcessDelayFromCtx(m.ctx, h.metricsReporters, "remote")
+					h.remoteService.remoteProcess(m.ctx, nil, m.agent, m.route, m.msg)
+
+					logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+
+				} else {
+					logger.Log.Warnf("request made to another server type but no remoteService running")
+				}
+			}
+
+		case <-a.ChAgentDie:
+			logger.Log.Warnf("processGameMessage exit. uid = %s", uid)
+			return
 		}
 	}
 }
