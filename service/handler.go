@@ -342,19 +342,8 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	a.ChRoleMessages <- message
 }
 
-// func (h *HandlerService) processGameMessageByGoIfNeed(a *agent.Agent) {
-// 	if a == nil {
-// 		return
-// 	}
-
-// 	if a.SetHandleFlagIfNeed() {
-// 		go h.processGameMessage(a)
-// 	}
-// }
-
 func (h *HandlerService) processGameMessage(a *agent.Agent) {
 
-	// defer a.HandleMessagesFinish()
 	uid := a.Session.UID();
 
 	for {

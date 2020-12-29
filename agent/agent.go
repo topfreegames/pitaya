@@ -71,8 +71,6 @@ type (
 		chStopWrite        chan struct{}     // stop writing messages
 		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
 		ChAgentDie         chan struct{}         // 
-		handleFlag         bool
-		handleMutex        sync.Mutex
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -143,7 +141,6 @@ func NewAgent(
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
-		handleFlag:         false,
 		ChAgentDie:         make(chan struct{}),
 	}
 
@@ -528,25 +525,4 @@ func (a *Agent) reportChannelSize() {
 			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}
-}
-
-//设置处理消息标识
-func (a *Agent) SetHandleFlagIfNeed() bool {
-	a.handleMutex.Lock()
-	defer a.handleMutex.Unlock()
-
-	if !a.handleFlag && len(a.ChRoleMessages) > 0 {
-		a.handleFlag = true;
-		return true
-	}
-
-	return false
-}
-
-func (a *Agent) HandleMessagesFinish() {
-	a.handleMutex.Lock()
-	defer a.handleMutex.Unlock()
-
-	a.handleFlag = false;
-	logger.Log.Debugf("HandleMessagesFinish uid =%s", a.Session.UID())
 }
