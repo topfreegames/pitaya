@@ -418,8 +418,8 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
-	for name := range handlers {
-		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
+	for name, hh := range handlers {
+		logger.Log.Infof("registered handler %s, isRawArg: %t, type: %v", name, hh.IsRawArg, hh.MessageType)
 	}
 }
 
