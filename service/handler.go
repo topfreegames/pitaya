@@ -62,8 +62,8 @@ type (
 		chLocalProcess     chan unhandledMessage // channel of messages that will be processed locally
 		chRemoteProcess    chan unhandledMessage // channel of messages that will be processed remotely
 		MessageChanSize    int
-		decoder            codec.PacketDecoder   // binary decoder
-		encoder            codec.PacketEncoder   // binary encoder
+		decoder            codec.PacketDecoder // binary decoder
+		encoder            codec.PacketEncoder // binary encoder
 		heartbeatTimeout   time.Duration
 		messagesBufferSize int
 		remoteService      *RemoteService
@@ -333,7 +333,7 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	// 	}
 	// }
 
-	message := agent.UnhandledRoleMessage {
+	message := agent.UnhandledRoleMessage{
 		Ctx:   ctx,
 		Route: r,
 		Msg:   msg,
@@ -344,14 +344,14 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 
 func (h *HandlerService) processGameMessage(a *agent.Agent) {
 
-	uid := a.Session.UID();
+	uid := a.Session.UID()
 
 	for {
 		select {
 		case n := <-a.ChRoleMessages:
 
 			if n.Ctx != nil && n.Route != nil && n.Msg != nil {
-				
+
 				m := unhandledMessage{
 					ctx:   n.Ctx,
 					agent: a,
@@ -363,19 +363,19 @@ func (h *HandlerService) processGameMessage(a *agent.Agent) {
 
 				if m.route.SvType == h.server.Type {
 
-					logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+					// logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
 					metrics.ReportMessageProcessDelayFromCtx(m.ctx, h.metricsReporters, "local")
 					h.localProcess(m.ctx, m.agent, m.route, m.msg)
-					logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+					// logger.Log.Debugf("pitaya.handler processGameMessage -> localProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
 
 				} else {
 					if h.remoteService != nil {
 
-						logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+						// logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
 						metrics.ReportMessageProcessDelayFromCtx(m.ctx, h.metricsReporters, "remote")
 						h.remoteService.remoteProcess(m.ctx, nil, m.agent, m.route, m.msg)
 
-						logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
+						// logger.Log.Debugf("pitaya.handler processGameMessage -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", m.agent.Session.ID(), m.agent.Session.UID(), m.msg.Route)
 
 					} else {
 						logger.Log.Warnf("request made to another server type but no remoteService running")
