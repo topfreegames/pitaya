@@ -127,25 +127,25 @@ func (h *HandlerService) Dispatch(thread int) {
 		select {
 		// 玩家来的消息，在当前app 可以route到，会走到这里
 		case lm := <-h.chLocalProcess:
-			logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <0> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <0> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
 			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
-			logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <1> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> localProcess <1> for SessionID=%d, UID=%s, route=%s", lm.agent.Session.ID(), lm.agent.Session.UID(), lm.msg.Route)
 
 		// 玩家来的消息，在当前app route不到，会走到这里，去rpc call/post 其他消息
 		case rm := <-h.chRemoteProcess:
-			logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <0> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
 			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
-			logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> remoteProcess <1> for SessionID=%d, UID=%s, route=%s", rm.agent.Session.ID(), rm.agent.Session.UID(), rm.msg.Route)
 
 		// 收到 rpc call/post 后，处理消息
 		case rpcReq := <-h.remoteService.rpcServer.GetUnhandledRequestsChannel():
 			// logger.Log.Infof("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <0> for ", zap.Any("rpcReq", rpcReq))
-			logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <0> for route=%s", rpcReq.Msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <0> for route=%s", rpcReq.Msg.Route)
 			h.remoteService.rpcServer.ProcessSingleMessage(rpcReq)
 			// logger.Log.Infof("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <1> for ", zap.Any("rpcReq", rpcReq))
-			logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <1> for route=%s", rpcReq.Msg.Route)
+			// logger.Log.Debugf("pitaya.handler Dispatch -> rpc.ProcessSingleMessage <1> for route=%s", rpcReq.Msg.Route)
 
 		// timer tick
 		case <-timer.GlobalTicker.C: // execute cron task
