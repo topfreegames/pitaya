@@ -164,7 +164,7 @@ func processHandlerMessage(
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
-		logger.Warnf("invalid message type, error: %s", err.Error())
+		logger.Warnf("invalid message type, router:%s error: %s", rt.Short(), err.Error())
 	}
 
 	// First unmarshal the handler arg that will be passed to
