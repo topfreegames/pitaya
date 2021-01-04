@@ -173,14 +173,17 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// guarantee agent related resource is destroyed
 	defer func() {
 		a.GetSession().Close()
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.GetSession().ID(), a.GetSession().UID())
+		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%s", a.GetSession().ID(), a.GetSession().UID())
 	}()
 
 	for {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			if err != constants.ErrConnectionClosed {
+				logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			}
+
 			return
 		}
 

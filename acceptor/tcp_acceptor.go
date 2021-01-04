@@ -51,6 +51,10 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	// if the header has no data, we can consider it as a closed connection
+	if len(header) == 0 {
+		return nil, constants.ErrConnectionClosed
+	}
 	msgSize, _, err := codec.ParseHeader(header)
 	if err != nil {
 		return nil, err
