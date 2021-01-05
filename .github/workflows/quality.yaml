@@ -20,3 +20,7 @@ jobs:
       run: make setup-ci
     - name: Run tests
       run: make test
+    - name: Send coverage
+      env:
+        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: goveralls -coverprofile=covprofile -service=github
