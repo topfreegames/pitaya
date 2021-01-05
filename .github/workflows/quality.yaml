@@ -1,0 +1,22 @@
+name: Quality
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: '1.13'
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup dependencies
+      run: make setup-ci
+    - name: Run tests
+      run: make test
