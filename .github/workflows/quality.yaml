@@ -24,11 +24,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     - name: Setup dependencies
-      env:
-        GO111MODULE: off
       run: make setup-ci
     - name: Run tests
       run: make test
+    - name: Install goveralls
+      env:
+        GO111MODULE: off
+      run: go get github.com/mattn/goveralls
     - name: Send coverage
       env:
         COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
