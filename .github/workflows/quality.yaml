@@ -16,7 +16,16 @@ jobs:
         go-version: '1.13'
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Restore cache
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     - name: Setup dependencies
+      env:
+        GO111MODULE: off
       run: make setup-ci
     - name: Run tests
       run: make test
