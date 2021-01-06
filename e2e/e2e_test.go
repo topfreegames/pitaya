@@ -56,16 +56,16 @@ func TestHandlerCallToFront(t *testing.T) {
 	tables := []struct {
 		req  string
 		data []byte
-		resp []byte
+		resp string
 	}{
-		{"connector.testsvc.testrequestonlysessionreturnsptr", []byte(``), []byte(`{"code":200,"msg":"hello"}`)},
-		{"connector.testsvc.testrequestonlysessionreturnsptrnil", []byte(``), []byte(`{"code":"PIT-000","msg":"reply must not be null"}`)},
-		{"connector.testsvc.testrequestonlysessionreturnsrawnil", []byte(``), []byte(`{"code":"PIT-000","msg":"reply must not be null"}`)},
-		{"connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), []byte(`{"code":200,"msg":"good"}`)},
-		{"connector.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), []byte(`good`)},
-		{"connector.testsvc.testrequestreceivereturnsraw", []byte(`woow`), []byte(`woow`)},
-		{"connector.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"code":"PIT-404","msg":"pitaya/handler: connector.testsvc.nonexistenthandler not found"}`)},
-		{"connector.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"code":"PIT-555","msg":"somerror"}`)},
+		{"connector.testsvc.testrequestonlysessionreturnsptr", []byte(``), `{"code":200,"msg":"hello"}`},
+		{"connector.testsvc.testrequestonlysessionreturnsptrnil", []byte(``), `{"code":"PIT-000","msg":"reply must not be null"}`},
+		{"connector.testsvc.testrequestonlysessionreturnsrawnil", []byte(``), `{"code":"PIT-000","msg":"reply must not be null"}`},
+		{"connector.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), `{"code":200,"msg":"good"}`},
+		{"connector.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), `good`},
+		{"connector.testsvc.testrequestreceivereturnsraw", []byte(`woow`), `woow`},
+		{"connector.testsvc.nonexistenthandler", []byte(`woow`), `{"code":"PIT-404","msg":"pitaya/handler: connector.testsvc.nonexistenthandler not found"}`},
+		{"connector.testsvc.testrequestreturnserror", []byte(`woow`), `{"code":"PIT-555","msg":"somerror"}`},
 	}
 	port := helpers.GetFreePort(t)
 	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
@@ -84,7 +84,7 @@ func TestHandlerCallToFront(t *testing.T) {
 
 			msg := helpers.ShouldEventuallyReceive(t, c.IncomingMsgChan).(*message.Message)
 			assert.Equal(t, message.Response, msg.Type)
-			assert.Equal(t, table.resp, msg.Data)
+			assert.Regexp(t, table.resp, string(msg.Data))
 		})
 	}
 }
@@ -356,14 +356,14 @@ func TestForwardToBackend(t *testing.T) {
 	tables := []struct {
 		req  string
 		data []byte
-		resp []byte
+		resp string
 	}{
-		{"game.testsvc.testrequestonlysessionreturnsptr", []byte(``), []byte(`{"code":200,"msg":"hello"}`)},
-		{"game.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), []byte(`{"code":200,"msg":"good"}`)},
-		{"game.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), []byte(`good`)},
-		{"game.testsvc.testrequestreceivereturnsraw", []byte(`woow`), []byte(`woow`)},
-		{"game.testsvc.nonexistenthandler", []byte(`woow`), []byte(`{"code":"PIT-404","msg":"pitaya/handler: game.testsvc.nonexistenthandler not found"}`)},
-		{"game.testsvc.testrequestreturnserror", []byte(`woow`), []byte(`{"code":"PIT-555","msg":"somerror"}`)},
+		{"game.testsvc.testrequestonlysessionreturnsptr", []byte(``), `{"code":200,"msg":"hello"}`},
+		{"game.testsvc.testrequestreturnsptr", []byte(`{"msg":"good"}`), `{"code":200,"msg":"good"}`},
+		{"game.testsvc.testrequestreturnsraw", []byte(`{"msg":"good"}`), `good`},
+		{"game.testsvc.testrequestreceivereturnsraw", []byte(`woow`), `woow`},
+		{"game.testsvc.nonexistenthandler", []byte(`woow`), `{"code":"PIT-404","msg":".+pitaya/handler: game.testsvc.nonexistenthandler not found"}`},
+		{"game.testsvc.testrequestreturnserror", []byte(`woow`), `{"code":"PIT-555","msg":".+somerror"}`},
 	}
 
 	c := client.New(logrus.InfoLevel)
@@ -379,7 +379,7 @@ func TestForwardToBackend(t *testing.T) {
 
 			msg := helpers.ShouldEventuallyReceive(t, c.IncomingMsgChan).(*message.Message)
 			assert.Equal(t, message.Response, msg.Type)
-			assert.Equal(t, table.resp, msg.Data)
+			assert.Regexp(t, table.resp, string(msg.Data))
 		})
 	}
 }
@@ -452,16 +452,16 @@ func TestUserRPC(t *testing.T) {
 		name  string
 		route string
 		data  []byte
-		res   []byte
+		res   string
 	}{
-		{"front_to_back", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), []byte(`{"code":200,"msg":"got thisthis"}`)},
-		{"back_to_front", "game.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), []byte(`{"code":200,"msg":"got thisthis"}`)},
-		{"front_to_back_error", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestreturnserror","data":"thisthis"}`), []byte(`{"code":"PIT-433","msg":"test error","metadata":{"some":"meta"}}`)},
-		{"back_to_front_error", "game.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestreturnserror","data":"thisthis"}`), []byte(`{"code":"PIT-433","msg":"test error","metadata":{"some":"meta"}}`)},
-		{"same_server", "connector.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), []byte(`{"code":"PIT-000","msg":"you are making a rpc that may be processed locally, either specify a different server type or specify a server id"}`)},
-		{"front_to_back_ptr", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestptrreturnsptr","data":"thisthis"}`), []byte(`{"code":200,"msg":"got thisthis"}`)},
-		{"no_args", "connector.testsvc.testsendrpcnoargs", []byte(`{"route":"game.testremotesvc.rpctestnoargs"}`), []byte(`{"code":200,"msg":"got nothing"}`)},
-		{"not_found", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestnotfound","data":"thisthis"}`), []byte(`{"code":"PIT-404","msg":"route not found","metadata":{"route":"testremotesvc.rpctestnotfound"}}`)},
+		{"front_to_back", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), `{"code":200,"msg":"got thisthis"}`},
+		{"back_to_front", "game.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), `{"code":200,"msg":"got thisthis"}`},
+		{"front_to_back_error", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestreturnserror","data":"thisthis"}`), `{"code":"PIT-433","msg":".+test error","metadata":{"some":"meta"}}`},
+		{"back_to_front_error", "game.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestreturnserror","data":"thisthis"}`), `{"code":"PIT-433","msg":".+test error","metadata":{"some":"meta"}}`},
+		{"same_server", "connector.testsvc.testsendrpc", []byte(`{"route":"connector.testremotesvc.rpctestrawptrreturnsptr","data":"thisthis"}`), `{"code":"PIT-000","msg":"you are making a rpc that may be processed locally, either specify a different server type or specify a server id"}`},
+		{"front_to_back_ptr", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestptrreturnsptr","data":"thisthis"}`), `{"code":200,"msg":"got thisthis"}`},
+		{"no_args", "connector.testsvc.testsendrpcnoargs", []byte(`{"route":"game.testremotesvc.rpctestnoargs"}`), `{"code":200,"msg":"got nothing"}`},
+		{"not_found", "connector.testsvc.testsendrpc", []byte(`{"route":"game.testremotesvc.rpctestnotfound","data":"thisthis"}`), `{"code":"PIT-404","msg":".+route not found","metadata":{"route":"testremotesvc.rpctestnotfound"}}`},
 	}
 
 	for _, table := range tables {
@@ -469,7 +469,7 @@ func TestUserRPC(t *testing.T) {
 			_, err := c1.SendRequest(table.route, table.data)
 			assert.NoError(t, err)
 			msg := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
-			assert.Equal(t, table.res, msg.Data)
+			assert.Regexp(t, table.res, string(msg.Data))
 		})
 	}
 }

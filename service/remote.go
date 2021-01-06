@@ -111,13 +111,13 @@ func (r *RemoteService) remoteProcess(
 	switch msg.Type {
 	case message.Request:
 		if err != nil {
-			logger.Log.Errorf("Failed to process remote: %s", err.Error())
+			logger.Log.Errorf("Failed to process remote server: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
 		err := a.GetSession().ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
-			logger.Log.Errorf("Failed to respond remote: %s", err.Error())
+			logger.Log.Errorf("Failed to respond to remote server: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
 	case message.Notify:
@@ -126,7 +126,7 @@ func (r *RemoteService) remoteProcess(
 			err = errors.New(res.Error.GetMsg())
 		}
 		if err != nil {
-			logger.Log.Errorf("error while sending a notify: %s", err.Error())
+			logger.Log.Errorf("error while sending a notify to server: %s", err.Error())
 		}
 	}
 }
@@ -449,7 +449,15 @@ func (r *RemoteService) remoteCall(
 
 	res, err := r.rpcClient.Call(ctx, rpcType, route, session, msg, target)
 	if err != nil {
-		return nil, err
+		if err, ok := err.(*e.Error); ok {
+			return nil, e.NewError(
+				fmt.Errorf("error making call to target with id %s and host %s: %s", target.ID, target.Hostname, err.Message),
+				err.Code,
+				err.Metadata,
+			)
+		}
+
+		return nil, fmt.Errorf("error making call to target with id %s and host %s: %w", target.ID, target.Hostname, err)
 	}
 	return res, err
 }
