@@ -52,8 +52,9 @@ func NewGRPCServer(config *config.Config, server *Server, metricsReporters []met
 
 // Init inits grpc rpc server
 func (gs *GRPCServer) Init() error {
+	address := gs.config.GetString("pitaya.cluster.rpc.server.grpc.address")
 	port := gs.config.GetInt("pitaya.cluster.rpc.server.grpc.port")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, port))
 	if err != nil {
 		return err
 	}

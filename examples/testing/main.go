@@ -244,6 +244,7 @@ func (t *TestSvc) TestSendRPCNoArgs(ctx context.Context, msg *TestRPCRequest) (*
 }
 
 func main() {
+	address := flag.String("address", "0.0.0.0", "the address to listen")
 	port := flag.Int("port", 32222, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
@@ -264,7 +265,7 @@ func main() {
 
 	pitaya.SetLogger(l)
 
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
+	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf("%s:%d", *address, *port))
 
 	pitaya.Register(
 		&TestSvc{},
@@ -292,6 +293,7 @@ func main() {
 
 	cfg := viper.New()
 	cfg.Set("pitaya.cluster.sd.etcd.prefix", *sdPrefix)
+	cfg.Set("pitaya.cluster.rpc.server.grpc.address", *address)
 	cfg.Set("pitaya.cluster.rpc.server.grpc.port", *grpcPort)
 
 	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{
