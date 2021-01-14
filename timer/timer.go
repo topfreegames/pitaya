@@ -83,15 +83,25 @@ func init() {
 	Manager.ChCreatedTimer = make(chan *Timer, timerBacklog)
 }
 
+func GetTimerCount() int {
+	timerCount := 0
+	Manager.timers.Range(func(idInterface, tInterface interface{}) bool {
+		timerCount++
+		return true
+	})
+	return timerCount
+}
+
 // AddTimer adds a timer to the manager
 func AddTimer(t *Timer) {
 	Manager.timers.Store(t.ID, t)
+	// logger.Log.Debugf("add timer.id = %d, timerCount = %d", t.ID, GetTimerCount())
 }
 
 // RemoveTimer removes a timer to the manager
 func RemoveTimer(id int64) {
-	// logger.Log.Debugf("remove timer %d", id)
 	Manager.timers.Delete(id)
+	// logger.Log.Debugf("remove timer.id = %d, timerCount = %d", id, GetTimerCount())
 }
 
 // NewTimer creates a cron job
@@ -129,6 +139,14 @@ func (t *Timer) Stop() {
 	} else {
 		t.counter = 0 // automatically closed in next Cron
 	}
+}
+
+func (t *Timer) IsClose() bool {
+	if atomic.LoadInt32(&t.closed) > 0 {
+		return true
+	}
+
+	return false
 }
 
 // execute job function with protection

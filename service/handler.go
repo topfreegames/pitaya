@@ -53,6 +53,11 @@ import (
 var (
 	handlers    = make(map[string]*component.Handler) // all handler method
 	handlerType = "handler"
+	mapFilterRoutes = map[string]bool{
+		"baseapp.scene.syncpos": true,
+		"baseapp.scene.stopsyncpos": true,
+		"baseapp.scene.syncskypos": true,
+	}
 )
 
 type (
@@ -120,7 +125,13 @@ func NewHandlerService(
 // Dispatch message to corresponding logic handler
 func (h *HandlerService) Dispatch(thread int) {
 	// TODO: This timer is being stopped multiple times, it probably doesn't need to be stopped here
-	defer timer.GlobalTicker.Stop()
+	defer func() {
+		logger.Log.Warnf("Go HandlerService::Dispatch(%d) exit", thread)
+		timer.GlobalTicker.Stop()
+		if err := recover(); err != nil {
+			logger.Log.Warnf("Go HandlerService::Dispatch(%d) exit by err = %v", thread, err)
+		}
+	}()
 
 	for {
 		// Calls to remote servers block calls to local server
@@ -317,29 +328,36 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 	}
 
 	// 若走 Dispatch() 协程池， 则打开以下代码 (玩家消息执行顺序无法保证!)
-	// message := unhandledMessage{
-	// 	ctx:   ctx,
-	// 	agent: a,
-	// 	route: r,
-	// 	msg:   msg,
-	// }
-	// if r.SvType == h.server.Type {
-	// 	h.chLocalProcess <- message
-	// } else {
-	// 	if h.remoteService != nil {
-	// 		h.chRemoteProcess <- message
-	// 	} else {
-	// 		logger.Log.Warnf("request made to another server type but no remoteService running")
-	// 	}
-	// }
+	if _, ok := mapFilterRoutes[msg.Route]; ok {
 
-	message := agent.UnhandledRoleMessage{
-		Ctx:   ctx,
-		Route: r,
-		Msg:   msg,
+		//该消息由协程池竞争执行
+		message := unhandledMessage{
+			ctx:   ctx,
+			agent: a,
+			route: r,
+			msg:   msg,
+		}
+		if r.SvType == h.server.Type {
+			h.chLocalProcess <- message
+		} else {
+			if h.remoteService != nil {
+				h.chRemoteProcess <- message
+			} else {
+				logger.Log.Warnf("request made to another server type but no remoteService running")
+			}
+		}
+
+	} else {
+
+		//进入用户自己的队列，顺序执行
+		message := agent.UnhandledRoleMessage{
+			Ctx:   ctx,
+			Route: r,
+			Msg:   msg,
+		}
+
+		a.ChRoleMessages <- message
 	}
-
-	a.ChRoleMessages <- message
 }
 
 func (h *HandlerService) processGameMessage(a *agent.Agent) {
