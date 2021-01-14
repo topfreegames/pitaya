@@ -222,6 +222,22 @@ func (r *RemoteService) DoSend(ctx context.Context, serverID string, route *rout
 	return r.remoteSend(ctx, target, protos.RPCType_User, route, nil, msg)
 }
 
+// RPCLocalCall 直接 call 当前 server 的方法
+func (r *RemoteService) RPCLocalCall(ctx context.Context, rt *route.Route, reply interface{}, arg interface{}) error {
+	rsp, err := directRPCLocalCall(ctx, rt, r.serializer, arg)
+	if err != nil {
+		return err
+	}
+	if reply != nil {
+		err := r.serializer.Unmarshal(rsp, reply)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Send makes sends
 func (r *RemoteService) Send(ctx context.Context, serverID string, route *route.Route, reply proto.Message, arg proto.Message) error {
 	var data []byte

@@ -208,3 +208,42 @@ func processHandlerMessage(
 
 	return ret, nil
 }
+
+func directRPCLocalCall(
+	ctx context.Context,
+	rt *route.Route,
+	serializer serialize.Serializer,
+	arg interface{},
+) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	h, ok := remotes[rt.Short()]
+	if !ok {
+		logger.Log.Warnf("pitaya/remote local call: %s not found", rt.Short())
+		return nil, fmt.Errorf("router not found:%s", rt.Short())
+	}
+
+	// h, err := getHandler(rt)
+	// if err != nil {
+	// 	return nil, e.NewError(err, e.ErrNotFoundCode)
+	// }
+
+	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
+	if arg != nil {
+		args = append(args, reflect.ValueOf(arg))
+	}
+
+	resp, err := util.Pcall(h.Method, args)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO 这里 返回字节，外面又解码为 结构体，有点重复，编码又立马解码的开销，但是是为了让接口统一，目前先这样处理 by 涂飞
+	ret, err := serializeReturn(serializer, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}

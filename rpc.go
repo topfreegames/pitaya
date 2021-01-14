@@ -93,7 +93,10 @@ func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Messa
 	}
 
 	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
-		return constants.ErrNonsenseRPC
+		// 如果发现是 rpc 的服务是 本地 则直接 call 本地的方法 by 涂飞
+		// return constants.ErrNonsenseRPC
+
+		return remoteService.RPCLocalCall(ctx, r, reply, arg)
 	}
 
 	if reply == nil {

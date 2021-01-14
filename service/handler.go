@@ -401,7 +401,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 	ret, err := processHandlerMessage(ctx, route, h.serializer, a.Session, msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
-			logger.Log.Errorf("Failed to process handler message: %s", err.Error())
+			logger.Log.Errorf("Failed to process handler(route:%s) message: %s", route.Short(), err.Error())
 			a.AnswerWithError(ctx, mid, err)
 		} else {
 			err := a.Session.ResponseMID(ctx, mid, ret)
@@ -415,6 +415,22 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 		tracing.FinishSpan(ctx, err)
 	}
 }
+
+// // DirectProcessLocalCall 直接 call 当前 server 的方法
+// func (h *HandlerService) DirectProcessLocalCall(ctx context.Context, rt *route.Route, reply interface{}, arg interface{}) error {
+// 	rsp, err := directRPCLocalCall(ctx, rt, h.serializer, arg)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if reply != nil {
+// 		err := h.serializer.Unmarshal(rsp, &reply)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+
+// 	return nil
+// }
 
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
