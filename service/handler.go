@@ -53,6 +53,7 @@ import (
 var (
 	handlers    = make(map[string]*component.Handler) // all handler method
 	handlerType = "handler"
+	// TODO: 后续移到配置文件或采用其他实现方式
 	mapFilterRoutes = map[string]bool{
 		"baseapp.scene.syncpos": true,
 		"baseapp.scene.stopsyncpos": true,
