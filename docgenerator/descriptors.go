@@ -20,6 +20,8 @@ func ProtoDescriptors(protoName string) ([]byte, error) {
 
 	if strings.HasPrefix(protoName, "types.") {
 		protoName = strings.Replace(protoName, "types.", "google.protobuf.", 1)
+	} else if strings.HasPrefix(protoName, "anypb.") {
+		protoName = strings.Replace(protoName, "anypb.", "google.protobuf.", 1)
 	}
 	protoReflectTypePointer := proto.MessageType(protoName)
 	if protoReflectTypePointer == nil {
