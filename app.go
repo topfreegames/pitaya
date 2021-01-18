@@ -87,6 +87,7 @@ type Pitaya interface {
 	StartWorker()
 	RegisterRPCJob(rpcJob worker.RPCJob) error
 	Documentation(getPtrNames bool) (map[string]interface{}, error)
+	IsRunning() bool
 
 	RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error
 	RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error
@@ -250,6 +251,13 @@ func (app *App) GetServersByType(t string) (map[string]*cluster.Server, error) {
 // GetServers get all servers
 func (app *App) GetServers() []*cluster.Server {
 	return app.serviceDiscovery.GetServers()
+}
+
+// IsRunning indicates if the Pitaya app has been initialized. Note: This
+// doesn't cover acceptors, only the pitaya internal registration and modules
+// initialization.
+func (app *App) IsRunning() bool {
+	return app.running
 }
 
 // SetLogger logger setter

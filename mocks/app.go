@@ -358,6 +358,20 @@ func (mr *MockPitayaMockRecorder) GroupRenewTTL(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupRenewTTL", reflect.TypeOf((*MockPitaya)(nil).GroupRenewTTL), arg0, arg1)
 }
 
+// IsRunning mocks base method
+func (m *MockPitaya) IsRunning() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsRunning")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsRunning indicates an expected call of IsRunning
+func (mr *MockPitayaMockRecorder) IsRunning() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRunning", reflect.TypeOf((*MockPitaya)(nil).IsRunning))
+}
+
 // RPC mocks base method
 func (m *MockPitaya) RPC(arg0 context.Context, arg1 string, arg2, arg3 proto.Message) error {
 	m.ctrl.T.Helper()
