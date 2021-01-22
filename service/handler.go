@@ -183,7 +183,10 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			if err != constants.ErrConnectionClosed {
+				logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			}
+
 			return
 		}
 
@@ -332,7 +335,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a *agent.Agent, route
 // DumpServices outputs all registered services
 func (h *HandlerService) DumpServices() {
 	for name := range handlers {
-		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
+		logger.Log.Infof("registered handler %s, isRawArg: %v", name, handlers[name].IsRawArg)
 	}
 }
 

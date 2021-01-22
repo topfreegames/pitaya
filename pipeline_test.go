@@ -33,8 +33,9 @@ func resetPipelines() {
 	pipeline.AfterHandler.Handlers = make([]pipeline.AfterHandlerTempl, 0)
 }
 
-var myHandler = func(ctx context.Context, in interface{}) (interface{}, error) {
-	return []byte("test"), nil
+var myHandler = func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
+	ctx = context.WithValue(ctx, "traceID", "123456")
+	return ctx, []byte("test"), nil
 }
 
 var myAfterHandler = func(ctx context.Context, out interface{}, err error) (interface{}, error) {
@@ -44,9 +45,10 @@ var myAfterHandler = func(ctx context.Context, out interface{}, err error) (inte
 func TestBeforeHandler(t *testing.T) {
 	resetPipelines()
 	BeforeHandler(myHandler)
-	r, err := pipeline.BeforeHandler.Handlers[0](nil, nil)
+	ctx, r, err := pipeline.BeforeHandler.Handlers[0](context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test"), r)
+	assert.Equal(t, "123456", ctx.Value("traceID").(string))
 }
 
 func TestAfterHandler(t *testing.T) {

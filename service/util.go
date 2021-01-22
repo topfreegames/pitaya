@@ -96,19 +96,19 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
-func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, error) {
+func executeBeforePipeline(ctx context.Context, data interface{}) (context.Context, interface{}, error) {
 	var err error
 	res := data
 	if len(pipeline.BeforeHandler.Handlers) > 0 {
 		for _, h := range pipeline.BeforeHandler.Handlers {
-			res, err = h(ctx, res)
+			ctx, res, err = h(ctx, res)
 			if err != nil {
 				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
-				return res, err
+				return ctx, res, err
 			}
 		}
 	}
-	return res, nil
+	return ctx, res, nil
 }
 
 func executeAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
@@ -174,7 +174,8 @@ func processHandlerMessage(
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
-	if arg, err = executeBeforePipeline(ctx, arg); err != nil {
+	ctx, arg, err = executeBeforePipeline(ctx, arg)
+	if err != nil {
 		return nil, err
 	}
 

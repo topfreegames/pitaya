@@ -32,7 +32,7 @@ var (
 type (
 	// HandlerTempl is a function that has the same signature as a handler and will
 	// be called before or after handler methods
-	HandlerTempl func(ctx context.Context, in interface{}) (out interface{}, err error)
+	HandlerTempl func(ctx context.Context, in interface{}) (c context.Context, out interface{}, err error)
 
 	// AfterHandlerTempl is a function for the after handler, receives both the handler response
 	// and the error returned

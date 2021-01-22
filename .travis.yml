@@ -1,9 +1,0 @@
-language: go
-go:
-- "1.13"
-sudo: false
-services:
-- docker
-before_script: make setup-ci
-script: make test
-after_success: $HOME/gopath/bin/goveralls -coverprofile coverprofile.out -service=travis-ci
