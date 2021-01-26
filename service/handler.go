@@ -210,7 +210,8 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 
 	// guarantee agent related resource is destroyed
 	defer func() {
-		a.Session.Close()
+		// a.Session.Close()
+		a.CloseByReason(agent.AgentCloseByMessageEnd)
 		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
 
@@ -363,7 +364,13 @@ func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
 
 func (h *HandlerService) processGameMessage(a *agent.Agent) {
 
+	sid := a.Session.ID()
 	uid := a.Session.UID()
+
+	defer func() {
+		a.Session.Close()
+		logger.Log.Infof("processGameMessage exit, SessionID=%d, UID=%s", sid, uid)
+	}()
 
 	for {
 		select {
@@ -401,8 +408,8 @@ func (h *HandlerService) processGameMessage(a *agent.Agent) {
 					}
 				}
 			}
-		case <-a.ChAgentDie:
-			logger.Log.Warnf("processGameMessage exit. uid = %s", uid)
+		case rs := <-a.ChAgentDie:
+			logger.Log.Infof("processGameMessage receive agent die. uid = %s, rs = %d", uid, rs)
 			return
 		}
 	}

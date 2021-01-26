@@ -60,6 +60,14 @@ var (
 
 const handlerType = "handler"
 
+const (
+	_ int32 = iota
+	AgentCloseByWriteEnd
+	AgentCloseByHeartBeat
+	AgentCloseByHandleEnd
+	AgentCloseByMessageEnd
+)
+
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
@@ -70,7 +78,7 @@ type (
 		chStopHeartbeat    chan struct{}     // stop heartbeats
 		chStopWrite        chan struct{}     // stop writing messages
 		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
-		ChAgentDie         chan struct{}         // 
+		ChAgentDie         chan int32         // 
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -141,7 +149,7 @@ func NewAgent(
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
-		ChAgentDie:         make(chan struct{}),
+		ChAgentDie:         make(chan int32, 10),
 	}
 
 	// binding session
@@ -336,7 +344,7 @@ func (a *Agent) SetStatus(state int32) {
 // Handle handles the messages from and to a client
 func (a *Agent) Handle() {
 	defer func() {
-		a.Close()
+		a.CloseByReason(AgentCloseByHandleEnd)
 		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
 	}()
 
@@ -370,7 +378,7 @@ func (a *Agent) heartbeat() {
 
 	defer func() {
 		ticker.Stop()
-		a.Close()
+		a.CloseByReason(AgentCloseByHeartBeat)
 	}()
 
 	for {
@@ -426,7 +434,7 @@ func (a *Agent) write() {
 	// clean func
 	defer func() {
 		close(a.chSend)
-		a.Close()
+		a.CloseByReason(AgentCloseByWriteEnd)
 	}()
 
 	for {
@@ -525,4 +533,15 @@ func (a *Agent) reportChannelSize() {
 			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}
+}
+
+func (a *Agent) CloseByReason(rs int32) {
+	a.closeMutex.Lock()
+	defer a.closeMutex.Unlock()
+	if a.GetStatus() == constants.StatusClosed {
+		return
+	}
+
+	logger.Log.Debugf("CloseByReason rs = %d", rs)
+	a.ChAgentDie <- rs
 }

@@ -307,7 +307,7 @@ func (ns *NatsRPCServer) processPushes() {
 		// logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
 		_, err := ns.pitayaServer.PushToUser(context.Background(), push)
 		if err != nil {
-			logger.Log.Errorf("error sending push to user: %v", err)
+			logger.Log.Errorf("error sending push to user<%s:%s>: %v", push.Uid, push.Route, err)
 		}
 	}
 }
