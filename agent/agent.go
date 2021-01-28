@@ -75,6 +75,7 @@ type (
 		appDieChan         chan bool         // app die channel
 		chDie              chan struct{}     // wait for close
 		chSend             chan pendingWrite // push message queue
+		chHbSend           chan pendingWrite // push message queue (心跳专用)
 		chStopHeartbeat    chan struct{}     // stop heartbeats
 		chStopWrite        chan struct{}     // stop writing messages
 		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
@@ -137,6 +138,7 @@ func NewAgent(
 		appDieChan:         dieChan,
 		chDie:              make(chan struct{}),
 		chSend:             make(chan pendingWrite, messagesBufferSize),
+		chHbSend:           make(chan pendingWrite, messagesBufferSize),
 		chStopHeartbeat:    make(chan struct{}),
 		chStopWrite:        make(chan struct{}),
 		messagesBufferSize: messagesBufferSize,
@@ -379,6 +381,10 @@ func (a *Agent) heartbeat() {
 	defer func() {
 		ticker.Stop()
 		a.CloseByReason(AgentCloseByHeartBeat)
+		close(a.chHbSend)
+		if e := recover(); e != nil {
+			logger.Log.Warnf("heartbeat err=%+v", e)
+		}
 	}()
 
 	for {
@@ -399,7 +405,8 @@ func (a *Agent) heartbeat() {
 			if err != nil {
 				logger.Log.Warn("encode heartbeat err %s", err)
 			}
-			a.chSend <- pendingWrite{data: bytes}
+			// logger.Log.Debugf("heartbeat chHbSend <-")
+			a.chHbSend <- pendingWrite{data: bytes}
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
@@ -450,6 +457,15 @@ func (a *Agent) write() {
 			var e error
 			tracing.FinishSpan(pWrite.ctx, e)
 			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
+		case pWrite := <-a.chHbSend:
+			// logger.Log.Debugf("heartbeat chHbSend ->")
+			// close agent if low-level Conn broken
+			if _, err := a.conn.Write(pWrite.data); err != nil {
+				tracing.FinishSpan(pWrite.ctx, err)
+				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
+				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
+				return
+			}
 		case <-a.chStopWrite:
 			return
 		}
