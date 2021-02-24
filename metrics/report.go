@@ -27,6 +27,7 @@ import (
 
 	"github.com/tutumagi/pitaya/constants"
 	"github.com/tutumagi/pitaya/errors"
+	"github.com/tutumagi/pitaya/logger"
 
 	pcontext "github.com/tutumagi/pitaya/context"
 )
@@ -82,6 +83,12 @@ func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
 
 // ReportSysMetrics reports sys metrics
 func ReportSysMetrics(reporters []Reporter, period time.Duration) {
+	defer func() {
+		logger.Log.Warnf("Go ReportSysMetrics exit")
+		if err := recover(); err != nil {
+			logger.Log.Warnf("Go ReportSysMetrics exit by err = %v", err)
+		}
+	}()
 	for {
 		for _, r := range reporters {
 			num := runtime.NumGoroutine()

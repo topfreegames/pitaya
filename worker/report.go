@@ -12,6 +12,12 @@ import (
 
 // Report sends periodic of worker reports
 func Report(reporters []metrics.Reporter, period time.Duration) {
+	defer func() {
+		logger.Log.Warnf("Go Report::Report exit")
+		if err := recover(); err != nil {
+			logger.Log.Warnf("Go Report::Report exit by err = %v", err)
+		}
+	}()
 	for {
 		time.Sleep(period)
 
