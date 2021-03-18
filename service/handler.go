@@ -55,9 +55,9 @@ var (
 	handlerType = "handler"
 	// TODO: 后续移到配置文件或采用其他实现方式
 	mapFilterRoutes = map[string]bool{
-		"baseapp.scene.syncpos": true,
-		"baseapp.scene.stopsyncpos": true,
-		"baseapp.scene.syncskypos": true,
+		// "baseapp.scene.syncpos": true,
+		// "baseapp.scene.stopsyncpos": true,
+		// "baseapp.scene.syncskypos": true,
 	}
 )
 
