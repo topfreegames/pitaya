@@ -104,6 +104,3 @@ If you have found a security vulnerability, please email security@tfgco.com
   + [Implement a chat room in ~100 lines with pitaya and WebSocket](./examples/demo/chat) (adapted from [nano](https://github.com/lonnng/nano)'s example)
   + [Pitaya cluster mode example](./examples/demo/cluster)
   + [Pitaya cluster mode with protobuf protocol example](./examples/demo/cluster_protobuf)
-
-## test
-aa
