@@ -134,7 +134,15 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 // Join room
 func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
-	err := pitaya.GroupAddMember(ctx, "room", s.UID())
+	fakeUID := s.ID()                              // just use s.ID as uid !!!
+	err := s.Bind(ctx, strconv.Itoa(int(fakeUID))) // binding session uid
+
+	if err != nil {
+		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
+	}
+	println("============================join, uid:", s.UID())
+
+	err = pitaya.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		return nil, err
 	}
