@@ -25,6 +25,7 @@ require (
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/mattn/goveralls v0.0.8 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/nats-io/gnatsd v1.4.1
 	github.com/nats-io/go-nats v1.5.0 // indirect
@@ -46,7 +47,9 @@ require (
 	github.com/uber/jaeger-client-go v2.13.0+incompatible
 	github.com/uber/jaeger-lib v1.4.0 // indirect
 	github.com/ugorji/go v0.0.0-20180112141927-9831f2c3ac10 // indirect
+	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
+	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.21.1
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
