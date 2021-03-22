@@ -176,7 +176,7 @@ func TestUnmarshalRemoteArgErr(t *testing.T) {
 	}
 	args, err := unmarshalRemoteArg(remote, []byte("arg"))
 	assert.Empty(t, args)
-	assert.Equal(t, errors.New("unexpected EOF"), err)
+	assert.Equal(t, errors.New("proto: cannot parse invalid wire-format data").Error(), err.Error())
 }
 
 func TestGetMsgType(t *testing.T) {
@@ -199,7 +199,9 @@ func TestGetMsgType(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			msgType, err := getMsgType(table.in)
-			assert.Equal(t, table.err, err)
+                        if err != nil {
+			  assert.Equal(t, table.err.Error(), err.Error())
+                        }
 			assert.Equal(t, table.msgType, msgType)
 		})
 	}
