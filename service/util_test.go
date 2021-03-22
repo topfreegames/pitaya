@@ -199,9 +199,7 @@ func TestGetMsgType(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			msgType, err := getMsgType(table.in)
-                        if err != nil {
-			  assert.Equal(t, table.err.Error(), err.Error())
-                        }
+			assert.Equal(t, table.err, err)
 			assert.Equal(t, table.msgType, msgType)
 		})
 	}
