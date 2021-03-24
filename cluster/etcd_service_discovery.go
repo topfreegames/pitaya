@@ -371,7 +371,13 @@ func (sd *etcdServiceDiscovery) Init() error {
 	sd.running = true
 	var err error
 
-        sd.InitETCDClient()
+        if sd.cli == nil { 
+		sd.InitETCDClient()
+        } else {
+		sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
+		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
+		sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
+	}
 
 	if err = sd.bootstrap(); err != nil {
 		return err
