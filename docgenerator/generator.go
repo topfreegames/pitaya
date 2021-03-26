@@ -196,6 +196,10 @@ func parseType(typ reflect.Type, isOutput bool, getPtrNames bool) interface{} {
 		return typ.String()
 	}
 
+	if elm.Kind() != reflect.Struct {
+		return elm.Kind().String()
+	}
+
 	fields := map[string]interface{}{}
 	for i := 0; i < elm.NumField(); i++ {
 		if name, valid := getName(elm.Field(i), isOutput); valid {
