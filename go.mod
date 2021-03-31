@@ -4,11 +4,10 @@ go 1.12
 
 require (
 	github.com/DataDog/datadog-go v2.2.0+incompatible
-	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
+	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
 	github.com/coreos/etcd v3.3.9+incompatible
 	github.com/coreos/go-semver v0.2.0 // indirect
@@ -33,6 +32,8 @@ require (
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/jhump/protoreflect v1.5.0
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180715050151-f15292f7a699 // indirect
@@ -41,30 +42,30 @@ require (
 	github.com/nats-io/nats-server v1.4.1
 	github.com/nats-io/nats-server/v2 v2.0.4 // indirect
 	github.com/nats-io/nats.go v1.8.1
-	github.com/opentracing/opentracing-go v1.0.2
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/orfjackal/nanospec.go v0.0.0-20120727230329-de4694c1d701 // indirect
+	github.com/pelletier/go-toml v1.4.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v0.8.0
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
 	github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273 // indirect
-	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/afero v1.1.1 // indirect
 	github.com/spf13/cast v1.2.0 // indirect
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
+	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.0.2
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.7.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20171017195756-830351dc03c6 // indirect
 	github.com/topfreegames/go-workers v1.0.0
-	github.com/tutumagi/gecs v0.1.0
-	github.com/uber-go/atomic v1.3.2 // indirect
-	github.com/uber/jaeger-client-go v2.13.0+incompatible
-	github.com/uber/jaeger-lib v1.4.0 // indirect
+	github.com/uber/jaeger-client-go v2.25.0+incompatible
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/ugorji/go v0.0.0-20180112141927-9831f2c3ac10 // indirect
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
-	go.mongodb.org/mongo-driver v1.4.1
 	go.uber.org/atomic v1.3.2 // indirect
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/time v0.0.0-20180314180208-26559e0f760e // indirect
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.25.0
