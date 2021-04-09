@@ -508,7 +508,7 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat":  heartbeatTimeout.Seconds(),
-			"dict":       message.GetDictionary(),
+			"dict":       map[string]uint16{}, //message.GetDictionary(),
 			"serializer": serializerName,
 		},
 	}
