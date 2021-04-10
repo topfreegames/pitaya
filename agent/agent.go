@@ -71,15 +71,15 @@ const (
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
-		Session            *session.Session          // session
-		appDieChan         chan bool                 // app die channel
-		chDie              chan struct{}             // wait for close
-		chSend             chan pendingWrite         // push message queue
-		chHbSend           chan pendingWrite         // push message queue (心跳专用)
-		chStopHeartbeat    chan struct{}             // stop heartbeats
-		chStopWrite        chan struct{}             // stop writing messages
-		ChRoleMessages     chan UnhandledRoleMessage // 用户请求的消息列表(队列)
-		ChAgentDie         chan int32                //
+		Session            *session.Session  // session
+		appDieChan         chan bool         // app die channel
+		chDie              chan struct{}     // wait for close
+		chSend             chan pendingWrite // push message queue
+		chHbSend           chan pendingWrite // push message queue (心跳专用)
+		chStopHeartbeat    chan struct{}     // stop heartbeats
+		chStopWrite        chan struct{}     // stop writing messages
+		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
+		ChAgentDie         chan int32         // 
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -387,37 +387,32 @@ func (a *Agent) heartbeat() {
 		}
 	}()
 
-	a.pushHeartbeat() // 先发一次给前端，保证服务器时间给到前端
 	for {
 		select {
 		case <-ticker.C:
-			a.pushHeartbeat()
+			now := time.Now()
+			deadline := now.Add(-2 * a.heartbeatTimeout).Unix()
+			if atomic.LoadInt64(&a.lastAt) < deadline {
+				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				return
+			}
+
+			// 时间戳，毫秒
+			ts := uint64(now.UnixNano() / int64(time.Millisecond))
+			binary.BigEndian.PutUint64(hbd, ts)
+
+			bytes, err := a.encoder.Encode(packet.Heartbeat, hbd)
+			if err != nil {
+				logger.Log.Warn("encode heartbeat err %s", err)
+			}
+			// logger.Log.Debugf("heartbeat chHbSend <-")
+			a.chHbSend <- pendingWrite{data: bytes}
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
 			return
 		}
 	}
-}
-
-func (a *Agent) pushHeartbeat() {
-	now := time.Now()
-	deadline := now.Add(-2 * a.heartbeatTimeout).Unix()
-	if atomic.LoadInt64(&a.lastAt) < deadline {
-		logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
-		return
-	}
-
-	// 时间戳，毫秒
-	ts := uint64(now.UnixNano() / int64(time.Millisecond))
-	binary.BigEndian.PutUint64(hbd, ts)
-
-	bytes, err := a.encoder.Encode(packet.Heartbeat, hbd)
-	if err != nil {
-		logger.Log.Warn("encode heartbeat err %s", err)
-	}
-	// logger.Log.Debugf("heartbeat chHbSend <-")
-	a.chHbSend <- pendingWrite{data: bytes}
 }
 
 func onSessionClosed(s *session.Session) {
@@ -513,6 +508,7 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat":  heartbeatTimeout.Seconds(),
+			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)),   // 时间戳，毫秒
 			"dict":       map[string]uint16{}, //message.GetDictionary(),
 			"serializer": serializerName,
 		},
