@@ -433,7 +433,7 @@ func onSessionClosed(s *session.Session) {
 
 // SendHandshakeResponse sends a handshake response
 func (a *Agent) SendHandshakeResponse() error {
-	_, err := a.conn.Write(hrd)
+	_, err := a.conn.Write(a.hrdEncodeInner())
 	return err
 }
 
@@ -538,6 +538,45 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 	// if err != nil {
 	// 	panic(err)
 	// }
+}
+
+//上边函数的一个副本，由于severtime是一个变量，每次握手都是不一样的，不能 once.Do(hbdEncode)
+func (a *Agent) hrdEncodeInner() ([]byte) {
+	hrdBuff := []byte{}
+	hData := map[string]interface{}{
+		"code": 200,
+		"sys": map[string]interface{}{
+			"heartbeat":  a.heartbeatTimeout.Seconds(),
+			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)),   // 时间戳，毫秒
+			"dict":       map[string]uint16{}, //message.GetDictionary(),
+			"serializer": a.serializer.GetName(),
+		},
+	}
+	data, err := gojson.Marshal(hData)
+	if err != nil {
+		logger.Log.Warnf("hrdEncodeInner gojson.Marshal error:%v", err)
+		return hrdBuff
+	}
+
+	if a.messageEncoder.IsCompressionEnabled() {
+		compressedData, err := compression.DeflateData(data)
+		if err != nil {
+			logger.Log.Warnf("hrdEncodeInner DeflateData error:%v", err)
+			return hrdBuff
+		}
+
+		if len(compressedData) < len(data) {
+			data = compressedData
+		}
+	}
+
+	hrdBuff, err = a.encoder.Encode(packet.Handshake, data)
+	if err != nil {
+		logger.Log.Warnf("hrdEncodeInner encoder.Encode error:%v", err)
+		return hrdBuff
+	}
+
+	return hrdBuff
 }
 
 func (a *Agent) reportChannelSize() {
