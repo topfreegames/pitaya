@@ -99,13 +99,13 @@ func (r *RemoteService) remoteProcess(
 	case message.Request:
 		res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
 		if err != nil {
-			logger.Log.Errorf("Failed to process remote: %s", err.Error())
+			logger.Log.Errorf("Failed to process remote(%s): %s", route, err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
 		err = a.Session.ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
-			logger.Log.Errorf("Failed to respond remote: %s", err.Error())
+			logger.Log.Errorf("Failed to respond remote(%s): %s", route, err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
 	case message.Notify:
