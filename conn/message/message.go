@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -54,8 +55,9 @@ var types = map[Type]string{
 }
 
 var (
-	routes = make(map[string]uint16) // route map to code
-	codes  = make(map[uint16]string) // code map to route
+	routesCodesMutex = sync.RWMutex{}
+	routes           = make(map[string]uint16) // route map to code
+	codes            = make(map[uint16]string) // code map to route
 )
 
 // Errors that could be occurred in message codec
@@ -110,6 +112,8 @@ func SetDictionary(dict map[string]uint16) error {
 	if dict == nil {
 		return nil
 	}
+	routesCodesMutex.Lock()
+	defer routesCodesMutex.Unlock()
 
 	for route, code := range dict {
 		r := strings.TrimSpace(route)
@@ -133,6 +137,8 @@ func SetDictionary(dict map[string]uint16) error {
 
 // GetDictionary gets the routes map which is used to compress route.
 func GetDictionary() map[string]uint16 {
+	routesCodesMutex.RLock()
+	defer routesCodesMutex.RUnlock()
 	return routes
 }
 
