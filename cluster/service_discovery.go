@@ -27,7 +27,7 @@ type ServiceDiscovery interface {
 	GetServersByType(serverType string) (map[string]*Server, error)
 	GetServer(id string) (*Server, error)
 	GetServers() []*Server
-	SyncServers() error
+	//SyncServers() error
 	AddListener(listener SDListener)
 	interfaces.Module
 }
