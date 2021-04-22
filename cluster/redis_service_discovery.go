@@ -53,6 +53,7 @@ func NewRedisServiceDiscovery(
 		redisClient:       client,
 		appDieChan:        appDieChan,
 		serverMapByType:   map[string]map[string]*Server{},
+		serverMapByID:     map[string]*Server{},
 		redisTTL:          redisTTL,
 		redisSyncInterval: redisSyncInterval,
 		quitChan:          make(chan struct{}),
