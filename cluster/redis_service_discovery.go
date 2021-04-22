@@ -58,6 +58,7 @@ func NewRedisServiceDiscovery(
 		quitChan:          make(chan struct{}),
 	}
 }
+
 func (r *RedisServiceDiscovery) GetServersByType(serverType string) (map[string]*Server, error) {
 	if err := r.fillOutLocalCache(); err != nil {
 		return nil, fmt.Errorf("fill out local cache: %w", err)
@@ -238,8 +239,6 @@ func (r *RedisServiceDiscovery) processMessage(msg *redis.Message) {
 	channelPrefix := getChannelPrefix()
 	keyValue := msg.Channel[len(channelPrefix):]
 
-	logger.Log.Debugf("payload=%s", msg.Payload)
-
 	server := &Server{}
 	if err := json.Unmarshal([]byte(keyValue), server); err != nil {
 		logger.Log.Warnf("failed to parse server from redis keyspace notification. %s", err)
@@ -251,8 +250,6 @@ func (r *RedisServiceDiscovery) processMessage(msg *redis.Message) {
 	} else if msg.Payload == "set" {
 		r.addServerToLocalCache(server)
 	}
-
-	logger.Log.Debugf("end=%s", msg.Payload)
 }
 
 func (r *RedisServiceDiscovery) removeServerFromLocalCache(sv *Server) {
@@ -319,6 +316,7 @@ func (r *RedisServiceDiscovery) addServerToRedis(ctx context.Context) error {
 	}
 	return nil
 }
+
 func getServerRedisKey(server *Server) string {
 	return fmt.Sprintf("%s%s", prefix, server.AsJSONString())
 }
