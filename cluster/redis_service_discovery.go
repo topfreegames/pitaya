@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -16,16 +17,17 @@ import (
 const prefix = "server:"
 
 type RedisServiceDiscovery struct {
-	redisClient       *redis.Client
-	watchPubSub       *redis.PubSub
-	server            *Server
-	appDieChan        chan bool
-	localCacheLock    sync.RWMutex
-	serverMapByType   map[string]map[string]*Server
-	serverMapByID     map[string]*Server
-	redisTTL          time.Duration
-	redisSyncInterval time.Duration
-	quitChan          chan struct{}
+	redisClient                    *redis.Client
+	watchPubSub                    *redis.PubSub
+	server                         *Server
+	appDieChan                     chan bool
+	localCacheLock                 sync.RWMutex
+	serverMapByType                map[string]map[string]*Server
+	serverMapByID                  map[string]*Server
+	redisTTL                       time.Duration
+	redisSyncInterval              time.Duration
+	redisRefreshExpirationInterval time.Duration
+	quitChan                       chan struct{}
 }
 
 func NewRedisServiceDiscovery(
@@ -49,14 +51,15 @@ func NewRedisServiceDiscovery(
 		TLSConfig:       nil,
 	})
 	return &RedisServiceDiscovery{
-		server:            server,
-		redisClient:       client,
-		appDieChan:        appDieChan,
-		serverMapByType:   map[string]map[string]*Server{},
-		serverMapByID:     map[string]*Server{},
-		redisTTL:          redisTTL,
-		redisSyncInterval: redisSyncInterval,
-		quitChan:          make(chan struct{}),
+		server:                         server,
+		redisClient:                    client,
+		appDieChan:                     appDieChan,
+		serverMapByType:                map[string]map[string]*Server{},
+		serverMapByID:                  map[string]*Server{},
+		redisTTL:                       redisTTL,
+		redisSyncInterval:              redisSyncInterval,
+		redisRefreshExpirationInterval: redisTTL / 3,
+		quitChan:                       make(chan struct{}),
 	}
 }
 
@@ -147,11 +150,15 @@ func (r *RedisServiceDiscovery) Init() error {
 	}()
 
 	go r.redisSyncRoutine()
+	go r.redisRefreshExpirationRoutine()
 	return nil
 }
 
 func (r *RedisServiceDiscovery) redisSyncRoutine() {
-	ticker := time.NewTicker(r.redisSyncInterval)
+	// adding a random factor to sync interval to avoid multiple instances running at same time
+	rand.Seed(time.Now().UnixNano())
+	syncInterval := r.redisSyncInterval + (time.Second * time.Duration(rand.Intn(60)))
+	ticker := time.NewTicker(syncInterval)
 
 	for {
 		select {
@@ -164,6 +171,30 @@ func (r *RedisServiceDiscovery) redisSyncRoutine() {
 
 		case <-r.quitChan:
 			logger.Log.Debug("shutting down redis sync routine")
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func (r *RedisServiceDiscovery) redisRefreshExpirationRoutine() {
+	ticker := time.NewTicker(r.redisRefreshExpirationInterval)
+	for {
+		select {
+		case <-ticker.C:
+			logger.Log.Debug("running refresh expiration routine")
+			ctx := context.TODO()
+			res := r.redisClient.Expire(ctx, getServerRedisKey(r.server), r.redisTTL)
+			if err := res.Err(); err != nil {
+				logger.Log.Errorf("failed to refresh expiration time: %s", err)
+				r.appDieChan <- true
+				return
+			}
+			if ok := res.Val(); !ok {
+				logger.Log.Warnf("failed to update expiration time for server: %s", r.server.AsJSONString())
+			}
+		case <-r.quitChan:
+			logger.Log.Debug("shutting down redis refresh expiration routine")
 			ticker.Stop()
 			return
 		}
