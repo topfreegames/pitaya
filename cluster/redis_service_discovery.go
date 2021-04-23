@@ -109,9 +109,6 @@ func (r *RedisServiceDiscovery) fillOutLocalCache() error {
 		return nil
 	}
 
-	r.localCacheLock.RLock()
-	defer r.localCacheLock.RUnlock()
-
 	if err := r.updateLocalCache(); err != nil {
 		r.appDieChan <- true
 		return fmt.Errorf("update local cache: %w", err)
@@ -234,6 +231,9 @@ func (r *RedisServiceDiscovery) getAllServersFromRedis() ([]*Server, error) {
 }
 
 func (r *RedisServiceDiscovery) updateLocalCache() error {
+	r.localCacheLock.Lock()
+	defer r.localCacheLock.Unlock()
+
 	logger.Log.Debug("updating local cache")
 
 	servers, err := r.getAllServersFromRedis()
