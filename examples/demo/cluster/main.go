@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"time"
 
 	"strings"
 
@@ -75,7 +76,7 @@ func configureFrontend(port int) {
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
-	svType := flag.String("type", "connector", "the server type")
+	svType := flag.String("type", "test-type", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 
 	flag.Parse()
@@ -84,12 +85,23 @@ func main() {
 
 	pitaya.SetSerializer(json.NewSerializer())
 
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+
+	pitaya.SetServiceDiscoveryClient(cluster.NewRedisServiceDiscovery(
+		"localhost:6379",
+		"",
+		"",
+		time.Second*10,
+		time.Hour*1,
+		pitaya.GetServer(),
+		pitaya.GetDieChan(),
+	))
+
 	if !*isFrontend {
 		configureBackend()
 	} else {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
 	pitaya.Start()
 }

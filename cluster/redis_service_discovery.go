@@ -203,7 +203,7 @@ func (r *RedisServiceDiscovery) redisRefreshExpirationRoutine() {
 
 func (r *RedisServiceDiscovery) getAllServersFromRedis() ([]*Server, error) {
 	ctx := context.TODO()
-	allKeysRes := r.redisClient.Keys(ctx, "*")
+	allKeysRes := r.redisClient.Keys(ctx, fmt.Sprintf("%s*", prefix))
 	if err := allKeysRes.Err(); err != nil {
 		r.appDieChan <- true
 		return nil, fmt.Errorf("list all keys: %w", err)
@@ -236,22 +236,13 @@ func (r *RedisServiceDiscovery) getAllServersFromRedis() ([]*Server, error) {
 func (r *RedisServiceDiscovery) updateLocalCache() error {
 	logger.Log.Debug("updating local cache")
 
-	ctx := context.TODO()
-	allKeysRes := r.redisClient.Keys(ctx, "*")
-	if err := allKeysRes.Err(); err != nil {
-		r.appDieChan <- true
-		return fmt.Errorf("list all keys: %w", err)
-	}
-	r.localCacheLock.RLock()
-	defer r.localCacheLock.RUnlock()
-
-	r.serverMapByType = map[string]map[string]*Server{}
-	r.serverMapByID = map[string]*Server{}
-
 	servers, err := r.getAllServersFromRedis()
 	if err != nil {
 		return fmt.Errorf("get all servers from redis: %w", err)
 	}
+
+	r.serverMapByType = map[string]map[string]*Server{}
+	r.serverMapByID = map[string]*Server{}
 
 	for _, server := range servers {
 		r.serverMapByID[server.ID] = server
@@ -264,6 +255,7 @@ func (r *RedisServiceDiscovery) updateLocalCache() error {
 			r.serverMapByType[server.Type] = value
 		}
 	}
+
 	return nil
 }
 
