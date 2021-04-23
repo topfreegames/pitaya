@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/topfreegames/pitaya/logger"
+
 	"strings"
 
 	"github.com/topfreegames/pitaya"
@@ -74,6 +76,16 @@ func configureFrontend(port int) {
 	pitaya.AddAcceptor(tcp)
 }
 
+type Listener struct{}
+
+func (l Listener) AddServer(server *cluster.Server) {
+	logger.Log.Infof("ADDED SERVER: %s, %s", server.ID, server.Type)
+}
+
+func (l Listener) RemoveServer(server *cluster.Server) {
+	logger.Log.Infof("REMOVED SERVER: %s, %s", server.ID, server.Type)
+}
+
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "test-type", "the server type")
@@ -87,7 +99,7 @@ func main() {
 
 	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
 
-	pitaya.SetServiceDiscoveryClient(cluster.NewRedisServiceDiscovery(
+	redisSd := cluster.NewRedisServiceDiscovery(
 		"localhost:6379",
 		"",
 		"",
@@ -95,7 +107,11 @@ func main() {
 		time.Hour*1,
 		pitaya.GetServer(),
 		pitaya.GetDieChan(),
-	))
+	)
+
+	redisSd.AddListener(&Listener{})
+
+	pitaya.SetServiceDiscoveryClient(redisSd)
 
 	if !*isFrontend {
 		configureBackend()
