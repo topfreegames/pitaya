@@ -28,6 +28,7 @@ type RedisServiceDiscovery struct {
 	redisSyncInterval              time.Duration
 	redisRefreshExpirationInterval time.Duration
 	quitChan                       chan struct{}
+	listeners                      []SDListener
 }
 
 func NewRedisServiceDiscovery(
@@ -117,9 +118,18 @@ func (r *RedisServiceDiscovery) fillOutLocalCache() error {
 	return nil
 }
 
-func (r *RedisServiceDiscovery) AddListener(_ SDListener) {
-	// TODO We will not support GRPC now
-	// No implementation.
+func (r *RedisServiceDiscovery) AddListener(listener SDListener) {
+	r.listeners = append(r.listeners, listener)
+}
+
+func (r *RedisServiceDiscovery) notifyListeners(act Action, sv *Server) {
+	for _, l := range r.listeners {
+		if act == DEL {
+			l.RemoveServer(sv)
+		} else if act == ADD {
+			l.AddServer(sv)
+		}
+	}
 }
 
 func (r *RedisServiceDiscovery) isLocalCacheEmpty() bool {
@@ -241,22 +251,32 @@ func (r *RedisServiceDiscovery) updateLocalCache() error {
 		return fmt.Errorf("get all servers from redis: %w", err)
 	}
 
-	r.serverMapByType = map[string]map[string]*Server{}
-	r.serverMapByID = map[string]*Server{}
-
 	for _, server := range servers {
-		r.serverMapByID[server.ID] = server
-		if value, ok := r.serverMapByType[server.Type]; !ok {
-			serverValue := make(map[string]*Server)
-			serverValue[server.ID] = server
-			r.serverMapByType[server.Type] = serverValue
-		} else {
-			value[server.ID] = server
-			r.serverMapByType[server.Type] = value
-		}
+		logger.Log.Debugf("adding server %s", server)
+		r.addServerToLocalCache(server)
 	}
 
+	r.removeLocalInvalidServers(servers)
+
 	return nil
+}
+
+func hasServer(servers []*Server, wantServer *Server) bool {
+	for _, server := range servers {
+		if server.ID == wantServer.ID {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *RedisServiceDiscovery) removeLocalInvalidServers(allValidServers []*Server) {
+	for _, server := range r.serverMapByID {
+		if !hasServer(allValidServers, server) {
+			logger.Log.Warnf("removing invalid local server %s", server.ID)
+			r.removeServerFromLocalCache(server)
+		}
+	}
 }
 
 func (r *RedisServiceDiscovery) processMessage(msg *redis.Message) {
@@ -286,12 +306,17 @@ func (r *RedisServiceDiscovery) removeServerFromLocalCache(sv *Server) {
 		if svMap, ok := r.serverMapByType[sv.Type]; ok {
 			delete(svMap, sv.ID)
 		}
+		r.notifyListeners(DEL, sv)
 	}
 }
 
 func (r *RedisServiceDiscovery) addServerToLocalCache(sv *Server) {
 	r.localCacheLock.Lock()
 	defer r.localCacheLock.Unlock()
+
+	if _, ok := r.serverMapByID[sv.ID]; ok {
+		return
+	}
 
 	logger.Log.Debugf("adding server to local cache: id=%s, type=%s", sv.ID, sv.Type)
 	r.serverMapByID[sv.ID] = sv
@@ -301,6 +326,8 @@ func (r *RedisServiceDiscovery) addServerToLocalCache(sv *Server) {
 		r.serverMapByType[sv.Type] = mapSvByType
 	}
 	mapSvByType[sv.ID] = sv
+
+	r.notifyListeners(ADD, sv)
 }
 
 func (r *RedisServiceDiscovery) AfterInit() {
