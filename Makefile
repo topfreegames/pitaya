@@ -1,5 +1,11 @@
 TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
+.PHONY: build
+
+build:
+	@mkdir -p build
+	@go build -o build/pitaya
+
 setup: init-submodules
 	@go get ./...
 

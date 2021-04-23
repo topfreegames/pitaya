@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/topfreegames/pitaya/component"
+	"github.com/topfreegames/pitaya/pkg/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
 )
 

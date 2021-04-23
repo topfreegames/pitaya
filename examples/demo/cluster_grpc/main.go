@@ -9,15 +9,15 @@ import (
 
 	"strings"
 
-	"github.com/topfreegames/pitaya"
-	"github.com/topfreegames/pitaya/acceptor"
-	"github.com/topfreegames/pitaya/cluster"
-	"github.com/topfreegames/pitaya/component"
-	"github.com/topfreegames/pitaya/constants"
+	"github.com/topfreegames/pitaya/pkg"
+	"github.com/topfreegames/pitaya/pkg/acceptor"
+	"github.com/topfreegames/pitaya/pkg/cluster"
+	"github.com/topfreegames/pitaya/pkg/component"
+	"github.com/topfreegames/pitaya/pkg/constants"
 	"github.com/topfreegames/pitaya/examples/demo/cluster_grpc/services"
-	"github.com/topfreegames/pitaya/modules"
-	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/pkg/modules"
+	"github.com/topfreegames/pitaya/pkg/route"
+	"github.com/topfreegames/pitaya/pkg/serialize/json"
 )
 
 func configureBackend() {
