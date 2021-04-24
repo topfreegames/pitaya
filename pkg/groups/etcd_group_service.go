@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/namespace"
-	"go.etcd.io/etcd/mvcc/mvccpb"
 	"github.com/topfreegames/pitaya/pkg/config"
 	"github.com/topfreegames/pitaya/pkg/constants"
 	"github.com/topfreegames/pitaya/pkg/logger"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/namespace"
 )
 
 var (

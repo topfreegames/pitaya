@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/namespace"
+	"go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/namespace"
 	"github.com/topfreegames/pitaya/pkg/cluster"
 	"github.com/topfreegames/pitaya/pkg/config"
 	"github.com/topfreegames/pitaya/pkg/constants"

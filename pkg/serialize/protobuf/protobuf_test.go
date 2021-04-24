@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/topfreegames/pitaya/pkg/constants"
 	"github.com/topfreegames/pitaya/pkg/helpers"
@@ -92,7 +93,7 @@ func TestUnmarshal(t *testing.T) {
 			err := serializer.Unmarshal(table.data, result)
 			assert.Equal(t, table.err, err)
 			if table.err == nil {
-				assert.Equal(t, table.expected, result)
+				assert.True(t, proto.Equal(table.expected.(*protos.Response), result.(*protos.Response)))
 			}
 		})
 	}

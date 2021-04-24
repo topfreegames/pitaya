@@ -58,8 +58,8 @@ run-rate-limiting-example:
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=./pkg/protos/ --go_opt paths=source_relative --go-grpc_out ./pkg/protos/ --go-grpc_opt paths=source_relative --go-grpc_opt require_unimplemented_servers=false
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out ./pkg/protos/test/ --go_opt paths=source_relative
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

@@ -28,7 +28,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/topfreegames/pitaya/pkg/config"
 	"github.com/topfreegames/pitaya/pkg/constants"

@@ -457,10 +457,10 @@ func TestNatsRPCClientCall(t *testing.T) {
 			// TODO this is ugly, can lead to flaky tests and we could probably do it better
 			time.Sleep(50 * time.Millisecond)
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
-			assert.Equal(t, table.expected, res)
-                        if err != nil {
-			  assert.Contains(t, err.Error(), table.err.Error())
-                        }
+			assert.True(t, proto.Equal(table.expected, res))
+			if err != nil {
+				assert.Contains(t, err.Error(), table.err.Error())
+			}
 			err = subs.Unsubscribe()
 			assert.NoError(t, err)
 			conn.Close()

@@ -12,9 +12,8 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1
-	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.0
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.4.2
 	github.com/jhump/protoreflect v1.8.2
@@ -38,10 +37,15 @@ require (
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
-	go.etcd.io/etcd v0.0.0-20210226220824-aa7126864d82
+	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0 // indirect
+	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/tests/v3 v3.5.0-alpha.0 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/sys v0.0.0-20210423185535-09eb48e85fd7 // indirect
 	golang.org/x/text v0.3.6 // indirect
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.37.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )
+
+replace github.com/coreos/etcd => go.etcd.io/etcd/v3 v3.5.0-alpha.0

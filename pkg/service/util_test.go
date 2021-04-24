@@ -164,7 +164,7 @@ func TestUnmarshalRemoteArg(t *testing.T) {
 
 			arg, err := unmarshalRemoteArg(remote, payload)
 			assert.NoError(t, err)
-			assert.Equal(t, table.arg, arg)
+			assert.True(t, proto.Equal(table.arg, arg.(*test.SomeStruct)))
 		})
 	}
 }

@@ -32,8 +32,8 @@ import (
 	"github.com/topfreegames/pitaya/pkg/constants"
 	"github.com/topfreegames/pitaya/pkg/logger"
 	"github.com/topfreegames/pitaya/pkg/util"
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/namespace"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/namespace"
 )
 
 type etcdServiceDiscovery struct {

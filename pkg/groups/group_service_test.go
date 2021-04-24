@@ -25,7 +25,7 @@ import (
 	"os"
 	"testing"
 
-	"go.etcd.io/etcd/integration"
+	"go.etcd.io/etcd/tests/v3/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/pkg/config"
