@@ -60,6 +60,7 @@ protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=./pkg/protos/ --go_opt paths=source_relative --go-grpc_out ./pkg/protos/ --go-grpc_opt paths=source_relative --go-grpc_opt require_unimplemented_servers=false
 	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out ./pkg/protos/test/ --go_opt paths=source_relative
+	@protoc -I examples/demo/protos/ examples/demo/protos/*.proto --go_out ./examples/demo/protos --go_opt paths=source_relative
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

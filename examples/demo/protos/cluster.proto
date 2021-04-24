@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package protos;
 
+option go_package = "github.com/topfreegames/pitaya/examples/demo/protos";
+
 // RPCMsg message to be sent using rpc
 message RPCMsg {
   string Msg = 1;
@@ -10,8 +12,4 @@ message RPCMsg {
 // RPCRes is the rpc response
 message RPCRes {
   string Msg = 1;
-}
-
-message Doc {
-  string doc = 1;
 }
