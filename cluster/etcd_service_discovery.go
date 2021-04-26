@@ -224,7 +224,7 @@ func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
 		return err
 	}
 
-	sd.SyncServers()
+	sd.SyncServers(true)
 	return nil
 }
 
@@ -389,7 +389,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 		for sd.running {
 			select {
 			case <-syncServersTicker.C:
-				err := sd.SyncServers()
+				err := sd.SyncServers(false)
 				if err != nil {
 					logger.Log.Errorf("error resyncing servers: %s", err.Error())
 				}
@@ -467,8 +467,13 @@ func (p *parallelGetter) start() {
 		go func() {
 			for work := range p.workChan {
 				logger.Log.Debugf("loading info from missing server: %s/%s", work.serverType, work.serverID)
-
-				sv, err := parseServer(work.payload)
+				var sv *Server
+				var err error
+				if work.payload == nil {
+					sv, err = getServerFromEtcd(p.cli, work.serverType, work.serverID)
+				} else {
+					sv, err = parseServer(work.payload)
+				}
 				if err != nil {
 					logger.Log.Errorf("Error parsing server from etcd: %s, error: %s", work.serverID, err.Error())
 					p.wg.Done()
@@ -491,7 +496,7 @@ func (p *parallelGetter) waitAndGetResult() []*Server {
 	return *p.result
 }
 
-func (p *parallelGetter) addWork(serverType, serverID string, payload []byte) {
+func (p *parallelGetter) addWorkWithPayload(serverType, serverID string, payload []byte) {
 	p.wg.Add(1)
 	p.workChan <- parallelGetterWork{
 		serverType: serverType,
@@ -500,13 +505,32 @@ func (p *parallelGetter) addWork(serverType, serverID string, payload []byte) {
 	}
 }
 
+func (p *parallelGetter) addWork(serverType, serverID string) {
+	p.wg.Add(1)
+	p.workChan <- parallelGetterWork{
+		serverType: serverType,
+		serverID:   serverID,
+	}
+}
+
 // SyncServers gets all servers from etcd
-func (sd *etcdServiceDiscovery) SyncServers() error {
-	kvs, err := sd.cli.Get(
-		context.TODO(),
-		"servers/",
-		clientv3.WithPrefix(),
-	)
+func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
+	var kvs *clientv3.GetResponse
+	var err error
+	if firstSync {
+		kvs, err = sd.cli.Get(
+			context.TODO(),
+			"servers/",
+			clientv3.WithPrefix(),
+		)
+	} else {
+		kvs, err = sd.cli.Get(
+			context.TODO(),
+			"servers/",
+			clientv3.WithPrefix(),
+			clientv3.WithKeysOnly(),
+		)
+	}
 	if err != nil {
 		return err
 	}
@@ -534,7 +558,11 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
 			// Add new work to the channel
-			parallelGetter.addWork(svType, svID, kv.Value)
+			if firstSync {
+				parallelGetter.addWorkWithPayload(svType, svID, kv.Value)
+			} else {
+				parallelGetter.addWork(svType, svID)
+			}
 		}
 	}
 
