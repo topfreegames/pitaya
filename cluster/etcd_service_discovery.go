@@ -533,6 +533,7 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 		)
 	}
 	if err != nil {
+		logger.Log.Errorf("Error querying etcd server: %s", err.Error())
 		return err
 	}
 
