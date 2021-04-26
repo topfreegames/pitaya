@@ -16,9 +16,9 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/topfreegames/pitaya/sidecar"
 )
 
 // sidecarCmd represents the start command
@@ -27,7 +27,11 @@ var sidecarCmd = &cobra.Command{
 	Short: "starts pitaya in sidecar mode",
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("start called")
+		// TODO fix config here
+		cfg := viper.New()
+		cfg.Set("pitaya.sidecar.bindaddr", "0.0.0.0")
+		cfg.Set("pitaya.sidecar.listenport", "3000")
+		sidecar.StartSidecar(cfg)
 	},
 }
 
