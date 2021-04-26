@@ -465,27 +465,27 @@ func (a *Agent) write() {
 		select {
 		case pWrite := <-a.chSend:
 			//TODO 搞明白什么情况下会发生什么事情
-			a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
+			// a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
 				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
-				// return
+				return
 			}
 			var e error
 			tracing.FinishSpan(pWrite.ctx, e)
 			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
 		case pWrite := <-a.chHbSend:
 			//TODO 搞明白什么情况下会发生什么事情
-			a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
+			// a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 			// logger.Log.Debugf("heartbeat chHbSend ->")
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
 				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
-				// return
+				return
 			}
 		case <-a.chStopWrite:
 			return
