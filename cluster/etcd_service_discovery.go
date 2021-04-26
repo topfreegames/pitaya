@@ -515,6 +515,7 @@ func (p *parallelGetter) addWork(serverType, serverID string) {
 
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
+	start := time.Now()
 	var kvs *clientv3.GetResponse
 	var err error
 	if firstSync {
@@ -578,6 +579,8 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 
 	sd.printServers()
 	sd.lastSyncTime = time.Now()
+	elapsed := time.Since(start)
+	logger.Log.Infof("SyncServers took : %s to run", elapsed)
 	return nil
 }
 

@@ -273,7 +273,7 @@ func TestEtcdSDInit(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "30ms")
+			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "300ms")
 			config := getConfig(conf)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
@@ -336,7 +336,7 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "10ms")
+			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "100ms")
 			config := getConfig(conf)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
@@ -370,7 +370,7 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "10ms")
+			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "100ms")
 			config := getConfig(conf)
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
@@ -410,7 +410,7 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 	for _, table := range etcdSDBlacklistTables {
 		t.Run(table.name, func(t *testing.T) {
 			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "10ms")
+			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "100ms")
 			conf.Set("pitaya.cluster.sd.etcd.serverTypeBlacklist", table.serverTypeBlacklist)
 			config := getConfig(conf)
 			c, cli := helpers.GetTestEtcd(t)
