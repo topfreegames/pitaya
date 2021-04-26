@@ -216,15 +216,16 @@ func (sd *etcdServiceDiscovery) addServerIntoEtcd(server *Server) error {
 		server.AsJSONString(),
 		clientv3.WithLease(sd.leaseID),
 	)
+	sd.addServer(server)
 	return err
 }
 
 func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
+	sd.SyncServers(true)
 	if err := sd.addServerIntoEtcd(server); err != nil {
 		return err
 	}
 
-	sd.SyncServers(true)
 	return nil
 }
 
