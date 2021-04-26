@@ -490,10 +490,11 @@ func TestParallelGetter(t *testing.T) {
 		)
 		assert.NoError(t, err)
 	}
-
+        
 	parallelGetter := newParallelGetter(cli, 5)
 	for _, serverToAdd := range serversToAdd {
-		parallelGetter.addWork(serverToAdd.Type, serverToAdd.ID)
+                payload := []byte("{\"id\":\""+serverToAdd.ID+"\",\"type\":\""+serverToAdd.Type+"\",\"frontend\":true,\"hostname\":\""+serverToAdd.ID+"\",\"metadata\":{\"region\":\"us\"}}")
+		parallelGetter.addWork(serverToAdd.Type, serverToAdd.ID, payload)
 	}
 
 	servers := parallelGetter.waitAndGetResult()

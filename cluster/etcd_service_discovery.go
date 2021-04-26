@@ -435,6 +435,7 @@ func (sd *etcdServiceDiscovery) printServers() {
 type parallelGetterWork struct {
 	serverType string
 	serverID   string
+        payload    []byte
 }
 
 type parallelGetter struct {
@@ -467,9 +468,9 @@ func (p *parallelGetter) start() {
 			for work := range p.workChan {
 				logger.Log.Debugf("loading info from missing server: %s/%s", work.serverType, work.serverID)
 
-				sv, err := getServerFromEtcd(p.cli, work.serverType, work.serverID)
+				sv, err := parseServer(work.payload)
 				if err != nil {
-					logger.Log.Errorf("error getting server from etcd: %s, error: %s", work.serverID, err.Error())
+					logger.Log.Errorf("Error parsing server from etcd: %s, error: %s", work.serverID, err.Error())
 					p.wg.Done()
 					continue
 				}
@@ -490,21 +491,21 @@ func (p *parallelGetter) waitAndGetResult() []*Server {
 	return *p.result
 }
 
-func (p *parallelGetter) addWork(serverType, serverID string) {
+func (p *parallelGetter) addWork(serverType, serverID string, payload []byte) {
 	p.wg.Add(1)
 	p.workChan <- parallelGetterWork{
 		serverType: serverType,
 		serverID:   serverID,
+                payload:    payload,
 	}
 }
 
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers() error {
-	keys, err := sd.cli.Get(
+	kvs, err := sd.cli.Get(
 		context.TODO(),
 		"servers/",
 		clientv3.WithPrefix(),
-		clientv3.WithKeysOnly(),
 	)
 	if err != nil {
 		return err
@@ -516,7 +517,7 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	// Spawn worker goroutines that will work in parallel
 	parallelGetter := newParallelGetter(sd.cli, sd.syncServersParallelism)
 
-	for _, kv := range keys.Kvs {
+	for _, kv := range kvs.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
 			logger.Log.Warnf("failed to parse etcd key %s, error: %s", kv.Key, err.Error())
@@ -533,7 +534,7 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
 			// Add new work to the channel
-			parallelGetter.addWork(svType, svID)
+			parallelGetter.addWork(svType, svID, kv.Value)
 		}
 	}
 
