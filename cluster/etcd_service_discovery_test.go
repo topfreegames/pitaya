@@ -26,12 +26,12 @@ import (
 	"testing"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/config"
 	"github.com/topfreegames/pitaya/constants"
 	"github.com/topfreegames/pitaya/helpers"
+	"go.etcd.io/etcd/clientv3"
 )
 
 var etcdSDTables = []struct {
@@ -490,10 +490,10 @@ func TestParallelGetter(t *testing.T) {
 		)
 		assert.NoError(t, err)
 	}
-        
+
 	parallelGetter := newParallelGetter(cli, 5)
 	for _, serverToAdd := range serversToAdd {
-                payload := []byte("{\"id\":\""+serverToAdd.ID+"\",\"type\":\""+serverToAdd.Type+"\",\"frontend\":true,\"hostname\":\""+serverToAdd.ID+"\",\"metadata\":{\"region\":\"us\"}}")
+		payload := []byte("{\"id\":\"" + serverToAdd.ID + "\",\"type\":\"" + serverToAdd.Type + "\",\"frontend\":true,\"hostname\":\"" + serverToAdd.ID + "\",\"metadata\":{\"region\":\"us\"}}")
 		parallelGetter.addWork(serverToAdd.Type, serverToAdd.ID, payload)
 	}
 
