@@ -471,7 +471,7 @@ func (a *Agent) write() {
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
 				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
-				return
+				// return
 			}
 			var e error
 			tracing.FinishSpan(pWrite.ctx, e)
@@ -485,7 +485,7 @@ func (a *Agent) write() {
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
 				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
-				return
+				// return
 			}
 		case <-a.chStopWrite:
 			return
