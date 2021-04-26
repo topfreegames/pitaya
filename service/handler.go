@@ -212,7 +212,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	defer func() {
 		// a.Session.Close()
 		a.CloseByReason(agent.AgentCloseByMessageEnd)
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("Session read goroutine exit, Session:", a.Session.DebugString())
 	}()
 
 	for {
@@ -220,7 +220,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			logger.Log.Errorf("Error reading next available message(session:) err: %s", a.Session.DebugString(), err.Error())
 			return
 		}
 

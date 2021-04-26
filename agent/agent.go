@@ -60,26 +60,43 @@ var (
 
 const handlerType = "handler"
 
+type AgentCloseReason int32
+
 const (
-	_ int32 = iota
+	_ AgentCloseReason = iota
 	AgentCloseByWriteEnd
 	AgentCloseByHeartBeat
 	AgentCloseByHandleEnd
 	AgentCloseByMessageEnd
 )
 
+func (a AgentCloseReason) String() string {
+	switch a {
+	case AgentCloseByWriteEnd:
+		return "AgentCloseByWriteEnd"
+	case AgentCloseByHeartBeat:
+		return "AgentCloseByHeartBeat"
+	case AgentCloseByHandleEnd:
+		return "AgentCloseByHandleEnd"
+	case AgentCloseByMessageEnd:
+		return "AgentCloseByMessageEnd"
+	default:
+		return "UnknownReason"
+	}
+}
+
 type (
 	// Agent corresponds to a user and is used for storing raw Conn information
 	Agent struct {
-		Session            *session.Session  // session
-		appDieChan         chan bool         // app die channel
-		chDie              chan struct{}     // wait for close
-		chSend             chan pendingWrite // push message queue
-		chHbSend           chan pendingWrite // push message queue (心跳专用)
-		chStopHeartbeat    chan struct{}     // stop heartbeats
-		chStopWrite        chan struct{}     // stop writing messages
-		ChRoleMessages     chan UnhandledRoleMessage      // 用户请求的消息列表(队列)
-		ChAgentDie         chan int32         // 
+		Session            *session.Session          // session
+		appDieChan         chan bool                 // app die channel
+		chDie              chan struct{}             // wait for close
+		chSend             chan pendingWrite         // push message queue
+		chHbSend           chan pendingWrite         // push message queue (心跳专用)
+		chStopHeartbeat    chan struct{}             // stop heartbeats
+		chStopWrite        chan struct{}             // stop writing messages
+		ChRoleMessages     chan UnhandledRoleMessage // 用户请求的消息列表(队列)
+		ChAgentDie         chan int32                //
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -447,6 +464,8 @@ func (a *Agent) write() {
 	for {
 		select {
 		case pWrite := <-a.chSend:
+			//TODO 搞明白什么情况下会发生什么事情
+			a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
 				tracing.FinishSpan(pWrite.ctx, err)
@@ -458,6 +477,8 @@ func (a *Agent) write() {
 			tracing.FinishSpan(pWrite.ctx, e)
 			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
 		case pWrite := <-a.chHbSend:
+			//TODO 搞明白什么情况下会发生什么事情
+			a.conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 			// logger.Log.Debugf("heartbeat chHbSend ->")
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
@@ -508,8 +529,8 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat":  heartbeatTimeout.Seconds(),
-			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)),   // 时间戳，毫秒
-			"dict":       map[string]uint16{}, //message.GetDictionary(),
+			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)), // 时间戳，毫秒
+			"dict":       map[string]uint16{},                                     //message.GetDictionary(),
 			"serializer": serializerName,
 		},
 	}
@@ -541,14 +562,14 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 }
 
 //上边函数的一个副本，由于severtime是一个变量，每次握手都是不一样的，不能 once.Do(hbdEncode)
-func (a *Agent) hrdEncodeInner() ([]byte) {
+func (a *Agent) hrdEncodeInner() []byte {
 	hrdBuff := []byte{}
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
 			"heartbeat":  a.heartbeatTimeout.Seconds(),
-			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)),   // 时间戳，毫秒
-			"dict":       map[string]uint16{}, //message.GetDictionary(),
+			"severtime":  uint64(time.Now().UnixNano() / int64(time.Millisecond)), // 时间戳，毫秒
+			"dict":       map[string]uint16{},                                     //message.GetDictionary(),
 			"serializer": a.serializer.GetName(),
 		},
 	}
@@ -591,13 +612,13 @@ func (a *Agent) reportChannelSize() {
 	}
 }
 
-func (a *Agent) CloseByReason(rs int32) {
+func (a *Agent) CloseByReason(rs AgentCloseReason) {
 	a.closeMutex.Lock()
 	defer a.closeMutex.Unlock()
 	if a.GetStatus() == constants.StatusClosed {
 		return
 	}
 
-	logger.Log.Debugf("CloseByReason rs = %d", rs)
-	a.ChAgentDie <- rs
+	logger.Log.Debugf("CloseByReason rs = %s", rs)
+	a.ChAgentDie <- int32(rs)
 }

@@ -23,6 +23,7 @@ package session
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -722,4 +723,8 @@ func (s *Session) sendRequestToFront(ctx context.Context, route string, includeD
 	}
 	logger.Log.Debugf("%s Got response: %+v", route, res)
 	return nil
+}
+
+func (s *Session) DebugString() string {
+	return fmt.Sprintf("(ID:%d UID:%s RID:%s)", s.id, s.uid, s.roleID)
 }

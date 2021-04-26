@@ -90,11 +90,11 @@ func ReportSysMetrics(reporters []Reporter, period time.Duration) {
 		}
 	}()
 	for {
-		for _, r := range reporters {
-			num := runtime.NumGoroutine()
-			m := &runtime.MemStats{}
-			runtime.ReadMemStats(m)
+		num := runtime.NumGoroutine()
+		m := &runtime.MemStats{}
+		runtime.ReadMemStats(m)
 
+		for _, r := range reporters {
 			r.ReportGauge(Goroutines, map[string]string{}, float64(num))
 			r.ReportGauge(HeapSize, map[string]string{}, float64(m.Alloc))
 			r.ReportGauge(HeapObjects, map[string]string{}, float64(m.HeapObjects))
