@@ -21,9 +21,9 @@
 package acceptorwrapper
 
 import (
-	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/metrics"
 )
 
 // RateLimitingWrapper rate limits for each connection
@@ -33,11 +33,11 @@ type RateLimitingWrapper struct {
 }
 
 // NewRateLimitingWrapper returns an instance of *RateLimitingWrapper
-func NewRateLimitingWrapper(app pitaya.Pitaya, c config.RateLimitingConfig) *RateLimitingWrapper {
+func NewRateLimitingWrapper(reporters []metrics.Reporter, c config.RateLimitingConfig) *RateLimitingWrapper {
 	r := &RateLimitingWrapper{}
 
 	r.BaseWrapper = NewBaseWrapper(func(conn acceptor.PlayerConn) acceptor.PlayerConn {
-		return NewRateLimiter(app, conn, c.Limit, c.Interval, c.ForceDisable)
+		return NewRateLimiter(reporters, conn, c.Limit, c.Interval, c.ForceDisable)
 	})
 
 	return r

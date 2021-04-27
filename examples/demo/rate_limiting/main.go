@@ -13,9 +13,10 @@ import (
 	"github.com/topfreegames/pitaya/v2/component"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/examples/demo/rate_limiting/services"
+	"github.com/topfreegames/pitaya/v2/metrics"
 )
 
-func createAcceptor(port int) acceptor.Acceptor {
+func createAcceptor(port int, reporters []metrics.Reporter) acceptor.Acceptor {
 
 	// 5 requests in 1 minute. Doesn't make sense, just to test
 	// rate limiting
@@ -29,7 +30,7 @@ func createAcceptor(port int) acceptor.Acceptor {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	return acceptorwrapper.WithWrappers(
 		tcp,
-		acceptorwrapper.NewRateLimitingWrapper(app, rateLimitConfig))
+		acceptorwrapper.NewRateLimitingWrapper(reporters, rateLimitConfig))
 }
 
 var app pitaya.Pitaya
@@ -42,7 +43,7 @@ func main() {
 
 	config := config.NewDefaultBuilderConfig()
 	builder := pitaya.NewDefaultBuilder(true, svType, pitaya.Cluster, map[string]string{}, config)
-	builder.AddAcceptor(createAcceptor(*port))
+	builder.AddAcceptor(createAcceptor(*port, builder.MetricsReporters))
 
 	app = builder.Build()
 
