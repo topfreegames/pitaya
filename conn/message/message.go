@@ -139,7 +139,11 @@ func SetDictionary(dict map[string]uint16) error {
 func GetDictionary() map[string]uint16 {
 	routesCodesMutex.RLock()
 	defer routesCodesMutex.RUnlock()
-	return routes
+	dict := make(map[string]uint16)
+	for k, v := range routes {
+		dict[k] = v
+	}
+	return dict
 }
 
 func (t *Type) String() string {

@@ -3,6 +3,7 @@ package message
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -195,4 +196,16 @@ func TestSetDictionaryRace(t *testing.T) {
 
 	expected_routes := map[string]uint16{"a": 1, "b": 2}
 	assert.EqualValues(t, expected_routes, routes)
+}
+
+func TestGetDictionary(t *testing.T) {
+	defer resetDicts(t)
+	expected := map[string]uint16{"a": 1, "b": 2}
+	assert.Nil(t, SetDictionary(expected))
+
+	dict := GetDictionary()
+	assert.Equal(t, expected, dict)
+
+	// make sure we're copying the routes maps
+	assert.NotEqual(t, fmt.Sprintf("%p", routes), fmt.Sprintf("%p", dict))
 }
