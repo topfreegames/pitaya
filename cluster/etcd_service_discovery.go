@@ -37,7 +37,7 @@ import (
 )
 
 var (
-        syncServersRunning = false
+	syncServersRunning = false
 )
 
 type etcdServiceDiscovery struct {
@@ -644,7 +644,7 @@ func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 
 func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 	w := sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
-
+	failedWatchAttempts := 0
 	go func(chn clientv3.WatchChan) {
 		for sd.running {
 			select {
@@ -655,10 +655,16 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 				}
 				if !ok {
 					logger.Log.Error("etcd watcher died, retrying to watch in 1 second")
+					failedWatchAttempts++
 					time.Sleep(1000 * time.Millisecond)
-					sd.InitETCDClient()
-					chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+					if failedWatchAttempts > 10 {
+						sd.InitETCDClient()
+						chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+						failedWatchAttempts = 0
+					}
+					continue
 				}
+				failedWatchAttempts = 0
 				// Wait for syncServers() to finish running to avoid conflicts
 				for syncServersRunning {
 					time.Sleep(100 * time.Millisecond)
