@@ -651,7 +651,7 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			case wResp, ok := <-chn:
 				if wResp.Err() != nil {
 					logger.Log.Warnf("etcd watcher response error: %s", wResp.Err())
-					time.Sleep(100 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 				}
 				if !ok {
 					logger.Log.Error("etcd watcher died, retrying to watch in 1 second")
