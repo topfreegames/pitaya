@@ -379,6 +379,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
 		sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
 	}
+	go sd.watchEtcdChanges()
 
 	if err = sd.bootstrap(); err != nil {
 		return err
@@ -400,7 +401,6 @@ func (sd *etcdServiceDiscovery) Init() error {
 		}
 	}()
 
-	go sd.watchEtcdChanges()
 	return nil
 }
 
