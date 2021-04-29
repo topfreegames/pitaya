@@ -36,6 +36,10 @@ import (
 	"go.etcd.io/etcd/clientv3/namespace"
 )
 
+var (
+        syncServersRunning = false
+)
+
 type etcdServiceDiscovery struct {
 	cli                    *clientv3.Client
 	config                 *config.Config
@@ -516,6 +520,7 @@ func (p *parallelGetter) addWork(serverType, serverID string) {
 
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
+	syncServersRunning = true
 	start := time.Now()
 	var kvs *clientv3.GetResponse
 	var err error
@@ -535,6 +540,7 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 	}
 	if err != nil {
 		logger.Log.Errorf("Error querying etcd server: %s", err.Error())
+		syncServersRunning = false
 		return err
 	}
 
@@ -583,6 +589,7 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 	sd.lastSyncTime = time.Now()
 	elapsed := time.Since(start)
 	logger.Log.Infof("SyncServers took : %s to run", elapsed)
+	syncServersRunning = false
 	return nil
 }
 
@@ -651,6 +658,10 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					time.Sleep(1000 * time.Millisecond)
 					sd.InitETCDClient()
 					chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+				}
+				// Wait for syncServers() to finish running to avoid conflicts
+				for syncServersRunning {
+					time.Sleep(100 * time.Millisecond)
 				}
 				for _, ev := range wResp.Events {
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
