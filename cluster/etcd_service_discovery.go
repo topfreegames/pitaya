@@ -350,6 +350,7 @@ func (sd *etcdServiceDiscovery) InitETCDClient() error {
 	config := clientv3.Config{
 		Endpoints:   sd.etcdEndpoints,
 		DialTimeout: sd.etcdDialTimeout,
+		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	}
 	if sd.etcdUser != "" && sd.etcdPass != "" {
 		config.Username = sd.etcdUser
