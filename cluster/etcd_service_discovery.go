@@ -34,39 +34,42 @@ import (
 	"github.com/topfreegames/pitaya/util"
 	"go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/clientv3/namespace"
+	"google.golang.org/grpc"
 )
 
 type etcdServiceDiscovery struct {
-	cli                    *clientv3.Client
-	config                 *config.Config
-	syncServersInterval    time.Duration
-	heartbeatTTL           time.Duration
-	logHeartbeat           bool
-	lastHeartbeatTime      time.Time
-	leaseID                clientv3.LeaseID
-	mapByTypeLock          sync.RWMutex
-	serverMapByType        map[string]map[string]*Server
-	serverMapByID          sync.Map
-	etcdEndpoints          []string
-	etcdUser               string
-	etcdPass               string
-	etcdPrefix             string
-	etcdDialTimeout        time.Duration
-	running                bool
-	server                 *Server
-	stopChan               chan bool
-	stopLeaseChan          chan bool
-	lastSyncTime           time.Time
-	listeners              []SDListener
-	revokeTimeout          time.Duration
-	grantLeaseTimeout      time.Duration
-	grantLeaseMaxRetries   int
-	grantLeaseInterval     time.Duration
-	shutdownDelay          time.Duration
-	appDieChan             chan bool
-	serverTypesBlacklist   []string
-	syncServersParallelism int
-	syncServersRunning     chan bool
+	cli                      *clientv3.Client
+	config                   *config.Config
+	syncServersInterval      time.Duration
+	heartbeatTTL             time.Duration
+	logHeartbeat             bool
+	lastHeartbeatTime        time.Time
+	leaseID                  clientv3.LeaseID
+	mapByTypeLock            sync.RWMutex
+	serverMapByType          map[string]map[string]*Server
+	serverMapByID            sync.Map
+	etcdEndpoints            []string
+	etcdUser                 string
+	etcdPass                 string
+	etcdPrefix               string
+	etcdDialTimeout          time.Duration
+	etcdDialKeepAliveTime    time.Duration
+	etcdDialKeepAliveTimeout time.Duration
+	running                  bool
+	server                   *Server
+	stopChan                 chan bool
+	stopLeaseChan            chan bool
+	lastSyncTime             time.Time
+	listeners                []SDListener
+	revokeTimeout            time.Duration
+	grantLeaseTimeout        time.Duration
+	grantLeaseMaxRetries     int
+	grantLeaseInterval       time.Duration
+	shutdownDelay            time.Duration
+	appDieChan               chan bool
+	serverTypesBlacklist     []string
+	syncServersParallelism   int
+	syncServersRunning       chan bool
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -103,6 +106,8 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.etcdUser = sd.config.GetString("pitaya.cluster.sd.etcd.user")
 	sd.etcdPass = sd.config.GetString("pitaya.cluster.sd.etcd.pass")
 	sd.etcdDialTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
+	sd.etcdDialKeepAliveTime = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
+	sd.etcdDialKeepAliveTimeout = sd.config.GetDuration("pitaya.cluster.sd.etcd.dialtimeout")
 	sd.etcdPrefix = sd.config.GetString("pitaya.cluster.sd.etcd.prefix")
 	sd.heartbeatTTL = sd.config.GetDuration("pitaya.cluster.sd.etcd.heartbeat.ttl")
 	sd.logHeartbeat = sd.config.GetBool("pitaya.cluster.sd.etcd.heartbeat.log")
@@ -348,9 +353,11 @@ func (sd *etcdServiceDiscovery) InitETCDClient() error {
 	var cli *clientv3.Client
 	var err error
 	config := clientv3.Config{
-		Endpoints:   sd.etcdEndpoints,
-		DialTimeout: sd.etcdDialTimeout,
-		DialOptions: []grpc.DialOption{grpc.WithBlock()},
+		Endpoints:            sd.etcdEndpoints,
+		DialTimeout:          sd.etcdDialTimeout,
+		DialOptions:          []grpc.DialOption{grpc.WithBlock()},
+		DialKeepAliveTime:    sd.etcdDialKeepAliveTime,
+		DialKeepAliveTimeout: sd.etcdDialKeepAliveTimeout,
 	}
 	if sd.etcdUser != "" && sd.etcdPass != "" {
 		config.Username = sd.etcdUser

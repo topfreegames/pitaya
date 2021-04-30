@@ -70,6 +70,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.connectiontimeout":      "2s",
 		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": 15,
 		"pitaya.cluster.sd.etcd.dialtimeout":                    "5s",
+		"pitaya.cluster.sd.etcd.dialkeepalivetime":              "5s",
+		"pitaya.cluster.sd.etcd.dialkeepalivetimeout":           "1s",
 		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
 		"pitaya.cluster.sd.etcd.grantlease.maxretries":          15,
 		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       "5s",
