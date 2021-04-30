@@ -191,9 +191,29 @@ func AddAcceptor(ac acceptor.Acceptor) {
 	app.acceptors = append(app.acceptors, ac)
 }
 
+// GetConfig gets the pitaya config instance
+func GetConfig() *config.Config {
+	return app.config
+}
+
 // GetDieChan gets the channel that the app sinalizes when its going to die
 func GetDieChan() chan bool {
 	return app.dieChan
+}
+
+// GetMetricsReporters gets registered metrics reporters
+func GetMetricsReporters() []metrics.Reporter {
+	return app.metricsReporters
+}
+
+// GetRPCServer returns the rpc server
+func GetRPCServer() cluster.RPCServer {
+	return app.rpcServer
+}
+
+// GetServerID returns the generated server id
+func GetServerID() string {
+	return app.server.ID
 }
 
 // SetDebug toggles debug on/off
@@ -219,21 +239,6 @@ func SetHeartbeatTime(interval time.Duration) {
 // SetLogger logger setter
 func SetLogger(l logger.Logger) {
 	logger.Log = l
-}
-
-// GetServerID returns the generated server id
-func GetServerID() string {
-	return app.server.ID
-}
-
-// GetConfig gets the pitaya config instance
-func GetConfig() *config.Config {
-	return app.config
-}
-
-// GetMetricsReporters gets registered metrics reporters
-func GetMetricsReporters() []metrics.Reporter {
-	return app.metricsReporters
 }
 
 // SetRPCServer to be used
@@ -396,7 +401,10 @@ func Start() {
 			app.server,
 		)
 
-		app.rpcServer.SetPitayaServer(remoteService)
+		// Only set this if not set already, so that we don't override user choice
+		if app.rpcServer.GetPitayaServer() == nil {
+			app.rpcServer.SetPitayaServer(remoteService)
+		}
 
 		initSysRemotes()
 	}
