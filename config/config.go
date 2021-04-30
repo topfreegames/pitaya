@@ -79,7 +79,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.prefix":                         "pitaya/",
 		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
 		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
-		"pitaya.cluster.sd.etcd.shutdown.delay":                 "10ms",
+		"pitaya.cluster.sd.etcd.shutdown.delay":                 "300ms",
 		"pitaya.cluster.sd.etcd.servertypeblacklist":            nil,
 		"pitaya.cluster.sd.etcd.syncserversparallelism":         10,
 		// the sum of this config among all the frontend servers should always be less than
