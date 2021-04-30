@@ -64,6 +64,11 @@ func (gs *GRPCServer) Init() error {
 	return nil
 }
 
+// GetPitayaServer returns the currently set Pitaya Server
+func (gs *GRPCServer) GetPitayaServer() protos.PitayaServer {
+	return gs.pitayaServer
+}
+
 // SetPitayaServer sets the pitaya server
 func (gs *GRPCServer) SetPitayaServer(ps protos.PitayaServer) {
 	gs.pitayaServer = ps

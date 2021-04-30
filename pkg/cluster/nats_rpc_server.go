@@ -115,6 +115,11 @@ func (ns *NatsRPCServer) GetBindingsChannel() chan *nats.Msg {
 	return ns.bindingsChan
 }
 
+// GetPitayaServer returns the currently set Pitaya Server
+func (ns *NatsRPCServer) GetPitayaServer() protos.PitayaServer {
+	return ns.pitayaServer
+}
+
 // GetUserMessagesTopic get the topic for user
 func GetUserMessagesTopic(uid string, svType string) string {
 	return fmt.Sprintf("pitaya/%s/user/%s/push", svType, uid)

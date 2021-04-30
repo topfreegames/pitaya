@@ -359,6 +359,9 @@ func TestNatsRPCServerProcessBindings(t *testing.T) {
 	defer ctrl.Finish()
 
 	rpcServer.SetPitayaServer(pitayaSvMock)
+	// test GetPitayaServer just to get test coverage ( why not? (: )
+	tSv := rpcServer.GetPitayaServer()
+	assert.Equal(t, pitayaSvMock, tSv)
 
 	bindMsg := &protos.BindMsg{
 		Uid: "testuid",
