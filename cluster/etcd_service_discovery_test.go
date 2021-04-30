@@ -158,7 +158,7 @@ func TestEtcdSDBootstrapServer(t *testing.T) {
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
-			e.grantLease()
+			e.Init()
 			err := e.bootstrapServer(table.server)
 			assert.NoError(t, err)
 			v, err := cli.Get(context.TODO(), getKey(table.server.ID, table.server.Type))
@@ -183,7 +183,7 @@ func TestEtcdSDDeleteServer(t *testing.T) {
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
-			e.grantLease()
+			e.Init()
 			err := e.bootstrapServer(table.server)
 			assert.NoError(t, err)
 			e.deleteServer(table.server.ID)
@@ -243,7 +243,7 @@ func TestEtcdSDGetServer(t *testing.T) {
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
-			e.grantLease()
+			e.Init()
 			e.bootstrapServer(table.server)
 			sv, err := e.GetServer(table.server.ID)
 			assert.NoError(t, err)
@@ -259,12 +259,14 @@ func TestEtcdSDGetServers(t *testing.T) {
 		c, cli := helpers.GetTestEtcd(t)
 		defer c.Terminate(t)
 		e := getEtcdSD(t, config, &Server{}, cli)
-		e.grantLease()
+		e.Init()
 		for _, server := range table.servers {
 			e.bootstrapServer(server)
 		}
 		serverList := e.GetServers()
-		assert.ElementsMatch(t, table.servers, serverList)
+		var checkList []*Server
+		checkList = append(table.servers, &Server{})
+		assert.ElementsMatch(t, checkList, serverList)
 	}
 }
 
@@ -335,15 +337,12 @@ func TestEtcdWatchChangesAddNewServers(t *testing.T) {
 	t.Parallel()
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
-			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "100ms")
-			config := getConfig(conf)
+			config := getConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
+			e.Init()
 			e.running = true
-			e.bootstrapServer(table.server)
-			e.watchEtcdChanges()
 			serversBefore, err := e.GetServersByType(table.server.Type)
 			assert.NoError(t, err)
 			assert.Equal(t, 1, len(serversBefore))
@@ -369,15 +368,12 @@ func TestEtcdWatchChangesDeleteServers(t *testing.T) {
 	t.Parallel()
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
-			conf := viper.New()
-			conf.Set("pitaya.cluster.sd.etcd.syncservers.interval", "100ms")
-			config := getConfig(conf)
+			config := getConfig()
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
+			e.Init()
 			e.running = true
-			e.bootstrapServer(table.server)
-			e.watchEtcdChanges()
 			serversBefore, err := e.GetServersByType(table.server.Type)
 			assert.NoError(t, err)
 			assert.Equal(t, 1, len(serversBefore))
@@ -416,9 +412,8 @@ func TestEtcdWatchChangesWithBlacklist(t *testing.T) {
 			c, cli := helpers.GetTestEtcd(t)
 			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
+			e.Init()
 			e.running = true
-			_ = e.bootstrapServer(table.server)
-			e.watchEtcdChanges()
 
 			serversBefore, err := e.GetServersByType(table.server.Type)
 			assert.NoError(t, err)

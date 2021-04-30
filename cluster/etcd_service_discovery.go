@@ -66,7 +66,7 @@ type etcdServiceDiscovery struct {
 	appDieChan             chan bool
 	serverTypesBlacklist   []string
 	syncServersParallelism int
-	syncServersRunning     bool
+	syncServersRunning     chan bool
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -81,15 +81,16 @@ func NewEtcdServiceDiscovery(
 		client = cli[0]
 	}
 	sd := &etcdServiceDiscovery{
-		config:          config,
-		running:         false,
-		server:          server,
-		serverMapByType: make(map[string]map[string]*Server),
-		listeners:       make([]SDListener, 0),
-		stopChan:        make(chan bool),
-		stopLeaseChan:   make(chan bool),
-		appDieChan:      appDieChan,
-		cli:             client,
+		config:             config,
+		running:            false,
+		server:             server,
+		serverMapByType:    make(map[string]map[string]*Server),
+		listeners:          make([]SDListener, 0),
+		stopChan:           make(chan bool),
+		stopLeaseChan:      make(chan bool),
+		appDieChan:         appDieChan,
+		cli:                client,
+		syncServersRunning: make(chan bool),
 	}
 
 	sd.configure()
@@ -113,7 +114,6 @@ func (sd *etcdServiceDiscovery) configure() {
 	sd.shutdownDelay = sd.config.GetDuration("pitaya.cluster.sd.etcd.shutdown.delay")
 	sd.serverTypesBlacklist = sd.config.GetStringSlice("pitaya.cluster.sd.etcd.servertypeblacklist")
 	sd.syncServersParallelism = sd.config.GetInt("pitaya.cluster.sd.etcd.syncserversparallelism")
-	sd.syncServersRunning = false
 
 	if len(sd.serverTypesBlacklist) > 0 {
 		logger.Log.Warnf("using server types blacklist: %s", sd.serverTypesBlacklist)
@@ -518,9 +518,9 @@ func (p *parallelGetter) addWork(serverType, serverID string) {
 
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
-	sd.syncServersRunning = true
+	sd.syncServersRunning <- true
 	defer func() {
-		sd.syncServersRunning = false
+		sd.syncServersRunning <- false
 	}()
 	start := time.Now()
 	var kvs *clientv3.GetResponse
@@ -647,6 +647,11 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 	go func(chn clientv3.WatchChan) {
 		for sd.running {
 			select {
+			// Block here if SyncServers() is running and consume the watcher channel after it's finished, to avoid conflicts
+			case syncServersState := <-sd.syncServersRunning:
+				for syncServersState {
+					syncServersState = <-sd.syncServersRunning
+				}
 			case wResp, ok := <-chn:
 				if wResp.Err() != nil {
 					logger.Log.Warnf("etcd watcher response error: %s", wResp.Err())
@@ -664,10 +669,6 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					continue
 				}
 				failedWatchAttempts = 0
-				// Wait for syncServers() to finish running to avoid conflicts
-				for sd.syncServersRunning {
-					time.Sleep(time.Millisecond)
-				}
 				for _, ev := range wResp.Events {
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
 					if err != nil {
@@ -689,17 +690,18 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 						}
 
 						sd.addServer(sv)
-						logger.Log.Debugf("server %s added", ev.Kv.Key)
+						logger.Log.Debugf("server %s added by watcher", ev.Kv.Key)
 						sd.printServers()
 					case clientv3.EventTypeDelete:
 						sd.deleteServer(svID)
-						logger.Log.Debugf("server %s deleted", svID)
+						logger.Log.Debugf("server %s deleted by watcher", svID)
 						sd.printServers()
 					}
 				}
 			case <-sd.stopChan:
 				return
 			}
+
 		}
 	}(w)
 }
