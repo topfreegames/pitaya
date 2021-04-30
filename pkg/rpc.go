@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/topfreegames/pitaya/pkg/constants"
+	"github.com/topfreegames/pitaya/pkg/protos"
 	"github.com/topfreegames/pitaya/pkg/route"
 	"github.com/topfreegames/pitaya/pkg/worker"
 )
@@ -38,6 +39,39 @@ func RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Me
 // RPCTo send a rpc to a specific server
 func RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
 	return doSendRPC(ctx, serverID, routeStr, reply, arg)
+}
+
+// RawRPC send a rpc to a specific server, in and out will be a byte array, it
+// is used by the sidecar
+func RawRPC(ctx context.Context, serverID, routeStr string, arg []byte) (*protos.Response, error) {
+	var r *route.Route
+	var err error
+	if r, err = basicCheckRPC(ctx, serverID, routeStr); err != nil {
+		return nil, err
+	}
+
+	return remoteService.DoRPC(ctx, serverID, r, arg)
+}
+
+func basicCheckRPC(ctx context.Context, serverID, routeStr string) (*route.Route, error) {
+	if app.rpcServer == nil {
+		return nil, constants.ErrRPCServerNotInitialized
+	}
+
+	r, err := route.Decode(routeStr)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.SvType == "" {
+		return nil, constants.ErrNoServerTypeChosenForRPC
+	}
+
+	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
+		return nil, constants.ErrNonsenseRPC
+	}
+
+	return r, nil
 }
 
 // ReliableRPC enqueues RPC to worker so it's executed asynchronously
@@ -62,25 +96,14 @@ func ReliableRPCWithOptions(
 }
 
 func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
-	if app.rpcServer == nil {
-		return constants.ErrRPCServerNotInitialized
+	var r *route.Route
+	var err error
+	if r, err = basicCheckRPC(ctx, serverID, routeStr); err != nil {
+		return err
 	}
 
 	if reflect.TypeOf(reply).Kind() != reflect.Ptr {
 		return constants.ErrReplyShouldBePtr
-	}
-
-	r, err := route.Decode(routeStr)
-	if err != nil {
-		return err
-	}
-
-	if r.SvType == "" {
-		return constants.ErrNoServerTypeChosenForRPC
-	}
-
-	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
-		return constants.ErrNonsenseRPC
 	}
 
 	return remoteService.RPC(ctx, serverID, r, reply, arg)

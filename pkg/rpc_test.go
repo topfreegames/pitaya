@@ -45,6 +45,51 @@ func TestDoSendRPCNotInitialized(t *testing.T) {
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
+func TestRawRPC(t *testing.T) {
+	app.server.ID = "myserver"
+	app.rpcServer = &cluster.NatsRPCServer{}
+	tables := []struct {
+		name     string
+		routeStr string
+		arg      []byte
+		err      error
+	}{
+		{"bad_route", "badroute", nil, route.ErrInvalidRoute},
+		{"no_server_type", "bla.bla", nil, constants.ErrNoServerTypeChosenForRPC},
+		{"nonsense_rpc", "mytype.bla.bla", nil, constants.ErrNonsenseRPC},
+		{"success", "bla.bla.bla", []byte{0x01}, nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			if table.err == nil {
+				packetEncoder := codec.NewPomeloPacketEncoder()
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+				mockSerializer := serializemocks.NewMockSerializer(ctrl)
+				mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
+				mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
+				mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
+				messageEncoder := message.NewMessagesEncoder(false)
+				router := router.New()
+				svc := service.NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+				assert.NotNil(t, svc)
+				remoteService = svc
+				app.server.ID = "notmyserver"
+				b, err := proto.Marshal(&test.SomeStruct{A: 1})
+				assert.NoError(t, err)
+				mockSD.EXPECT().GetServer("myserver").Return(&cluster.Server{}, nil)
+				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&protos.Response{Data: b}, nil)
+			}
+
+			_, err := RawRPC(ctx, "myserver", table.routeStr, table.arg)
+			assert.Equal(t, table.err, err)
+		})
+	}
+}
+
 func TestDoSendRPC(t *testing.T) {
 	app.server.ID = "myserver"
 	app.rpcServer = &cluster.NatsRPCServer{}
