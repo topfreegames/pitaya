@@ -38,7 +38,7 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 			logger.Log.Warn("disconnected from nats!")
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
-			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName() )
+			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
 			err := nc.LastError()
@@ -50,6 +50,15 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 			logger.Log.Errorf("nats connection closed. reason: %q", nc.LastError())
 			if appDieChan != nil {
 				appDieChan <- true
+			}
+		}),
+		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
+			if err == nats.ErrSlowConsumer {
+				dropped, _ := sub.Dropped()
+				logger.Log.Warn("Slow consumer on subject %q: dropped %d messages\n",
+					sub.Subject, dropped)
+			} else {
+				logger.Log.Errorf(err.Error())
 			}
 		}),
 	)
