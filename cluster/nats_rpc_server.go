@@ -185,7 +185,7 @@ func (ns *NatsRPCServer) subscribeToUserMessages(uid string, svType string) (*na
 
 func (ns *NatsRPCServer) handleMessages() {
 	defer (func() {
-		ns.conn.Close()
+		ns.conn.Drain()
 		close(ns.unhandledReqCh)
 		close(ns.subChan)
 		close(ns.bindingsChan)
