@@ -196,7 +196,6 @@ func (c *MemoryGroupService) GroupRenewTTL(ctx context.Context, groupName string
 
 	if mg.TTL != 0 {
 		mg.LastRefresh = time.Now().UnixNano()
-		memoryGroups[groupName] = mg
 		return nil
 	}
 	return constants.ErrMemoryTTLNotFound
