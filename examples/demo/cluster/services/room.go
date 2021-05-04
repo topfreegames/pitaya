@@ -176,6 +176,6 @@ func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, er
 }
 
 // MessageRemote just echoes the given message
-func (r *Room) MessageRemote(ctx context.Context, msg *UserMessage, b bool, s string) (*UserMessage, error) {
+func (r *Room) MessageRemote(ctx context.Context, msg *UserMessage) (*UserMessage, error) {
 	return msg, nil
 }

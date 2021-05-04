@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/topfreegames/pitaya/examples/demo/protos"
+	demoProtos "github.com/topfreegames/pitaya/examples/demo/protos"
 	pitaya "github.com/topfreegames/pitaya/pkg"
 	"github.com/topfreegames/pitaya/pkg/component"
+	protos "github.com/topfreegames/pitaya/pkg/protos"
 )
 
 // ConnectorRemote is a remote that will receive rpc's
@@ -68,9 +69,9 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 }
 
 // RemoteFunc is a function that will be called remotely
-func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
+func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *demoProtos.RPCMsg) (*demoProtos.RPCRes, error) {
 	fmt.Printf("received a remote call with this message: %s\n", msg.GetMsg())
-	return &protos.RPCRes{
+	return &demoProtos.RPCRes{
 		Msg: msg.GetMsg(),
 	}, nil
 }

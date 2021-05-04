@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	demoProtos "github.com/topfreegames/pitaya/examples/demo/protos"
 	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
 )
 
 // ConnectorRemote is a remote that will receive rpc's
@@ -24,9 +24,7 @@ type SessionData struct {
 }
 
 // RemoteFunc is a function that will be called remotelly
-func (c *ConnectorRemote) RemoteFunc(ctx context.Context, message []byte) (*protos.Response, error) {
-	fmt.Printf("received a remote call with this message: %s\n", message)
-	return &protos.Response{
-		Msg: string(message),
-	}, nil
+func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *demoProtos.RPCMsg) (*demoProtos.RPCMsg, error) {
+	fmt.Printf("received a remote call with this message: %s\n", msg.Msg)
+	return msg, nil
 }

@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/topfreegames/pitaya/pkg"
+	demoProtos "github.com/topfreegames/pitaya/examples/demo/protos"
+	pitaya "github.com/topfreegames/pitaya/pkg"
 	"github.com/topfreegames/pitaya/pkg/component"
 	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/examples/demo/cluster_protobuf/protos"
 	"github.com/topfreegames/pitaya/pkg/groups"
 	"github.com/topfreegames/pitaya/pkg/timer"
 )
@@ -66,15 +66,15 @@ func (r *Room) AfterInit() {
 	})
 }
 
-func reply(code int32, msg string) *protos.Response {
-	return &protos.Response{
+func reply(code int32, msg string) *demoProtos.DemoResponse {
+	return &demoProtos.DemoResponse{
 		Code: code,
 		Msg:  msg,
 	}
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(ctx context.Context) (*protos.Response, error) {
+func (r *Room) Entry(ctx context.Context) (*demoProtos.DemoResponse, error) {
 	fakeUID := uuid.New().String() // just use s.ID as uid !!!
 	s := pitaya.GetSessionFromCtx(ctx)
 	err := s.Bind(ctx, fakeUID) // binding session uid
@@ -85,23 +85,23 @@ func (r *Room) Entry(ctx context.Context) (*protos.Response, error) {
 }
 
 // Join room
-func (r *Room) Join(ctx context.Context) (*protos.Response, error) {
+func (r *Room) Join(ctx context.Context) (*demoProtos.DemoResponse, error) {
 	s := pitaya.GetSessionFromCtx(ctx)
 	members, err := pitaya.GroupMembers(ctx, "room")
 	if err != nil {
 		return nil, err
 	}
-	s.Push("onMembers", &protos.AllMembers{Members: members})
-	pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	s.Push("onMembers", &demoProtos.AllMembers{Members: members})
+	pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &demoProtos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	pitaya.GroupAddMember(ctx, "room", s.UID())
 	s.OnClose(func() {
 		pitaya.GroupRemoveMember(ctx, "room", s.UID())
 	})
-	return &protos.Response{Msg: "success"}, nil
+	return reply(200, "success"), nil
 }
 
 // Message sync last message to all members
-func (r *Room) Message(ctx context.Context, msg *protos.UserMessage) {
+func (r *Room) Message(ctx context.Context, msg *demoProtos.UserMessage) {
 	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		fmt.Println("error broadcasting message", err)
@@ -109,9 +109,9 @@ func (r *Room) Message(ctx context.Context, msg *protos.UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(ctx context.Context, msg []byte) (*protos.Response, error) {
-	ret := protos.Response{}
-	err := pitaya.RPC(ctx, "connector.connectorremote.remotefunc", &ret, &protos.RPCMsg{})
+func (r *Room) SendRPC(ctx context.Context, msg []byte) (*demoProtos.DemoResponse, error) {
+	ret := demoProtos.RPCMsg{}
+	err := pitaya.RPC(ctx, "connector.connectorremote.remotefunc", &ret, &demoProtos.RPCMsg{Msg: "hello world"})
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
 	}

@@ -13,3 +13,24 @@ message RPCMsg {
 message RPCRes {
   string Msg = 1;
 }
+
+message DemoResponse {
+  int32 Code = 1;
+  string Msg = 2;
+}
+
+// UserMessage represents a message that user sent
+message UserMessage {
+  string Name = 1;
+  string Content = 2;
+}
+
+// NewUser message will be received when new user join room
+message NewUser{
+  string Content = 1;
+}
+
+// AllMembers contains all members uid
+message AllMembers {
+  repeated string Members = 1;
+}
