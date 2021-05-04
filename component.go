@@ -40,14 +40,24 @@ func (app *App) RegisterRemote(c component.Component, options ...component.Optio
 	app.remoteComp = append(app.remoteComp, regComp{c, options})
 }
 
-func (app *App) startupComponents() {
-	// component initialize hooks
-	for _, c := range app.handlerComp {
+func startupComponents() {
+	// handler component initialize hooks
+	for _, c := range handlerComp {
 		c.comp.Init()
 	}
 
-	// component after initialize hooks
-	for _, c := range app.handlerComp {
+	// handler component after initialize hooks
+	for _, c := range handlerComp {
+		c.comp.AfterInit()
+	}
+
+	// remote component initialize hooks
+	for _, c := range remoteComp {
+		c.comp.Init()
+	}
+
+	// remote component after initialize hooks
+	for _, c := range remoteComp {
 		c.comp.AfterInit()
 	}
 
