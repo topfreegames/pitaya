@@ -96,7 +96,6 @@ type (
 		chStopHeartbeat    chan struct{}             // stop heartbeats
 		chStopWrite        chan struct{}             // stop writing messages
 		ChRoleMessages     chan UnhandledRoleMessage // 用户请求的消息列表(队列)
-		ChAgentDie         chan int32                //
 		closeMutex         sync.Mutex
 		conn               net.Conn            // low-level conn fd
 		decoder            codec.PacketDecoder // binary decoder
@@ -168,7 +167,6 @@ func NewAgent(
 		state:              constants.StatusStart,
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
-		ChAgentDie:         make(chan int32, 10),
 	}
 
 	// binding session
@@ -241,7 +239,11 @@ func (a *Agent) send(pendingMsg pendingMessage) (err error) {
 		pWrite.err = util.GetErrorFromPayload(a.serializer, m.Data)
 	}
 
-	a.chSend <- pWrite
+	// chSend is never closed so we need this to don't block if agent is already closed
+	select {
+	case a.chSend <- pWrite:
+	case <-a.chDie:
+	}
 	return
 }
 
@@ -314,7 +316,6 @@ func (a *Agent) Close() error {
 		close(a.chStopHeartbeat)
 		close(a.chDie)
 		close(a.ChRoleMessages)
-		close(a.ChAgentDie)
 		onSessionClosed(a.Session)
 	}
 
@@ -337,6 +338,10 @@ func (a *Agent) String() string {
 // GetStatus gets the status
 func (a *Agent) GetStatus() int32 {
 	return atomic.LoadInt32(&a.state)
+}
+
+func (a *Agent) ChDie() chan struct{} {
+	return a.chDie
 }
 
 // Kick sends a kick packet to a client
@@ -423,7 +428,15 @@ func (a *Agent) heartbeat() {
 				logger.Log.Warn("encode heartbeat err %s", err)
 			}
 			// logger.Log.Debugf("heartbeat chHbSend <-")
-			a.chHbSend <- pendingWrite{data: bytes}
+			// a.chHbSend <- pendingWrite{data: bytes}
+			// chSend is never closed so we need this to don't block if agent is already closed
+			select {
+			case a.chSend <- pendingWrite{data: bytes}:
+			case <-a.chDie:
+				return
+			case <-a.chStopHeartbeat:
+				return
+			}
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
@@ -613,12 +626,6 @@ func (a *Agent) reportChannelSize() {
 }
 
 func (a *Agent) CloseByReason(rs AgentCloseReason) {
-	a.closeMutex.Lock()
-	defer a.closeMutex.Unlock()
-	if a.GetStatus() == constants.StatusClosed {
-		return
-	}
-
 	logger.Log.Debugf("CloseByReason rs = %s", rs)
-	a.ChAgentDie <- int32(rs)
+	a.Close()
 }

@@ -251,6 +251,12 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
 		logger.Log.Debug("Received handshake packet")
+		if a.GetStatus() == constants.StatusClosed {
+			//前端快速的重用已经被取消了的连接，又发了握手过来 ？？？
+			err := fmt.Errorf("recv a Handshake, but the conn is already closed!")
+			logger.Log.Errorf("%v", err)
+			return err
+		}
 		// logger.Log.Infof("pitaya.handler end to processPacket :handshake packet for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 		if err := a.SendHandshakeResponse(); err != nil {
 			logger.Log.Errorf("Error sending handshake response: %s", err.Error())
@@ -276,6 +282,12 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 		logger.Log.Debug("Successfully saved handshake data")
 
 	case packet.HandshakeAck:
+		if a.GetStatus() == constants.StatusClosed {
+			//前端快速的重用已经被取消了的连接，又发了握手过来 ？？？
+			err := fmt.Errorf("recv a HandshakeAck, but the conn is already closed!")
+			logger.Log.Errorf("%v", err)
+			return err
+		}
 		a.SetStatus(constants.StatusWorking)
 		logger.Log.Debugf("Receive handshake ACK Id=%d, Remote=%s", a.Session.ID(), a.RemoteAddr())
 		// logger.Log.Infof("pitaya.handler end to processPacket :handshake ACK for SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
@@ -408,7 +420,7 @@ func (h *HandlerService) processGameMessage(a *agent.Agent) {
 					}
 				}
 			}
-		case rs := <-a.ChAgentDie:
+		case rs := <-a.ChDie():
 			logger.Log.Infof("processGameMessage receive agent die. uid = %s, rs = %d", uid, rs)
 			return
 		}
