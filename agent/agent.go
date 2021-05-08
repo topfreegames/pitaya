@@ -266,7 +266,7 @@ func (a *Agent) Close() error {
 	a.SetStatus(constants.StatusClosed)
 
 	logger.Log.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
-		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
+		a.Session.ID(), a.Session.UID(), a.RemoteAddr())
 
 	// prevent closing closed channel
 	select {
@@ -292,7 +292,7 @@ func (a *Agent) RemoteAddr() net.Addr {
 
 // String, implementation for Stringer interface
 func (a *Agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt))
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt))
 }
 
 // GetStatus gets the status
