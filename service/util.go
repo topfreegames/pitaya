@@ -111,6 +111,20 @@ func executeBeforePipeline(ctx context.Context, data interface{}) (interface{}, 
 	return res, nil
 }
 
+func executeRouteBeforePipeline(ctx context.Context, route string, data interface{}) (interface{}, error) {
+	var err error
+	res := data
+	if len(pipeline.BeforeRouterHandler.Handlers[route]) > 0 {
+		for _, h := range pipeline.BeforeRouterHandler.Handlers[route] {
+			res, err = h(ctx, res)
+			if err != nil {
+				logger.Log.Debugf("pitaya/handler: before broken route pipeline: %s", err.Error())
+				return res, err
+			}
+		}
+	}
+	return res, nil
+}
 func executeAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
 	ret := res
 	if len(pipeline.AfterHandler.Handlers) > 0 {
@@ -175,6 +189,10 @@ func processHandlerMessage(
 	}
 
 	if arg, err = executeBeforePipeline(ctx, arg); err != nil {
+		return nil, err
+	}
+
+	if arg, err = executeRouteBeforePipeline(ctx, rt.Service, arg); err != nil {
 		return nil, err
 	}
 

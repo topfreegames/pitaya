@@ -24,7 +24,8 @@ import "context"
 
 var (
 	// BeforeHandler contains the functions to be called before the handler method is executed
-	BeforeHandler = &pipelineChannel{}
+	BeforeHandler       = &pipelineChannel{}
+	BeforeRouterHandler = &pipelineRouteChannel{Handlers: map[string][]HandlerTempl{}}
 	// AfterHandler contains the functions to be called after the handler method is executed
 	AfterHandler = &pipelineAfterChannel{}
 )
@@ -42,10 +43,19 @@ type (
 		Handlers []HandlerTempl
 	}
 
+	pipelineRouteChannel struct {
+		Handlers map[string][]HandlerTempl
+	}
+
 	pipelineAfterChannel struct {
 		Handlers []AfterHandlerTempl
 	}
 )
+
+//Append append route
+func (p *pipelineRouteChannel) Append(route string, h HandlerTempl) {
+	p.Handlers[route] = append(p.Handlers[route], h)
+}
 
 // PushFront should not be used after pitaya is running
 func (p *pipelineChannel) PushFront(h HandlerTempl) {

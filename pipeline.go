@@ -33,3 +33,7 @@ func BeforeHandler(h pipeline.HandlerTempl) {
 func AfterHandler(h pipeline.AfterHandlerTempl) {
 	pipeline.AfterHandler.PushBack(h)
 }
+
+func AppendHandler(route string, h pipeline.HandlerTempl) {
+	pipeline.BeforeRouterHandler.Append(route, h)
+}

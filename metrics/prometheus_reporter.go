@@ -256,6 +256,17 @@ func (p *PrometheusReporter) registerMetrics(
 		},
 		additionalLabelsKeys,
 	)
+	
+	//p.countReportersMap[WorkerPushCount] = prometheus.NewCounterVec(
+	//	prometheus.CounterOpts{
+	//		Namespace:   "pitaya",
+	//		Subsystem:   "sys",
+	//		Name:        WorkerPushCount,
+	//		Help:        "the number of push network data",
+	//		ConstLabels: constLabels,
+	//	},
+	//	append([]string{"size","route"}, additionalLabelsKeys...),
+	//)
 
 	toRegister := make([]prometheus.Collector, 0)
 	for _, c := range p.countReportersMap {
