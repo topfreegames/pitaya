@@ -85,4 +85,6 @@ var (
 	ErrReceivedMsgSmallerThanExpected = errors.New("received less data than expected, EOF?")
 	ErrReceivedMsgBiggerThanExpected  = errors.New("received more data than expected")
 	ErrConnectionClosed               = errors.New("client connection closed")
+	ErrSidecarCallTimeout             = errors.New("sidecar call to remote process timedout")
+	ErrSidecarNoCallbackInformation   = errors.New("no callback information found for call, maybe it was cleaned by timeout")
 )

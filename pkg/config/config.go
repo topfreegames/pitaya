@@ -114,6 +114,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.conn.ratelimiting.interval":                "1s",
 		"pitaya.conn.ratelimiting.forcedisable":            false,
 		"pitaya.session.unique":                            true,
+		"pitaya.sidecar.bind":                              "unix:///tmp/pitaya.sock",
+		"pitaya.sidecar.calltimeout":                       "1000ms",
 		"pitaya.worker.concurrency":                        1,
 		"pitaya.worker.redis.pool":                         "10",
 		"pitaya.worker.redis.url":                          "localhost:6379",
@@ -130,6 +132,11 @@ func (c *Config) fillDefaultValues() {
 			c.config.SetDefault(param, defaultsMap[param])
 		}
 	}
+}
+
+// GetViper returns the underlying viper config object
+func (c *Config) GetViper() *viper.Viper {
+	return c.config
 }
 
 // GetDuration returns a duration from the inner config
