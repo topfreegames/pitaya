@@ -107,10 +107,8 @@ func TestRateLimiterGetNextMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockConn = mocks.NewMockPlayerConn(ctrl)
-			mockedApp := mocks.NewMockPitaya(ctrl)
-			mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
 
-			r = NewRateLimiter(mockedApp, mockConn, limit, interval, table.forceDisable)
+			r = NewRateLimiter([]metrics.Reporter{}, mockConn, limit, interval, table.forceDisable)
 
 			table.mock()
 			buf, err := r.GetNextMessage()
@@ -165,10 +163,7 @@ func TestRateLimiterShouldRateLimit(t *testing.T) {
 
 	for name, table := range tables {
 		t.Run(name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			mockedApp := mocks.NewMockPitaya(ctrl)
-			mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
-			r = NewRateLimiter(mockedApp, nil, limit, interval, false)
+			r = NewRateLimiter([]metrics.Reporter{}, nil, limit, interval, false)
 
 			table.before()
 			should := r.shouldRateLimit(now)

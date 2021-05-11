@@ -24,21 +24,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/metrics"
-	"github.com/topfreegames/pitaya/v2/mocks"
 )
 
 func TestNewRateLimitingWrapper(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	mockedApp := mocks.NewMockPitaya(ctrl)
-	mockedApp.EXPECT().GetMetricsReporters().Return([]metrics.Reporter{}).AnyTimes()
+	reporters := []metrics.Reporter{}
 
-	rateLimitingWrapper := NewRateLimitingWrapper(mockedApp, config.NewDefaultRateLimitingConfig())
-	expected := NewRateLimiter(mockedApp, nil, 20, time.Second, false)
+	rateLimitingWrapper := NewRateLimitingWrapper(reporters, config.NewDefaultRateLimitingConfig())
+	expected := NewRateLimiter(reporters, nil, 20, time.Second, false)
 	assert.Equal(t, expected, rateLimitingWrapper.wrapConn(nil))
 }
