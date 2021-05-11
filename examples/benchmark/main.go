@@ -65,7 +65,7 @@ func main() {
 	for i := 0; i < *threads; i++ {
 		workers[i] = &worker{
 			ticker: time.NewTicker(
-				time.Duration(1000 / *msgSec) * time.Millisecond),
+				time.Duration(1000000 / *msgSec) * time.Microsecond),
 			id: i,
 		}
 		go workers[i].doSendRPCs()

@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/topfreegames/pitaya/pkg/config"
 	"github.com/topfreegames/pitaya/sidecar"
 )
 
@@ -28,9 +28,7 @@ var sidecarCmd = &cobra.Command{
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO fix config here
-		cfg := viper.New()
-		cfg.Set("pitaya.sidecar.bindaddr", "0.0.0.0")
-		cfg.Set("pitaya.sidecar.listenport", "3000")
+		cfg := config.NewConfig()
 		sidecar.StartSidecar(cfg)
 	},
 }
