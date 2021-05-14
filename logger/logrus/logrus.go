@@ -6,7 +6,7 @@ import (
 )
 
 type logrusImpl struct {
-	impl *logrus.Entry
+	impl logrus.FieldLogger
 }
 
 // New returns a new interfaces.Logger implementation based on logrus
@@ -16,13 +16,20 @@ func New() interfaces.Logger {
 }
 
 // NewWithEntry returns a new interfaces.Logger implementation based on a provided logrus entry instance
+// Deprecated: NewWithEntry is deprecated.
 func NewWithEntry(logger *logrus.Entry) interfaces.Logger {
 	return &logrusImpl{impl: logger}
 }
 
 // NewWithLogger returns a new interfaces.Logger implementation based on a provided logrus instance
+// Deprecated: NewWithLogger is deprecated.
 func NewWithLogger(logger *logrus.Logger) interfaces.Logger {
 	return &logrusImpl{impl: logrus.NewEntry(logger)}
+}
+
+// NewWithFieldLogger returns a new interfaces.Logger implementation based on a provided logrus instance
+func NewWithFieldLogger(logger logrus.FieldLogger) interfaces.Logger {
+	return &logrusImpl{impl: logger}
 }
 
 func (l *logrusImpl) Fatal(format ...interface{}) {
