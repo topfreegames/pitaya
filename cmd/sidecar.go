@@ -27,7 +27,6 @@ var sidecarCmd = &cobra.Command{
 	Short: "starts pitaya in sidecar mode",
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO fix config here
 		cfg := config.NewConfig()
 		sidecar.StartSidecar(cfg)
 	},
