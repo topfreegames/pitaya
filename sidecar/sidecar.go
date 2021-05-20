@@ -147,11 +147,7 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 	return nil
 }
 
-func (s *SidecarServer) SendRPC(ctx context.Context, msg *protos.Msg) (*protos.Response, error) {
-	return pitaya.RawRPC(context.Background(), "", msg.Route, msg.Data)
-}
-
-func (s *SidecarServer) SendRPCTo(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
+func (s *SidecarServer) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
 	return pitaya.RawRPC(context.Background(), in.ServerID, in.Msg.Route, in.Msg.Data)
 }
 
@@ -230,7 +226,6 @@ func StartSidecar(cfg *config.Config) {
 	checkError(err)
 	defer sidecar.listener.Close()
 	var opts []grpc.ServerOption
-	// TODO: tls shit
 
 	grpcServer := grpc.NewServer(opts...)
 	protos.RegisterSidecarServer(grpcServer, sidecar.sidecarServer)

@@ -20,8 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SidecarClient interface {
 	ListenRPC(ctx context.Context, opts ...grpc.CallOption) (Sidecar_ListenRPCClient, error)
-	SendRPC(ctx context.Context, in *Msg, opts ...grpc.CallOption) (*Response, error)
-	SendRPCTo(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error)
+	SendRPC(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error)
 	StartPitaya(ctx context.Context, in *StartPitayaRequest, opts ...grpc.CallOption) (*Error, error)
 	StopPitaya(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Error, error)
 }
@@ -65,18 +64,9 @@ func (x *sidecarListenRPCClient) Recv() (*SidecarRequest, error) {
 	return m, nil
 }
 
-func (c *sidecarClient) SendRPC(ctx context.Context, in *Msg, opts ...grpc.CallOption) (*Response, error) {
+func (c *sidecarClient) SendRPC(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
 	err := c.cc.Invoke(ctx, "/protos.Sidecar/SendRPC", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sidecarClient) SendRPCTo(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/protos.Sidecar/SendRPCTo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +96,7 @@ func (c *sidecarClient) StopPitaya(ctx context.Context, in *emptypb.Empty, opts 
 // for forward compatibility
 type SidecarServer interface {
 	ListenRPC(Sidecar_ListenRPCServer) error
-	SendRPC(context.Context, *Msg) (*Response, error)
-	SendRPCTo(context.Context, *RequestTo) (*Response, error)
+	SendRPC(context.Context, *RequestTo) (*Response, error)
 	StartPitaya(context.Context, *StartPitayaRequest) (*Error, error)
 	StopPitaya(context.Context, *emptypb.Empty) (*Error, error)
 }
@@ -119,11 +108,8 @@ type UnimplementedSidecarServer struct {
 func (UnimplementedSidecarServer) ListenRPC(Sidecar_ListenRPCServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListenRPC not implemented")
 }
-func (UnimplementedSidecarServer) SendRPC(context.Context, *Msg) (*Response, error) {
+func (UnimplementedSidecarServer) SendRPC(context.Context, *RequestTo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendRPC not implemented")
-}
-func (UnimplementedSidecarServer) SendRPCTo(context.Context, *RequestTo) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendRPCTo not implemented")
 }
 func (UnimplementedSidecarServer) StartPitaya(context.Context, *StartPitayaRequest) (*Error, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartPitaya not implemented")
@@ -170,7 +156,7 @@ func (x *sidecarListenRPCServer) Recv() (*RPCResponse, error) {
 }
 
 func _Sidecar_SendRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Msg)
+	in := new(RequestTo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -182,25 +168,7 @@ func _Sidecar_SendRPC_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/protos.Sidecar/SendRPC",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SidecarServer).SendRPC(ctx, req.(*Msg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Sidecar_SendRPCTo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RequestTo)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SidecarServer).SendRPCTo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/protos.Sidecar/SendRPCTo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SidecarServer).SendRPCTo(ctx, req.(*RequestTo))
+		return srv.(SidecarServer).SendRPC(ctx, req.(*RequestTo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -251,10 +219,6 @@ var Sidecar_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendRPC",
 			Handler:    _Sidecar_SendRPC_Handler,
-		},
-		{
-			MethodName: "SendRPCTo",
-			Handler:    _Sidecar_SendRPCTo_Handler,
 		},
 		{
 			MethodName: "StartPitaya",
