@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/examples/demo/protos"
 	pitaya "github.com/topfreegames/pitaya/pkg"
 	"github.com/topfreegames/pitaya/pkg/logger"
@@ -32,6 +33,7 @@ func (w *worker) doSendRPCs() {
 			if err != nil {
 				fmt.Printf("Error sending RPC: %s", err.Error())
 			}
+			logger.Log.Debugf("got response: %s", res.Msg)
 			atomic.AddUint64(&answers, 1)
 		}
 	}
@@ -40,6 +42,7 @@ func (w *worker) doSendRPCs() {
 func main() {
 	svType := flag.String("type", "bench", "the server type")
 	isFrontend := flag.Bool("frontend", false, "if server is frontend")
+	debug := flag.Bool("debug", false, "should log debug messages")
 	route = flag.String("route", "csharp.testremote.test", "the route to stress")
 	threads := flag.Int("threads", 4, "number of threads to use when sending RPCs")
 	msgSec := flag.Int("rate", 1000, "messages per second rate that each thread should send")
@@ -49,6 +52,13 @@ func main() {
 	defer pitaya.Shutdown()
 
 	ser := protobuf.NewSerializer()
+
+	l := logrus.New()
+	l.SetLevel(logrus.InfoLevel)
+	if *debug {
+		l.SetLevel(logrus.DebugLevel)
+	}
+	logger.Log = l
 
 	pitaya.SetSerializer(ser)
 
