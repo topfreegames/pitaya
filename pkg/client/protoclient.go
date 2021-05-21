@@ -144,11 +144,13 @@ func getOutputInputNames(command map[string]interface{}) (string, string, error)
 
 	out := command["output"]
 	outputDocsArr := out.([]interface{})
-	outputDocs, ok := outputDocsArr[0].(map[string]interface{})
-	if ok {
-		for k := range outputDocs {
-			if strings.Contains(k, "proto") {
-				outputName = strings.Replace(k, "*", "", 1)
+	if len(outputDocsArr) > 0 {
+		outputDocs, ok := outputDocsArr[0].(map[string]interface{})
+		if ok {
+			for k := range outputDocs {
+				if strings.Contains(k, "proto") {
+					outputName = strings.Replace(k, "*", "", 1)
+				}
 			}
 		}
 	}
