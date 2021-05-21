@@ -182,9 +182,9 @@ func getKeys(info map[string]interface{}, keysSet map[string]bool) {
 }
 
 // Receives one json string from the auto documentation, decode it and request
-// to the server the protobuf descriptors. If the the  descriptors route are
-// not set, this function identify the route responsible for providing the
-// protobuf descriptors.
+// to the server the protobuf descriptors. If the descriptors route are not set,
+// this function identify the route responsible for providing the protobuf
+// descriptors.
 func (pc *ProtoClient) getDescriptors(data string) error {
 	d := []byte(data)
 	var jsonmap interface{}

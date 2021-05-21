@@ -6,9 +6,14 @@ require (
 	github.com/DataDog/datadog-go v4.5.0+incompatible
 	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
+	github.com/abiosoft/ishell v2.0.0+incompatible // indirect
+	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+	github.com/chzyer/logex v1.1.10 // indirect
+	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/customerio/gospec v0.0.0-20130710230057-a5cc0e48aa39 // indirect
+	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1
@@ -37,14 +42,14 @@ require (
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
-	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/tests/v3 v3.5.0-alpha.0 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	go.etcd.io/etcd/tests/v3 v3.5.0-alpha.0
 	golang.org/x/sys v0.0.0-20210423185535-09eb48e85fd7 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
+	gopkg.in/abiosoft/ishell.v2 v2.0.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )
 
