@@ -372,8 +372,10 @@ func (pc *ProtoClient) waitForData() {
 		select {
 		case response := <-pc.Client.IncomingMsgChan:
 
-			inputMsg := dynamic.NewMessage(pc.expectedInputDescriptor)
-
+			var inputMsg *dynamic.Message
+			if pc.expectedInputDescriptor != nil {
+				inputMsg = dynamic.NewMessage(pc.expectedInputDescriptor)
+			}
 			msg, ok := pc.info.Commands[response.Route]
 			if ok {
 				inputMsg = dynamic.NewMessage(msg.outputMsgDescriptor)

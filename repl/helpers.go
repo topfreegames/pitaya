@@ -44,7 +44,7 @@ func protoClient(addr string) error {
 	}
 
 	if err := protoclient.LoadServerInfo(addr); err != nil {
-		logger.Log.Error("Failed to load server info")
+		logger.Log.Errorf("Failed to load server info: %s", err.Error())
 		return err
 	}
 
