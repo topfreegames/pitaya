@@ -263,11 +263,12 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 		logger.Log.Debugf("(%d) processing message %v", threadID, ns.requests[threadID].GetMsg().GetId())
 		ctx, err := util.GetContextFromRequest(ns.requests[threadID], ns.server.ID)
 		if err != nil {
-			ns.responses[threadID].Error = &protos.Error{
-				Code: e.ErrInternalCode,
-				Msg:  err.Error(),
+			ns.responses[threadID] = &protos.Response{
+				Error: &protos.Error{
+					Code: e.ErrInternalCode,
+					Msg:  err.Error(),
+				},
 			}
-			ns.responses[threadID].Data = nil
 		} else {
 			ns.responses[threadID], _ = ns.pitayaServer.Call(ctx, ns.requests[threadID])
 		}
