@@ -331,7 +331,8 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			router := router.New()
 			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
 			assert.NotNil(t, svc)
-			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
+			res := svc.remoteCallPool.Get().(*protos.Response)
+			svc.handleRPCUser(context.Background(), table.req, res, table.rt)
 			assert.NoError(t, err)
 			if table.errSubstring != "" {
 				assert.Contains(t, res.Error.Msg, table.errSubstring)
@@ -381,7 +382,8 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			if table.errSubstring == "" {
 				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil)
 			}
-			res := svc.handleRPCSys(nil, table.req, table.rt)
+			res := svc.remoteCallPool.Get().(*protos.Response)
+			svc.handleRPCSys(nil, table.req, res, table.rt)
 
 			if table.errSubstring != "" {
 				assert.Contains(t, res.Error.Msg, table.errSubstring)
