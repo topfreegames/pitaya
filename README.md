@@ -6,8 +6,8 @@
 [4]: https://goreportcard.com/report/github.com/topfreegames/pitaya
 [5]: https://img.shields.io/badge/license-MIT-blue.svg
 [6]: LICENSE
-[7]: https://travis-ci.org/topfreegames/pitaya.svg?branch=master
-[8]: https://travis-ci.org/topfreegames/pitaya
+[7]: https://github.com/topfreegames/pitaya/actions/workflows/tests.yaml/badge.svg
+[8]: https://github.com/topfreegames/pitaya/actions/workflows/tests.yaml
 [9]: https://coveralls.io/repos/github/topfreegames/pitaya/badge.svg?branch=master
 [10]: https://coveralls.io/github/topfreegames/pitaya?branch=master
 [11]: https://readthedocs.org/projects/pitaya/badge/?version=latest
