@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nats-io/nuid"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -40,7 +41,6 @@ import (
 	"github.com/topfreegames/pitaya/serialize/protobuf"
 	"github.com/topfreegames/pitaya/tracing"
 
-	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -177,10 +177,10 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 		requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
 		if rID, ok := requestID.(string); ok {
 			if rID == "" {
-				requestID = uuid.New()
+				requestID = nuid.Next()
 			}
 		} else {
-			requestID = uuid.New()
+			requestID = nuid.Next()
 		}
 		defaultLogger = logrusLogger.WithFields(
 			logrus.Fields{

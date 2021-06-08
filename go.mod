@@ -27,6 +27,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.2.0
 	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
+	github.com/nats-io/nuid v1.0.1
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
