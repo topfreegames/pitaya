@@ -323,6 +323,14 @@ func startDefaultRPCClient() {
 	SetRPCClient(rpcClient)
 }
 
+func initCommonHandlers() {
+	docs := &Docs{}
+	Register(docs,
+		component.WithName("docs"),
+		component.WithNameFunc(strings.ToLower),
+	)
+}
+
 func initSysRemotes() {
 	sys := &remote.Sys{}
 	RegisterRemote(sys,
@@ -407,6 +415,7 @@ func Start() {
 		}
 
 		initSysRemotes()
+		initCommonHandlers()
 	}
 
 	handlerService = service.NewHandlerService(
