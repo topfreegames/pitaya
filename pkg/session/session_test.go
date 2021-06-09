@@ -602,7 +602,7 @@ func TestSessionClose(t *testing.T) {
 func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-        var initialSubs uint32 = s.NumSubscriptions()
+	var initialSubs uint32 = s.NumSubscriptions()
 	conn, err := nats.Connect(fmt.Sprintf("nats://%s", s.Addr()))
 	assert.NoError(t, err)
 	defer conn.Close()
@@ -1239,6 +1239,37 @@ func TestSessionValue(t *testing.T) {
 
 			val := ss.Value("key")
 			assert.Equal(t, table.val, val)
+		})
+	}
+}
+
+func TestSessionStruct(t *testing.T) {
+	t.Parallel()
+
+	tables := []struct {
+		name string
+		val  *someStruct
+	}{
+		{"existent", &someStruct{A: 1, B: "somestring"}},
+		{"unexistent", nil},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			ss := New(nil, true)
+			assert.NotNil(t, ss)
+
+			if table.val != nil {
+				err := ss.Set("key", table.val)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, ss.data)
+				val := ss.Get("key")
+				assert.Equal(t, table.val, val.(*someStruct))
+			} else {
+				val := ss.Value("key")
+				assert.Nil(t, val)
+			}
+
 		})
 	}
 }
