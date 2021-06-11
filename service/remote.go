@@ -153,7 +153,7 @@ func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.
 	}
 
 	defer tracing.FinishSpan(c, err)
-	return res, nil
+	return &*res, nil
 }
 
 // SessionBindRemote is called when a remote server binds a user session and want us to acknowledge it
