@@ -123,8 +123,6 @@ func StartServer(
 	}
 	t.Helper()
 	args := []string{
-		"-address",
-		"localhost",
 		"-type",
 		svType,
 		"-port",
