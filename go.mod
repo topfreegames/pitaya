@@ -17,15 +17,10 @@ require (
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
-	github.com/golang/groupcache v0.0.0-20180203143532-66deaeb636df // indirect
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.3.2
-	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a // indirect
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.4.2
-	github.com/grpc-ecosystem/go-grpc-prometheus v0.0.0-20160910222444-6b7015e65d36 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.3.0 // indirect
-	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/jhump/protoreflect v1.5.0
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
