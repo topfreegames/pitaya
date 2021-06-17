@@ -69,7 +69,9 @@ func (me *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	buf := make([]byte, 0)
 	flag := byte(message.Type) << 1
 
+	routesCodesMutex.RLock()
 	code, compressed := routes[message.Route]
+	routesCodesMutex.RUnlock()
 	if compressed {
 		flag |= msgRouteCompressMask
 	}
@@ -163,7 +165,9 @@ func Decode(data []byte) (*Message, error) {
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
+			routesCodesMutex.RLock()
 			route, ok := codes[code]
+			routesCodesMutex.RUnlock()
 			if !ok {
 				return nil, ErrRouteInfoNotFound
 			}
