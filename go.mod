@@ -41,6 +41,7 @@ require (
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber-go/atomic v1.3.2 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
+	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
 	github.com/ugorji/go v0.0.0-20180112141927-9831f2c3ac10 // indirect
 	go.etcd.io/etcd v0.0.0-20210226220824-aa7126864d82
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
