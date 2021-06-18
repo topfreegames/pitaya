@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/DataDog/datadog-go v4.5.0+incompatible
+	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
@@ -37,7 +38,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber-go/atomic v1.3.2 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
