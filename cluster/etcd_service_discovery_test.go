@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	"go.etcd.io/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
