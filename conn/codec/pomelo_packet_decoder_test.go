@@ -1,7 +1,6 @@
 package codec
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestForward(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ppd := NewPomeloPacketDecoder()
 
-			sz, typ, err := ppd.forward(bytes.NewBuffer(table.buf))
+			sz, typ, err := ppd.forward()
 			if table.err == nil {
 				assert.Equal(t, packet.Type(table.buf[0]), typ)
 				assert.Equal(t, 0, sz)
