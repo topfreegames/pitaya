@@ -430,8 +430,8 @@ func TestNatsRPCClientCall(t *testing.T) {
 	}{
 		{"test_error", &protos.Response{Data: []byte("nok"), Error: &protos.Error{Msg: "nok"}}, nil, e.NewError(errors.New("nok"), e.ErrUnknownCode)},
 		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
-		{"test_bad_response", []byte("invalid"), nil, errors.New("unexpected EOF")},
-		{"test_bad_proto", &protos.Session{Id: 1, Uid: "snap"}, nil, errors.New("unexpected EOF")},
+		{"test_bad_response", []byte("invalid"), nil, errors.New("cannot parse invalid wire-format data")},
+		{"test_bad_proto", &protos.Session{Id: 1, Uid: "snap"}, nil, errors.New("cannot parse invalid wire-format data")},
 		{"test_no_response", nil, nil, errors.New("nats: timeout")},
 	}
 
@@ -468,7 +468,10 @@ func TestNatsRPCClientCall(t *testing.T) {
 
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
 			assert.Equal(t, table.expected, res)
-			assert.Equal(t, table.err, err)
+			if table.err != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), table.err.Error())
+			}
 			err = subs.Unsubscribe()
 			assert.NoError(t, err)
 			conn.Close()

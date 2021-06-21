@@ -51,6 +51,20 @@ func shutdown() {
 	closer.Close()
 }
 
+func assertBaggage(t *testing.T, ctx opentracing.SpanContext, expected map[string]string) {
+	b := extractBaggage(ctx, true)
+	assert.Equal(t, expected, b)
+}
+
+func extractBaggage(ctx opentracing.SpanContext, allItems bool) map[string]string {
+	b := make(map[string]string)
+	ctx.ForeachBaggageItem(func(k, v string) bool {
+		b[k] = v
+		return allItems
+	})
+	return b
+}
+
 func TestExtractSpan(t *testing.T) {
 	span := opentracing.StartSpan("op", opentracing.ChildOf(nil))
 	ctx := opentracing.ContextWithSpan(context.Background(), span)
@@ -60,7 +74,11 @@ func TestExtractSpan(t *testing.T) {
 }
 
 func TestExtractSpanInjectedSpan(t *testing.T) {
-	span := opentracing.StartSpan("op", opentracing.ChildOf(nil))
+	span := opentracing.StartSpan("someOp")
+	span.SetBaggageItem("some_key", "12345")
+	span.SetBaggageItem("some-other-key", "42")
+	expectedBaggage := map[string]string{"some_key": "12345", "some-other-key": "42"}
+
 	spanData := opentracing.TextMapCarrier{}
 	tracer := opentracing.GlobalTracer()
 	err := tracer.Inject(span.Context(), opentracing.TextMap, spanData)
@@ -69,7 +87,7 @@ func TestExtractSpanInjectedSpan(t *testing.T) {
 
 	spanCtx, err := ExtractSpan(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, span.Context(), spanCtx)
+	assertBaggage(t, spanCtx, expectedBaggage)
 }
 
 func TestExtractSpanNoSpan(t *testing.T) {

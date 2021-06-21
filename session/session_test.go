@@ -627,6 +627,8 @@ func TestSessionClose(t *testing.T) {
 func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
+	initialSubs := s.NumSubscriptions()
+
 	conn, err := nats.Connect(fmt.Sprintf("nats://%s", s.Addr()))
 	assert.NoError(t, err)
 	defer conn.Close()
@@ -634,7 +636,8 @@ func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	subs, err := conn.Subscribe(uuid.New().String(), func(msg *nats.Msg) {})
 	assert.NoError(t, err)
 
-	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, uint32(1))
+	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, initialSubs+1)
+	helpers.ShouldEventuallyReturn(t, conn.NumSubscriptions, 1)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -648,7 +651,8 @@ func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	mockEntity.EXPECT().Close()
 	ss.Close()
 
-	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, uint32(0))
+	helpers.ShouldEventuallyReturn(t, s.NumSubscriptions, initialSubs)
+	helpers.ShouldEventuallyReturn(t, conn.NumSubscriptions, 0)
 }
 
 func TestSessionRemoteAddr(t *testing.T) {
