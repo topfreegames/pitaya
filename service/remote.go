@@ -424,7 +424,7 @@ func (r *RemoteService) remoteCall(
 
 	res, err := r.rpcClient.Call(ctx, rpcType, route, session, msg, target)
 	if err != nil {
-		logger.Log.Errorf("error making call to target with id %s and host %s: %w", target.ID, target.Hostname, err)
+		logger.Log.Errorf("error making call to target with id %s route %s and host %s: %w", target.ID, route.String(), target.Hostname, err)
 		return nil, err
 	}
 	return res, err
