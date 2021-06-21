@@ -205,9 +205,12 @@ func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route
 		Route: route.Short(),
 		Data:  protoData,
 	}
+	if serverID == "" {
+		return r.remoteCall(ctx, nil, protos.RPCType_User, route, nil, msg)
+	}
 
 	target, _ := r.serviceDiscovery.GetServer(serverID)
-	if serverID != "" && target == nil {
+	if target == nil {
 		return nil, constants.ErrServerNotFound
 	}
 
