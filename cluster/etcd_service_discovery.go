@@ -28,12 +28,12 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/namespace"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/util"
+	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/clientv3/namespace"
 )
 
 type etcdServiceDiscovery struct {
@@ -120,7 +120,11 @@ func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAlive
 			return
 		case <-sd.stopLeaseChan:
 			return
-		case leaseKeepAliveResponse := <-c:
+		case leaseKeepAliveResponse, ok := <-c:
+			if !ok {
+				logger.Log.Error("ETCD lease KeepAlive died, retrying in 10 seconds")
+				time.Sleep(10000 * time.Millisecond)
+			}
 			if leaseKeepAliveResponse != nil {
 				if sd.logHeartbeat {
 					logger.Log.Debugf("sd: etcd lease %x renewed", leaseKeepAliveResponse.ID)
@@ -330,31 +334,44 @@ func (sd *etcdServiceDiscovery) GetServer(id string) (*Server, error) {
 	return nil, constants.ErrNoServerWithID
 }
 
-// Init starts the service discovery client
-func (sd *etcdServiceDiscovery) Init() error {
-	sd.running = true
+func (sd *etcdServiceDiscovery) InitETCDClient() error {
+	logger.Log.Infof("Initializing ETCD client")
 	var cli *clientv3.Client
 	var err error
-	if sd.cli == nil {
-		config := clientv3.Config{
-			Endpoints:   sd.etcdEndpoints,
-			DialTimeout: sd.etcdDialTimeout,
-		}
-		if sd.etcdUser != "" && sd.etcdPass != "" {
-			config.Username = sd.etcdUser
-			config.Password = sd.etcdPass
-		}
-		cli, err = clientv3.New(config)
-		if err != nil {
-			return err
-		}
-		sd.cli = cli
+	config := clientv3.Config{
+		Endpoints:   sd.etcdEndpoints,
+		DialTimeout: sd.etcdDialTimeout,
 	}
+	if sd.etcdUser != "" && sd.etcdPass != "" {
+		config.Username = sd.etcdUser
+		config.Password = sd.etcdPass
+	}
+	cli, err = clientv3.New(config)
+	if err != nil {
+		logger.Log.Errorf("error initializing etcd client: %s", err.Error())
+		return err
+	}
+	sd.cli = cli
 
 	// namespaced etcd :)
 	sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
 	sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
 	sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
+	return nil
+}
+
+// Init starts the service discovery client
+func (sd *etcdServiceDiscovery) Init() error {
+	sd.running = true
+	var err error
+
+	if sd.cli == nil {
+		sd.InitETCDClient()
+	} else {
+		sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
+		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
+		sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
+	}
 
 	if err = sd.bootstrap(); err != nil {
 		return err
@@ -590,8 +607,10 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					time.Sleep(100 * time.Millisecond)
 				}
 				if !ok {
-					logger.Log.Error("etcd watcher died")
-					time.Sleep(100 * time.Millisecond)
+					logger.Log.Error("etcd watcher died, retrying to watch in 1 second")
+					time.Sleep(1000 * time.Millisecond)
+					_ = sd.InitETCDClient()
+					chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
 				}
 				for _, ev := range wResp.Events {
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
