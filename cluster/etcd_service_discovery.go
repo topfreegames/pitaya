@@ -27,7 +27,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -218,7 +217,7 @@ func (sd *etcdServiceDiscovery) bootstrapServer(server *Server) error {
 		return err
 	}
 
-	sd.SyncServers()
+	sd.SyncServers(true)
 	return nil
 }
 
@@ -383,7 +382,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 		for sd.running {
 			select {
 			case <-syncServersTicker.C:
-				err := sd.SyncServers()
+				err := sd.SyncServers(false)
 				if err != nil {
 					logger.Log.Errorf("error resyncing servers: %s", err.Error())
 				}
@@ -429,6 +428,7 @@ func (sd *etcdServiceDiscovery) printServers() {
 type parallelGetterWork struct {
 	serverType string
 	serverID   string
+	payload    []byte
 }
 
 type parallelGetter struct {
@@ -460,10 +460,15 @@ func (p *parallelGetter) start() {
 		go func() {
 			for work := range p.workChan {
 				logger.Log.Debugf("loading info from missing server: %s/%s", work.serverType, work.serverID)
-
-				sv, err := getServerFromEtcd(p.cli, work.serverType, work.serverID)
+				var sv *Server
+				var err error
+				if work.payload == nil {
+					sv, err = getServerFromEtcd(p.cli, work.serverType, work.serverID)
+				} else {
+					sv, err = parseServer(work.payload)
+				}
 				if err != nil {
-					logger.Log.Errorf("error getting server from etcd: %s, error: %s", work.serverID, err.Error())
+					logger.Log.Errorf("Error parsing server from etcd: %s, error: %s", work.serverID, err.Error())
 					p.wg.Done()
 					continue
 				}
@@ -484,6 +489,15 @@ func (p *parallelGetter) waitAndGetResult() []*Server {
 	return *p.result
 }
 
+func (p *parallelGetter) addWorkWithPayload(serverType, serverID string, payload []byte) {
+	p.wg.Add(1)
+	p.workChan <- parallelGetterWork{
+		serverType: serverType,
+		serverID:   serverID,
+		payload:    payload,
+	}
+}
+
 func (p *parallelGetter) addWork(serverType, serverID string) {
 	p.wg.Add(1)
 	p.workChan <- parallelGetterWork{
@@ -493,14 +507,26 @@ func (p *parallelGetter) addWork(serverType, serverID string) {
 }
 
 // SyncServers gets all servers from etcd
-func (sd *etcdServiceDiscovery) SyncServers() error {
-	keys, err := sd.cli.Get(
-		context.TODO(),
-		"servers/",
-		clientv3.WithPrefix(),
-		clientv3.WithKeysOnly(),
-	)
+func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
+	start := time.Now()
+	var kvs *clientv3.GetResponse
+	var err error
+	if firstSync {
+		kvs, err = sd.cli.Get(
+			context.TODO(),
+			"servers/",
+			clientv3.WithPrefix(),
+		)
+	} else {
+		kvs, err = sd.cli.Get(
+			context.TODO(),
+			"servers/",
+			clientv3.WithPrefix(),
+			clientv3.WithKeysOnly(),
+		)
+	}
 	if err != nil {
+		logger.Log.Errorf("Error querying etcd server: %s", err.Error())
 		return err
 	}
 
@@ -510,7 +536,7 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 	// Spawn worker goroutines that will work in parallel
 	parallelGetter := newParallelGetter(sd.cli, sd.syncServersParallelism)
 
-	for _, kv := range keys.Kvs {
+	for _, kv := range kvs.Kvs {
 		svType, svID, err := parseEtcdKey(string(kv.Key))
 		if err != nil {
 			logger.Log.Warnf("failed to parse etcd key %s, error: %s", kv.Key, err.Error())
@@ -527,7 +553,11 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 
 		if _, ok := sd.serverMapByID.Load(svID); !ok {
 			// Add new work to the channel
-			parallelGetter.addWork(svType, svID)
+			if firstSync {
+				parallelGetter.addWorkWithPayload(svType, svID, kv.Value)
+			} else {
+				parallelGetter.addWork(svType, svID)
+			}
 		}
 	}
 
@@ -543,6 +573,8 @@ func (sd *etcdServiceDiscovery) SyncServers() error {
 
 	sd.printServers()
 	sd.lastSyncTime = time.Now()
+	elapsed := time.Since(start)
+	logger.Log.Infof("SyncServers took : %s to run", elapsed)
 	return nil
 }
 
