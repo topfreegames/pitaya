@@ -234,7 +234,7 @@ func NewDefaultEtcdServiceDiscoveryConfig() EtcdServiceDiscoveryConfig {
 		GrantLeaseTimeout:      time.Duration(60 * time.Second),
 		GrantLeaseMaxRetries:   15,
 		GrantLeaseInterval:     time.Duration(5 * time.Second),
-		ShutdownDelay:          time.Duration(10 * time.Millisecond),
+		ShutdownDelay:          time.Duration(300 * time.Millisecond),
 		ServerTypesBlacklist:   nil,
 		SyncServersParallelism: 10,
 	}
