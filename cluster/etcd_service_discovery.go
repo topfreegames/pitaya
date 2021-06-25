@@ -64,6 +64,7 @@ type etcdServiceDiscovery struct {
 	appDieChan             chan bool
 	serverTypesBlacklist   []string
 	syncServersParallelism int
+	syncServersRunning     chan bool
 }
 
 // NewEtcdServiceDiscovery ctor
@@ -86,6 +87,7 @@ func NewEtcdServiceDiscovery(
 		stopLeaseChan:   make(chan bool),
 		appDieChan:      appDieChan,
 		cli:             client,
+		syncServersRunning: make(chan bool),
 	}
 
 	sd.configure(config)
@@ -371,6 +373,7 @@ func (sd *etcdServiceDiscovery) Init() error {
 		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
 		sd.cli.Lease = namespace.NewLease(sd.cli.Lease, sd.etcdPrefix)
 	}
+	go sd.watchEtcdChanges()
 
 	if err = sd.bootstrap(); err != nil {
 		return err
@@ -392,7 +395,6 @@ func (sd *etcdServiceDiscovery) Init() error {
 		}
 	}()
 
-	go sd.watchEtcdChanges()
 	return nil
 }
 
@@ -508,6 +510,10 @@ func (p *parallelGetter) addWork(serverType, serverID string) {
 
 // SyncServers gets all servers from etcd
 func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
+	sd.syncServersRunning <- true
+	defer func() {
+		sd.syncServersRunning <- false
+	}()
 	start := time.Now()
 	var kvs *clientv3.GetResponse
 	var err error
@@ -629,10 +635,15 @@ func (sd *etcdServiceDiscovery) addServer(sv *Server) {
 
 func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 	w := sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
-
+	failedWatchAttempts := 0
 	go func(chn clientv3.WatchChan) {
 		for sd.running {
 			select {
+			// Block here if SyncServers() is running and consume the watcher channel after it's finished, to avoid conflicts
+			case syncServersState := <-sd.syncServersRunning:
+				for syncServersState {
+					syncServersState = <-sd.syncServersRunning
+				}
 			case wResp, ok := <-chn:
 				if wResp.Err() != nil {
 					logger.Log.Warnf("etcd watcher response error: %s", wResp.Err())
@@ -640,10 +651,16 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 				}
 				if !ok {
 					logger.Log.Error("etcd watcher died, retrying to watch in 1 second")
+					failedWatchAttempts++
 					time.Sleep(1000 * time.Millisecond)
-					_ = sd.InitETCDClient()
-					chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+					if failedWatchAttempts > 10 {
+						_ = sd.InitETCDClient()
+						chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+						failedWatchAttempts = 0
+					}
+					continue
 				}
+				failedWatchAttempts = 0
 				for _, ev := range wResp.Events {
 					svType, svID, err := parseEtcdKey(string(ev.Kv.Key))
 					if err != nil {
@@ -665,17 +682,18 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 						}
 
 						sd.addServer(sv)
-						logger.Log.Debugf("server %s added", ev.Kv.Key)
+						logger.Log.Debugf("server %s added by watcher", ev.Kv.Key)
 						sd.printServers()
 					case clientv3.EventTypeDelete:
 						sd.deleteServer(svID)
-						logger.Log.Debugf("server %s deleted", svID)
+						logger.Log.Debugf("server %s deleted by watcher", svID)
 						sd.printServers()
 					}
 				}
 			case <-sd.stopChan:
 				return
 			}
+
 		}
 	}(w)
 }
