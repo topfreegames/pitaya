@@ -177,7 +177,7 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 			requestID = nuid.New()
 		}
 	} else {
-		requestID = uuid.New()
+		requestID = nuid.New()
 	}
 	defaultLogger := logger.Log.WithFields(
 		map[string]interface{}{
