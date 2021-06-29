@@ -367,7 +367,10 @@ func (sd *etcdServiceDiscovery) Init() error {
 	var err error
 
 	if sd.cli == nil {
-		sd.InitETCDClient()
+		err = sd.InitETCDClient()
+		if err != nil {
+			return err
+		}
 	} else {
 		sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
 		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
@@ -654,7 +657,10 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					failedWatchAttempts++
 					time.Sleep(1000 * time.Millisecond)
 					if failedWatchAttempts > 10 {
-						_ = sd.InitETCDClient()
+						if err := sd.InitETCDClient(); err != nil {
+							failedWatchAttempts = 0
+							continue
+						}
 						chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
 						failedWatchAttempts = 0
 					}
