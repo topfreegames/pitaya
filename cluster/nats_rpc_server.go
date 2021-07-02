@@ -112,6 +112,8 @@ func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
 	// blocking producers on a massive push
 	ns.userPushCh = make(chan *protos.Push, ns.pushBufferSize)
 	ns.userKickCh = make(chan *protos.KickMsg, ns.messagesBufferSize)
+	ns.responses = make([]*protos.Response, ns.service)
+	ns.requests = make([]*protos.Request, ns.service)
 	return nil
 }
 
@@ -314,8 +316,6 @@ func (ns *NatsRPCServer) processKick() {
 
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
-	ns.responses = make([]*protos.Response, ns.config.GetInt("pitaya.concurrency.remote.service"))
-	ns.requests = make([]*protos.Request, ns.config.GetInt("pitaya.concurrency.remote.service"))
 	// TODO should we have concurrency here? it feels like we should
 	go ns.handleMessages()
 
