@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/integration"
+	"go.etcd.io/etcd/integration"
 	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"

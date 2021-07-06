@@ -90,7 +90,7 @@ func (ns *NatsRPCClient) configure() error {
 	return nil
 }
 
-// BroadcastSessionBind sends the binding information to other servers that may br interested in this info
+// BroadcastSessionBind sends the binding information to other servers that may be interested in this info
 func (ns *NatsRPCClient) BroadcastSessionBind(uid string) error {
 	msg := &protos.BindMsg{
 		Uid: uid,
@@ -150,7 +150,7 @@ func (ns *NatsRPCClient) Call(
 		"peer.serverType": server.Type,
 		"peer.id":         server.ID,
 	}
-	ctx = tracing.StartSpan(ctx, "RPC Call", tags, parent)
+	ctx = tracing.StartSpan(ctx, "NATS RPC Call", tags, parent)
 	defer tracing.FinishSpan(ctx, err)
 
 	if !ns.running {

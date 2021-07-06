@@ -176,7 +176,7 @@ func TestUnmarshalRemoteArgErr(t *testing.T) {
 	}
 	args, err := unmarshalRemoteArg(remote, []byte("arg"))
 	assert.Empty(t, args)
-	assert.Equal(t, errors.New("unexpected EOF"), err)
+	assert.Contains(t, err.Error(), "cannot parse invalid wire-format data")
 }
 
 func TestGetMsgType(t *testing.T) {

@@ -46,13 +46,23 @@ func RegisterRemote(c component.Component, options ...component.Option) {
 }
 
 func startupComponents() {
-	// component initialize hooks
+	// handler component initialize hooks
 	for _, c := range handlerComp {
 		c.comp.Init()
 	}
 
-	// component after initialize hooks
+	// handler component after initialize hooks
 	for _, c := range handlerComp {
+		c.comp.AfterInit()
+	}
+
+	// remote component initialize hooks
+	for _, c := range remoteComp {
+		c.comp.Init()
+	}
+
+	// remote component after initialize hooks
+	for _, c := range remoteComp {
 		c.comp.AfterInit()
 	}
 

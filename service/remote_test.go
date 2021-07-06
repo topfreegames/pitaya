@@ -23,7 +23,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -69,12 +68,6 @@ func (m *MyComp) RemoteErr(ctx context.Context) (*test.SomeStruct, error) {
 }
 
 type unregisteredStruct struct{}
-
-func errorIs(t *testing.T, err1 error, err2 error)  {
-	if !assert.ObjectsAreEqual(err1, err2) && !errors.Is(err1, err2) {
-		assert.Fail(t, fmt.Sprintf("Error does not match target:\nactual: %s\nexpected: %s", err1, err2))
-	}
-}
 
 func TestNewRemoteService(t *testing.T) {
 	packetEncoder := codec.NewPomeloPacketEncoder()
@@ -188,7 +181,7 @@ func TestRemoteServicePushToUser(t *testing.T) {
 			}
 			_, err := svc.PushToUser(context.Background(), table.p)
 			if table.err != nil {
-				errorIs(t, err, table.err)
+				assert.EqualError(t, err, table.err.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -280,7 +273,7 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, ss, msg, sv).Return(table.res, table.err)
 			}
 			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, ss, msg)
-			errorIs(t, err, table.err)
+			assert.Equal(t, table.err, err)
 			assert.Equal(t, table.res, res)
 		})
 	}
@@ -338,7 +331,8 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			router := router.New()
 			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
 			assert.NotNil(t, svc)
-			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
+			res := svc.responsePool.Get().(*protos.Response)
+			svc.handleRPCUser(context.Background(), table.req, res, table.rt)
 			assert.NoError(t, err)
 			if table.errSubstring != "" {
 				assert.Contains(t, res.Error.Msg, table.errSubstring)
@@ -388,7 +382,8 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			if table.errSubstring == "" {
 				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil)
 			}
-			res := svc.handleRPCSys(nil, table.req, table.rt)
+			res := svc.responsePool.Get().(*protos.Response)
+			svc.handleRPCSys(nil, table.req, res, table.rt)
 
 			if table.errSubstring != "" {
 				assert.Contains(t, res.Error.Msg, table.errSubstring)
@@ -490,9 +485,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 			if table.serverID != "" {
 				var sdRet *cluster.Server
 				if table.foundServer {
-					sdRet = &cluster.Server{
-						ID: table.serverID,
-					}
+					sdRet = &cluster.Server{}
 				}
 				mockSD.EXPECT().GetServer(table.serverID).Return(sdRet, nil)
 			}
@@ -513,7 +506,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: b}, table.err)
 			}
 			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.arg)
-			errorIs(t, err, table.err)
+			assert.Equal(t, table.err, err)
 			if table.reply != nil {
 				assert.Equal(t, table.reply, expected)
 			}
