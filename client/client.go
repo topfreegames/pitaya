@@ -98,7 +98,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logLevel)
 
-	logger.Log = logruswrapper.NewWithLogger(l)
+	logger.Log = logruswrapper.NewWithFieldLogger(l)
 
 	reqTimeout := 5 * time.Second
 	if len(requestTimeout) > 0 {

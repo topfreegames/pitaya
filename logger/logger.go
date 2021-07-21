@@ -37,7 +37,7 @@ func initLogger() interfaces.Logger {
 	log := plog.WithFields(logrus.Fields{
 		"source": "pitaya",
 	})
-	return logruswrapper.NewWithEntry(log)
+	return logruswrapper.NewWithFieldLogger(log)
 }
 
 // SetLogger rewrites the default logger
