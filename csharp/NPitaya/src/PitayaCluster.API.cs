@@ -17,6 +17,7 @@ using System.Linq;
 // TODO profiling
 // TODO better reflection performance in task async call
 // TODO support to sync methods
+// TODO benchmark with blocking handlers
 namespace NPitaya
 {
     public partial class PitayaCluster

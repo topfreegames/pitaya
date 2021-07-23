@@ -38,6 +38,7 @@ import (
 
 // TODO fix the panic when the client disconnects
 
+// Sidecar main struct to keep state
 type Sidecar struct {
 	config        *config.Config
 	sidecarServer protos.SidecarServer
@@ -48,6 +49,7 @@ type Sidecar struct {
 	listener      net.Listener
 }
 
+// Call struct represents an incoming RPC call from other servers
 type Call struct {
 	ctx   context.Context
 	req   *protos.Request
@@ -57,6 +59,8 @@ type Call struct {
 	reqId uint64
 }
 
+// SidecarServer is the implementation of the GRPC server used to communicate
+// with the sidecar client
 type SidecarServer struct {
 	protos.UnimplementedPitayaServer
 }
@@ -73,6 +77,9 @@ var (
 	wg       sync.WaitGroup
 )
 
+// Call receives an RPC request from other pitaya servers and forward it to the
+// sidecar client so that it processes them, afterwards it gets the client
+// response and send it back to the callee
 func (s *Sidecar) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	call := &Call{
 		ctx:   ctx,
@@ -102,18 +109,23 @@ func (s *Sidecar) Call(ctx context.Context, req *protos.Request) (*protos.Respon
 	}
 }
 
+// SessionBindRemote is meant to frontend servers so its not implemented here
 func (s *Sidecar) SessionBindRemote(ctx context.Context, msg *protos.BindMsg) (*protos.Response, error) {
 	return nil, constants.ErrNotImplemented
 }
 
+// PushToUser is meant to frontend servers so its not implemented here
 func (s *Sidecar) PushToUser(ctx context.Context, push *protos.Push) (*protos.Response, error) {
 	return nil, constants.ErrNotImplemented
 }
 
+// KickUser is meant to frontend servers so its not implemented here
 func (s *Sidecar) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
 	return nil, constants.ErrNotImplemented
 }
 
+// FinishRPC is called when the sidecar client returns the answer to an RPC
+// call, after this method happens, the Call method above returns
 func (s *SidecarServer) FinishRPC(ctx context.Context, res *protos.RPCResponse) {
 	reqMutex.RLock()
 	defer reqMutex.RUnlock()
@@ -125,6 +137,10 @@ func (s *SidecarServer) FinishRPC(ctx context.Context, res *protos.RPCResponse) 
 	}
 }
 
+// ListenRPC keeps a bidirectional stream open between the sidecar client and
+// server, it sends incoming RPC from other pitaya servers to the client and
+// also listens for incoming answers from the client. This method is the most
+// important one here and is where is defined our async model.
 func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 	go func() {
 		for {
@@ -154,10 +170,14 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 	return nil
 }
 
+// SendRPC is called by the sidecar client when it wants to send RPC requests to
+// other pitaya servers
 func (s *SidecarServer) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
 	return pitaya.RawRPC(context.Background(), in.ServerID, in.Msg.Route, in.Msg.Data)
 }
 
+// SendPush is called by the sidecar client when it wants to send a push to an
+// user through a frontend server
 func (s *SidecarServer) SendPush(ctx context.Context, in *protos.PushRequest) (*protos.PushResponse, error) {
 	push := in.GetPush()
 	failedUids, err := pitaya.SendPushToUsers(push.Route, push.GetData(), []string{push.Uid}, in.FrontendType)
@@ -172,6 +192,8 @@ func (s *SidecarServer) SendPush(ctx context.Context, in *protos.PushRequest) (*
 	return res, nil // can't send the error here because if we do, it will throw an exception in csharp side
 }
 
+// SendKick is called by the sidecar client when it wants to send a kick to an
+// user through a frontend server
 func (s *SidecarServer) SendKick(ctx context.Context, in *protos.KickRequest) (*protos.PushResponse, error) {
 	failedUids, err := pitaya.SendKickToUsers([]string{in.GetKick().GetUserId()}, in.FrontendType)
 	res := &protos.PushResponse{
@@ -185,6 +207,9 @@ func (s *SidecarServer) SendKick(ctx context.Context, in *protos.KickRequest) (*
 	return res, nil // can't send the error here because if we do, it will throw an exception in csharp side
 }
 
+// StartPitaya instantiates a pitaya server and starts it. It must be called
+// during the initialization of the sidecar client, all other methods will only
+// work when this one was already called
 func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitayaRequest) (*protos.Error, error) {
 	config := req.GetConfig()
 	pitaya.Configure(
@@ -224,6 +249,8 @@ func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitaya
 	return &protos.Error{}, nil
 }
 
+// StopPitaya stops the instantiated pitaya server and must always be called
+// when the client is dying so that we can correctly gracefully shutdown pitaya
 func (s *SidecarServer) StopPitaya(ctx context.Context, req *emptypb.Empty) (*protos.Error, error) {
 	logger.Log.Info("received stop request, will stop pitaya server")
 	close(sidecar.stopChan)
@@ -236,6 +263,9 @@ func checkError(err error) {
 	}
 }
 
+// StartSidecar starts the sidecar server, it instantiates the GRPC server and
+// listens for incoming client connections. This is the very first method that
+// is called when the sidecar is starting.
 func StartSidecar(cfg *config.Config) {
 	// Start our own logger
 	sidecar.log = logrus.WithField("source", "sidecar")
