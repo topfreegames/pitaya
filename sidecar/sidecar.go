@@ -137,6 +137,23 @@ func (s *SidecarServer) FinishRPC(ctx context.Context, res *protos.RPCResponse) 
 	}
 }
 
+// GetServer is called by the sidecar client to get the information from
+// a pitaya server by passing its ID
+func (s *SidecarServer) GetServer(ctx context.Context, in *protos.Server) (*protos.Server, error) {
+	server, err := pitaya.GetServerByID(in.Id)
+	if err != nil {
+		return nil, err
+	}
+	res := &protos.Server{
+		Id:       server.ID,
+		Frontend: server.Frontend,
+		Type:     server.Type,
+		Metadata: server.Metadata,
+		Hostname: server.Hostname,
+	}
+	return res, nil
+}
+
 // ListenRPC keeps a bidirectional stream open between the sidecar client and
 // server, it sends incoming RPC from other pitaya servers to the client and
 // also listens for incoming answers from the client. This method is the most
@@ -213,17 +230,17 @@ func (s *SidecarServer) SendKick(ctx context.Context, in *protos.KickRequest) (*
 func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitayaRequest) (*protos.Error, error) {
 	config := req.GetConfig()
 	pitaya.Configure(
-		config.GetIsFrontend(),
-		config.GetServerType(),
+		config.GetFrontend(),
+		config.GetType(),
 		pitaya.Cluster,
 		config.GetMetadata(),
 		sidecar.config.GetViper(),
 	)
 
-	pitaya.SetDebug(config.GetDebugLog())
+	pitaya.SetDebug(req.GetDebugLog())
 
 	// TODO support frontend servers
-	if config.GetIsFrontend() {
+	if config.GetFrontend() {
 		//t := acceptor.NewTCPAcceptor(":3250") pitaya.AddAcceptor(t)
 		logger.Log.Fatal("Frontend servers not supported yet")
 	}

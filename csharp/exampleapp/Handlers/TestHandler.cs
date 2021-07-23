@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NPitaya.Models;
 using NPitaya.Protos;
+using NPitaya;
 
 #pragma warning disable 1998
 namespace exampleapp.Handlers
@@ -19,6 +20,11 @@ namespace exampleapp.Handlers
                 Code = 200
             };
             return response;
+        }
+
+        public async Task<NPitaya.Protos.Server> GetServer(PitayaSession session, Protos.RPCMsg msg)
+        {
+            return PitayaCluster.GetServerById(msg.Msg);
         }
 
         public async Task NotifyBind(PitayaSession pitayaSession, Protos.RPCMsg msg)

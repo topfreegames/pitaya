@@ -49,6 +49,7 @@ namespace NPitaya.Protos {
     static readonly grpc::Marshaller<global::NPitaya.Protos.PushRequest> __Marshaller_protos_PushRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.PushRequest.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.PushResponse> __Marshaller_protos_PushResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.PushResponse.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.KickRequest> __Marshaller_protos_KickRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.KickRequest.Parser));
+    static readonly grpc::Marshaller<global::NPitaya.Protos.Server> __Marshaller_protos_Server = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.Server.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.StartPitayaRequest> __Marshaller_protos_StartPitayaRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.StartPitayaRequest.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.Error> __Marshaller_protos_Error = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.Error.Parser));
     static readonly grpc::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Google.Protobuf.WellKnownTypes.Empty.Parser));
@@ -80,6 +81,13 @@ namespace NPitaya.Protos {
         "SendKick",
         __Marshaller_protos_KickRequest,
         __Marshaller_protos_PushResponse);
+
+    static readonly grpc::Method<global::NPitaya.Protos.Server, global::NPitaya.Protos.Server> __Method_GetServer = new grpc::Method<global::NPitaya.Protos.Server, global::NPitaya.Protos.Server>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "GetServer",
+        __Marshaller_protos_Server,
+        __Marshaller_protos_Server);
 
     static readonly grpc::Method<global::NPitaya.Protos.StartPitayaRequest, global::NPitaya.Protos.Error> __Method_StartPitaya = new grpc::Method<global::NPitaya.Protos.StartPitayaRequest, global::NPitaya.Protos.Error>(
         grpc::MethodType.Unary,
@@ -121,6 +129,11 @@ namespace NPitaya.Protos {
       }
 
       public virtual global::System.Threading.Tasks.Task<global::NPitaya.Protos.PushResponse> SendKick(global::NPitaya.Protos.KickRequest request, grpc::ServerCallContext context)
+      {
+        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+      }
+
+      public virtual global::System.Threading.Tasks.Task<global::NPitaya.Protos.Server> GetServer(global::NPitaya.Protos.Server request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -222,6 +235,22 @@ namespace NPitaya.Protos {
       {
         return CallInvoker.AsyncUnaryCall(__Method_SendKick, null, options, request);
       }
+      public virtual global::NPitaya.Protos.Server GetServer(global::NPitaya.Protos.Server request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GetServer(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual global::NPitaya.Protos.Server GetServer(global::NPitaya.Protos.Server request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_GetServer, null, options, request);
+      }
+      public virtual grpc::AsyncUnaryCall<global::NPitaya.Protos.Server> GetServerAsync(global::NPitaya.Protos.Server request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GetServerAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual grpc::AsyncUnaryCall<global::NPitaya.Protos.Server> GetServerAsync(global::NPitaya.Protos.Server request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_GetServer, null, options, request);
+      }
       public virtual global::NPitaya.Protos.Error StartPitaya(global::NPitaya.Protos.StartPitayaRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return StartPitaya(request, new grpc::CallOptions(headers, deadline, cancellationToken));
@@ -298,6 +327,7 @@ namespace NPitaya.Protos {
           .AddMethod(__Method_SendRPC, serviceImpl.SendRPC)
           .AddMethod(__Method_SendPush, serviceImpl.SendPush)
           .AddMethod(__Method_SendKick, serviceImpl.SendKick)
+          .AddMethod(__Method_GetServer, serviceImpl.GetServer)
           .AddMethod(__Method_StartPitaya, serviceImpl.StartPitaya)
           .AddMethod(__Method_StopPitaya, serviceImpl.StopPitaya).Build();
     }
@@ -312,6 +342,7 @@ namespace NPitaya.Protos {
       serviceBinder.AddMethod(__Method_SendRPC, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.RequestTo, global::NPitaya.Protos.Response>(serviceImpl.SendRPC));
       serviceBinder.AddMethod(__Method_SendPush, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.PushRequest, global::NPitaya.Protos.PushResponse>(serviceImpl.SendPush));
       serviceBinder.AddMethod(__Method_SendKick, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.KickRequest, global::NPitaya.Protos.PushResponse>(serviceImpl.SendKick));
+      serviceBinder.AddMethod(__Method_GetServer, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.Server, global::NPitaya.Protos.Server>(serviceImpl.GetServer));
       serviceBinder.AddMethod(__Method_StartPitaya, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.StartPitayaRequest, global::NPitaya.Protos.Error>(serviceImpl.StartPitaya));
       serviceBinder.AddMethod(__Method_StopPitaya, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Google.Protobuf.WellKnownTypes.Empty, global::NPitaya.Protos.Error>(serviceImpl.StopPitaya));
     }

@@ -211,22 +211,15 @@ namespace NPitaya
 //            MetricsReporters.Terminate();
 //        }
 //
-//        public static Server? GetServerById(string serverId)
-//        {
-//            var retServer = new Server();
-//
-//            bool ok = GetServerByIdInternal(serverId, ref retServer);
-//
-//            if (!ok)
-//            {
-//                Logger.Error($"There are no servers with id {serverId}");
-//                return null;
-//            }
-//
-//            //var server = (Pitaya.Server)Marshal.PtrToStructure(serverPtr, typeof(Pitaya.Server));
-//            //FreeServerInternal(serverPtr);
-//            return retServer;
-//        }
+        public static Server GetServerById(string serverId)
+        {
+            try{
+                var protoSv = _client.GetServer(new NPitaya.Protos.Server{Id=serverId});
+                return protoSv;
+            } catch (Exception _){
+                return null;
+            }
+        }
 //
         // TODO deprecate this frontendId field, it's not useful when using nats
         public static unsafe Task<PushResponse> SendPushToUser(string serverType, string route, string uid,

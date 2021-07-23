@@ -7,11 +7,11 @@ import (
 
 	"strings"
 
-	"github.com/topfreegames/pitaya/pkg"
+	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
+	pitaya "github.com/topfreegames/pitaya/pkg"
 	"github.com/topfreegames/pitaya/pkg/acceptor"
 	"github.com/topfreegames/pitaya/pkg/cluster"
 	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
 	"github.com/topfreegames/pitaya/pkg/route"
 	"github.com/topfreegames/pitaya/pkg/serialize/json"
 )
@@ -90,6 +90,6 @@ func main() {
 		configureFrontend(*port)
 	}
 
-	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{})
+	pitaya.Configure(*isFrontend, *svType, pitaya.Cluster, map[string]string{"metadata": "test"})
 	pitaya.Start()
 }

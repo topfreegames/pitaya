@@ -26,37 +26,37 @@ namespace NPitaya.Protos {
           string.Concat(
             "Cg1zaWRlY2FyLnByb3RvEgZwcm90b3MaC2Vycm9yLnByb3RvGgpwdXNoLnBy",
             "b3RvGgpraWNrLnByb3RvGgltc2cucHJvdG8aDnJlc3BvbnNlLnByb3RvGg1y",
-            "ZXF1ZXN0LnByb3RvGhtnb29nbGUvcHJvdG9idWYvZW1wdHkucHJvdG8ivgIK",
-            "ElN0YXJ0UGl0YXlhUmVxdWVzdBI3CgZjb25maWcYASABKAsyJy5wcm90b3Mu",
-            "U3RhcnRQaXRheWFSZXF1ZXN0LlNlcnZlckNvbmZpZxruAQoMU2VydmVyQ29u",
-            "ZmlnEgoKAmlkGAEgASgJEhIKCmlzRnJvbnRlbmQYAiABKAgSEgoKc2VydmVy",
-            "VHlwZRgDIAEoCRJHCghtZXRhZGF0YRgEIAMoCzI1LnByb3Rvcy5TdGFydFBp",
-            "dGF5YVJlcXVlc3QuU2VydmVyQ29uZmlnLk1ldGFkYXRhRW50cnkSHgoWc2hv",
-            "dWxkQ29tcHJlc3NNZXNzYWdlcxgFIAEoCBIQCghkZWJ1Z0xvZxgGIAEoCBov",
-            "Cg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToC",
-            "OAEiNwoJUmVxdWVzdFRvEhAKCHNlcnZlcklEGAEgASgJEhgKA21zZxgCIAEo",
-            "CzILLnByb3Rvcy5Nc2ciVwoLUlBDUmVzcG9uc2USDQoFcmVxSWQYASABKAQS",
-            "HQoDcmVzGAIgASgLMhAucHJvdG9zLlJlc3BvbnNlEhoKA2VychgDIAEoCzIN",
-            "LnByb3Rvcy5FcnJvciI9Cg5TaWRlY2FyUmVxdWVzdBINCgVyZXFJZBgBIAEo",
-            "BBIcCgNyZXEYAiABKAsyDy5wcm90b3MuUmVxdWVzdCI/CgtQdXNoUmVxdWVz",
-            "dBIUCgxmcm9udGVuZFR5cGUYAiABKAkSGgoEcHVzaBgDIAEoCzIMLnByb3Rv",
-            "cy5QdXNoIjUKDFB1c2hSZXNwb25zZRISCgpmYWlsZWRVaWRzGAEgAygJEhEK",
-            "CWhhc0ZhaWxlZBgCIAEoCCJCCgtLaWNrUmVxdWVzdBIUCgxmcm9udGVuZFR5",
-            "cGUYAiABKAkSHQoEa2ljaxgDIAEoCzIPLnByb3Rvcy5LaWNrTXNnMtQCCgdT",
-            "aWRlY2FyEjwKCUxpc3RlblJQQxITLnByb3Rvcy5SUENSZXNwb25zZRoWLnBy",
-            "b3Rvcy5TaWRlY2FyUmVxdWVzdCgBMAESLgoHU2VuZFJQQxIRLnByb3Rvcy5S",
-            "ZXF1ZXN0VG8aEC5wcm90b3MuUmVzcG9uc2USNQoIU2VuZFB1c2gSEy5wcm90",
-            "b3MuUHVzaFJlcXVlc3QaFC5wcm90b3MuUHVzaFJlc3BvbnNlEjUKCFNlbmRL",
-            "aWNrEhMucHJvdG9zLktpY2tSZXF1ZXN0GhQucHJvdG9zLlB1c2hSZXNwb25z",
-            "ZRI4CgtTdGFydFBpdGF5YRIaLnByb3Rvcy5TdGFydFBpdGF5YVJlcXVlc3Qa",
-            "DS5wcm90b3MuRXJyb3ISMwoKU3RvcFBpdGF5YRIWLmdvb2dsZS5wcm90b2J1",
-            "Zi5FbXB0eRoNLnByb3Rvcy5FcnJvckI8WilnaXRodWIuY29tL3RvcGZyZWVn",
-            "YW1lcy9waXRheWEvcGtnL3Byb3Rvc6oCDk5QaXRheWEuUHJvdG9zYgZwcm90",
-            "bzM="));
+            "ZXF1ZXN0LnByb3RvGhtnb29nbGUvcHJvdG9idWYvZW1wdHkucHJvdG8ipwEK",
+            "BlNlcnZlchIKCgJpZBgBIAEoCRIQCghmcm9udGVuZBgCIAEoCBIMCgR0eXBl",
+            "GAMgASgJEi4KCG1ldGFkYXRhGAQgAygLMhwucHJvdG9zLlNlcnZlci5NZXRh",
+            "ZGF0YUVudHJ5EhAKCGhvc3RuYW1lGAUgASgJGi8KDU1ldGFkYXRhRW50cnkS",
+            "CwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJmChJTdGFydFBpdGF5",
+            "YVJlcXVlc3QSHgoGY29uZmlnGAEgASgLMg4ucHJvdG9zLlNlcnZlchIeChZz",
+            "aG91bGRDb21wcmVzc01lc3NhZ2VzGAIgASgIEhAKCGRlYnVnTG9nGAMgASgI",
+            "IjcKCVJlcXVlc3RUbxIQCghzZXJ2ZXJJRBgBIAEoCRIYCgNtc2cYAiABKAsy",
+            "Cy5wcm90b3MuTXNnIlcKC1JQQ1Jlc3BvbnNlEg0KBXJlcUlkGAEgASgEEh0K",
+            "A3JlcxgCIAEoCzIQLnByb3Rvcy5SZXNwb25zZRIaCgNlcnIYAyABKAsyDS5w",
+            "cm90b3MuRXJyb3IiPQoOU2lkZWNhclJlcXVlc3QSDQoFcmVxSWQYASABKAQS",
+            "HAoDcmVxGAIgASgLMg8ucHJvdG9zLlJlcXVlc3QiPwoLUHVzaFJlcXVlc3QS",
+            "FAoMZnJvbnRlbmRUeXBlGAIgASgJEhoKBHB1c2gYAyABKAsyDC5wcm90b3Mu",
+            "UHVzaCI1CgxQdXNoUmVzcG9uc2USEgoKZmFpbGVkVWlkcxgBIAMoCRIRCglo",
+            "YXNGYWlsZWQYAiABKAgiQgoLS2lja1JlcXVlc3QSFAoMZnJvbnRlbmRUeXBl",
+            "GAIgASgJEh0KBGtpY2sYAyABKAsyDy5wcm90b3MuS2lja01zZzKBAwoHU2lk",
+            "ZWNhchI8CglMaXN0ZW5SUEMSEy5wcm90b3MuUlBDUmVzcG9uc2UaFi5wcm90",
+            "b3MuU2lkZWNhclJlcXVlc3QoATABEi4KB1NlbmRSUEMSES5wcm90b3MuUmVx",
+            "dWVzdFRvGhAucHJvdG9zLlJlc3BvbnNlEjUKCFNlbmRQdXNoEhMucHJvdG9z",
+            "LlB1c2hSZXF1ZXN0GhQucHJvdG9zLlB1c2hSZXNwb25zZRI1CghTZW5kS2lj",
+            "axITLnByb3Rvcy5LaWNrUmVxdWVzdBoULnByb3Rvcy5QdXNoUmVzcG9uc2US",
+            "KwoJR2V0U2VydmVyEg4ucHJvdG9zLlNlcnZlchoOLnByb3Rvcy5TZXJ2ZXIS",
+            "OAoLU3RhcnRQaXRheWESGi5wcm90b3MuU3RhcnRQaXRheWFSZXF1ZXN0Gg0u",
+            "cHJvdG9zLkVycm9yEjMKClN0b3BQaXRheWESFi5nb29nbGUucHJvdG9idWYu",
+            "RW1wdHkaDS5wcm90b3MuRXJyb3JCPFopZ2l0aHViLmNvbS90b3BmcmVlZ2Ft",
+            "ZXMvcGl0YXlhL3BrZy9wcm90b3OqAg5OUGl0YXlhLlByb3Rvc2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::NPitaya.Protos.ErrorReflection.Descriptor, global::NPitaya.Protos.PushReflection.Descriptor, global::NPitaya.Protos.KickReflection.Descriptor, global::NPitaya.Protos.MsgReflection.Descriptor, global::NPitaya.Protos.ResponseReflection.Descriptor, global::NPitaya.Protos.RequestReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.StartPitayaRequest), global::NPitaya.Protos.StartPitayaRequest.Parser, new[]{ "Config" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig), global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig.Parser, new[]{ "Id", "IsFrontend", "ServerType", "Metadata", "ShouldCompressMessages", "DebugLog" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, })}),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.Server), global::NPitaya.Protos.Server.Parser, new[]{ "Id", "Frontend", "Type", "Metadata", "Hostname" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.StartPitayaRequest), global::NPitaya.Protos.StartPitayaRequest.Parser, new[]{ "Config", "ShouldCompressMessages", "DebugLog" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.RequestTo), global::NPitaya.Protos.RequestTo.Parser, new[]{ "ServerID", "Msg" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.RPCResponse), global::NPitaya.Protos.RPCResponse.Parser, new[]{ "ReqId", "Res", "Err" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.SidecarRequest), global::NPitaya.Protos.SidecarRequest.Parser, new[]{ "ReqId", "Req" }, null, null, null, null),
@@ -69,6 +69,317 @@ namespace NPitaya.Protos {
 
   }
   #region Messages
+  public sealed partial class Server : pb::IMessage<Server>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<Server> _parser = new pb::MessageParser<Server>(() => new Server());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<Server> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[0]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Server() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Server(Server other) : this() {
+      id_ = other.id_;
+      frontend_ = other.frontend_;
+      type_ = other.type_;
+      metadata_ = other.metadata_.Clone();
+      hostname_ = other.hostname_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Server Clone() {
+      return new Server(this);
+    }
+
+    /// <summary>Field number for the "id" field.</summary>
+    public const int IdFieldNumber = 1;
+    private string id_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Id {
+      get { return id_; }
+      set {
+        id_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "frontend" field.</summary>
+    public const int FrontendFieldNumber = 2;
+    private bool frontend_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Frontend {
+      get { return frontend_; }
+      set {
+        frontend_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "type" field.</summary>
+    public const int TypeFieldNumber = 3;
+    private string type_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Type {
+      get { return type_; }
+      set {
+        type_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "metadata" field.</summary>
+    public const int MetadataFieldNumber = 4;
+    private static readonly pbc::MapField<string, string>.Codec _map_metadata_codec
+        = new pbc::MapField<string, string>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForString(18, ""), 34);
+    private readonly pbc::MapField<string, string> metadata_ = new pbc::MapField<string, string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::MapField<string, string> Metadata {
+      get { return metadata_; }
+    }
+
+    /// <summary>Field number for the "hostname" field.</summary>
+    public const int HostnameFieldNumber = 5;
+    private string hostname_ = "";
+    /// <summary>
+    /// TODO
+    /// rpc module
+    /// cluster mode
+    /// other configs
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Hostname {
+      get { return hostname_; }
+      set {
+        hostname_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as Server);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(Server other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Id != other.Id) return false;
+      if (Frontend != other.Frontend) return false;
+      if (Type != other.Type) return false;
+      if (!Metadata.Equals(other.Metadata)) return false;
+      if (Hostname != other.Hostname) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Id.Length != 0) hash ^= Id.GetHashCode();
+      if (Frontend != false) hash ^= Frontend.GetHashCode();
+      if (Type.Length != 0) hash ^= Type.GetHashCode();
+      hash ^= Metadata.GetHashCode();
+      if (Hostname.Length != 0) hash ^= Hostname.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Id.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Id);
+      }
+      if (Frontend != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(Frontend);
+      }
+      if (Type.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Type);
+      }
+      metadata_.WriteTo(output, _map_metadata_codec);
+      if (Hostname.Length != 0) {
+        output.WriteRawTag(42);
+        output.WriteString(Hostname);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Id.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Id);
+      }
+      if (Frontend != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(Frontend);
+      }
+      if (Type.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Type);
+      }
+      metadata_.WriteTo(ref output, _map_metadata_codec);
+      if (Hostname.Length != 0) {
+        output.WriteRawTag(42);
+        output.WriteString(Hostname);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (Id.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Id);
+      }
+      if (Frontend != false) {
+        size += 1 + 1;
+      }
+      if (Type.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Type);
+      }
+      size += metadata_.CalculateSize(_map_metadata_codec);
+      if (Hostname.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Hostname);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(Server other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Id.Length != 0) {
+        Id = other.Id;
+      }
+      if (other.Frontend != false) {
+        Frontend = other.Frontend;
+      }
+      if (other.Type.Length != 0) {
+        Type = other.Type;
+      }
+      metadata_.Add(other.metadata_);
+      if (other.Hostname.Length != 0) {
+        Hostname = other.Hostname;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Id = input.ReadString();
+            break;
+          }
+          case 16: {
+            Frontend = input.ReadBool();
+            break;
+          }
+          case 26: {
+            Type = input.ReadString();
+            break;
+          }
+          case 34: {
+            metadata_.AddEntriesFrom(input, _map_metadata_codec);
+            break;
+          }
+          case 42: {
+            Hostname = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Id = input.ReadString();
+            break;
+          }
+          case 16: {
+            Frontend = input.ReadBool();
+            break;
+          }
+          case 26: {
+            Type = input.ReadString();
+            break;
+          }
+          case 34: {
+            metadata_.AddEntriesFrom(ref input, _map_metadata_codec);
+            break;
+          }
+          case 42: {
+            Hostname = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
   public sealed partial class StartPitayaRequest : pb::IMessage<StartPitayaRequest>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -81,7 +392,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -99,6 +410,8 @@ namespace NPitaya.Protos {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public StartPitayaRequest(StartPitayaRequest other) : this() {
       config_ = other.config_ != null ? other.config_.Clone() : null;
+      shouldCompressMessages_ = other.shouldCompressMessages_;
+      debugLog_ = other.debugLog_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -109,12 +422,34 @@ namespace NPitaya.Protos {
 
     /// <summary>Field number for the "config" field.</summary>
     public const int ConfigFieldNumber = 1;
-    private global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig config_;
+    private global::NPitaya.Protos.Server config_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig Config {
+    public global::NPitaya.Protos.Server Config {
       get { return config_; }
       set {
         config_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "shouldCompressMessages" field.</summary>
+    public const int ShouldCompressMessagesFieldNumber = 2;
+    private bool shouldCompressMessages_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool ShouldCompressMessages {
+      get { return shouldCompressMessages_; }
+      set {
+        shouldCompressMessages_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "debugLog" field.</summary>
+    public const int DebugLogFieldNumber = 3;
+    private bool debugLog_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool DebugLog {
+      get { return debugLog_; }
+      set {
+        debugLog_ = value;
       }
     }
 
@@ -132,6 +467,8 @@ namespace NPitaya.Protos {
         return true;
       }
       if (!object.Equals(Config, other.Config)) return false;
+      if (ShouldCompressMessages != other.ShouldCompressMessages) return false;
+      if (DebugLog != other.DebugLog) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -139,6 +476,8 @@ namespace NPitaya.Protos {
     public override int GetHashCode() {
       int hash = 1;
       if (config_ != null) hash ^= Config.GetHashCode();
+      if (ShouldCompressMessages != false) hash ^= ShouldCompressMessages.GetHashCode();
+      if (DebugLog != false) hash ^= DebugLog.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -159,6 +498,14 @@ namespace NPitaya.Protos {
         output.WriteRawTag(10);
         output.WriteMessage(Config);
       }
+      if (ShouldCompressMessages != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(ShouldCompressMessages);
+      }
+      if (DebugLog != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(DebugLog);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -172,6 +519,14 @@ namespace NPitaya.Protos {
         output.WriteRawTag(10);
         output.WriteMessage(Config);
       }
+      if (ShouldCompressMessages != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(ShouldCompressMessages);
+      }
+      if (DebugLog != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(DebugLog);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -183,6 +538,12 @@ namespace NPitaya.Protos {
       int size = 0;
       if (config_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Config);
+      }
+      if (ShouldCompressMessages != false) {
+        size += 1 + 1;
+      }
+      if (DebugLog != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -197,9 +558,15 @@ namespace NPitaya.Protos {
       }
       if (other.config_ != null) {
         if (config_ == null) {
-          Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
+          Config = new global::NPitaya.Protos.Server();
         }
         Config.MergeFrom(other.Config);
+      }
+      if (other.ShouldCompressMessages != false) {
+        ShouldCompressMessages = other.ShouldCompressMessages;
+      }
+      if (other.DebugLog != false) {
+        DebugLog = other.DebugLog;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -217,9 +584,17 @@ namespace NPitaya.Protos {
             break;
           case 10: {
             if (config_ == null) {
-              Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
+              Config = new global::NPitaya.Protos.Server();
             }
             input.ReadMessage(Config);
+            break;
+          }
+          case 16: {
+            ShouldCompressMessages = input.ReadBool();
+            break;
+          }
+          case 24: {
+            DebugLog = input.ReadBool();
             break;
           }
         }
@@ -238,369 +613,23 @@ namespace NPitaya.Protos {
             break;
           case 10: {
             if (config_ == null) {
-              Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
+              Config = new global::NPitaya.Protos.Server();
             }
             input.ReadMessage(Config);
+            break;
+          }
+          case 16: {
+            ShouldCompressMessages = input.ReadBool();
+            break;
+          }
+          case 24: {
+            DebugLog = input.ReadBool();
             break;
           }
         }
       }
     }
     #endif
-
-    #region Nested types
-    /// <summary>Container for nested types declared in the StartPitayaRequest message type.</summary>
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static partial class Types {
-      public sealed partial class ServerConfig : pb::IMessage<ServerConfig>
-      #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-          , pb::IBufferMessage
-      #endif
-      {
-        private static readonly pb::MessageParser<ServerConfig> _parser = new pb::MessageParser<ServerConfig>(() => new ServerConfig());
-        private pb::UnknownFieldSet _unknownFields;
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public static pb::MessageParser<ServerConfig> Parser { get { return _parser; } }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public static pbr::MessageDescriptor Descriptor {
-          get { return global::NPitaya.Protos.StartPitayaRequest.Descriptor.NestedTypes[0]; }
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        pbr::MessageDescriptor pb::IMessage.Descriptor {
-          get { return Descriptor; }
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public ServerConfig() {
-          OnConstruction();
-        }
-
-        partial void OnConstruction();
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public ServerConfig(ServerConfig other) : this() {
-          id_ = other.id_;
-          isFrontend_ = other.isFrontend_;
-          serverType_ = other.serverType_;
-          metadata_ = other.metadata_.Clone();
-          shouldCompressMessages_ = other.shouldCompressMessages_;
-          debugLog_ = other.debugLog_;
-          _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public ServerConfig Clone() {
-          return new ServerConfig(this);
-        }
-
-        /// <summary>Field number for the "id" field.</summary>
-        public const int IdFieldNumber = 1;
-        private string id_ = "";
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public string Id {
-          get { return id_; }
-          set {
-            id_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-          }
-        }
-
-        /// <summary>Field number for the "isFrontend" field.</summary>
-        public const int IsFrontendFieldNumber = 2;
-        private bool isFrontend_;
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public bool IsFrontend {
-          get { return isFrontend_; }
-          set {
-            isFrontend_ = value;
-          }
-        }
-
-        /// <summary>Field number for the "serverType" field.</summary>
-        public const int ServerTypeFieldNumber = 3;
-        private string serverType_ = "";
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public string ServerType {
-          get { return serverType_; }
-          set {
-            serverType_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-          }
-        }
-
-        /// <summary>Field number for the "metadata" field.</summary>
-        public const int MetadataFieldNumber = 4;
-        private static readonly pbc::MapField<string, string>.Codec _map_metadata_codec
-            = new pbc::MapField<string, string>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForString(18, ""), 34);
-        private readonly pbc::MapField<string, string> metadata_ = new pbc::MapField<string, string>();
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public pbc::MapField<string, string> Metadata {
-          get { return metadata_; }
-        }
-
-        /// <summary>Field number for the "shouldCompressMessages" field.</summary>
-        public const int ShouldCompressMessagesFieldNumber = 5;
-        private bool shouldCompressMessages_;
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public bool ShouldCompressMessages {
-          get { return shouldCompressMessages_; }
-          set {
-            shouldCompressMessages_ = value;
-          }
-        }
-
-        /// <summary>Field number for the "debugLog" field.</summary>
-        public const int DebugLogFieldNumber = 6;
-        private bool debugLog_;
-        /// <summary>
-        /// TODO
-        /// rpc module
-        /// cluster mode
-        /// other configs
-        /// </summary>
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public bool DebugLog {
-          get { return debugLog_; }
-          set {
-            debugLog_ = value;
-          }
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public override bool Equals(object other) {
-          return Equals(other as ServerConfig);
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public bool Equals(ServerConfig other) {
-          if (ReferenceEquals(other, null)) {
-            return false;
-          }
-          if (ReferenceEquals(other, this)) {
-            return true;
-          }
-          if (Id != other.Id) return false;
-          if (IsFrontend != other.IsFrontend) return false;
-          if (ServerType != other.ServerType) return false;
-          if (!Metadata.Equals(other.Metadata)) return false;
-          if (ShouldCompressMessages != other.ShouldCompressMessages) return false;
-          if (DebugLog != other.DebugLog) return false;
-          return Equals(_unknownFields, other._unknownFields);
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public override int GetHashCode() {
-          int hash = 1;
-          if (Id.Length != 0) hash ^= Id.GetHashCode();
-          if (IsFrontend != false) hash ^= IsFrontend.GetHashCode();
-          if (ServerType.Length != 0) hash ^= ServerType.GetHashCode();
-          hash ^= Metadata.GetHashCode();
-          if (ShouldCompressMessages != false) hash ^= ShouldCompressMessages.GetHashCode();
-          if (DebugLog != false) hash ^= DebugLog.GetHashCode();
-          if (_unknownFields != null) {
-            hash ^= _unknownFields.GetHashCode();
-          }
-          return hash;
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public override string ToString() {
-          return pb::JsonFormatter.ToDiagnosticString(this);
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public void WriteTo(pb::CodedOutputStream output) {
-        #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-          output.WriteRawMessage(this);
-        #else
-          if (Id.Length != 0) {
-            output.WriteRawTag(10);
-            output.WriteString(Id);
-          }
-          if (IsFrontend != false) {
-            output.WriteRawTag(16);
-            output.WriteBool(IsFrontend);
-          }
-          if (ServerType.Length != 0) {
-            output.WriteRawTag(26);
-            output.WriteString(ServerType);
-          }
-          metadata_.WriteTo(output, _map_metadata_codec);
-          if (ShouldCompressMessages != false) {
-            output.WriteRawTag(40);
-            output.WriteBool(ShouldCompressMessages);
-          }
-          if (DebugLog != false) {
-            output.WriteRawTag(48);
-            output.WriteBool(DebugLog);
-          }
-          if (_unknownFields != null) {
-            _unknownFields.WriteTo(output);
-          }
-        #endif
-        }
-
-        #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-          if (Id.Length != 0) {
-            output.WriteRawTag(10);
-            output.WriteString(Id);
-          }
-          if (IsFrontend != false) {
-            output.WriteRawTag(16);
-            output.WriteBool(IsFrontend);
-          }
-          if (ServerType.Length != 0) {
-            output.WriteRawTag(26);
-            output.WriteString(ServerType);
-          }
-          metadata_.WriteTo(ref output, _map_metadata_codec);
-          if (ShouldCompressMessages != false) {
-            output.WriteRawTag(40);
-            output.WriteBool(ShouldCompressMessages);
-          }
-          if (DebugLog != false) {
-            output.WriteRawTag(48);
-            output.WriteBool(DebugLog);
-          }
-          if (_unknownFields != null) {
-            _unknownFields.WriteTo(ref output);
-          }
-        }
-        #endif
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public int CalculateSize() {
-          int size = 0;
-          if (Id.Length != 0) {
-            size += 1 + pb::CodedOutputStream.ComputeStringSize(Id);
-          }
-          if (IsFrontend != false) {
-            size += 1 + 1;
-          }
-          if (ServerType.Length != 0) {
-            size += 1 + pb::CodedOutputStream.ComputeStringSize(ServerType);
-          }
-          size += metadata_.CalculateSize(_map_metadata_codec);
-          if (ShouldCompressMessages != false) {
-            size += 1 + 1;
-          }
-          if (DebugLog != false) {
-            size += 1 + 1;
-          }
-          if (_unknownFields != null) {
-            size += _unknownFields.CalculateSize();
-          }
-          return size;
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public void MergeFrom(ServerConfig other) {
-          if (other == null) {
-            return;
-          }
-          if (other.Id.Length != 0) {
-            Id = other.Id;
-          }
-          if (other.IsFrontend != false) {
-            IsFrontend = other.IsFrontend;
-          }
-          if (other.ServerType.Length != 0) {
-            ServerType = other.ServerType;
-          }
-          metadata_.Add(other.metadata_);
-          if (other.ShouldCompressMessages != false) {
-            ShouldCompressMessages = other.ShouldCompressMessages;
-          }
-          if (other.DebugLog != false) {
-            DebugLog = other.DebugLog;
-          }
-          _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-        }
-
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        public void MergeFrom(pb::CodedInputStream input) {
-        #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-          input.ReadRawMessage(this);
-        #else
-          uint tag;
-          while ((tag = input.ReadTag()) != 0) {
-            switch(tag) {
-              default:
-                _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-                break;
-              case 10: {
-                Id = input.ReadString();
-                break;
-              }
-              case 16: {
-                IsFrontend = input.ReadBool();
-                break;
-              }
-              case 26: {
-                ServerType = input.ReadString();
-                break;
-              }
-              case 34: {
-                metadata_.AddEntriesFrom(input, _map_metadata_codec);
-                break;
-              }
-              case 40: {
-                ShouldCompressMessages = input.ReadBool();
-                break;
-              }
-              case 48: {
-                DebugLog = input.ReadBool();
-                break;
-              }
-            }
-          }
-        #endif
-        }
-
-        #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-        void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-          uint tag;
-          while ((tag = input.ReadTag()) != 0) {
-            switch(tag) {
-              default:
-                _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-                break;
-              case 10: {
-                Id = input.ReadString();
-                break;
-              }
-              case 16: {
-                IsFrontend = input.ReadBool();
-                break;
-              }
-              case 26: {
-                ServerType = input.ReadString();
-                break;
-              }
-              case 34: {
-                metadata_.AddEntriesFrom(ref input, _map_metadata_codec);
-                break;
-              }
-              case 40: {
-                ShouldCompressMessages = input.ReadBool();
-                break;
-              }
-              case 48: {
-                DebugLog = input.ReadBool();
-                break;
-              }
-            }
-          }
-        }
-        #endif
-
-      }
-
-    }
-    #endregion
 
   }
 
@@ -616,7 +645,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[1]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -833,7 +862,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[2]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1095,7 +1124,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[3]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1312,7 +1341,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[4]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1532,7 +1561,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[5]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1729,7 +1758,7 @@ namespace NPitaya.Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[6]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

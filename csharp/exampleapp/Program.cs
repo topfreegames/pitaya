@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
-using exampleapp.Handlers;
-using exampleapp.remotes;
 using NPitaya;
 using NPitaya.Metrics;
 using NPitaya.Models;
@@ -35,12 +32,12 @@ namespace PitayaCSharpExample
         {"testKey", "testValue"}
       };
 
-      var sv = new Server(
-          id: serverId,
-          type: "csharp",
-          metadata: metadata,
-          hostname: "localhost",
-          frontend: false);
+      var sv = new NPitaya.Protos.Server{ 
+        Id = serverId,
+        Type = "csharp",
+        Hostname = "localhost",
+        Frontend = false };
+      sv.Metadata.Add(metadata);
 
       var natsConfig = new NatsConfig(
           endpoint: "127.0.0.1:4222",
