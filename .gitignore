@@ -29,3 +29,5 @@ examples/demo/cluster_grpc/main
 build
 bin
 obj
+out
+.vs
