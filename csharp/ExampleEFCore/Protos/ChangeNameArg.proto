@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package Gen.Protos;
+
+message ChangeNameArgs {
+    string token = 1;
+    string name = 2;
+}

@@ -31,6 +31,13 @@ import (
 // TODO investigate why I will get drops in send rate every now and then during
 // the benchmark test. I imagine maybe it's due to garbage collection?
 
+// TODO I can utilize reutilizable objects, such as with a poll and reduce
+// allocations here
+
+// TODO document public methods and structs
+
+// TODO fix the panic when the client disconnects
+
 type Sidecar struct {
 	config        *config.Config
 	sidecarServer protos.SidecarServer
@@ -149,6 +156,33 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 
 func (s *SidecarServer) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
 	return pitaya.RawRPC(context.Background(), in.ServerID, in.Msg.Route, in.Msg.Data)
+}
+
+func (s *SidecarServer) SendPush(ctx context.Context, in *protos.PushRequest) (*protos.PushResponse, error) {
+	push := in.GetPush()
+	failedUids, err := pitaya.SendPushToUsers(push.Route, push.GetData(), []string{push.Uid}, in.FrontendType)
+	res := &protos.PushResponse{
+		FailedUids: failedUids,
+	}
+	if err != nil {
+		res.HasFailed = true
+	} else {
+		res.HasFailed = false
+	}
+	return res, nil // can't send the error here because if we do, it will throw an exception in csharp side
+}
+
+func (s *SidecarServer) SendKick(ctx context.Context, in *protos.KickRequest) (*protos.PushResponse, error) {
+	failedUids, err := pitaya.SendKickToUsers([]string{in.GetKick().GetUserId()}, in.FrontendType)
+	res := &protos.PushResponse{
+		FailedUids: failedUids,
+	}
+	if err != nil {
+		res.HasFailed = true
+	} else {
+		res.HasFailed = false
+	}
+	return res, nil // can't send the error here because if we do, it will throw an exception in csharp side
 }
 
 func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitayaRequest) (*protos.Error, error) {

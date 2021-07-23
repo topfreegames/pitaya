@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+
+        <IsPackable>false</IsPackable>
+
+        <RootNamespace>NPitayaTest</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+        <PackageReference Include="xunit" Version="2.4.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NPitaya\NPitaya.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\..\precompiled\libpitaya_cluster.bundle">
+        <Link>libpitaya_cluster.bundle</Link>
+      </Content>
+      <Content Include="..\..\precompiled\libpitaya_cluster.dylib">
+        <Link>libpitaya_cluster.dylib</Link>
+      </Content>
+      <Content Include="..\..\precompiled\libpitaya_cluster.so">
+        <Link>libpitaya_cluster.so</Link>
+      </Content>
+    </ItemGroup>
+
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+        <Exec Condition=" '$(OS)' == 'Unix' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.dylib&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE&#xA;              fi&#xA;            " />
+    </Target>
+
+</Project>
