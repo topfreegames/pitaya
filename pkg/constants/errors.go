@@ -27,6 +27,7 @@ var (
 	ErrBindingNotFound                = errors.New("binding for this user was not found in etcd")
 	ErrBrokenPipe                     = errors.New("broken low-level pipe")
 	ErrBufferExceed                   = errors.New("session send buffer exceed")
+	ErrCantSetNilData                 = errors.New("you can't set a nil data")
 	ErrChangeDictionaryWhileRunning   = errors.New("you shouldn't change the dictionary while the app is already running")
 	ErrChangeRouteWhileRunning        = errors.New("you shouldn't change routes while app is already running")
 	ErrCloseClosedGroup               = errors.New("close closed group")

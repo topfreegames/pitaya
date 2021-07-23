@@ -243,6 +243,10 @@ func (s *Session) SetData(data map[string]interface{}) error {
 	s.Lock()
 	defer s.Unlock()
 
+	if data == nil {
+		return constants.ErrCantSetNilData
+	}
+
 	s.data = data
 	return s.updateEncodedData()
 }

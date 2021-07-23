@@ -44,6 +44,8 @@ func SendPushToUsers(route string, v interface{}, uids []string, frontendType st
 
 	logger.Log.Debugf("Type=PushToUsers Route=%s, Data=%+v, SvType=%s, #Users=%d", route, v, frontendType, len(uids))
 
+	// TODO we could use concurrency for sending the pushes here, not see why not
+	// doing it
 	for _, uid := range uids {
 		if s := session.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
 			if err := s.Push(route, data); err != nil {
