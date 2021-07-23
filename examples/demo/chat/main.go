@@ -109,7 +109,7 @@ func main() {
 	builder := pitaya.NewDefaultBuilder(true, "chat", pitaya.Cluster, map[string]string{}, conf)
 	builder.AddAcceptor(acceptor.NewWSAcceptor(":3250"))
 	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
-	app := builder.Build()
+	app = builder.Build()
 
 	defer app.Shutdown()
 
