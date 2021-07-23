@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 
 namespace SidecarClient
 {
+  // TODO fix this whole project to use npitaya
     class Program
     {
 
@@ -19,7 +20,7 @@ namespace SidecarClient
         // ReadRPCs will receive a stream of requests form the sidecar
         // During my benchmarks I could hit 100k req/sec with a golang server sending small messages in this stream
         // TODO: benchmark with larger messages
-        public static void processRead(int i, Grpc.Core.AsyncDuplexStreamingCall<Protos.RPCResponse, Protos.SidecarRequest> stream)
+        public static void processRead(int i, Grpc.Core.AsyncDuplexStreamingCall<RPCResponse, SidecarRequest> stream)
         {
             Console.WriteLine("Starting read thread " + i);
             var task = new Task(() =>
@@ -35,7 +36,7 @@ namespace SidecarClient
             task.Start();
 
         }
-        public static async void processWrite(Grpc.Core.AsyncDuplexStreamingCall<Protos.RPCResponse, Protos.SidecarRequest> stream)
+        public static async void processWrite(Grpc.Core.AsyncDuplexStreamingCall<RPCResponse, SidecarRequest> stream)
         {
             while (true)
             {
@@ -44,7 +45,7 @@ namespace SidecarClient
             }
         }
 
-        public static async void HandleRPCs(Grpc.Core.AsyncDuplexStreamingCall<Protos.RPCResponse, Protos.SidecarRequest> stream)
+        public static async void HandleRPCs(Grpc.Core.AsyncDuplexStreamingCall<RPCResponse, SidecarRequest> stream)
         {
             var msgCount = 0;
             // Benchmark start

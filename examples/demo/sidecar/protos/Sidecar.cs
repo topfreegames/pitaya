@@ -9,7 +9,7 @@ using pb = global::Google.Protobuf;
 using pbc = global::Google.Protobuf.Collections;
 using pbr = global::Google.Protobuf.Reflection;
 using scg = global::System.Collections.Generic;
-namespace Protos {
+namespace NPitaya.Protos {
 
   /// <summary>Holder for reflection information generated from sidecar.proto</summary>
   public static partial class SidecarReflection {
@@ -24,35 +24,45 @@ namespace Protos {
     static SidecarReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "Cg1zaWRlY2FyLnByb3RvEgZwcm90b3MaC2Vycm9yLnByb3RvGgltc2cucHJv",
-            "dG8aDnJlc3BvbnNlLnByb3RvGg1yZXF1ZXN0LnByb3RvGhtnb29nbGUvcHJv",
-            "dG9idWYvZW1wdHkucHJvdG8isgIKElN0YXJ0UGl0YXlhUmVxdWVzdBI3CgZj",
-            "b25maWcYASABKAsyJy5wcm90b3MuU3RhcnRQaXRheWFSZXF1ZXN0LlNlcnZl",
-            "ckNvbmZpZxriAQoMU2VydmVyQ29uZmlnEhIKCmlzRnJvbnRlbmQYASABKAgS",
-            "EgoKc2VydmVyVHlwZRgCIAEoCRJHCghtZXRhZGF0YRgDIAMoCzI1LnByb3Rv",
-            "cy5TdGFydFBpdGF5YVJlcXVlc3QuU2VydmVyQ29uZmlnLk1ldGFkYXRhRW50",
-            "cnkSHgoWc2hvdWxkQ29tcHJlc3NNZXNzYWdlcxgEIAEoCBIQCghkZWJ1Z0xv",
-            "ZxgFIAEoCBovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1",
-            "ZRgCIAEoCToCOAEiNwoJUmVxdWVzdFRvEhAKCHNlcnZlcklEGAEgASgJEhgK",
-            "A21zZxgCIAEoCzILLnByb3Rvcy5Nc2ciVwoLUlBDUmVzcG9uc2USDQoFcmVx",
-            "SWQYASABKAQSHQoDcmVzGAIgASgLMhAucHJvdG9zLlJlc3BvbnNlEhoKA2Vy",
-            "chgDIAEoCzINLnByb3Rvcy5FcnJvciI9Cg5TaWRlY2FyUmVxdWVzdBINCgVy",
-            "ZXFJZBgBIAEoBBIcCgNyZXEYAiABKAsyDy5wcm90b3MuUmVxdWVzdDKSAgoH",
-            "U2lkZWNhchI8CglMaXN0ZW5SUEMSEy5wcm90b3MuUlBDUmVzcG9uc2UaFi5w",
-            "cm90b3MuU2lkZWNhclJlcXVlc3QoATABEigKB1NlbmRSUEMSCy5wcm90b3Mu",
-            "TXNnGhAucHJvdG9zLlJlc3BvbnNlEjAKCVNlbmRSUENUbxIRLnByb3Rvcy5S",
-            "ZXF1ZXN0VG8aEC5wcm90b3MuUmVzcG9uc2USOAoLU3RhcnRQaXRheWESGi5w",
-            "cm90b3MuU3RhcnRQaXRheWFSZXF1ZXN0Gg0ucHJvdG9zLkVycm9yEjMKClN0",
-            "b3BQaXRheWESFi5nb29nbGUucHJvdG9idWYuRW1wdHkaDS5wcm90b3MuRXJy",
-            "b3JCK1opZ2l0aHViLmNvbS90b3BmcmVlZ2FtZXMvcGl0YXlhL3BrZy9wcm90",
-            "b3NiBnByb3RvMw=="));
+            "Cg1zaWRlY2FyLnByb3RvEgZwcm90b3MaC2Vycm9yLnByb3RvGgpwdXNoLnBy",
+            "b3RvGgpraWNrLnByb3RvGgltc2cucHJvdG8aDnJlc3BvbnNlLnByb3RvGg1y",
+            "ZXF1ZXN0LnByb3RvGhtnb29nbGUvcHJvdG9idWYvZW1wdHkucHJvdG8ivgIK",
+            "ElN0YXJ0UGl0YXlhUmVxdWVzdBI3CgZjb25maWcYASABKAsyJy5wcm90b3Mu",
+            "U3RhcnRQaXRheWFSZXF1ZXN0LlNlcnZlckNvbmZpZxruAQoMU2VydmVyQ29u",
+            "ZmlnEgoKAmlkGAEgASgJEhIKCmlzRnJvbnRlbmQYAiABKAgSEgoKc2VydmVy",
+            "VHlwZRgDIAEoCRJHCghtZXRhZGF0YRgEIAMoCzI1LnByb3Rvcy5TdGFydFBp",
+            "dGF5YVJlcXVlc3QuU2VydmVyQ29uZmlnLk1ldGFkYXRhRW50cnkSHgoWc2hv",
+            "dWxkQ29tcHJlc3NNZXNzYWdlcxgFIAEoCBIQCghkZWJ1Z0xvZxgGIAEoCBov",
+            "Cg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToC",
+            "OAEiNwoJUmVxdWVzdFRvEhAKCHNlcnZlcklEGAEgASgJEhgKA21zZxgCIAEo",
+            "CzILLnByb3Rvcy5Nc2ciVwoLUlBDUmVzcG9uc2USDQoFcmVxSWQYASABKAQS",
+            "HQoDcmVzGAIgASgLMhAucHJvdG9zLlJlc3BvbnNlEhoKA2VychgDIAEoCzIN",
+            "LnByb3Rvcy5FcnJvciI9Cg5TaWRlY2FyUmVxdWVzdBINCgVyZXFJZBgBIAEo",
+            "BBIcCgNyZXEYAiABKAsyDy5wcm90b3MuUmVxdWVzdCI/CgtQdXNoUmVxdWVz",
+            "dBIUCgxmcm9udGVuZFR5cGUYAiABKAkSGgoEcHVzaBgDIAEoCzIMLnByb3Rv",
+            "cy5QdXNoIjUKDFB1c2hSZXNwb25zZRISCgpmYWlsZWRVaWRzGAEgAygJEhEK",
+            "CWhhc0ZhaWxlZBgCIAEoCCJCCgtLaWNrUmVxdWVzdBIUCgxmcm9udGVuZFR5",
+            "cGUYAiABKAkSHQoEa2ljaxgDIAEoCzIPLnByb3Rvcy5LaWNrTXNnMtQCCgdT",
+            "aWRlY2FyEjwKCUxpc3RlblJQQxITLnByb3Rvcy5SUENSZXNwb25zZRoWLnBy",
+            "b3Rvcy5TaWRlY2FyUmVxdWVzdCgBMAESLgoHU2VuZFJQQxIRLnByb3Rvcy5S",
+            "ZXF1ZXN0VG8aEC5wcm90b3MuUmVzcG9uc2USNQoIU2VuZFB1c2gSEy5wcm90",
+            "b3MuUHVzaFJlcXVlc3QaFC5wcm90b3MuUHVzaFJlc3BvbnNlEjUKCFNlbmRL",
+            "aWNrEhMucHJvdG9zLktpY2tSZXF1ZXN0GhQucHJvdG9zLlB1c2hSZXNwb25z",
+            "ZRI4CgtTdGFydFBpdGF5YRIaLnByb3Rvcy5TdGFydFBpdGF5YVJlcXVlc3Qa",
+            "DS5wcm90b3MuRXJyb3ISMwoKU3RvcFBpdGF5YRIWLmdvb2dsZS5wcm90b2J1",
+            "Zi5FbXB0eRoNLnByb3Rvcy5FcnJvckI8WilnaXRodWIuY29tL3RvcGZyZWVn",
+            "YW1lcy9waXRheWEvcGtnL3Byb3Rvc6oCDk5QaXRheWEuUHJvdG9zYgZwcm90",
+            "bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::NPitaya.Protos.ErrorReflection.Descriptor, global::NPitaya.Protos.MsgReflection.Descriptor, global::NPitaya.Protos.ResponseReflection.Descriptor, global::NPitaya.Protos.RequestReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::NPitaya.Protos.ErrorReflection.Descriptor, global::NPitaya.Protos.PushReflection.Descriptor, global::NPitaya.Protos.KickReflection.Descriptor, global::NPitaya.Protos.MsgReflection.Descriptor, global::NPitaya.Protos.ResponseReflection.Descriptor, global::NPitaya.Protos.RequestReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.StartPitayaRequest), global::Protos.StartPitayaRequest.Parser, new[]{ "Config" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protos.StartPitayaRequest.Types.ServerConfig), global::Protos.StartPitayaRequest.Types.ServerConfig.Parser, new[]{ "IsFrontend", "ServerType", "Metadata", "ShouldCompressMessages", "DebugLog" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, })}),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.RequestTo), global::Protos.RequestTo.Parser, new[]{ "ServerID", "Msg" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.RPCResponse), global::Protos.RPCResponse.Parser, new[]{ "ReqId", "Res", "Err" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protos.SidecarRequest), global::Protos.SidecarRequest.Parser, new[]{ "ReqId", "Req" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.StartPitayaRequest), global::NPitaya.Protos.StartPitayaRequest.Parser, new[]{ "Config" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig), global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig.Parser, new[]{ "Id", "IsFrontend", "ServerType", "Metadata", "ShouldCompressMessages", "DebugLog" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, })}),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.RequestTo), global::NPitaya.Protos.RequestTo.Parser, new[]{ "ServerID", "Msg" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.RPCResponse), global::NPitaya.Protos.RPCResponse.Parser, new[]{ "ReqId", "Res", "Err" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.SidecarRequest), global::NPitaya.Protos.SidecarRequest.Parser, new[]{ "ReqId", "Req" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.PushRequest), global::NPitaya.Protos.PushRequest.Parser, new[]{ "FrontendType", "Push" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.PushResponse), global::NPitaya.Protos.PushResponse.Parser, new[]{ "FailedUids", "HasFailed" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::NPitaya.Protos.KickRequest), global::NPitaya.Protos.KickRequest.Parser, new[]{ "FrontendType", "Kick" }, null, null, null, null)
           }));
     }
     #endregion
@@ -71,7 +81,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.SidecarReflection.Descriptor.MessageTypes[0]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -99,9 +109,9 @@ namespace Protos {
 
     /// <summary>Field number for the "config" field.</summary>
     public const int ConfigFieldNumber = 1;
-    private global::Protos.StartPitayaRequest.Types.ServerConfig config_;
+    private global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig config_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::Protos.StartPitayaRequest.Types.ServerConfig Config {
+    public global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig Config {
       get { return config_; }
       set {
         config_ = value;
@@ -187,7 +197,7 @@ namespace Protos {
       }
       if (other.config_ != null) {
         if (config_ == null) {
-          Config = new global::Protos.StartPitayaRequest.Types.ServerConfig();
+          Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
         }
         Config.MergeFrom(other.Config);
       }
@@ -207,7 +217,7 @@ namespace Protos {
             break;
           case 10: {
             if (config_ == null) {
-              Config = new global::Protos.StartPitayaRequest.Types.ServerConfig();
+              Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
             }
             input.ReadMessage(Config);
             break;
@@ -228,7 +238,7 @@ namespace Protos {
             break;
           case 10: {
             if (config_ == null) {
-              Config = new global::Protos.StartPitayaRequest.Types.ServerConfig();
+              Config = new global::NPitaya.Protos.StartPitayaRequest.Types.ServerConfig();
             }
             input.ReadMessage(Config);
             break;
@@ -254,7 +264,7 @@ namespace Protos {
 
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public static pbr::MessageDescriptor Descriptor {
-          get { return global::Protos.StartPitayaRequest.Descriptor.NestedTypes[0]; }
+          get { return global::NPitaya.Protos.StartPitayaRequest.Descriptor.NestedTypes[0]; }
         }
 
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -271,6 +281,7 @@ namespace Protos {
 
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public ServerConfig(ServerConfig other) : this() {
+          id_ = other.id_;
           isFrontend_ = other.isFrontend_;
           serverType_ = other.serverType_;
           metadata_ = other.metadata_.Clone();
@@ -284,8 +295,19 @@ namespace Protos {
           return new ServerConfig(this);
         }
 
+        /// <summary>Field number for the "id" field.</summary>
+        public const int IdFieldNumber = 1;
+        private string id_ = "";
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+        public string Id {
+          get { return id_; }
+          set {
+            id_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+          }
+        }
+
         /// <summary>Field number for the "isFrontend" field.</summary>
-        public const int IsFrontendFieldNumber = 1;
+        public const int IsFrontendFieldNumber = 2;
         private bool isFrontend_;
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public bool IsFrontend {
@@ -296,7 +318,7 @@ namespace Protos {
         }
 
         /// <summary>Field number for the "serverType" field.</summary>
-        public const int ServerTypeFieldNumber = 2;
+        public const int ServerTypeFieldNumber = 3;
         private string serverType_ = "";
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public string ServerType {
@@ -307,9 +329,9 @@ namespace Protos {
         }
 
         /// <summary>Field number for the "metadata" field.</summary>
-        public const int MetadataFieldNumber = 3;
+        public const int MetadataFieldNumber = 4;
         private static readonly pbc::MapField<string, string>.Codec _map_metadata_codec
-            = new pbc::MapField<string, string>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForString(18, ""), 26);
+            = new pbc::MapField<string, string>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForString(18, ""), 34);
         private readonly pbc::MapField<string, string> metadata_ = new pbc::MapField<string, string>();
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public pbc::MapField<string, string> Metadata {
@@ -317,7 +339,7 @@ namespace Protos {
         }
 
         /// <summary>Field number for the "shouldCompressMessages" field.</summary>
-        public const int ShouldCompressMessagesFieldNumber = 4;
+        public const int ShouldCompressMessagesFieldNumber = 5;
         private bool shouldCompressMessages_;
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public bool ShouldCompressMessages {
@@ -328,11 +350,10 @@ namespace Protos {
         }
 
         /// <summary>Field number for the "debugLog" field.</summary>
-        public const int DebugLogFieldNumber = 5;
+        public const int DebugLogFieldNumber = 6;
         private bool debugLog_;
         /// <summary>
         /// TODO
-        /// service discovery
         /// rpc module
         /// cluster mode
         /// other configs
@@ -358,6 +379,7 @@ namespace Protos {
           if (ReferenceEquals(other, this)) {
             return true;
           }
+          if (Id != other.Id) return false;
           if (IsFrontend != other.IsFrontend) return false;
           if (ServerType != other.ServerType) return false;
           if (!Metadata.Equals(other.Metadata)) return false;
@@ -369,6 +391,7 @@ namespace Protos {
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public override int GetHashCode() {
           int hash = 1;
+          if (Id.Length != 0) hash ^= Id.GetHashCode();
           if (IsFrontend != false) hash ^= IsFrontend.GetHashCode();
           if (ServerType.Length != 0) hash ^= ServerType.GetHashCode();
           hash ^= Metadata.GetHashCode();
@@ -390,21 +413,25 @@ namespace Protos {
         #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
           output.WriteRawMessage(this);
         #else
+          if (Id.Length != 0) {
+            output.WriteRawTag(10);
+            output.WriteString(Id);
+          }
           if (IsFrontend != false) {
-            output.WriteRawTag(8);
+            output.WriteRawTag(16);
             output.WriteBool(IsFrontend);
           }
           if (ServerType.Length != 0) {
-            output.WriteRawTag(18);
+            output.WriteRawTag(26);
             output.WriteString(ServerType);
           }
           metadata_.WriteTo(output, _map_metadata_codec);
           if (ShouldCompressMessages != false) {
-            output.WriteRawTag(32);
+            output.WriteRawTag(40);
             output.WriteBool(ShouldCompressMessages);
           }
           if (DebugLog != false) {
-            output.WriteRawTag(40);
+            output.WriteRawTag(48);
             output.WriteBool(DebugLog);
           }
           if (_unknownFields != null) {
@@ -416,21 +443,25 @@ namespace Protos {
         #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+          if (Id.Length != 0) {
+            output.WriteRawTag(10);
+            output.WriteString(Id);
+          }
           if (IsFrontend != false) {
-            output.WriteRawTag(8);
+            output.WriteRawTag(16);
             output.WriteBool(IsFrontend);
           }
           if (ServerType.Length != 0) {
-            output.WriteRawTag(18);
+            output.WriteRawTag(26);
             output.WriteString(ServerType);
           }
           metadata_.WriteTo(ref output, _map_metadata_codec);
           if (ShouldCompressMessages != false) {
-            output.WriteRawTag(32);
+            output.WriteRawTag(40);
             output.WriteBool(ShouldCompressMessages);
           }
           if (DebugLog != false) {
-            output.WriteRawTag(40);
+            output.WriteRawTag(48);
             output.WriteBool(DebugLog);
           }
           if (_unknownFields != null) {
@@ -442,6 +473,9 @@ namespace Protos {
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         public int CalculateSize() {
           int size = 0;
+          if (Id.Length != 0) {
+            size += 1 + pb::CodedOutputStream.ComputeStringSize(Id);
+          }
           if (IsFrontend != false) {
             size += 1 + 1;
           }
@@ -465,6 +499,9 @@ namespace Protos {
         public void MergeFrom(ServerConfig other) {
           if (other == null) {
             return;
+          }
+          if (other.Id.Length != 0) {
+            Id = other.Id;
           }
           if (other.IsFrontend != false) {
             IsFrontend = other.IsFrontend;
@@ -493,23 +530,27 @@ namespace Protos {
               default:
                 _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
                 break;
-              case 8: {
+              case 10: {
+                Id = input.ReadString();
+                break;
+              }
+              case 16: {
                 IsFrontend = input.ReadBool();
                 break;
               }
-              case 18: {
+              case 26: {
                 ServerType = input.ReadString();
                 break;
               }
-              case 26: {
+              case 34: {
                 metadata_.AddEntriesFrom(input, _map_metadata_codec);
                 break;
               }
-              case 32: {
+              case 40: {
                 ShouldCompressMessages = input.ReadBool();
                 break;
               }
-              case 40: {
+              case 48: {
                 DebugLog = input.ReadBool();
                 break;
               }
@@ -527,23 +568,27 @@ namespace Protos {
               default:
                 _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
                 break;
-              case 8: {
+              case 10: {
+                Id = input.ReadString();
+                break;
+              }
+              case 16: {
                 IsFrontend = input.ReadBool();
                 break;
               }
-              case 18: {
+              case 26: {
                 ServerType = input.ReadString();
                 break;
               }
-              case 26: {
+              case 34: {
                 metadata_.AddEntriesFrom(ref input, _map_metadata_codec);
                 break;
               }
-              case 32: {
+              case 40: {
                 ShouldCompressMessages = input.ReadBool();
                 break;
               }
-              case 40: {
+              case 48: {
                 DebugLog = input.ReadBool();
                 break;
               }
@@ -571,7 +616,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.SidecarReflection.Descriptor.MessageTypes[1]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -788,7 +833,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.SidecarReflection.Descriptor.MessageTypes[2]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1050,7 +1095,7 @@ namespace Protos {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protos.SidecarReflection.Descriptor.MessageTypes[3]; }
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1246,6 +1291,640 @@ namespace Protos {
               Req = new global::NPitaya.Protos.Request();
             }
             input.ReadMessage(Req);
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class PushRequest : pb::IMessage<PushRequest>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<PushRequest> _parser = new pb::MessageParser<PushRequest>(() => new PushRequest());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<PushRequest> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[4]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushRequest() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushRequest(PushRequest other) : this() {
+      frontendType_ = other.frontendType_;
+      push_ = other.push_ != null ? other.push_.Clone() : null;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushRequest Clone() {
+      return new PushRequest(this);
+    }
+
+    /// <summary>Field number for the "frontendType" field.</summary>
+    public const int FrontendTypeFieldNumber = 2;
+    private string frontendType_ = "";
+    /// <summary>
+    /// TODO I think this field is not needed if we use nats only
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string FrontendType {
+      get { return frontendType_; }
+      set {
+        frontendType_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "push" field.</summary>
+    public const int PushFieldNumber = 3;
+    private global::NPitaya.Protos.Push push_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public global::NPitaya.Protos.Push Push {
+      get { return push_; }
+      set {
+        push_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as PushRequest);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(PushRequest other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (FrontendType != other.FrontendType) return false;
+      if (!object.Equals(Push, other.Push)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (FrontendType.Length != 0) hash ^= FrontendType.GetHashCode();
+      if (push_ != null) hash ^= Push.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (FrontendType.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(FrontendType);
+      }
+      if (push_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(Push);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (FrontendType.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(FrontendType);
+      }
+      if (push_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(Push);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (FrontendType.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(FrontendType);
+      }
+      if (push_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Push);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(PushRequest other) {
+      if (other == null) {
+        return;
+      }
+      if (other.FrontendType.Length != 0) {
+        FrontendType = other.FrontendType;
+      }
+      if (other.push_ != null) {
+        if (push_ == null) {
+          Push = new global::NPitaya.Protos.Push();
+        }
+        Push.MergeFrom(other.Push);
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 18: {
+            FrontendType = input.ReadString();
+            break;
+          }
+          case 26: {
+            if (push_ == null) {
+              Push = new global::NPitaya.Protos.Push();
+            }
+            input.ReadMessage(Push);
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 18: {
+            FrontendType = input.ReadString();
+            break;
+          }
+          case 26: {
+            if (push_ == null) {
+              Push = new global::NPitaya.Protos.Push();
+            }
+            input.ReadMessage(Push);
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class PushResponse : pb::IMessage<PushResponse>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<PushResponse> _parser = new pb::MessageParser<PushResponse>(() => new PushResponse());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<PushResponse> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[5]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushResponse() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushResponse(PushResponse other) : this() {
+      failedUids_ = other.failedUids_.Clone();
+      hasFailed_ = other.hasFailed_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public PushResponse Clone() {
+      return new PushResponse(this);
+    }
+
+    /// <summary>Field number for the "failedUids" field.</summary>
+    public const int FailedUidsFieldNumber = 1;
+    private static readonly pb::FieldCodec<string> _repeated_failedUids_codec
+        = pb::FieldCodec.ForString(10);
+    private readonly pbc::RepeatedField<string> failedUids_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::RepeatedField<string> FailedUids {
+      get { return failedUids_; }
+    }
+
+    /// <summary>Field number for the "hasFailed" field.</summary>
+    public const int HasFailedFieldNumber = 2;
+    private bool hasFailed_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool HasFailed {
+      get { return hasFailed_; }
+      set {
+        hasFailed_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as PushResponse);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(PushResponse other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if(!failedUids_.Equals(other.failedUids_)) return false;
+      if (HasFailed != other.HasFailed) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      hash ^= failedUids_.GetHashCode();
+      if (HasFailed != false) hash ^= HasFailed.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      failedUids_.WriteTo(output, _repeated_failedUids_codec);
+      if (HasFailed != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(HasFailed);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      failedUids_.WriteTo(ref output, _repeated_failedUids_codec);
+      if (HasFailed != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(HasFailed);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      size += failedUids_.CalculateSize(_repeated_failedUids_codec);
+      if (HasFailed != false) {
+        size += 1 + 1;
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(PushResponse other) {
+      if (other == null) {
+        return;
+      }
+      failedUids_.Add(other.failedUids_);
+      if (other.HasFailed != false) {
+        HasFailed = other.HasFailed;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            failedUids_.AddEntriesFrom(input, _repeated_failedUids_codec);
+            break;
+          }
+          case 16: {
+            HasFailed = input.ReadBool();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            failedUids_.AddEntriesFrom(ref input, _repeated_failedUids_codec);
+            break;
+          }
+          case 16: {
+            HasFailed = input.ReadBool();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class KickRequest : pb::IMessage<KickRequest>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<KickRequest> _parser = new pb::MessageParser<KickRequest>(() => new KickRequest());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<KickRequest> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::NPitaya.Protos.SidecarReflection.Descriptor.MessageTypes[6]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public KickRequest() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public KickRequest(KickRequest other) : this() {
+      frontendType_ = other.frontendType_;
+      kick_ = other.kick_ != null ? other.kick_.Clone() : null;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public KickRequest Clone() {
+      return new KickRequest(this);
+    }
+
+    /// <summary>Field number for the "frontendType" field.</summary>
+    public const int FrontendTypeFieldNumber = 2;
+    private string frontendType_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string FrontendType {
+      get { return frontendType_; }
+      set {
+        frontendType_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "kick" field.</summary>
+    public const int KickFieldNumber = 3;
+    private global::NPitaya.Protos.KickMsg kick_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public global::NPitaya.Protos.KickMsg Kick {
+      get { return kick_; }
+      set {
+        kick_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as KickRequest);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(KickRequest other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (FrontendType != other.FrontendType) return false;
+      if (!object.Equals(Kick, other.Kick)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (FrontendType.Length != 0) hash ^= FrontendType.GetHashCode();
+      if (kick_ != null) hash ^= Kick.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (FrontendType.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(FrontendType);
+      }
+      if (kick_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(Kick);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (FrontendType.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(FrontendType);
+      }
+      if (kick_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(Kick);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (FrontendType.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(FrontendType);
+      }
+      if (kick_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Kick);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(KickRequest other) {
+      if (other == null) {
+        return;
+      }
+      if (other.FrontendType.Length != 0) {
+        FrontendType = other.FrontendType;
+      }
+      if (other.kick_ != null) {
+        if (kick_ == null) {
+          Kick = new global::NPitaya.Protos.KickMsg();
+        }
+        Kick.MergeFrom(other.Kick);
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 18: {
+            FrontendType = input.ReadString();
+            break;
+          }
+          case 26: {
+            if (kick_ == null) {
+              Kick = new global::NPitaya.Protos.KickMsg();
+            }
+            input.ReadMessage(Kick);
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 18: {
+            FrontendType = input.ReadString();
+            break;
+          }
+          case 26: {
+            if (kick_ == null) {
+              Kick = new global::NPitaya.Protos.KickMsg();
+            }
+            input.ReadMessage(Kick);
             break;
           }
         }
