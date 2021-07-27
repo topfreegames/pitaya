@@ -44,6 +44,8 @@ namespace NPitaya.Protos {
 
     static readonly grpc::Marshaller<global::NPitaya.Protos.RPCResponse> __Marshaller_protos_RPCResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.RPCResponse.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.SidecarRequest> __Marshaller_protos_SidecarRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.SidecarRequest.Parser));
+    static readonly grpc::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Google.Protobuf.WellKnownTypes.Empty.Parser));
+    static readonly grpc::Marshaller<global::NPitaya.Protos.SDEvent> __Marshaller_protos_SDEvent = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.SDEvent.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.RequestTo> __Marshaller_protos_RequestTo = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.RequestTo.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.Response> __Marshaller_protos_Response = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.Response.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.PushRequest> __Marshaller_protos_PushRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.PushRequest.Parser));
@@ -52,7 +54,6 @@ namespace NPitaya.Protos {
     static readonly grpc::Marshaller<global::NPitaya.Protos.Server> __Marshaller_protos_Server = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.Server.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.StartPitayaRequest> __Marshaller_protos_StartPitayaRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.StartPitayaRequest.Parser));
     static readonly grpc::Marshaller<global::NPitaya.Protos.Error> __Marshaller_protos_Error = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::NPitaya.Protos.Error.Parser));
-    static readonly grpc::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Google.Protobuf.WellKnownTypes.Empty.Parser));
 
     static readonly grpc::Method<global::NPitaya.Protos.RPCResponse, global::NPitaya.Protos.SidecarRequest> __Method_ListenRPC = new grpc::Method<global::NPitaya.Protos.RPCResponse, global::NPitaya.Protos.SidecarRequest>(
         grpc::MethodType.DuplexStreaming,
@@ -60,6 +61,13 @@ namespace NPitaya.Protos {
         "ListenRPC",
         __Marshaller_protos_RPCResponse,
         __Marshaller_protos_SidecarRequest);
+
+    static readonly grpc::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::NPitaya.Protos.SDEvent> __Method_ListenSD = new grpc::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::NPitaya.Protos.SDEvent>(
+        grpc::MethodType.ServerStreaming,
+        __ServiceName,
+        "ListenSD",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_protos_SDEvent);
 
     static readonly grpc::Method<global::NPitaya.Protos.RequestTo, global::NPitaya.Protos.Response> __Method_SendRPC = new grpc::Method<global::NPitaya.Protos.RequestTo, global::NPitaya.Protos.Response>(
         grpc::MethodType.Unary,
@@ -114,6 +122,11 @@ namespace NPitaya.Protos {
     public abstract partial class SidecarBase
     {
       public virtual global::System.Threading.Tasks.Task ListenRPC(grpc::IAsyncStreamReader<global::NPitaya.Protos.RPCResponse> requestStream, grpc::IServerStreamWriter<global::NPitaya.Protos.SidecarRequest> responseStream, grpc::ServerCallContext context)
+      {
+        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+      }
+
+      public virtual global::System.Threading.Tasks.Task ListenSD(global::Google.Protobuf.WellKnownTypes.Empty request, grpc::IServerStreamWriter<global::NPitaya.Protos.SDEvent> responseStream, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -186,6 +199,14 @@ namespace NPitaya.Protos {
       public virtual grpc::AsyncDuplexStreamingCall<global::NPitaya.Protos.RPCResponse, global::NPitaya.Protos.SidecarRequest> ListenRPC(grpc::CallOptions options)
       {
         return CallInvoker.AsyncDuplexStreamingCall(__Method_ListenRPC, null, options);
+      }
+      public virtual grpc::AsyncServerStreamingCall<global::NPitaya.Protos.SDEvent> ListenSD(global::Google.Protobuf.WellKnownTypes.Empty request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return ListenSD(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual grpc::AsyncServerStreamingCall<global::NPitaya.Protos.SDEvent> ListenSD(global::Google.Protobuf.WellKnownTypes.Empty request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncServerStreamingCall(__Method_ListenSD, null, options, request);
       }
       public virtual global::NPitaya.Protos.Response SendRPC(global::NPitaya.Protos.RequestTo request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
@@ -324,6 +345,7 @@ namespace NPitaya.Protos {
     {
       return grpc::ServerServiceDefinition.CreateBuilder()
           .AddMethod(__Method_ListenRPC, serviceImpl.ListenRPC)
+          .AddMethod(__Method_ListenSD, serviceImpl.ListenSD)
           .AddMethod(__Method_SendRPC, serviceImpl.SendRPC)
           .AddMethod(__Method_SendPush, serviceImpl.SendPush)
           .AddMethod(__Method_SendKick, serviceImpl.SendKick)
@@ -339,6 +361,7 @@ namespace NPitaya.Protos {
     public static void BindService(grpc::ServiceBinderBase serviceBinder, SidecarBase serviceImpl)
     {
       serviceBinder.AddMethod(__Method_ListenRPC, serviceImpl == null ? null : new grpc::DuplexStreamingServerMethod<global::NPitaya.Protos.RPCResponse, global::NPitaya.Protos.SidecarRequest>(serviceImpl.ListenRPC));
+      serviceBinder.AddMethod(__Method_ListenSD, serviceImpl == null ? null : new grpc::ServerStreamingServerMethod<global::Google.Protobuf.WellKnownTypes.Empty, global::NPitaya.Protos.SDEvent>(serviceImpl.ListenSD));
       serviceBinder.AddMethod(__Method_SendRPC, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.RequestTo, global::NPitaya.Protos.Response>(serviceImpl.SendRPC));
       serviceBinder.AddMethod(__Method_SendPush, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.PushRequest, global::NPitaya.Protos.PushResponse>(serviceImpl.SendPush));
       serviceBinder.AddMethod(__Method_SendKick, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::NPitaya.Protos.KickRequest, global::NPitaya.Protos.PushResponse>(serviceImpl.SendKick));

@@ -38,6 +38,11 @@ import (
 
 // TODO fix the panic when the client disconnects
 
+// TODO separate sidecar and sidecar server into isolated files
+
+// TODO the server is not being removed by the graeful shutdown pitaya when
+// I kill it
+
 // Sidecar main struct to keep state
 type Sidecar struct {
 	config        *config.Config
@@ -45,6 +50,7 @@ type Sidecar struct {
 	stopChan      chan bool
 	log           *logrus.Entry
 	callChan      chan (*Call)
+	sdChan        chan (*protos.SDEvent)
 	shouldRun     bool
 	listener      net.Listener
 }
@@ -69,6 +75,7 @@ var (
 	sidecar = &Sidecar{
 		stopChan:  make(chan bool),
 		callChan:  make(chan *Call),
+		sdChan:    make(chan *protos.SDEvent),
 		shouldRun: true,
 	}
 	reqId    uint64
@@ -76,6 +83,38 @@ var (
 	reqMap   = make(map[uint64]*Call)
 	wg       sync.WaitGroup
 )
+
+// AddServer is called by the ServiceDiscovery when a new  pitaya server is
+// added. We have it here so that we stream add and removed servers to sidecar
+// client.
+func (s *Sidecar) AddServer(server *cluster.Server) {
+	s.sdChan <- &protos.SDEvent{
+		Server: &protos.Server{
+			Id:       server.ID,
+			Frontend: server.Frontend,
+			Type:     server.Type,
+			Metadata: server.Metadata,
+			Hostname: server.Hostname,
+		},
+		Event: protos.SDEvent_ADD,
+	}
+}
+
+// RemoveServer is called by the ServiceDiscovery when a pitaya server is
+// removed from the cluster.  We have it here so that we stream add and removed
+// servers to sidecar client.
+func (s *Sidecar) RemoveServer(server *cluster.Server) {
+	s.sdChan <- &protos.SDEvent{
+		Server: &protos.Server{
+			Id:       server.ID,
+			Frontend: server.Frontend,
+			Type:     server.Type,
+			Metadata: server.Metadata,
+			Hostname: server.Hostname,
+		},
+		Event: protos.SDEvent_REMOVE,
+	}
+}
 
 // Call receives an RPC request from other pitaya servers and forward it to the
 // sidecar client so that it processes them, afterwards it gets the client
@@ -152,6 +191,25 @@ func (s *SidecarServer) GetServer(ctx context.Context, in *protos.Server) (*prot
 		Hostname: server.Hostname,
 	}
 	return res, nil
+}
+
+// ListenSD keeps a stream open between the sidecar client and server, it sends
+// service discovery events to the sidecar client, such as add or removal of
+// servers in the cluster
+func (s *SidecarServer) ListenSD(empty *emptypb.Empty, stream protos.Sidecar_ListenSDServer) error {
+	for sidecar.shouldRun {
+		select {
+		case evt := <-sidecar.sdChan:
+			err := stream.Send(evt)
+			if err != nil {
+				logger.Log.Warnf("error sending sd event to sidecar client: %s", err.Error)
+			}
+		case <-sidecar.stopChan:
+			sidecar.shouldRun = false
+		}
+	}
+	logger.Log.Info("exiting sidecar ListenSD routine because stopChan was closed")
+	return nil
 }
 
 // ListenRPC keeps a bidirectional stream open between the sidecar client and
@@ -250,10 +308,18 @@ func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitaya
 		return nil, err
 	}
 
+	var sd cluster.ServiceDiscovery
+	sd, err = cluster.NewEtcdServiceDiscovery(pitaya.GetConfig(), pitaya.GetServer(), pitaya.GetDieChan())
+	if err != nil {
+		return nil, err
+	}
+	sd.AddListener(sidecar)
+
 	// register the sidecar as the pitaya server so that calls will be delivered
 	// here and we can forward to the remote process
 	ns.SetPitayaServer(sidecar)
 	pitaya.SetRPCServer(ns)
+	pitaya.SetServiceDiscoveryClient(sd)
 	// TODO maybe we should return error in pitaya start. maybe recover from fatal
 	// TODO make this method return error so that I can catch it
 	go func() {

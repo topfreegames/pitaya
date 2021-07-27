@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SidecarClient interface {
 	ListenRPC(ctx context.Context, opts ...grpc.CallOption) (Sidecar_ListenRPCClient, error)
+	ListenSD(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Sidecar_ListenSDClient, error)
 	SendRPC(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error)
 	SendPush(ctx context.Context, in *PushRequest, opts ...grpc.CallOption) (*PushResponse, error)
 	SendKick(ctx context.Context, in *KickRequest, opts ...grpc.CallOption) (*PushResponse, error)
@@ -61,6 +62,38 @@ func (x *sidecarListenRPCClient) Send(m *RPCResponse) error {
 
 func (x *sidecarListenRPCClient) Recv() (*SidecarRequest, error) {
 	m := new(SidecarRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *sidecarClient) ListenSD(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Sidecar_ListenSDClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Sidecar_ServiceDesc.Streams[1], "/protos.Sidecar/ListenSD", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &sidecarListenSDClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Sidecar_ListenSDClient interface {
+	Recv() (*SDEvent, error)
+	grpc.ClientStream
+}
+
+type sidecarListenSDClient struct {
+	grpc.ClientStream
+}
+
+func (x *sidecarListenSDClient) Recv() (*SDEvent, error) {
+	m := new(SDEvent)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -126,6 +159,7 @@ func (c *sidecarClient) StopPitaya(ctx context.Context, in *emptypb.Empty, opts 
 // for forward compatibility
 type SidecarServer interface {
 	ListenRPC(Sidecar_ListenRPCServer) error
+	ListenSD(*emptypb.Empty, Sidecar_ListenSDServer) error
 	SendRPC(context.Context, *RequestTo) (*Response, error)
 	SendPush(context.Context, *PushRequest) (*PushResponse, error)
 	SendKick(context.Context, *KickRequest) (*PushResponse, error)
@@ -140,6 +174,9 @@ type UnimplementedSidecarServer struct {
 
 func (UnimplementedSidecarServer) ListenRPC(Sidecar_ListenRPCServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListenRPC not implemented")
+}
+func (UnimplementedSidecarServer) ListenSD(*emptypb.Empty, Sidecar_ListenSDServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListenSD not implemented")
 }
 func (UnimplementedSidecarServer) SendRPC(context.Context, *RequestTo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendRPC not implemented")
@@ -195,6 +232,27 @@ func (x *sidecarListenRPCServer) Recv() (*RPCResponse, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _Sidecar_ListenSD_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(emptypb.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SidecarServer).ListenSD(m, &sidecarListenSDServer{stream})
+}
+
+type Sidecar_ListenSDServer interface {
+	Send(*SDEvent) error
+	grpc.ServerStream
+}
+
+type sidecarListenSDServer struct {
+	grpc.ServerStream
+}
+
+func (x *sidecarListenSDServer) Send(m *SDEvent) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _Sidecar_SendRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -343,6 +401,11 @@ var Sidecar_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _Sidecar_ListenRPC_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "ListenSD",
+			Handler:       _Sidecar_ListenSD_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "sidecar.proto",

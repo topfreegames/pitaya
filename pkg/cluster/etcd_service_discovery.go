@@ -238,6 +238,7 @@ func (sd *etcdServiceDiscovery) AddListener(listener SDListener) {
 func (sd *etcdServiceDiscovery) AfterInit() {
 }
 
+// TODO It would be more "goish" to use a channel here to broadcast these
 func (sd *etcdServiceDiscovery) notifyListeners(act Action, sv *Server) {
 	for _, l := range sd.listeners {
 		if act == DEL {

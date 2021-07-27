@@ -81,9 +81,21 @@ namespace NPitaya
                 .Select(x => x).ToList();
         }
 
+        private static void ListenSDEvents(Sidecar.SidecarClient client)
+        {
+            var stream = client.ListenSD(new Google.Protobuf.WellKnownTypes.Empty());
+            new Thread(async () =>{
+                // TODO see what I can do with this cancellation token
+                while (await stream.ResponseStream.MoveNext(CancellationToken.None))
+                {
+                    var current = stream.ResponseStream.Current;
+                    // TODO notify own handlers
+                }
+            }).Start();
+        }
+
         private static void ListenToIncomingRPCs(Sidecar.SidecarClient client)
         {
-            // TODO extract this as a method
             var stream = client.ListenRPC();
 
             new Thread(async () =>{
@@ -151,6 +163,7 @@ namespace NPitaya
             RegisterRemotesAndHandlers();
 
             ListenToIncomingRPCs(_client);
+            ListenSDEvents(_client);
         }
 
         private static void RegisterRemote(BaseRemote remote)
