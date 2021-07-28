@@ -374,7 +374,7 @@ func NewDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
 		Shutdown: struct {
 			Delay time.Duration
 		}{
-			Delay: time.Duration(10 * time.Millisecond),
+			Delay: time.Duration(300 * time.Millisecond),
 		},
 		ServerTypesBlacklist: nil,
 	}

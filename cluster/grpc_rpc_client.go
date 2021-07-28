@@ -113,7 +113,7 @@ func (gs *GRPCClient) Call(
 		"peer.serverType": server.Type,
 		"peer.id":         server.ID,
 	}
-	ctx = tracing.StartSpan(ctx, "RPC Call", tags, parent)
+	ctx = tracing.StartSpan(ctx, "GRPC RPC Call", tags, parent)
 	defer tracing.FinishSpan(ctx, err)
 
 	req, err := buildRequest(ctx, rpcType, route, session, msg, gs.server)

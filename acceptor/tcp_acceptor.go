@@ -51,6 +51,10 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	// if the header has no data, we can consider it as a closed connection
+	if len(header) == 0 {
+		return nil, constants.ErrConnectionClosed
+	}
 	msgSize, _, err := codec.ParseHeader(header)
 	if err != nil {
 		return nil, err
@@ -134,6 +138,9 @@ func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
 
 	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
+	if err != nil {
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
+	}
 	a.listener = listener
 	a.running = true
 	a.serve()

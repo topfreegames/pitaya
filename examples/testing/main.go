@@ -269,7 +269,7 @@ func main() {
 		l.SetLevel(logrus.DebugLevel)
 	}
 
-	pitaya.SetLogger(logruswrapper.NewWithLogger(l))
+	pitaya.SetLogger(logruswrapper.NewWithFieldLogger(l))
 
 	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
 		constants.GRPCHostKey: "127.0.0.1",

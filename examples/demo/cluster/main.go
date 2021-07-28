@@ -81,11 +81,11 @@ func main() {
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config.NewDefaultBuilderConfig())
 	if *isFrontend {
-		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 		builder.AddAcceptor(tcp)
 	}
 	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
-	app := builder.Build()
+	app = builder.Build()
 
 	defer app.Shutdown()
 

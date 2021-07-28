@@ -466,7 +466,7 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 			mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: []byte("ok")}, table.remoteCallErr)
 
 			if table.remoteCallErr != nil {
-				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, table.remoteCallErr)
+				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, gomock.Any())
 			} else if expectedMsg.Type != message.Notify {
 				mockSession.EXPECT().ResponseMID(ctx, expectedMsg.ID, gomock.Any()).Return(table.responseMIDErr)
 			}

@@ -24,13 +24,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/nats-io/nuid"
 	"strings"
 	"time"
 
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/pipeline"
 
-	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/v2/agent"
 	"github.com/topfreegames/pitaya/v2/cluster"
@@ -173,14 +173,17 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// guarantee agent related resource is destroyed
 	defer func() {
 		a.GetSession().Close()
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%d", a.GetSession().ID(), a.GetSession().UID())
+		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%s", a.GetSession().ID(), a.GetSession().UID())
 	}()
 
 	for {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			if err != constants.ErrConnectionClosed {
+				logger.Log.Errorf("Error reading next available message: %s", err.Error())
+			}
+
 			return
 		}
 
@@ -257,16 +260,16 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 }
 
 func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
-	requestID := uuid.New()
+	requestID := nuid.New()
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID.String())
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID)
 	tags := opentracing.Tags{
 		"local.id":   h.server.ID,
 		"span.kind":  "server",
 		"msg.type":   strings.ToLower(msg.Type.String()),
 		"user.id":    a.GetSession().UID(),
-		"request.id": requestID.String(),
+		"request.id": requestID,
 	}
 	ctx = tracing.StartSpan(ctx, msg.Route, tags)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.GetSession())

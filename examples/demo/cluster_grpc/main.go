@@ -20,6 +20,8 @@ import (
 	"github.com/topfreegames/pitaya/v2/route"
 )
 
+var app pitaya.Pitaya
+
 func configureBackend() {
 	room := services.NewRoom(app)
 	app.Register(room,
@@ -73,7 +75,7 @@ func configureFrontend(port int) {
 	}
 }
 
-var app pitaya.Pitaya
+
 
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
@@ -88,7 +90,8 @@ func main() {
 		constants.GRPCPortKey: strconv.Itoa(*rpcServerPort),
 	}
 
-	app, bs := createApp(*port, *isFrontend, *svType, meta, *rpcServerPort)
+	var bs *modules.ETCDBindingStorage
+	app, bs = createApp(*port, *isFrontend, *svType, meta, *rpcServerPort)
 
 	defer app.Shutdown()
 

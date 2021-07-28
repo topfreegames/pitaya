@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/integration"
-	"github.com/nats-io/gnatsd/server"
-	gnatsd "github.com/nats-io/nats-server/test"
+	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/integration"
+	"github.com/nats-io/nats-server/v2/server"
+	gnatsd "github.com/nats-io/nats-server/v2/test"
 )
 
 // GetFreePort returns a free port

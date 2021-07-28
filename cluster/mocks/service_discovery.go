@@ -72,8 +72,8 @@ func (mr *MockServiceDiscoveryMockRecorder) GetServers() *gomock.Call {
 }
 
 // SyncServers mocks base method
-func (m *MockServiceDiscovery) SyncServers() error {
-	ret := m.ctrl.Call(m, "SyncServers")
+func (m *MockServiceDiscovery) SyncServers(firstSync bool) error {
+	ret := m.ctrl.Call(m, "SyncServers", firstSync)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
