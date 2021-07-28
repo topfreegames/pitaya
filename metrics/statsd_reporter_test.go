@@ -152,7 +152,7 @@ func TestReportGauge(t *testing.T) {
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedValue := 123.1
@@ -182,7 +182,7 @@ func TestReportGaugeError(t *testing.T) {
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
