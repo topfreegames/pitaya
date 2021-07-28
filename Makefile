@@ -1,12 +1,15 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
 ifeq ($(OS), Windows_NT)
 	BIN := pitaya.exe
 	MKFOLDER := if not exist "build" mkdir build
+	GREP_CMD := findstr /V
 else
 	BIN := pitaya
 	MKFOLDER := mkdir -p build
+	GREP_CMD := grep -v
 endif
+
+TESTABLE_PACKAGES = $(shell go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark)
 
 .PHONY: build
 

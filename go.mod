@@ -45,9 +45,9 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/tests/v3 v3.5.0-alpha.0
-	golang.org/x/sys v0.0.0-20210423185535-09eb48e85fd7 // indirect
 	golang.org/x/text v0.3.6 // indirect
-	google.golang.org/grpc v1.37.0
+	golang.org/x/tools v0.1.5 // indirect
+	google.golang.org/grpc v1.38.1
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/abiosoft/ishell.v2 v2.0.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
