@@ -78,8 +78,9 @@ namespace PitayaCSharpExample
       try
       {
         PitayaCluster.SetSerializer(new NPitaya.Serializer.JSONSerializer());
+        var sockAddr = System.IO.Path.Combine(System.IO.Path.GetTempPath(),"pitaya.sock");
         PitayaCluster.Initialize(
-            "unix:///tmp/pitaya.sock",
+            sockAddr,
             sv,
             true
             //new PitayaCluster.ServiceDiscoveryListener((action, server) =>

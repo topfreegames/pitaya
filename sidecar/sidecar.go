@@ -3,7 +3,6 @@ package sidecar
 import (
 	"context"
 	"net"
-	"net/url"
 	"os"
 	"os/signal"
 	"sync"
@@ -357,19 +356,14 @@ func StartSidecar(cfg *config.Config) {
 	sidecar.config = cfg
 	sidecar.sidecarServer = &SidecarServer{}
 
+	bindProto := cfg.GetString("pitaya.sidecar.bindprotocol")
 	bindAddr := cfg.GetString("pitaya.sidecar.bind")
-	u, err := url.Parse(bindAddr)
-	checkError(err)
-	var addr string
-	if u.Scheme == "unix" {
-		addr = u.Path
-	} else if u.Scheme == "tcp" {
-		addr = u.Host
-	} else {
+	if bindProto != "unix" && bindProto != "tcp" {
 		logger.Log.Fatal("only supported schemes are unix and tcp, review your bindaddr config")
 	}
 
-	sidecar.listener, err = net.Listen(u.Scheme, addr)
+	var err error
+	sidecar.listener, err = net.Listen(bindProto, bindAddr)
 	checkError(err)
 	defer sidecar.listener.Close()
 	var opts []grpc.ServerOption

@@ -1,10 +1,18 @@
 TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
 
+ifeq ($(OS), Windows_NT)
+	BIN := pitaya.exe
+	MKFOLDER := if not exist "build" mkdir build
+else
+	BIN := pitaya
+	MKFOLDER := mkdir -p build
+endif
+
 .PHONY: build
 
 build:
-	@mkdir -p build
-	@go build -o build/pitaya
+	@$(MKFOLDER)
+	@go build -o build/$(BIN)
 
 setup: init-submodules
 	@go get ./...
