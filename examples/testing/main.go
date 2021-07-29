@@ -307,7 +307,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		builder.AddAcceptor(tcp)
 	}
 
-	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
 
 	if serializer == "json" {
 		builder.Serializer = json.NewSerializer()
@@ -319,19 +319,19 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 
 	var bs *modules.ETCDBindingStorage
 	if grpc {
-		gs, err := cluster.NewGRPCServer(config.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
+		gs, err := cluster.NewGRPCServer(*config.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
 		if err != nil {
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, config.NewETCDBindingConfig(conf))
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewETCDBindingConfig(conf))
 
 		gc, err := cluster.NewGRPCClient(
-			config.NewGRPCClientConfig(conf),
+			*config.NewGRPCClientConfig(conf),
 			builder.Server,
 			builder.MetricsReporters,
 			bs,
-			cluster.NewInfoRetriever(config.NewInfoRetrieverConfig(conf)),
+			cluster.NewInfoRetriever(*config.NewInfoRetrieverConfig(conf)),
 		)
 		if err != nil {
 			panic(err)

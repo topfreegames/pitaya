@@ -43,7 +43,7 @@ func (m *MyComp) Shutdown() {
 
 func TestRegister(t *testing.T) {
 	config := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 	b := &component.Base{}
 	app.Register(b)
 	assert.Equal(t, 1, len(app.handlerComp))
@@ -52,7 +52,7 @@ func TestRegister(t *testing.T) {
 
 func TestRegisterRemote(t *testing.T) {
 	config := config.NewDefaultBuilderConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
+	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 	before := app.remoteComp
 	b := &component.Base{}
 	app.RegisterRemote(b)
@@ -61,7 +61,7 @@ func TestRegisterRemote(t *testing.T) {
 }
 
 func TestStartupComponents(t *testing.T) {
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, *config.NewDefaultBuilderConfig()).(*App)
 
 	app.Register(&MyComp{})
 	app.RegisterRemote(&MyComp{})
@@ -70,7 +70,7 @@ func TestStartupComponents(t *testing.T) {
 }
 
 func TestShutdownComponents(t *testing.T) {
-	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, config.NewDefaultBuilderConfig()).(*App)
+	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, *config.NewDefaultBuilderConfig()).(*App)
 
 	app.Register(&MyComp{})
 	app.RegisterRemote(&MyComp{})

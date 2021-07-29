@@ -57,7 +57,7 @@ func TestSendKickToUsersLocalSession(t *testing.T) {
 	mockSessionPool.EXPECT().GetSessionByUID(table.uid2).Return(s2).Times(1)
 
 	config := config.NewDefaultBuilderConfig()
-	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, *config)
 	builder.SessionPool = mockSessionPool
 	app := builder.Build()
 
@@ -90,7 +90,7 @@ func TestSendKickToUsersFail(t *testing.T) {
 	mockRPCClient.EXPECT().SendKick(table.uid2, table.frontendType, &protos.KickMsg{UserId: table.uid2}).Return(table.err).Times(1)
 
 	config := config.NewDefaultBuilderConfig()
-	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, *config)
 	builder.SessionPool = mockSessionPool
 	builder.RPCClient = mockRPCClient
 	app := builder.Build()
@@ -119,7 +119,7 @@ func TestSendKickToUsersRemoteSession(t *testing.T) {
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 
 			config := config.NewDefaultBuilderConfig()
-			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, config).(*App)
+			app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 			app.rpcClient = mockRPCClient
 
 			for _, uid := range table.uids {

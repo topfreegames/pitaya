@@ -45,11 +45,11 @@ func setup() {
 	var err error
 	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(config.NewDefaultEtcdGroupServiceConfig(), cli)
+	etcdGroupService, err = NewEtcdGroupService(*config.NewDefaultEtcdGroupServiceConfig(), cli)
 	if err != nil {
 		panic(err)
 	}
-	memoryGroupService = NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
+	memoryGroupService = NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
 }
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {

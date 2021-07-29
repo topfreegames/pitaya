@@ -98,9 +98,9 @@ func main() {
 	metagameServer := NewMetagameMock()
 
 	config := config.NewDefaultBuilderConfig()
-	config.IsDefaultPipelineEnabled = true
+	config.DefaultPipelines.StructValidation.Enabled = true
 
-	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config)
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config)
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	builder.AddAcceptor(tcp)
 	builder.HandlerHooks.BeforeHandler.PushBack(metagameServer.simpleBefore)

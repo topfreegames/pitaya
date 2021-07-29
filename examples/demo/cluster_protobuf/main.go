@@ -48,13 +48,13 @@ func main() {
 
 	flag.Parse()
 
-	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, config.NewDefaultBuilderConfig())
+	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config.NewDefaultBuilderConfig())
 	if *isFrontend {
 		ws := acceptor.NewWSAcceptor(fmt.Sprintf(":%d", *port))
 		builder.AddAcceptor(ws)
 	}
 	builder.Serializer = protobuf.NewSerializer()
-	builder.Groups = groups.NewMemoryGroupService(config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
 	app = builder.Build()
 
 	defer app.Shutdown()

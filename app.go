@@ -201,7 +201,7 @@ func NewApp(
 		sessionPool:      sessionPool,
 	}
 	if app.heartbeat == time.Duration(0) {
-		app.heartbeat = config.HearbeatInterval
+		app.heartbeat = config.Heartbeat.Interval
 	}
 
 	app.initSysRemotes()
@@ -274,7 +274,7 @@ func (app *App) initSysRemotes() {
 }
 
 func (app *App) periodicMetrics() {
-	period := app.config.MetricsPeriod
+	period := app.config.Metrics.Period
 	go metrics.ReportSysMetrics(app.metricsReporters, period)
 
 	if app.worker.Started() {
@@ -346,7 +346,7 @@ func (app *App) listen() {
 	timer.GlobalTicker = time.NewTicker(timer.Precision)
 
 	logger.Log.Infof("starting server %s:%s", app.server.Type, app.server.ID)
-	for i := 0; i < app.config.ConcurrencyHandlerDispatch; i++ {
+	for i := 0; i < app.config.Concurrency.Handler.Dispatch; i++ {
 		go app.handlerService.Dispatch(i)
 	}
 	for _, acc := range app.acceptors {
@@ -364,7 +364,7 @@ func (app *App) listen() {
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 
-	if app.serverMode == Cluster && app.server.Frontend && app.config.SessionUnique {
+	if app.serverMode == Cluster && app.server.Frontend && app.config.Session.Unique {
 		unique := mods.NewUniqueSession(app.server, app.rpcServer, app.rpcClient, app.sessionPool)
 		app.remoteService.AddRemoteBindingListener(unique)
 		app.RegisterModule(unique, "uniqueSession")

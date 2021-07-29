@@ -45,7 +45,7 @@ func TestSendPushToUsersFailsIfErrSerializing(t *testing.T) {
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
 
 	config := config.NewDefaultBuilderConfig()
-	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
+	builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, *config)
 	builder.Serializer = mockSerializer
 	app := builder.Build()
 
@@ -95,7 +95,7 @@ func TestSendToUsersLocalSession(t *testing.T) {
 			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(s2).Times(1)
 
 			config := config.NewDefaultBuilderConfig()
-			builder := NewDefaultBuilder(true, "testtype", Standalone, map[string]string{}, config)
+			builder := NewDefaultBuilder(true, "testtype", Standalone, map[string]string{}, *config)
 			builder.SessionPool = mockSessionPool
 			app := builder.Build().(*App)
 			errArr, err := app.SendPushToUsers(route, data, []string{uid1, uid2}, app.server.Type)
@@ -150,7 +150,7 @@ func TestSendToUsersRemoteSession(t *testing.T) {
 			mockSessionPool.EXPECT().GetSessionByUID(uid2).Return(nil).Times(1)
 
 			config := config.NewDefaultBuilderConfig()
-			builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, config)
+			builder := NewDefaultBuilder(true, "testtype", Cluster, map[string]string{}, *config)
 			builder.SessionPool = mockSessionPool
 			builder.RPCClient = mockRPCClient
 			app := builder.Build()

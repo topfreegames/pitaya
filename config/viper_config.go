@@ -68,12 +68,10 @@ func (c *Config) fillDefaultValues() {
 	etcdBindingConfig := NewDefaultETCDBindingConfig()
 
 	defaultsMap := map[string]interface{}{
-		"pitaya.buffer.agent.messages": pitayaConfig.BufferAgentMessages,
+		"pitaya.buffer.agent.messages": pitayaConfig.Buffer.Agent.Messages,
 		// the max buffer size that nats will accept, if this buffer overflows, messages will begin to be dropped
-		"pitaya.buffer.cluster.rpc.server.nats.messages":        natsRPCServerConfig.Messages,
-		"pitaya.buffer.cluster.rpc.server.nats.push":            natsRPCServerConfig.Push,
-		"pitaya.buffer.handler.localprocess":                    pitayaConfig.BufferHandlerLocalProcess,
-		"pitaya.buffer.handler.remoteprocess":                   pitayaConfig.BufferHandlerRemoteProcess,
+		"pitaya.buffer.handler.localprocess":                    pitayaConfig.Buffer.Handler.LocalProcess,
+		"pitaya.buffer.handler.remoteprocess":                   pitayaConfig.Buffer.Handler.RemoteProcess,
 		"pitaya.cluster.info.region":                            infoRetrieverConfig.Region,
 		"pitaya.cluster.rpc.client.grpc.dialtimeout":            grpcRPCClientConfig.DialTimeout,
 		"pitaya.cluster.rpc.client.grpc.requesttimeout":         grpcRPCClientConfig.RequestTimeout,
@@ -86,43 +84,45 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.connect":                natsRPCServerConfig.Connect,
 		"pitaya.cluster.rpc.server.nats.connectiontimeout":      natsRPCServerConfig.ConnectionTimeout,
 		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": natsRPCServerConfig.MaxReconnectionRetries,
-		"pitaya.cluster.sd.etcd.dialtimeout":                    etcdSDConfig.EtcdDialTimeout,
-		"pitaya.cluster.sd.etcd.endpoints":                      etcdSDConfig.EtcdEndpoints,
-		"pitaya.cluster.sd.etcd.grantlease.maxretries":          etcdSDConfig.GrantLeaseMaxRetries,
-		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       etcdSDConfig.GrantLeaseInterval,
-		"pitaya.cluster.sd.etcd.grantlease.timeout":             etcdSDConfig.GrantLeaseTimeout,
-		"pitaya.cluster.sd.etcd.heartbeat.log":                  etcdSDConfig.LogHeartbeat,
-		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  etcdSDConfig.HeartbeatTTL,
-		"pitaya.cluster.sd.etcd.prefix":                         etcdSDConfig.EtcdPrefix,
-		"pitaya.cluster.sd.etcd.revoke.timeout":                 etcdSDConfig.RevokeTimeout,
-		"pitaya.cluster.sd.etcd.syncservers.interval":           etcdSDConfig.SyncServersInterval,
-		"pitaya.cluster.sd.etcd.shutdown.delay":                 etcdSDConfig.ShutdownDelay,
+		"pitaya.cluster.rpc.server.nats.services":               natsRPCServerConfig.Services,
+		"pitaya.cluster.rpc.server.nats.buffer.messages":        natsRPCServerConfig.Buffer.Messages,
+		"pitaya.cluster.rpc.server.nats.buffer.push":            natsRPCServerConfig.Buffer.Push,
+		"pitaya.cluster.sd.etcd.dialtimeout":                    etcdSDConfig.DialTimeout,
+		"pitaya.cluster.sd.etcd.endpoints":                      etcdSDConfig.Endpoints,
+		"pitaya.cluster.sd.etcd.prefix":                         etcdSDConfig.Prefix,
+		"pitaya.cluster.sd.etcd.grantlease.maxretries":          etcdSDConfig.GrantLease.MaxRetries,
+		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       etcdSDConfig.GrantLease.RetryInterval,
+		"pitaya.cluster.sd.etcd.grantlease.timeout":             etcdSDConfig.GrantLease.Timeout,
+		"pitaya.cluster.sd.etcd.heartbeat.log":                  etcdSDConfig.Heartbeat.Log,
+		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  etcdSDConfig.Heartbeat.TTL,
+		"pitaya.cluster.sd.etcd.revoke.timeout":                 etcdSDConfig.Revoke.Timeout,
+		"pitaya.cluster.sd.etcd.syncservers.interval":           etcdSDConfig.SyncServers.Interval,
+		"pitaya.cluster.sd.etcd.syncserversparallelism":         etcdSDConfig.SyncServers.Parallelism,
+		"pitaya.cluster.sd.etcd.shutdown.delay":                 etcdSDConfig.Shutdown.Delay,
 		"pitaya.cluster.sd.etcd.servertypeblacklist":            etcdSDConfig.ServerTypesBlacklist,
-		"pitaya.cluster.sd.etcd.syncserversparallelism":         etcdSDConfig.SyncServersParallelism,
 		// the sum of this config among all the frontend servers should always be less than
 		// the sum of pitaya.buffer.cluster.rpc.server.nats.messages, for covering the worst case scenario
 		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.nats.messages bigger
 		// than the sum of the config pitaya.concurrency.handler.dispatch among all frontend servers
-		"pitaya.concurrency.handler.dispatch":              pitayaConfig.ConcurrencyHandlerDispatch,
-		"pitaya.concurrency.remote.service":                natsRPCServerConfig.Service,
-		"pitaya.defaultpipelines.structvalidation.enabled": builderConfig.IsDefaultPipelineEnabled,
+		"pitaya.concurrency.handler.dispatch":              pitayaConfig.Concurrency.Handler.Dispatch,
+		"pitaya.defaultpipelines.structvalidation.enabled": builderConfig.DefaultPipelines.StructValidation.Enabled,
 		"pitaya.groups.etcd.dialtimeout":                   etcdGroupServiceConfig.DialTimeout,
 		"pitaya.groups.etcd.endpoints":                     etcdGroupServiceConfig.Endpoints,
 		"pitaya.groups.etcd.prefix":                        etcdGroupServiceConfig.Prefix,
 		"pitaya.groups.etcd.transactiontimeout":            etcdGroupServiceConfig.TransactionTimeout,
 		"pitaya.groups.memory.tickduration":                groupServiceConfig.TickDuration,
-		"pitaya.handler.messages.compression":              pitayaConfig.MessageCompression,
-		"pitaya.heartbeat.interval":                        pitayaConfig.HearbeatInterval,
-		"pitaya.metrics.additionalTags":                    prometheusConfig.AdditionalLabels,
+		"pitaya.handler.messages.compression":              pitayaConfig.Handler.Messages.Compression,
+		"pitaya.heartbeat.interval":                        pitayaConfig.Heartbeat.Interval,
+		"pitaya.metrics.prometheus.additionalTags":         prometheusConfig.Prometheus.AdditionalLabels,
 		"pitaya.metrics.constTags":                         prometheusConfig.ConstLabels,
 		"pitaya.metrics.custom":                            customMetricsSpec,
-		"pitaya.metrics.periodicMetrics.period":            pitayaConfig.MetricsPeriod,
-		"pitaya.metrics.prometheus.enabled":                builderConfig.IsPrometheusEnabled,
-		"pitaya.metrics.prometheus.port":                   prometheusConfig.Port,
-		"pitaya.metrics.statsd.enabled":                    builderConfig.IsStatsdEnabled,
-		"pitaya.metrics.statsd.host":                       statsdConfig.Host,
-		"pitaya.metrics.statsd.prefix":                     statsdConfig.Prefix,
-		"pitaya.metrics.statsd.rate":                       statsdConfig.Rate,
+		"pitaya.metrics.periodicMetrics.period":            pitayaConfig.Metrics.Period,
+		"pitaya.metrics.prometheus.enabled":                builderConfig.Metrics.Prometheus.Enabled,
+		"pitaya.metrics.prometheus.port":                   prometheusConfig.Prometheus.Port,
+		"pitaya.metrics.statsd.enabled":                    builderConfig.Metrics.Statsd.Enabled,
+		"pitaya.metrics.statsd.host":                       statsdConfig.Statsd.Host,
+		"pitaya.metrics.statsd.prefix":                     statsdConfig.Statsd.Prefix,
+		"pitaya.metrics.statsd.rate":                       statsdConfig.Statsd.Rate,
 		"pitaya.modules.bindingstorage.etcd.dialtimeout":   etcdBindingConfig.DialTimeout,
 		"pitaya.modules.bindingstorage.etcd.endpoints":     etcdBindingConfig.Endpoints,
 		"pitaya.modules.bindingstorage.etcd.leasettl":      etcdBindingConfig.LeaseTTL,
@@ -130,16 +130,16 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.conn.ratelimiting.limit":                   rateLimitingConfig.Limit,
 		"pitaya.conn.ratelimiting.interval":                rateLimitingConfig.Interval,
 		"pitaya.conn.ratelimiting.forcedisable":            rateLimitingConfig.ForceDisable,
-		"pitaya.session.unique":                            pitayaConfig.SessionUnique,
+		"pitaya.session.unique":                            pitayaConfig.Session.Unique,
 		"pitaya.worker.concurrency":                        workerConfig.Concurrency,
-		"pitaya.worker.redis.pool":                         workerConfig.Pool,
-		"pitaya.worker.redis.url":                          workerConfig.ServerURL,
-		"pitaya.worker.retry.enabled":                      enqueueOpts.RetryEnabled,
-		"pitaya.worker.retry.exponential":                  enqueueOpts.ExponentialFactor,
-		"pitaya.worker.retry.max":                          enqueueOpts.MaxRetries,
-		"pitaya.worker.retry.maxDelay":                     enqueueOpts.MaxDelayToRetry,
+		"pitaya.worker.redis.pool":                         workerConfig.Redis.Pool,
+		"pitaya.worker.redis.url":                          workerConfig.Redis.ServerURL,
+		"pitaya.worker.retry.enabled":                      enqueueOpts.Enabled,
+		"pitaya.worker.retry.exponential":                  enqueueOpts.Exponential,
+		"pitaya.worker.retry.max":                          enqueueOpts.Max,
+		"pitaya.worker.retry.maxDelay":                     enqueueOpts.MaxDelay,
 		"pitaya.worker.retry.maxRandom":                    enqueueOpts.MaxRandom,
-		"pitaya.worker.retry.minDelay":                     enqueueOpts.MinDelayToRetry,
+		"pitaya.worker.retry.minDelay":                     enqueueOpts.MinDelay,
 	}
 
 	for param := range defaultsMap {
@@ -187,4 +187,9 @@ func (c *Config) GetStringMapString(s string) map[string]string {
 // UnmarshalKey unmarshals key into v
 func (c *Config) UnmarshalKey(s string, v interface{}) error {
 	return c.config.UnmarshalKey(s, v)
+}
+
+// Unmarshal unmarshals config into v
+func (c *Config) Unmarshal(v interface{}) error {
+	return c.config.Unmarshal(v)
 }

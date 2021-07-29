@@ -30,7 +30,7 @@ func createAcceptor(port int, reporters []metrics.Reporter) acceptor.Acceptor {
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	return acceptorwrapper.WithWrappers(
 		tcp,
-		acceptorwrapper.NewRateLimitingWrapper(reporters, rateLimitConfig))
+		acceptorwrapper.NewRateLimitingWrapper(reporters, *rateLimitConfig))
 }
 
 var app pitaya.Pitaya
@@ -42,7 +42,7 @@ func main() {
 	flag.Parse()
 
 	config := config.NewDefaultBuilderConfig()
-	builder := pitaya.NewDefaultBuilder(true, svType, pitaya.Cluster, map[string]string{}, config)
+	builder := pitaya.NewDefaultBuilder(true, svType, pitaya.Cluster, map[string]string{}, *config)
 	builder.AddAcceptor(createAcceptor(*port, builder.MetricsReporters))
 
 	app = builder.Build()
