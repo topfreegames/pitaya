@@ -13,7 +13,7 @@
         <RepositoryUrl>https://github.com/topfreegames/libpitaya-cluster</RepositoryUrl>
         <PackageTags>pitaya,server,games,framework,rpc</PackageTags>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <TargetFrameworks>net5;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
         <RootNamespace>pitaya</RootNamespace>
     </PropertyGroup>
 
@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Protobuf CompileOutputs="false" Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" PrivateAssets="All" GrpcServices="None"/>
+      <Protobuf CompileOutputs="false" Include="../../pitaya-protos/*.proto" OutputDir="./src/gen" PrivateAssets="All" GrpcServices="None" />
       <Protobuf Update="../../pitaya-protos/sidecar.proto;../../pitaya-protos/pitaya.proto" OutputDir="./src/gen" GrpcServices="Both" />
     </ItemGroup>
 
