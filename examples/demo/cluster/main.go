@@ -13,7 +13,7 @@ import (
 	"github.com/topfreegames/pitaya/component"
 	"github.com/topfreegames/pitaya/examples/demo/cluster/services"
 	"github.com/topfreegames/pitaya/route"
-	"github.com/topfreegames/pitaya/serialize/json"
+	"github.com/topfreegames/pitaya/serialize/protobuf"
 )
 
 func configureBackend() {
@@ -36,6 +36,7 @@ func configureFrontend(port int) {
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
+
 	pitaya.RegisterRemote(&services.ConnectorRemote{},
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
@@ -82,7 +83,7 @@ func main() {
 
 	defer pitaya.Shutdown()
 
-	pitaya.SetSerializer(json.NewSerializer())
+	pitaya.SetSerializer(protobuf.NewSerializer())
 
 	if !*isFrontend {
 		configureBackend()
