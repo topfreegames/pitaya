@@ -24,12 +24,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/nats-io/nuid"
 	"strings"
 	"time"
 
 	"github.com/topfreegames/pitaya/acceptor"
 
-	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/agent"
 	"github.com/topfreegames/pitaya/cluster"
@@ -263,16 +263,16 @@ func (h *HandlerService) processPacket(a *agent.Agent, p *packet.Packet) error {
 }
 
 func (h *HandlerService) processMessage(a *agent.Agent, msg *message.Message) {
-	requestID := uuid.New()
+	requestID := nuid.Next()
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID.String())
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID)
 	tags := opentracing.Tags{
 		"local.id":   h.server.ID,
 		"span.kind":  "server",
 		"msg.type":   strings.ToLower(msg.Type.String()),
 		"user.id":    a.Session.UID(),
-		"request.id": requestID.String(),
+		"request.id": requestID,
 	}
 	ctx = tracing.StartSpan(ctx, msg.Route, tags)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.Session)
