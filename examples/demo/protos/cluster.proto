@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package protos;
+option go_package = "examples/demo/protos";
 
 // RPCMsg message to be sent using rpc
 message RPCMsg {
@@ -12,6 +13,43 @@ message RPCRes {
   string Msg = 1;
 }
 
-message Doc {
-  string doc = 1;
+// UserMessage represents a message that user sent
+message UserMessage {
+  string name = 1;
+  string content = 2;
+}
+
+// Stats exports the room status
+message Stats {
+  int64 outbound_bytes = 1;
+  int64 inbound_bytes = 2;
+}
+
+// SendRPCMsg represents a rpc message
+message SendRPCMsg {
+  string server_id = 1;
+  string route = 2;
+  string msg = 3;
+}
+
+// NewUser message will be received when new user join room
+message NewUser {
+  string content = 1;
+}
+
+// AllMembers contains all members uid
+message AllMembers {
+  repeated string Members = 1;
+}
+
+// JoinResponse represents the result of joining room
+message JoinResponse {
+  int64 code = 1;
+  string result = 2;
+}
+
+// Response struct
+message Response {
+  int32 code = 1;
+  string msg = 2;
 }
