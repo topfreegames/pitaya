@@ -22,7 +22,8 @@ package metrics
 
 import (
 	"fmt"
-	"log"
+	"github.com/topfreegames/pitaya/v2/logger"
+
 	"net/http"
 	"sync"
 
@@ -299,7 +300,10 @@ func getPrometheusReporter(
 		prometheusReporter.registerMetrics(config.ConstLabels, config.Prometheus.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil))
+			err := http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil)
+			if err != nil {
+				logger.Log.Error("prometheus reporter serve start failed, err: ", err)
+			}
 		})()
 	})
 
