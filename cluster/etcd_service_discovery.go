@@ -416,6 +416,7 @@ func parseServer(value []byte) (*Server, error) {
 	err := json.Unmarshal(value, &sv)
 	if err != nil {
 		logger.Log.Warnf("failed to load server %s, error: %s", sv, err.Error())
+		return nil, err
 	}
 	return sv, nil
 }
