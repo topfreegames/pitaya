@@ -296,7 +296,7 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 		// Create a new map to avoid concurrent read and write access to the
 		// map, this also prevents accidental changes to the list of servers
 		// kept by the service discovery.
-		ret := make(map[string]*Server, len(sd.serverMapByType))
+		ret := make(map[string]*Server,len(sd.serverMapByType[serverType]))
 		for k, v := range sd.serverMapByType[serverType] {
 			ret[k] = v
 		}
