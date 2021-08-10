@@ -184,7 +184,7 @@ func TestGetMsgType(t *testing.T) {
 func TestExecuteBeforePipelineEmpty(t *testing.T) {
 	expected := []byte("ok")
 	beforeHandler := pipeline.NewChannel()
-	res, err := beforeHandler.ExecuteBeforePipeline(nil, expected)
+	_, res, err := beforeHandler.ExecuteBeforePipeline(nil, expected)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, res)
 }
@@ -194,15 +194,15 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 	data := []byte("ok")
 	expected1 := []byte("oh noes 1")
 	expected2 := []byte("oh noes 2")
-	before1 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before1 := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, data, in)
-		return expected1, nil
+		return ctx, expected1, nil
 	}
-	before2 := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before2 := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
 		assert.Equal(t, expected1, in)
-		return expected2, nil
+		return ctx, expected2, nil
 	}
 
 	beforeHandler := pipeline.NewChannel()
@@ -210,7 +210,7 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 	beforeHandler.PushBack(before2)
 	defer beforeHandler.Clear()
 
-	res, err := beforeHandler.ExecuteBeforePipeline(c, data)
+	_, res, err := beforeHandler.ExecuteBeforePipeline(c, data)
 	assert.NoError(t, err)
 	assert.Equal(t, expected2, res)
 }
@@ -218,15 +218,15 @@ func TestExecuteBeforePipelineSuccess(t *testing.T) {
 func TestExecuteBeforePipelineError(t *testing.T) {
 	c := context.Background()
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in interface{}) (interface{}, error) {
+	before := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		assert.Equal(t, c, ctx)
-		return nil, expected
+		return ctx, nil, expected
 	}
 	beforeHandler := pipeline.NewChannel()
 	beforeHandler.PushFront(before)
 	defer beforeHandler.Clear()
 
-	_, err := beforeHandler.ExecuteBeforePipeline(c, []byte("ok"))
+	_, _, err := beforeHandler.ExecuteBeforePipeline(c, []byte("ok"))
 	assert.Equal(t, expected, err)
 }
 

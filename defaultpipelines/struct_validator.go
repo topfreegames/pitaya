@@ -9,7 +9,7 @@ import (
 //
 // The default struct validator used by pitaya is https://github.com/go-playground/validator.
 type StructValidator interface {
-	Validate(context.Context, interface{}) (interface{}, error)
+	Validate(context.Context, interface{}) (context.Context, interface{}, error)
 }
 
 // StructValidatorInstance holds the default validator

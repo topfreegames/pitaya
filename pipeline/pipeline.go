@@ -29,7 +29,7 @@ import (
 type (
 	// HandlerTempl is a function that has the same signature as a handler and will
 	// be called before or after handler methods
-	HandlerTempl func(ctx context.Context, in interface{}) (out interface{}, err error)
+	HandlerTempl func(ctx context.Context, in interface{}) (c context.Context, out interface{}, err error)
 
 	// AfterHandlerTempl is a function for the after handler, receives both the handler response
 	// and the error returned
@@ -71,19 +71,19 @@ func NewAfterChannel() *AfterChannel {
 }
 
 // ExecuteBeforePipeline calls registered handlers
-func (p *Channel) ExecuteBeforePipeline(ctx context.Context, data interface{}) (interface{}, error) {
+func (p *Channel) ExecuteBeforePipeline(ctx context.Context, data interface{}) (context.Context, interface{}, error) {
 	var err error
 	res := data
 	if len(p.Handlers) > 0 {
 		for _, h := range p.Handlers {
-			res, err = h(ctx, res)
+			ctx, res, err = h(ctx, res)
 			if err != nil {
 				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
-				return res, err
+				return ctx, res, err
 			}
 		}
 	}
-	return res, nil
+	return ctx, res, nil
 }
 
 // ExecuteAfterPipeline calls registered handlers

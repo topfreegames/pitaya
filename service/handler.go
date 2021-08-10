@@ -333,7 +333,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 func (h *HandlerService) DumpServices() {
 	handlers := h.handlerPool.GetHandlers()
 	for name := range handlers {
-		logger.Log.Infof("registered handler %s, isRawArg: %s", name, handlers[name].IsRawArg)
+		logger.Log.Infof("registered handler %s, isRawArg: %v", name, handlers[name].IsRawArg)
 	}
 }
 

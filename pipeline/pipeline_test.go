@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	handler1 = func(ctx context.Context, in interface{}) (interface{}, error) {
-		return in, errors.New("ohno")
+	handler1 = func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
+		return ctx, in, errors.New("ohno")
 	}
-	handler2 = func(ctx context.Context, in interface{}) (interface{}, error) {
-		return nil, nil
+	handler2 = func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
+		return ctx, nil, nil
 	}
 	p = &Channel{}
 )
@@ -43,7 +43,7 @@ func TestPushFront(t *testing.T) {
 	p.PushFront(handler2)
 	defer p.Clear()
 
-	_, err := p.Handlers[0](nil, nil)
+	_, _, err := p.Handlers[0](nil, nil)
 	assert.Nil(t, nil, err)
 }
 
@@ -52,7 +52,7 @@ func TestPushBack(t *testing.T) {
 	p.PushBack(handler2)
 	defer p.Clear()
 
-	_, err := p.Handlers[0](nil, nil)
+	_, _, err := p.Handlers[0](nil, nil)
 	assert.EqualError(t, errors.New("ohno"), err.Error())
 }
 

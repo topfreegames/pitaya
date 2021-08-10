@@ -142,8 +142,8 @@ func TestProcessHandlerMessageBrokenBeforePipeline(t *testing.T) {
 	handlerPool := NewHandlerPool()
 	handlerPool.handlers[rt.Short()] = &component.Handler{}
 	expected := errors.New("oh noes")
-	before := func(ctx context.Context, in interface{}) (interface{}, error) {
-		return nil, expected
+	before := func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
+		return ctx, nil, expected
 	}
 	beforeHandler := pipeline.NewChannel()
 	beforeHandler.PushFront(before)
