@@ -50,6 +50,9 @@ run-custom-metrics-example:
 run-rate-limiting-example:
 	@go run examples/demo/rate_limiting/main.go
 
+protos-compile-demo:
+	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos

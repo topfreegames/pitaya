@@ -8,6 +8,7 @@ import (
 	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/component"
 	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
+	pitayaprotos "github.com/topfreegames/pitaya/v2/protos"
 )
 
 // ConnectorRemote is a remote that will receive rpc's
@@ -43,8 +44,8 @@ func NewConnectorRemote(app pitaya.Pitaya) *ConnectorRemote {
 	return &ConnectorRemote{app: app}
 }
 
-func reply(code int32, msg string) (*Response, error) {
-	res := &Response{
+func reply(code int32, msg string) (*protos.Response, error) {
+	res := &protos.Response{
 		Code: code,
 		Msg:  msg,
 	}
@@ -88,7 +89,7 @@ func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*
 }
 
 // Docs returns documentation
-func (c *ConnectorRemote) Docs(ctx context.Context, ddd *protos.Doc) (*protos.Doc, error) {
+func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*protos.Doc, error) {
 	d, err := c.app.Documentation(true)
 	if err != nil {
 		return nil, err
@@ -99,5 +100,20 @@ func (c *ConnectorRemote) Docs(ctx context.Context, ddd *protos.Doc) (*protos.Do
 		return nil, err
 	}
 
-	return &protos.Doc{Doc: string(doc)}, nil
+	return &pitayaprotos.Doc{Doc: string(doc)}, nil
+}
+
+func (c *ConnectorRemote) Descriptor(ctx context.Context, names *pitayaprotos.ProtoNames) (*pitayaprotos.ProtoDescriptors, error) {
+	descriptors := make([][]byte, len(names.Name))
+
+	for i, protoName := range names.Name {
+		desc, err := pitaya.Descriptor(protoName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get descriptor for '%s': %w", protoName, err)
+		}
+
+		descriptors[i] = desc
+	}
+
+	return &pitayaprotos.ProtoDescriptors{Desc: descriptors}, nil
 }

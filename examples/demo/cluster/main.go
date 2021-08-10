@@ -37,6 +37,7 @@ func configureFrontend(port int) {
 		component.WithName("connector"),
 		component.WithNameFunc(strings.ToLower),
 	)
+
 	app.RegisterRemote(services.NewConnectorRemote(app),
 		component.WithName("connectorremote"),
 		component.WithNameFunc(strings.ToLower),
@@ -86,6 +87,8 @@ func main() {
 	}
 	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
 	app = builder.Build()
+
+	//TODO: Oelze pitaya.SetSerializer(protobuf.NewSerializer())
 
 	defer app.Shutdown()
 
