@@ -34,26 +34,7 @@ namespace NPitaya
 
         private static Action _onSignalEvent;
 
-        public enum ServiceDiscoveryAction
-        {
-            ServerAdded,
-            ServerRemoved,
-        }
-
-        public class ServiceDiscoveryListener
-        {
-            public Action<ServiceDiscoveryAction, Server> onServer;
-            public IntPtr NativeListenerHandle { get; set; }
-            public ServiceDiscoveryListener(Action<ServiceDiscoveryAction, Server> onServer)
-            {
-                Debug.Assert(onServer != null);
-                this.onServer = onServer;
-                NativeListenerHandle = IntPtr.Zero;
-            }
-        }
-
-        private static ServiceDiscoveryListener _serviceDiscoveryListener;
-        private static GCHandle _serviceDiscoveryListenerHandle;
+        private static Action<SDEvent> _onSDEvent;
 
         // Sidecar stuff
         // TODO create configuration on buffer sizes
@@ -85,11 +66,12 @@ namespace NPitaya
         {
             var stream = client.ListenSD(new Google.Protobuf.WellKnownTypes.Empty());
             new Thread(async () =>{
-                // TODO see what I can do with this cancellation token
                 while (await stream.ResponseStream.MoveNext(CancellationToken.None))
                 {
                     var current = stream.ResponseStream.Current;
-                    // TODO notify own handlers
+                    if (_onSDEvent != null){
+                        _onSDEvent(current);
+                    }
                 }
             }).Start();
         }
@@ -150,7 +132,8 @@ namespace NPitaya
         public static void Initialize(
                 string sidecarListenAddr,
                 Server server,
-                bool debug
+                bool debug,
+                Action<SDEvent> cbServiceDiscovery = null
                 )
         {
             _client = InitializeSidecarClient(sidecarListenAddr, server, debug);
@@ -163,6 +146,7 @@ namespace NPitaya
             RegisterRemotesAndHandlers();
 
             ListenToIncomingRPCs(_client);
+            SetServiceDiscoveryListener(cbServiceDiscovery);
             ListenSDEvents(_client);
         }
 
@@ -306,49 +290,17 @@ namespace NPitaya
             return Rpc<T>("", route, msg);
         }
 
-//        private static void OnServerAddedOrRemovedNativeCb(int serverAdded, IntPtr serverPtr, IntPtr user)
-//        {
-//            var pitayaClusterHandle = (GCHandle)user;
-//            var serviceDiscoveryListener = pitayaClusterHandle.Target as ServiceDiscoveryListener;
-//
-//            if (serviceDiscoveryListener == null)
-//            {
-//                Logger.Warn("The service discovery listener is null!");
-//                return;
-//            }
-//
-//            var server = (Server)Marshal.PtrToStructure(serverPtr, typeof(Server));
-//
-//            if (serverAdded == 1)
-//                serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerAdded, server);
-//            else
-//                serviceDiscoveryListener.onServer(ServiceDiscoveryAction.ServerRemoved, server);
-//        }
-//
-//        private static void AddServiceDiscoveryListener(ServiceDiscoveryListener listener)
-//        {
-//            _serviceDiscoveryListener = listener;
-//            if (listener == null)
-//                return;
-//
-//            _serviceDiscoveryListenerHandle = GCHandle.Alloc(_serviceDiscoveryListener);
-//
-//            IntPtr nativeListenerHandle = tfg_pitc_AddServiceDiscoveryListener(
-//                OnServerAddedOrRemovedNativeCb,
-//                (IntPtr)_serviceDiscoveryListenerHandle
-//            );
-//
-//            listener.NativeListenerHandle = nativeListenerHandle;
-//        }
-//
-//        private static void RemoveServiceDiscoveryListener(ServiceDiscoveryListener listener)
-//        {
-//            if (listener != null)
-//            {
-//                tfg_pitc_RemoveServiceDiscoveryListener(listener.NativeListenerHandle);
-//                _serviceDiscoveryListenerHandle.Free();
-//                _serviceDiscoveryListener = null;
-//            }
-//        }
+        private static void SetServiceDiscoveryListener(Action<SDEvent> cb)
+        {
+            _onSDEvent += cb;
+        }
+
+        private static void UnsetServiceDiscoveryListener()
+        {
+            if (_onSDEvent != null)
+            {
+                _onSDEvent = null;
+            }
+        }
     }
 }

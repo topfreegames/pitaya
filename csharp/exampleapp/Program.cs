@@ -82,25 +82,24 @@ namespace PitayaCSharpExample
         PitayaCluster.Initialize(
             sockAddr,
             sv,
-            true
-            //new PitayaCluster.ServiceDiscoveryListener((action, server) =>
-            //{
-            //    switch (action)
-            //    {
-            //        case PitayaCluster.ServiceDiscoveryAction.ServerAdded:
-            //            Console.WriteLine("Server was added");
-            //            Console.WriteLine("    id: " + server.id);
-            //            Console.WriteLine("  type: " + server.type);
-            //            break;
-            //        case PitayaCluster.ServiceDiscoveryAction.ServerRemoved:
-            //            Console.WriteLine("Server was removed");
-            //            Console.WriteLine("    id: " + server.id);
-            //            Console.WriteLine("  type: " + server.type);
-            //            break;
-            //        default:
-            //            throw new ArgumentOutOfRangeException(nameof(action), action, null);
-            //    }
-            //})
+            true,
+            (sdEvent) => {
+              switch (sdEvent.Event)
+              {
+                case NPitaya.Protos.SDEvent.Types.Event.Add:
+                  Console.WriteLine("Server was added");
+                  Console.WriteLine("   id: " + sdEvent.Server.Id);
+                  Console.WriteLine(" type: " + sdEvent.Server.Type);
+                  break;
+                case NPitaya.Protos.SDEvent.Types.Event.Remove:
+                  Console.WriteLine("Server was removed");
+                  Console.WriteLine("   id: " + sdEvent.Server.Id);
+                  Console.WriteLine(" type: " + sdEvent.Server.Type);
+                  break;
+                default:
+                  throw new ArgumentOutOfRangeException(nameof(sdEvent.Event), sdEvent.Event, null);
+              }
+            }
           );
       }
       catch (PitayaException exc)
