@@ -33,6 +33,7 @@ namespace NPitaya
         private static TaskFactory _rpcTaskFactory = new TaskFactory(Lcts);
 
         private static Action _onSignalEvent;
+        private static bool _processedSigint = false;
 
         private static Action<SDEvent> _onSDEvent;
 
@@ -43,17 +44,16 @@ namespace NPitaya
         static BlockingCollection<RPCResponse> queueWrite = new BlockingCollection<RPCResponse>(1000);
 
         // TODO this should now be a pure csharp implementation of getting sigint/sigterm
-        //public static void AddSignalHandler(Action cb)
-        //{
-        //    _onSignalEvent += cb;
-        //    OnSignalInternal(OnSignal);
-        //}
+        public static void AddSignalHandler(Action cb)
+        {
+            _onSignalEvent += cb;
+        }
 
-        //private static void OnSignal()
-        //{
-        //    Logger.Info("Invoking signal handler");
-        //    _onSignalEvent?.Invoke();
-        //}
+        private static void OnSignal()
+        {
+            Logger.Info("Invoking signal handler");
+            _onSignalEvent?.Invoke();
+        }
 
         private static List<Type> GetAllInheriting(Type type)
         {
@@ -148,6 +148,28 @@ namespace NPitaya
             ListenToIncomingRPCs(_client);
             SetServiceDiscoveryListener(cbServiceDiscovery);
             ListenSDEvents(_client);
+            RegisterGracefulShutdown();
+        }
+
+        private static void RegisterGracefulShutdown(){
+            Console.CancelKeyPress += (_, ea) =>
+            {
+                _processedSigint = true;
+                Console.WriteLine("Received SIGINT (Ctrl+C), executing on signal function");
+                OnSignal();
+                _client.StopPitaya(new Google.Protobuf.WellKnownTypes.Empty());
+            };
+
+            AppDomain.CurrentDomain.ProcessExit += (_, ea) =>
+            {
+                if (_processedSigint) {
+                    Console.WriteLine("Ignoring SIGTERM, already processed SIGINT");
+                } else{
+                    Console.WriteLine("Received SIGTERM, executing on signal function");
+                    OnSignal();
+                    _client.StopPitaya(new Google.Protobuf.WellKnownTypes.Empty());
+                }
+            };
         }
 
         private static void RegisterRemote(BaseRemote remote)

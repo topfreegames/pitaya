@@ -18,9 +18,17 @@ namespace NPitaya
             var client = new Sidecar.SidecarClient(channel);
             var req = new StartPitayaRequest { Config = server, DebugLog = debug };
 
-            // TODO see if I can get an error here, or else kill this process when the channel dies,
-            // because then probably the sidecar died
             client.StartPitaya(req);
+            // this is a hacky approach to detect if server is not running anymore, and if not, die
+            new System.Threading.Thread(() =>
+            {
+                for(;;)
+                {
+                    client.Heartbeat(new Google.Protobuf.WellKnownTypes.Empty());
+                    // TODO configure the timeout here
+                    System.Threading.Thread.Sleep(5000);
+                }
+            }).Start();
             return client;
         }
     }

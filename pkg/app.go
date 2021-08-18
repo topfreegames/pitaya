@@ -26,6 +26,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 
 	"time"
@@ -76,6 +77,7 @@ type App struct {
 	configured       bool
 	debug            bool
 	dieChan          chan bool
+	wgIsRunning      sync.WaitGroup
 	heartbeat        time.Duration
 	onSessionBind    func(*session.Session)
 	messageEncoder   message.Encoder
@@ -437,9 +439,11 @@ func Start() {
 
 	listen()
 
+	app.wgIsRunning.Add(1)
 	defer func() {
 		timer.GlobalTicker.Stop()
 		app.running = false
+		app.wgIsRunning.Done()
 	}()
 
 	sg := make(chan os.Signal)
@@ -451,7 +455,7 @@ func Start() {
 		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
-		close(app.dieChan)
+		Shutdown()
 	}
 
 	logger.Log.Warn("server is stopping...")
@@ -523,13 +527,14 @@ func AddRoute(
 	return nil
 }
 
-// Shutdown send a signal to let 'pitaya' shutdown itself.
-func Shutdown() {
+// Shutdown send a signal to let 'pitaya' shutdown itself. Returns a waiting group that will be done when pitaya has fully stopped.
+func Shutdown() *sync.WaitGroup {
 	select {
 	case <-app.dieChan: // prevent closing closed channel
 	default:
 		close(app.dieChan)
 	}
+	return &app.wgIsRunning
 }
 
 // Error creates a new error with a code, message and metadata

@@ -35,12 +35,7 @@ import (
 
 // TODO document public methods and structs
 
-// TODO fix the panic when the client disconnects
-
 // TODO separate sidecar and sidecar server into isolated files
-
-// TODO the server is not being removed by the graeful shutdown pitaya when
-// I kill it
 
 // Sidecar main struct to keep state
 type Sidecar struct {
@@ -80,7 +75,7 @@ var (
 	reqId    uint64
 	reqMutex sync.RWMutex
 	reqMap   = make(map[uint64]*Call)
-	wg       sync.WaitGroup
+	empty    = &emptypb.Empty{}
 )
 
 // AddServer is called by the ServiceDiscovery when a new  pitaya server is
@@ -192,6 +187,11 @@ func (s *SidecarServer) GetServer(ctx context.Context, in *protos.Server) (*prot
 	return res, nil
 }
 
+func (s *SidecarServer) Heartbeat(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	logger.Log.Debug("Received heartbeat from the sidecar client")
+	return empty, nil
+}
+
 // ListenSD keeps a stream open between the sidecar client and server, it sends
 // service discovery events to the sidecar client, such as add or removal of
 // servers in the cluster
@@ -220,9 +220,13 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 		for {
 			res, err := stream.Recv()
 			if err != nil {
-				logger.Log.Errorf("got error in GRPC stream, %s", err)
-				close(sidecar.stopChan)
-				return
+				select {
+				case <-sidecar.stopChan:
+					return
+				default:
+					close(sidecar.stopChan)
+					return
+				}
 			}
 			// TODO fix context to fix tracing
 			s.FinishRPC(context.Background(), res)
@@ -322,10 +326,6 @@ func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitaya
 	// TODO maybe we should return error in pitaya start. maybe recover from fatal
 	// TODO make this method return error so that I can catch it
 	go func() {
-		wg.Add(1)
-		defer func() {
-			wg.Done()
-		}()
 		pitaya.Start()
 	}()
 	return &protos.Error{}, nil
@@ -335,7 +335,12 @@ func (s *SidecarServer) StartPitaya(ctx context.Context, req *protos.StartPitaya
 // when the client is dying so that we can correctly gracefully shutdown pitaya
 func (s *SidecarServer) StopPitaya(ctx context.Context, req *emptypb.Empty) (*protos.Error, error) {
 	logger.Log.Info("received stop request, will stop pitaya server")
-	close(sidecar.stopChan)
+	select {
+	case <-sidecar.stopChan:
+		break
+	default:
+		close(sidecar.stopChan)
+	}
 	return &protos.Error{}, nil
 }
 
@@ -348,9 +353,13 @@ func checkError(err error) {
 // StartSidecar starts the sidecar server, it instantiates the GRPC server and
 // listens for incoming client connections. This is the very first method that
 // is called when the sidecar is starting.
-func StartSidecar(cfg *config.Config) {
+func StartSidecar(cfg *config.Config, debug bool) {
 	// Start our own logger
-	sidecar.log = logrus.WithField("source", "sidecar")
+	log := logrus.New()
+	if debug {
+		log.SetLevel(logrus.DebugLevel)
+	}
+	sidecar.log = log.WithField("source", "sidecar")
 	pitaya.SetLogger(sidecar.log)
 
 	sidecar.config = cfg
@@ -383,6 +392,7 @@ func StartSidecar(cfg *config.Config) {
 		}
 	}()
 
+	// TODO: what to do if received sigint/term without receiving stop request from client?
 	logger.Log.Infof("sidecar listening at %s", sidecar.listener.Addr())
 
 	sg := make(chan os.Signal)
@@ -390,15 +400,12 @@ func StartSidecar(cfg *config.Config) {
 
 	// stop server
 	select {
-	case <-sidecar.stopChan:
-		logger.Log.Warn("the app will shutdown in a few seconds")
-		pitaya.Shutdown()
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
 		close(sidecar.stopChan)
+		break
+	case <-sidecar.stopChan:
+		logger.Log.Warn("the app will shutdown in a few seconds")
 	}
-
-	// wait for pitaya to shutdown itself before exiting
-	wg.Wait()
-
+	pitaya.Shutdown().Wait()
 }

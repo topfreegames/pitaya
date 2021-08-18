@@ -66,14 +66,12 @@ namespace PitayaCSharpExample
       var prometheusMR = new PrometheusMetricsReporter("default", "game", 9090);
       MetricsReporters.AddMetricReporter(prometheusMR);
 
-      //PitayaCluster.AddSignalHandler(() =>
-      //{
-      //  Logger.Info("Calling terminate on cluster");
-      //  PitayaCluster.Terminate();
-      //  Logger.Info("Cluster terminated, exiting app");
-      //  Environment.Exit(1);
-      //  //Environment.FailFast("oops");
-      //});
+      PitayaCluster.AddSignalHandler(() =>
+      {
+        Logger.Info("Signal received, exiting app");
+        Environment.Exit(1);
+        //Environment.FailFast("oops");
+      });
 
       try
       {

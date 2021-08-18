@@ -21,6 +21,8 @@ import (
 	"github.com/topfreegames/pitaya/sidecar"
 )
 
+var debug bool
+
 // sidecarCmd represents the start command
 var sidecarCmd = &cobra.Command{
 	Use:   "sidecar",
@@ -28,10 +30,11 @@ var sidecarCmd = &cobra.Command{
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.NewConfig()
-		sidecar.StartSidecar(cfg)
+		sidecar.StartSidecar(cfg, debug)
 	},
 }
 
 func init() {
+	sidecarCmd.Flags().BoolVarP(&debug, "debug", "d", false, "turn debug on")
 	rootCmd.AddCommand(sidecarCmd)
 }

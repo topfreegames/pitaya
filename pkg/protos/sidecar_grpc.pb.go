@@ -19,12 +19,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SidecarClient interface {
+	GetServer(ctx context.Context, in *Server, opts ...grpc.CallOption) (*Server, error)
+	Heartbeat(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListenRPC(ctx context.Context, opts ...grpc.CallOption) (Sidecar_ListenRPCClient, error)
 	ListenSD(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Sidecar_ListenSDClient, error)
 	SendRPC(ctx context.Context, in *RequestTo, opts ...grpc.CallOption) (*Response, error)
 	SendPush(ctx context.Context, in *PushRequest, opts ...grpc.CallOption) (*PushResponse, error)
 	SendKick(ctx context.Context, in *KickRequest, opts ...grpc.CallOption) (*PushResponse, error)
-	GetServer(ctx context.Context, in *Server, opts ...grpc.CallOption) (*Server, error)
 	StartPitaya(ctx context.Context, in *StartPitayaRequest, opts ...grpc.CallOption) (*Error, error)
 	StopPitaya(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Error, error)
 }
@@ -35,6 +36,24 @@ type sidecarClient struct {
 
 func NewSidecarClient(cc grpc.ClientConnInterface) SidecarClient {
 	return &sidecarClient{cc}
+}
+
+func (c *sidecarClient) GetServer(ctx context.Context, in *Server, opts ...grpc.CallOption) (*Server, error) {
+	out := new(Server)
+	err := c.cc.Invoke(ctx, "/protos.Sidecar/GetServer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sidecarClient) Heartbeat(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/protos.Sidecar/Heartbeat", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *sidecarClient) ListenRPC(ctx context.Context, opts ...grpc.CallOption) (Sidecar_ListenRPCClient, error) {
@@ -127,15 +146,6 @@ func (c *sidecarClient) SendKick(ctx context.Context, in *KickRequest, opts ...g
 	return out, nil
 }
 
-func (c *sidecarClient) GetServer(ctx context.Context, in *Server, opts ...grpc.CallOption) (*Server, error) {
-	out := new(Server)
-	err := c.cc.Invoke(ctx, "/protos.Sidecar/GetServer", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sidecarClient) StartPitaya(ctx context.Context, in *StartPitayaRequest, opts ...grpc.CallOption) (*Error, error) {
 	out := new(Error)
 	err := c.cc.Invoke(ctx, "/protos.Sidecar/StartPitaya", in, out, opts...)
@@ -158,12 +168,13 @@ func (c *sidecarClient) StopPitaya(ctx context.Context, in *emptypb.Empty, opts 
 // All implementations should embed UnimplementedSidecarServer
 // for forward compatibility
 type SidecarServer interface {
+	GetServer(context.Context, *Server) (*Server, error)
+	Heartbeat(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	ListenRPC(Sidecar_ListenRPCServer) error
 	ListenSD(*emptypb.Empty, Sidecar_ListenSDServer) error
 	SendRPC(context.Context, *RequestTo) (*Response, error)
 	SendPush(context.Context, *PushRequest) (*PushResponse, error)
 	SendKick(context.Context, *KickRequest) (*PushResponse, error)
-	GetServer(context.Context, *Server) (*Server, error)
 	StartPitaya(context.Context, *StartPitayaRequest) (*Error, error)
 	StopPitaya(context.Context, *emptypb.Empty) (*Error, error)
 }
@@ -172,6 +183,12 @@ type SidecarServer interface {
 type UnimplementedSidecarServer struct {
 }
 
+func (UnimplementedSidecarServer) GetServer(context.Context, *Server) (*Server, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServer not implemented")
+}
+func (UnimplementedSidecarServer) Heartbeat(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
+}
 func (UnimplementedSidecarServer) ListenRPC(Sidecar_ListenRPCServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListenRPC not implemented")
 }
@@ -186,9 +203,6 @@ func (UnimplementedSidecarServer) SendPush(context.Context, *PushRequest) (*Push
 }
 func (UnimplementedSidecarServer) SendKick(context.Context, *KickRequest) (*PushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendKick not implemented")
-}
-func (UnimplementedSidecarServer) GetServer(context.Context, *Server) (*Server, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetServer not implemented")
 }
 func (UnimplementedSidecarServer) StartPitaya(context.Context, *StartPitayaRequest) (*Error, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartPitaya not implemented")
@@ -206,6 +220,42 @@ type UnsafeSidecarServer interface {
 
 func RegisterSidecarServer(s grpc.ServiceRegistrar, srv SidecarServer) {
 	s.RegisterService(&Sidecar_ServiceDesc, srv)
+}
+
+func _Sidecar_GetServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Server)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SidecarServer).GetServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protos.Sidecar/GetServer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SidecarServer).GetServer(ctx, req.(*Server))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sidecar_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SidecarServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protos.Sidecar/Heartbeat",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SidecarServer).Heartbeat(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Sidecar_ListenRPC_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -309,24 +359,6 @@ func _Sidecar_SendKick_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sidecar_GetServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Server)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SidecarServer).GetServer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/protos.Sidecar/GetServer",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SidecarServer).GetServer(ctx, req.(*Server))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Sidecar_StartPitaya_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StartPitayaRequest)
 	if err := dec(in); err != nil {
@@ -371,6 +403,14 @@ var Sidecar_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*SidecarServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetServer",
+			Handler:    _Sidecar_GetServer_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _Sidecar_Heartbeat_Handler,
+		},
+		{
 			MethodName: "SendRPC",
 			Handler:    _Sidecar_SendRPC_Handler,
 		},
@@ -381,10 +421,6 @@ var Sidecar_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendKick",
 			Handler:    _Sidecar_SendKick_Handler,
-		},
-		{
-			MethodName: "GetServer",
-			Handler:    _Sidecar_GetServer_Handler,
 		},
 		{
 			MethodName: "StartPitaya",
