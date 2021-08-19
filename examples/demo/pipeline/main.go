@@ -64,7 +64,7 @@ func (g *MetagameServer) HandlerNoArg(ctx context.Context) (*HandlerNoArgRespons
 // IMPORTANT: that this kind of pipeline will be hard to exist in real code
 // as a pipeline function executes for every handler and each of them
 // most probably have different parameter types.
-func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (interface{}, error) {
+func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
 	logger.Info("Simple Before exec")
 
@@ -76,7 +76,7 @@ func (g *MetagameServer) simpleBefore(ctx context.Context, in interface{}) (inte
 		logger.Infof("SoftCurrency: %d", createPlayerArgs.SoftCurrency)
 		logger.Infof("HardCurrency: %d", createPlayerArgs.HardCurrency)
 	}
-	return in, nil
+	return ctx, in, nil
 }
 
 // Simple example of an after pipeline. The 2nd argument is the handler response.

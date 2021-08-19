@@ -27,12 +27,6 @@ type (
 		Content string `json:"content"`
 	}
 
-	// Stats exports the room status
-	Stats struct {
-		outboundBytes int
-		inboundBytes  int
-	}
-
 	// RPCResponse represents a rpc message
 	RPCResponse struct {
 		Msg string `json:"msg"`
