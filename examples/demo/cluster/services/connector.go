@@ -62,7 +62,7 @@ func (c *Connector) GetSessionData(ctx context.Context) (*SessionData, error) {
 }
 
 // SetSessionData sets the session data
-func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*Response, error) {
+func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*protos.Response, error) {
 	s := c.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*
 }
 
 // Docs returns documentation
-func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*protos.Doc, error) {
+func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pitayaprotos.Doc, error) {
 	d, err := c.app.Documentation(true)
 	if err != nil {
 		return nil, err
