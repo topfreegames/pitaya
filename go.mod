@@ -21,8 +21,6 @@ require (
 	github.com/nats-io/nats-server/v2 v2.2.0
 	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
 	github.com/nats-io/nuid v1.0.1
-	github.com/onsi/ginkgo v1.8.0 // indirect
-	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/orfjackal/nanospec.go v0.0.0-20120727230329-de4694c1d701 // indirect
 	github.com/prometheus/client_golang v1.10.0
@@ -35,5 +33,5 @@ require (
 	go.etcd.io/etcd v0.0.0-20210226220824-aa7126864d82
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	google.golang.org/grpc v1.29.1
-    google.golang.org/protobuf v1.25.1-0.20200805231151-a709e31e5d12
+	google.golang.org/protobuf v1.25.1-0.20200805231151-a709e31e5d12
 )
