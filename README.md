@@ -1,5 +1,9 @@
 # pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
+*WARNING*: This version has entered the deprecation flow described [here](https://github.com/topfreegames/pitaya/issues/240), we strongly recommend to use the new version of Pitaya v2.x found in the [main branch](https://github.com/topfreegames/pitaya/tree/main).
+
+---
+
 [1]: https://godoc.org/github.com/topfreegames/pitaya?status.svg
 [2]: https://godoc.org/github.com/topfreegames/pitaya
 [3]: https://goreportcard.com/badge/github.com/topfreegames/pitaya
@@ -41,7 +45,7 @@ Here's one example of running Pitaya:
 
 Start etcd (This command requires docker-compose and will run an etcd container locally. An etcd may be run without docker if prefered.)
 ```
-cd ./examples/testing && docker-compose up -d etcd
+docker-compose -f examples/testing/docker-compose.yml up -d etcd
 ```
 run the connector frontend server from cluster_grpc example
 ```
