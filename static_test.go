@@ -27,13 +27,17 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/interfaces"
 	"github.com/topfreegames/pitaya/v2/metrics"
 	"github.com/topfreegames/pitaya/v2/mocks"
+	"github.com/topfreegames/pitaya/v2/session"
 	sessionmocks "github.com/topfreegames/pitaya/v2/session/mocks"
 	"github.com/topfreegames/pitaya/v2/worker"
 	workermocks "github.com/topfreegames/pitaya/v2/worker/mocks"
@@ -41,8 +45,10 @@ import (
 )
 
 func TestStaticConfigure(t *testing.T) {
-	// Configure(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, cfgs ...*viper.Viper)
-	// TODO(static): implement test
+	Configure(true, "frontendType", Cluster, map[string]string{}, []*viper.Viper{}...)
+
+	require.NotNil(t, DefaultApp)
+	require.NotNil(t, session.DefaultSessionPool)
 }
 
 func TestStaticGetDieChan(t *testing.T) {
@@ -393,23 +399,118 @@ func TestStaticRPCTo(t *testing.T) {
 }
 
 func TestStaticReliableRPC(t *testing.T) {
-	// ReliableRPC(routeStr string, metadata map[string]interface{}, reply, arg proto.Message) (jid string, err error)
-	// TODO(static): implement test
+	tables := []struct {
+		name     string
+		route    string
+		metadata map[string]interface{}
+		reply    proto.Message
+		arg      proto.Message
+		jid      string
+		err      error
+	}{
+		{"Success", "route", map[string]interface{}{}, nil, nil, "jid", nil},
+		{"Error", "route", map[string]interface{}{}, nil, nil, "", errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().ReliableRPC(row.route, row.metadata, row.reply, row.arg).Return(row.jid, row.err)
+
+			DefaultApp = app
+			jid, err := ReliableRPC(row.route, row.metadata, row.reply, row.arg)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.jid, jid)
+		})
+	}
 }
 
 func TestStaticReliableRPCWithOptions(t *testing.T) {
-	// ReliableRPCWithOptions(routeStr string, metadata map[string]interface{}, reply, arg proto.Message, opts *config.EnqueueOpts) (jid
-	// TODO: (static)stringerr error)
+	tables := []struct {
+		name     string
+		route    string
+		metadata map[string]interface{}
+		reply    proto.Message
+		arg      proto.Message
+		opts     *config.EnqueueOpts
+		jid      string
+		err      error
+	}{
+		{"Success", "route", map[string]interface{}{}, nil, nil, nil, "jid", nil},
+		{"Error", "route", map[string]interface{}{}, nil, nil, nil, "", errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().ReliableRPCWithOptions(row.route, row.metadata, row.reply, row.arg, row.opts).Return(row.jid, row.err)
+
+			DefaultApp = app
+			jid, err := ReliableRPCWithOptions(row.route, row.metadata, row.reply, row.arg, row.opts)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.jid, jid)
+		})
+	}
 }
 
 func TestStaticSendPushToUsers(t *testing.T) {
-	// SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error)
-	// TODO(static): implement test
+	tables := []struct {
+		name         string
+		route        string
+		v            interface{}
+		uids         []string
+		frontendType string
+		returned     []string
+		err          error
+	}{
+		{"Success", "route", nil, []string{"member"}, "frontendType", []string{"returned"}, nil},
+		{"Error", "route", nil, nil, "frontendType", nil, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().SendPushToUsers(row.route, row.v, row.uids, row.frontendType).Return(row.returned, row.err)
+
+			DefaultApp = app
+			returned, err := SendPushToUsers(row.route, row.v, row.uids, row.frontendType)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.returned, returned)
+		})
+	}
 }
 
 func TestStaticSendKickToUsers(t *testing.T) {
-	// SendKickToUsers(uids []string, frontendType string) ([]string, error)
-	// TODO(static): implement test
+	tables := []struct {
+		name         string
+		uids         []string
+		frontendType string
+		returned     []string
+		err          error
+	}{
+		{"Success", []string{"member"}, "frontendType", []string{"returned"}, nil},
+		{"Error", nil, "frontendType", nil, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().SendKickToUsers(row.uids, row.frontendType).Return(row.returned, row.err)
+
+			DefaultApp = app
+			returned, err := SendKickToUsers(row.uids, row.frontendType)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.returned, returned)
+		})
+	}
 }
 
 func TestStaticGroupCreate(t *testing.T) {
@@ -464,8 +565,30 @@ func TestStaticGroupCreateWithTTL(t *testing.T) {
 }
 
 func TestStaticGroupMembers(t *testing.T) {
-	// GroupMembers(ctx context.Context, groupName string) ([]string, error)
-	// TODO(static): implement test
+	ctx := context.Background()
+	tables := []struct {
+		name      string
+		groupName string
+		members   []string
+		err       error
+	}{
+		{"Success", "name", []string{"member"}, nil},
+		{"Error", "name", nil, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().GroupMembers(ctx, row.groupName).Return(row.members, row.err)
+
+			DefaultApp = app
+			members, err := GroupMembers(ctx, row.groupName)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.members, members)
+		})
+	}
 }
 
 func TestStaticGroupBroadcast(t *testing.T) {
@@ -496,8 +619,32 @@ func TestStaticGroupBroadcast(t *testing.T) {
 }
 
 func TestStaticGroupContainsMember(t *testing.T) {
-	// GroupContainsMember(ctx context.Context, groupName, uid string) (bool, error)
-	// TODO(static): implement test
+	ctx := context.Background()
+	tables := []struct {
+		name      string
+		groupName string
+		uid       string
+		contains  bool
+		err       error
+	}{
+		{"Success", "groupName", uuid.New().String(), true, nil},
+		{"Success/False", "groupName", uuid.New().String(), false, nil},
+		{"Error", "groupName", uuid.New().String(), true, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().GroupContainsMember(ctx, row.groupName, row.uid).Return(row.contains, row.err)
+
+			DefaultApp = app
+			contains, err := GroupContainsMember(ctx, row.groupName, row.uid)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.contains, contains)
+		})
+	}
 }
 
 func TestStaticGroupAddMember(t *testing.T) {
@@ -578,8 +725,30 @@ func TestStaticGroupRemoveAll(t *testing.T) {
 }
 
 func TestStaticGroupCountMembers(t *testing.T) {
-	// GroupCountMembers(ctx context.Context, groupName string) (int, error)
-	// TODO(static): implement test
+	ctx := context.Background()
+	tables := []struct {
+		name      string
+		groupName string
+		count     int
+		err       error
+	}{
+		{"Success", "name", 3, nil},
+		{"Error", "name", 0, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().GroupCountMembers(ctx, row.groupName).Return(row.count, row.err)
+
+			DefaultApp = app
+			count, err := GroupCountMembers(ctx, row.groupName)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.count, count)
+		})
+	}
 }
 
 func TestStaticGroupRenewTTL(t *testing.T) {
@@ -732,6 +901,27 @@ func TestStaticRegisterModuleBefore(t *testing.T) {
 }
 
 func TestStaticGetModule(t *testing.T) {
-	// GetModule(name string) (interfaces.Module, error)
-	// TODO(static): implement test
+	tables := []struct {
+		name       string
+		moduleName string
+		module     interfaces.Module
+		err        error
+	}{
+		{"Success", "name", nil, nil},
+		{"Error", "name", nil, errors.New("error")},
+	}
+
+	for _, row := range tables {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			app := mocks.NewMockPitaya(ctrl)
+			app.EXPECT().GetModule(row.moduleName).Return(row.module, row.err)
+
+			DefaultApp = app
+			module, err := GetModule(row.moduleName)
+			require.Equal(t, row.err, err)
+			require.Equal(t, row.module, module)
+		})
+	}
 }
