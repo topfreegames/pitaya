@@ -33,8 +33,6 @@ import (
 // TODO I can utilize reutilizable objects, such as with a poll and reduce
 // allocations here
 
-// TODO document public methods and structs
-
 // TODO separate sidecar and sidecar server into isolated files
 
 // Sidecar main struct to keep state
