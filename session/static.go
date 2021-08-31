@@ -16,6 +16,7 @@ func GetSessionByID(id int64) Session {
 	return DefaultSessionPool.GetSessionByID(id)
 }
 
+// OnSessionBind adds a method to be called when a session is bound
 // same function cannot be added twice!
 func OnSessionBind(f func(ctx context.Context, s Session) error) {
 	DefaultSessionPool.OnSessionBind(f)
