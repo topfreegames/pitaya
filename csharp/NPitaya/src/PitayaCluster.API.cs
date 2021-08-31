@@ -38,10 +38,9 @@ namespace NPitaya
         private static Action<SDEvent> _onSDEvent;
 
         // Sidecar stuff
-        // TODO create configuration on buffer sizes
         
-        static BlockingCollection<SidecarRequest> queueRead = new BlockingCollection<SidecarRequest>(1000);
-        static BlockingCollection<RPCResponse> queueWrite = new BlockingCollection<RPCResponse>(1000);
+        static BlockingCollection<SidecarRequest> queueRead = new BlockingCollection<SidecarRequest>(PitayaConfiguration.Config.getInt(PitayaConfiguration.CONFIG_READBUFFER_SIZE));
+        static BlockingCollection<RPCResponse> queueWrite = new BlockingCollection<RPCResponse>(PitayaConfiguration.Config.getInt(PitayaConfiguration.CONFIG_WRITEBUFFER_SIZE));
 
         // TODO this should now be a pure csharp implementation of getting sigint/sigterm
         public static void AddSignalHandler(Action cb)

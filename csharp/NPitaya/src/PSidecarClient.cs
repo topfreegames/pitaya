@@ -1,5 +1,6 @@
 using System;
 using Grpc.Core;
+using NPitaya.Models;
 using NPitaya.Protos;
 
 namespace NPitaya
@@ -25,8 +26,8 @@ namespace NPitaya
                 for(;;)
                 {
                     client.Heartbeat(new Google.Protobuf.WellKnownTypes.Empty());
-                    // TODO configure the timeout here
-                    System.Threading.Thread.Sleep(5000);
+                    var timeoutMs = PitayaConfiguration.Config.getInt(PitayaConfiguration.CONFIG_HEARTBEAT_TIMEOUT_MS);
+                    System.Threading.Thread.Sleep(timeoutMs);
                 }
             }).Start();
             return client;

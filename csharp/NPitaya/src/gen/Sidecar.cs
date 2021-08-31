@@ -679,8 +679,6 @@ namespace NPitaya.Protos {
     public const int DebugLogFieldNumber = 3;
     private bool debugLog_;
     /// <summary>
-    /// cluster mode
-    /// other configs
     /// rpc module
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
