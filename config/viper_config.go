@@ -145,6 +145,8 @@ func (c *Config) fillDefaultValues() {
 	for param := range defaultsMap {
 		if c.config.Get(param) == nil {
 			c.config.SetDefault(param, defaultsMap[param])
+		} else {
+			c.config.Set(param, c.config.Get(param))
 		}
 	}
 }
