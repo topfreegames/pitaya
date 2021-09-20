@@ -41,6 +41,9 @@ import (
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+	
 	err := doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }

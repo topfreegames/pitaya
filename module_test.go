@@ -83,7 +83,7 @@ func TestGetModule(t *testing.T) {
 
 func TestStartupModules(t *testing.T) {
 	
-	c := initApp(t)
+	c := initGroups(t)
 	defer c.Terminate(t)
 	resetModules()
 	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
@@ -108,7 +108,7 @@ func TestStartupModules(t *testing.T) {
 func TestShutdownModules(t *testing.T) {
 	resetModules()
 	
-	c := initApp(t)
+	c := initGroups(t)
 	defer c.Terminate(t)
 	Configure(true, "testtype", Standalone, map[string]string{}, viper.New())
 
