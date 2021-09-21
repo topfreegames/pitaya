@@ -25,7 +25,6 @@ import (
 	"os"
 	"testing"
 
-	"go.etcd.io/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/config"
@@ -34,7 +33,6 @@ import (
 	"github.com/topfreegames/pitaya/session/mocks"
 )
 
-var etcdGroupService *EtcdGroupService
 var memoryGroupService *MemoryGroupService
 
 func TestMain(m *testing.M) {
@@ -43,15 +41,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exit)
 }
 
-func setup() {
-	var err error
+func setup() {	
 	conf := config.NewConfig()
-	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
-	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(conf, cli)
-	if err != nil {
-		panic(err)
-	}
 	memoryGroupService = NewMemoryGroupService(conf)
 }
 
