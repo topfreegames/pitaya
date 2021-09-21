@@ -52,10 +52,12 @@ jobs:
       run: make setup-ci
     - name: Run tests
       run: make test-coverage
-    - name: Send coverage
-      env:
-        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
+    # TODO(luizmiranda7): Coveralls is down for maintenance, 
+    # uncomment this block when it gets back online.
+    # - name: Send coverage
+    #   env:
+    #     COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
   e2e-test-nats:
     name: Nats Test End to End
     runs-on: ubuntu-latest
