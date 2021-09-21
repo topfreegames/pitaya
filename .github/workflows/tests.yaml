@@ -3,10 +3,10 @@ name: Tests
 on:
   push:
     branches:
-    - v2
+    - main
   pull_request:
     branches:
-    - v2
+    - main
 
 jobs:
   deps:
@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
-        go-version: '1.13'
+        go-version: '1.16'
     - name: Checkout
       uses: actions/checkout@v2
     - name: Restore cache
@@ -36,7 +36,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
-        go-version: '1.13'
+        go-version: '1.16'
     - name: Checkout
       uses: actions/checkout@v2
     - name: Restore cache
@@ -52,10 +52,12 @@ jobs:
       run: make setup-ci
     - name: Run tests
       run: make test-coverage
-    - name: Send coverage
-      env:
-        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
+    # TODO(luizmiranda7): Coveralls is down for maintenance, 
+    # uncomment this block when it gets back online.
+    # - name: Send coverage
+    #   env:
+    #     COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
   e2e-test-nats:
     name: Nats Test End to End
     runs-on: ubuntu-latest
@@ -64,7 +66,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
-        go-version: '1.13'
+        go-version: '1.16'
     - name: Checkout
       uses: actions/checkout@v2
     - name: Restore cache
@@ -84,7 +86,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
-        go-version: '1.13'
+        go-version: '1.16'
     - name: Checkout
       uses: actions/checkout@v2
     - name: Restore cache

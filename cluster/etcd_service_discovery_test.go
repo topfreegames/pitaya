@@ -25,7 +25,7 @@ import (
 	"math"
 	"testing"
 	"time"
-	"go.etcd.io/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
@@ -135,7 +135,7 @@ func TestEtcdSDBootstrapLeaseError(t *testing.T) {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
 			c, cli := helpers.GetTestEtcd(t)
-			c.Terminate(t)
+			defer c.Terminate(t)
 			e := getEtcdSD(t, *config, table.server, cli)
 			err := e.grantLease()
 			assert.Error(t, err)
@@ -213,7 +213,8 @@ func TestEtcdSDDeleteLocalInvalidServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := config.NewDefaultEtcdServiceDiscoveryConfig()
-			_, cli := helpers.GetTestEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
+			defer c.Terminate(t)
 			e := getEtcdSD(t, *config, table.server, cli)
 			invalidServer := &Server{
 				ID:   "invalid",

@@ -22,35 +22,13 @@ package groups
 
 import (
 	"context"
-	"os"
 	"testing"
 
-	"go.etcd.io/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/config"
+
 	"github.com/topfreegames/pitaya/v2/constants"
 )
-
-var etcdGroupService *EtcdGroupService
-var memoryGroupService *MemoryGroupService
-
-func TestMain(m *testing.M) {
-	setup()
-	exit := m.Run()
-	os.Exit(exit)
-}
-
-func setup() {
-	var err error
-	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
-	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(*config.NewDefaultEtcdGroupServiceConfig(), cli)
-	if err != nil {
-		panic(err)
-	}
-	memoryGroupService = NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
-}
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {
 	ctx := context.Background()
