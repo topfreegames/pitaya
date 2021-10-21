@@ -340,6 +340,13 @@ func (app *App) Start() {
 }
 
 func (app *App) listen() {
+	if app.serverMode == Cluster && app.server.Frontend && app.config.Session.Unique {
+		unique := mods.NewUniqueSession(app.server, app.rpcServer, app.rpcClient, app.sessionPool)
+		app.remoteService.AddRemoteBindingListener(unique)
+		app.RegisterModule(unique, "uniqueSession")
+	}
+
+	app.startModules()
 	app.startupComponents()
 	// create global ticker instance, timer precision could be customized
 	// by SetTimerPrecision
@@ -364,13 +371,7 @@ func (app *App) listen() {
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 
-	if app.serverMode == Cluster && app.server.Frontend && app.config.Session.Unique {
-		unique := mods.NewUniqueSession(app.server, app.rpcServer, app.rpcClient, app.sessionPool)
-		app.remoteService.AddRemoteBindingListener(unique)
-		app.RegisterModule(unique, "uniqueSession")
-	}
-
-	app.startModules()
+	
 
 	logger.Log.Info("all modules started!")
 
