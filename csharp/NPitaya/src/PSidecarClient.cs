@@ -8,7 +8,7 @@ namespace NPitaya
 
     public partial class PitayaCluster
     {
-        public static Sidecar.SidecarClient InitializeSidecarClient(string sidecarListenAddr, NPitaya.Protos.Server server, bool debug = false)
+        public static Sidecar.SidecarClient InitializeSidecarClient(string sidecarListenAddr, NPitaya.Protos.Server server, OpenTracing.ITracer tracer, bool debug = false)
         {
             GrpcEnvironment.SetCompletionQueueCount(Environment.ProcessorCount);
             GrpcEnvironment.SetThreadPoolSize(Environment.ProcessorCount);

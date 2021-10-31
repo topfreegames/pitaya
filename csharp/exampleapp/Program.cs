@@ -77,28 +77,29 @@ namespace PitayaCSharpExample
       {
         PitayaCluster.SetSerializer(new NPitaya.Serializer.JSONSerializer());
         var sockAddr = "unix://" + System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pitaya.sock");
+        PitayaCluster.StartJaeger(sv, "pitaya-csharp-example", 1.0f);
         PitayaCluster.Initialize(
-            sockAddr,
-            sv,
-            true,
-            (sdEvent) => {
-              switch (sdEvent.Event)
-              {
-                case NPitaya.Protos.SDEvent.Types.Event.Add:
-                  Console.WriteLine("Server was added");
-                  Console.WriteLine("   id: " + sdEvent.Server.Id);
-                  Console.WriteLine(" type: " + sdEvent.Server.Type);
-                  break;
-                case NPitaya.Protos.SDEvent.Types.Event.Remove:
-                  Console.WriteLine("Server was removed");
-                  Console.WriteLine("   id: " + sdEvent.Server.Id);
-                  Console.WriteLine(" type: " + sdEvent.Server.Type);
-                  break;
-                default:
-                  throw new ArgumentOutOfRangeException(nameof(sdEvent.Event), sdEvent.Event, null);
-              }
+          sockAddr,
+          sv,
+          true,
+          (sdEvent) => {
+            switch (sdEvent.Event)
+            {
+              case NPitaya.Protos.SDEvent.Types.Event.Add:
+                Console.WriteLine("Server was added");
+                Console.WriteLine("   id: " + sdEvent.Server.Id);
+                Console.WriteLine(" type: " + sdEvent.Server.Type);
+                break;
+              case NPitaya.Protos.SDEvent.Types.Event.Remove:
+                Console.WriteLine("Server was removed");
+                Console.WriteLine("   id: " + sdEvent.Server.Id);
+                Console.WriteLine(" type: " + sdEvent.Server.Type);
+                break;
+              default:
+                throw new ArgumentOutOfRangeException(nameof(sdEvent.Event), sdEvent.Event, null);
             }
-          );
+          }
+        );
       }
       catch (PitayaException exc)
       {

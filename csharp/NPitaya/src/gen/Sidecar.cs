@@ -164,9 +164,6 @@ namespace NPitaya.Protos {
     /// <summary>Field number for the "hostname" field.</summary>
     public const int HostnameFieldNumber = 5;
     private string hostname_ = "";
-    /// <summary>
-    /// TODO
-    /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public string Hostname {
       get { return hostname_; }
@@ -678,9 +675,6 @@ namespace NPitaya.Protos {
     /// <summary>Field number for the "debugLog" field.</summary>
     public const int DebugLogFieldNumber = 3;
     private bool debugLog_;
-    /// <summary>
-    /// rpc module
-    /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public bool DebugLog {
       get { return debugLog_; }

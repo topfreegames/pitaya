@@ -11,6 +11,7 @@ import (
 
 	"sync/atomic"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/pkg"
 	"github.com/topfreegames/pitaya/pkg/cluster"
@@ -19,7 +20,10 @@ import (
 	"github.com/topfreegames/pitaya/pkg/errors"
 	"github.com/topfreegames/pitaya/pkg/logger"
 	"github.com/topfreegames/pitaya/pkg/protos"
+	"github.com/topfreegames/pitaya/pkg/tracing"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -140,6 +144,19 @@ func (s *Sidecar) Call(ctx context.Context, req *protos.Request) (*protos.Respon
 	}
 }
 
+// finishRPC is called when the sidecar client returns the answer to an RPC
+// call, after this method happens, the Call method above returns
+func (s *SidecarServer) finishRPC(ctx context.Context, res *protos.RPCResponse) {
+	reqMutex.RLock()
+	defer reqMutex.RUnlock()
+	call, ok := reqMap[res.ReqId]
+	if ok {
+		call.res = res.Res
+		call.err = res.Err
+		close(call.done)
+	}
+}
+
 // SessionBindRemote is meant to frontend servers so its not implemented here
 func (s *Sidecar) SessionBindRemote(ctx context.Context, msg *protos.BindMsg) (*protos.Response, error) {
 	return nil, constants.ErrNotImplemented
@@ -153,19 +170,6 @@ func (s *Sidecar) PushToUser(ctx context.Context, push *protos.Push) (*protos.Re
 // KickUser is meant to frontend servers so its not implemented here
 func (s *Sidecar) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
 	return nil, constants.ErrNotImplemented
-}
-
-// FinishRPC is called when the sidecar client returns the answer to an RPC
-// call, after this method happens, the Call method above returns
-func (s *SidecarServer) FinishRPC(ctx context.Context, res *protos.RPCResponse) {
-	reqMutex.RLock()
-	defer reqMutex.RUnlock()
-	call, ok := reqMap[res.ReqId]
-	if ok {
-		call.res = res.Res
-		call.err = res.Err
-		close(call.done)
-	}
 }
 
 // GetServer is called by the sidecar client to get the information from
@@ -227,7 +231,7 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 				}
 			}
 			// TODO fix context to fix tracing
-			s.FinishRPC(context.Background(), res)
+			s.finishRPC(context.Background(), res)
 		}
 	}()
 	for sidecar.shouldRun {
@@ -246,10 +250,24 @@ func (s *SidecarServer) ListenRPC(stream protos.Sidecar_ListenRPCServer) error {
 	return nil
 }
 
+func getCtxWithParentSpan(ctx context.Context, op string) context.Context {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		carrier := opentracing.HTTPHeadersCarrier(md)
+		clientContext, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
+		if err != nil {
+			logger.Log.Debugf("tracing: could not extract span from context!")
+		} else {
+			return tracing.StartSpan(ctx, op, opentracing.Tags{}, clientContext)
+		}
+	}
+	return ctx
+}
+
 // SendRPC is called by the sidecar client when it wants to send RPC requests to
 // other pitaya servers
 func (s *SidecarServer) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
-	return pitaya.RawRPC(context.Background(), in.ServerID, in.Msg.Route, in.Msg.Data)
+	return pitaya.RawRPC(getCtxWithParentSpan(ctx, in.Msg.Route), in.ServerID, in.Msg.Route, in.Msg.Data)
 }
 
 // SendPush is called by the sidecar client when it wants to send a push to an
@@ -348,6 +366,31 @@ func checkError(err error) {
 	}
 }
 
+// TODO need to replace pitayas own jaeger config with something that actually makes sense
+func configureJaeger(debug bool) {
+	cfg, err := jaegercfg.FromEnv()
+	if debug {
+		cfg.ServiceName = "pitaya-sidecar"
+		cfg.Sampler.Type = "const"
+		cfg.Sampler.Param = 1
+	}
+	if cfg.ServiceName == "" {
+		logger.Log.Error("Could not init jaeger tracer without ServiceName, either set environment JAEGER_SERVICE_NAME or cfg.ServiceName = \"my-api\"")
+		return
+	}
+	if err != nil {
+		logger.Log.Error("Could not parse Jaeger env vars: %s", err.Error())
+		return
+	}
+	tracer, _, err := cfg.NewTracer()
+	if err != nil {
+		logger.Log.Error("Could not initialize jaeger tracer: %s", err.Error())
+		return
+	}
+	opentracing.SetGlobalTracer(tracer)
+	logger.Log.Infof("Tracer configured for %s", cfg.Reporter.LocalAgentHostPort)
+}
+
 // StartSidecar starts the sidecar server, it instantiates the GRPC server and
 // listens for incoming client connections. This is the very first method that
 // is called when the sidecar is starting.
@@ -395,6 +438,9 @@ func StartSidecar(cfg *config.Config, debug bool) {
 
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+
+	// TODO make jaeger optional and configure with configs
+	configureJaeger(true)
 
 	// stop server
 	select {

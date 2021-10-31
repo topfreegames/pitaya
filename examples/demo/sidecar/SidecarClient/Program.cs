@@ -91,7 +91,7 @@ namespace SidecarClient
             Channel channel = new Channel("unix:///tmp/pitaya.sock", ChannelCredentials.Insecure);
 
             var client = new Sidecar.SidecarClient(channel);
-            var req = new StartPitayaRequest { Config = new StartPitayaRequest.Types.ServerConfig { IsFrontend = false, ServerType = "csharp", DebugLog = true } };
+            var req = new StartPitayaRequest { Config = new NPitaya.Protos.Server { Frontend = false, Type = "csharp" }, DebugLog = true, ShouldCompressMessages = false};
             //
             client.StartPitaya(req);
             //

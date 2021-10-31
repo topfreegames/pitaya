@@ -3,7 +3,6 @@ using Google.Protobuf;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NPitaya.Metrics;
@@ -13,6 +12,11 @@ using NPitaya.Protos;
 using NPitaya.Utils;
 using static NPitaya.Utils.Utils;
 using System.Linq;
+using Jaeger;
+using Jaeger.Samplers;
+using Jaeger.Reporters;
+using Jaeger.Senders.Thrift;
+using OpenTracing.Util;
 
 // TODO profiling
 // TODO better reflection performance in task async call
@@ -41,6 +45,9 @@ namespace NPitaya
         
         static BlockingCollection<SidecarRequest> queueRead = new BlockingCollection<SidecarRequest>(PitayaConfiguration.Config.getInt(PitayaConfiguration.CONFIG_READBUFFER_SIZE));
         static BlockingCollection<RPCResponse> queueWrite = new BlockingCollection<RPCResponse>(PitayaConfiguration.Config.getInt(PitayaConfiguration.CONFIG_WRITEBUFFER_SIZE));
+
+        // Tracer
+        private static Tracer _tracer;
 
         // TODO this should now be a pure csharp implementation of getting sigint/sigterm
         public static void AddSignalHandler(Action cb)
@@ -106,7 +113,7 @@ namespace NPitaya
 //                  Logger.Debug($"[Consumer thread {threadId}] No more incoming RPCs, exiting");
                     {
                         var req = queueRead.Take();
-
+                        // TODO receive a span here and propagate
                         //#pragma warning disable 4014
                         var res = await HandleIncomingRpc(req.Req);
                         //#pragma warning restore 4014
@@ -135,7 +142,7 @@ namespace NPitaya
                 Action<SDEvent> cbServiceDiscovery = null
                 )
         {
-            _client = InitializeSidecarClient(sidecarListenAddr, server, debug);
+            _client = InitializeSidecarClient(sidecarListenAddr, server, _tracer, debug);
 
             if (_client == null)
             {
@@ -148,6 +155,42 @@ namespace NPitaya
             SetServiceDiscoveryListener(cbServiceDiscovery);
             ListenSDEvents(_client);
             RegisterGracefulShutdown();
+        }
+
+        public static void StartJaeger(
+            Server server,
+            String serviceName,
+            double probabilisticSamplerParam)
+        {
+            // TODO understand and change this loggerFactory
+            System.Environment.SetEnvironmentVariable("JAEGER_SERVICE_NAME", serviceName);
+            System.Environment.SetEnvironmentVariable("JAEGER_SAMPLER_PARAM", probabilisticSamplerParam.ToString());
+            if (System.Environment.GetEnvironmentVariable("JAEGER_AGENT_HOST") == null)
+            {
+                System.Environment.SetEnvironmentVariable("JAEGER_AGENT_HOST", "localhost");
+            }
+            if (System.Environment.GetEnvironmentVariable("JAEGER_AGENT_PORT") == null)
+            {
+                System.Environment.SetEnvironmentVariable("JAEGER_AGENT_PORT", "6831");
+            }
+            var loggingFactory = new Microsoft.Extensions.Logging.LoggerFactory();
+            var config = Configuration.FromEnv(loggingFactory);
+            var sampler = new ProbabilisticSampler(config.SamplerConfig.Param.Value);
+            var reporter = new RemoteReporter.Builder()
+                .WithLoggerFactory(loggingFactory)
+                .WithSender(new UdpSender(config.ReporterConfig.SenderConfig.AgentHost, config.ReporterConfig.SenderConfig.AgentPort.Value, 0))
+                .Build();
+            _tracer = new Tracer.Builder(serviceName)
+                .WithLoggerFactory(loggingFactory)
+                .WithSampler(sampler)
+                .WithReporter(reporter)
+                .WithTag("local.id", server.Id)
+                .WithTag("local.type", server.Type)
+                .WithTag("span.kind", "sidecar")
+                .Build();
+            if (!GlobalTracer.IsRegistered()){
+                GlobalTracer.Register(_tracer);
+            }
         }
 
         private static void RegisterGracefulShutdown(){
@@ -222,6 +265,7 @@ namespace NPitaya
             _serializer = s;
         }
 
+// TODO do I need this method?
 //        public static void Terminate()
 //        {
 //            RemoveServiceDiscoveryListener(_serviceDiscoveryListener);
@@ -253,7 +297,12 @@ namespace NPitaya
                     Data = ByteString.CopyFrom(SerializerUtils.SerializeOrRaw(pushMsg, _serializer))
                 };
                 
-                return _client.SendPush(new PushRequest{FrontendType=serverType, Push=push});
+                var span = _tracer.BuildSpan("system.push")
+                    .WithTag("peer.serverType", serverType)
+                    .Start();
+                var res = _client.SendPush(new PushRequest{FrontendType=serverType, Push=push}, GRPCMetadataWithSpanContext(span));
+                span.Finish();
+                return res;
             });
         }
 
@@ -261,8 +310,26 @@ namespace NPitaya
         {
             return _rpcTaskFactory.StartNew(() =>
             {
-                return _client.SendKick(new KickRequest{FrontendType=serverType, Kick=kick});
+                var span = _tracer.BuildSpan("system.kick")
+                    .WithTag("peer.serverType", serverType)
+                    .Start();
+                var res = _client.SendKick(new KickRequest{FrontendType=serverType, Kick=kick}, GRPCMetadataWithSpanContext(span));
+                span.Finish();
+                return res;
             });
+        }
+
+        // TODO find better place for this method
+        private static Grpc.Core.Metadata GRPCMetadataWithSpanContext(OpenTracing.ISpan span){
+            var dictionary = new Dictionary<string, string>();
+            _tracer.Inject(span.Context, OpenTracing.Propagation.BuiltinFormats.HttpHeaders,
+                new OpenTracing.Propagation.TextMapInjectAdapter(dictionary));
+            Grpc.Core.Metadata metadata = new Grpc.Core.Metadata();
+            foreach (var kvp in dictionary)
+            {
+                metadata.Add(kvp.Key, kvp.Value);
+            }
+            return metadata;
         }
 
         public static unsafe Task<T> Rpc<T>(string serverId, Route route, object msg)
@@ -273,6 +340,10 @@ namespace NPitaya
                 var ok = false;
                 Response res = null;
                 Stopwatch sw = null;
+                var span = _tracer.BuildSpan(route.ToString())
+                    .WithTag("peer.id", serverId)
+                    .WithTag("peer.serverType", route.svType)
+                    .Start();
                 try
                 {
                     var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
@@ -280,7 +351,7 @@ namespace NPitaya
                     fixed (byte* p = data)
                     {
                         // TODO this can be optimized I think by using a readonly span
-                        res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}});
+                        res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}}, GRPCMetadataWithSpanContext(span));
                     }
 
                     sw.Stop();
@@ -302,6 +373,7 @@ namespace NPitaya
                                 "rpc", $"{retError.code}", sw);
                         }
                     }
+                    span.Finish();
                 }
             });
         }

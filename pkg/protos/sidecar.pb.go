@@ -208,7 +208,7 @@ type StartPitayaRequest struct {
 
 	Config                 *Server `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	ShouldCompressMessages bool    `protobuf:"varint,2,opt,name=shouldCompressMessages,proto3" json:"shouldCompressMessages,omitempty"`
-	DebugLog               bool    `protobuf:"varint,3,opt,name=debugLog,proto3" json:"debugLog,omitempty"`
+	DebugLog               bool    `protobuf:"varint,3,opt,name=debugLog,proto3" json:"debugLog,omitempty"` // rpc module
 }
 
 func (x *StartPitayaRequest) Reset() {

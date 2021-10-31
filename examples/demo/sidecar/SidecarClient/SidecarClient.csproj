@@ -9,4 +9,8 @@
     <ProjectReference Include="..\Sidecar\Sidecar.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Jaeger" Version="1.0.3" />
+  </ItemGroup>
+
 </Project>
