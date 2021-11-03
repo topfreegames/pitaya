@@ -21,9 +21,6 @@
 package config
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -117,8 +114,6 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.conn.ratelimiting.interval":                "1s",
 		"pitaya.conn.ratelimiting.forcedisable":            false,
 		"pitaya.session.unique":                            true,
-		"pitaya.sidecar.bindprotocol":                      "unix",
-		"pitaya.sidecar.bind":                              filepath.FromSlash(fmt.Sprintf("%s/pitaya.sock", os.TempDir())),
 		"pitaya.sidecar.calltimeout":                       "1000ms",
 		"pitaya.worker.concurrency":                        1,
 		"pitaya.worker.redis.pool":                         "10",

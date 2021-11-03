@@ -394,7 +394,7 @@ func configureJaeger(debug bool) {
 // StartSidecar starts the sidecar server, it instantiates the GRPC server and
 // listens for incoming client connections. This is the very first method that
 // is called when the sidecar is starting.
-func StartSidecar(cfg *config.Config, debug bool) {
+func StartSidecar(cfg *config.Config, debug bool, bindAddr, bindProto string) {
 	// Start our own logger
 	log := logrus.New()
 	if debug {
@@ -406,8 +406,6 @@ func StartSidecar(cfg *config.Config, debug bool) {
 	sidecar.config = cfg
 	sidecar.sidecarServer = &SidecarServer{}
 
-	bindProto := cfg.GetString("pitaya.sidecar.bindprotocol")
-	bindAddr := cfg.GetString("pitaya.sidecar.bind")
 	if bindProto != "unix" && bindProto != "tcp" {
 		logger.Log.Fatal("only supported schemes are unix and tcp, review your bindaddr config")
 	}

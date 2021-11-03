@@ -1,0 +1,947 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>StatsdClient</name>
+    </assembly>
+    <members>
+        <member name="T:StatsdClient.AdvancedStatsConfig">
+            <summary>
+            The advanced configuration options for DogStatsdService.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.AdvancedStatsConfig.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:StatsdClient.AdvancedStatsConfig"/> class.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.MaxMetricsInAsyncQueue">
+            <summary>
+            Gets or sets a value defining the maximum number of metrics in the queue
+            (Metrics are sent asynchronously using a queue).
+            A small value reduces memory usage whereas an higher value reduces
+            latency (When <see cref="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration"/> is null) or the number of messages
+            dropped (When <see cref="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration"/> is not null).
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration">
+            <summary>
+            Gets or sets a value defining the maximum duration a call can block.
+            If there are more metrics than `MaxMetricsInAsyncQueue` waiting to be sent:
+                - if <see cref="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration"/> is null, the metric send by a call to a
+                  <see cref="T:StatsdClient.DogStatsd"/> or <see cref="T:StatsdClient.DogStatsdService"/> method will be dropped.
+                - If <see cref="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration"/> is not null, the metric send by a call to a
+                  <see cref="T:StatsdClient.DogStatsd"/> or <see cref="T:StatsdClient.DogStatsdService"/> method will block for at most
+                  <see cref="P:StatsdClient.AdvancedStatsConfig.MaxBlockDuration"/> duration.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.DurationBeforeSendingNotFullBuffer">
+            <summary>
+            Gets or sets a value defining how long
+            DogStatsD waits before sending a not full buffer (Metrics are buffered before sent).
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.UDSBufferFullBlockDuration">
+            <summary>
+            Gets or sets a value defining how long to wait when the UDS buffer is full
+            (SocketError.NoBufferSpaceAvailable). A null value results in
+            dropping the metric.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.TelemetryFlushInterval">
+            <summary>
+            Gets or sets a value defining the duration between two telemetry flushes.
+            When this value is set at null, telemetry is disabled.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.AdvancedStatsConfig.OptionalTelemetryEndPoint">
+            <summary>
+            Gets or sets a value defining the telemetry endpoint. INTERNAL USAGE ONLY.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.AggregatorFlusher`1">
+            <summary>
+            AggregatorFlusher is responsible for flushing the aggregated `MetricStats` instances.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.Aggregators">
+            <summary>
+            Store all aggregators
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.CountAggregator">
+            <summary>
+            Aggregate <see cref="T:StatsdClient.Statistic.StatsMetric"/> instances of type <see cref="F:StatsdClient.MetricType.Count"/>
+            by summing the value by <see cref="T:StatsdClient.Aggregator.MetricStatsKey"/>.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.GaugeAggregator">
+            <summary>
+            Aggregate `StatsMetric` instances of type `Gauge` by by keeping the last value.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.MetricStatsKey">
+            <summary>
+            Dictionary Key for `MetricStats`.
+            It is more efficient to use `MetricStatsKey` than creating a string from metric name and tags.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Aggregator.SetAggregator">
+            <summary>
+            Aggregate `StatsMetric` instances of type `Set` by keeping the unique values.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Bufferize.BufferBuilder">
+            <summary>
+            Append string values to a fixed size bytes buffer.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Bufferize.BufferBuilderHandler">
+            <summary>
+            BufferBuilderHandler forwards metrics to ITransport and update telemetry.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Bufferize.IStatsBufferizeFactory">
+            <summary>
+            IStatsBufferizeFactory is a factory for StatsBufferize.
+            It is used to test StatsBufferize.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Bufferize.StatsBufferize">
+            <summary>
+            StatsBufferize bufferizes metrics before sending them.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.ClientSideAggregationConfig">
+            <summary>
+            Define the configuration for the client side aggregation.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.ClientSideAggregationConfig.MaxUniqueStatsBeforeFlush">
+            <summary>
+            Gets or sets the maximum number of unique stats before flushing.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.ClientSideAggregationConfig.FlushInterval">
+            <summary>
+            Gets or sets the maximum interval duration between two flushes.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Status">
+            <summary>
+            The status of the service check.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.Status.OK">
+            <summary>
+            Status OK
+            </summary>
+        </member>
+        <member name="F:StatsdClient.Status.WARNING">
+            <summary>
+            Status Warning
+            </summary>
+        </member>
+        <member name="F:StatsdClient.Status.CRITICAL">
+            <summary>
+            Status Critical
+            </summary>
+        </member>
+        <member name="F:StatsdClient.Status.UNKNOWN">
+            <summary>
+            Status Unknown
+            </summary>
+        </member>
+        <member name="T:StatsdClient.DogStatsd">
+            <summary>
+            DogStatsd is a collection of static methods that provide the same feature as DogStatsdService.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.DogStatsd.TelemetryCounters">
+            <summary>
+            Gets the telemetry counters
+            </summary>
+            <value>The telemetry counters.</value>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Configure(StatsdClient.StatsdConfig)">
+            <summary>
+            Configures the instance.
+            Must be called before any other methods.
+            </summary>
+            <param name="config">The value of the config.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Event(System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String,System.String,System.String[])">
+            <summary>
+            Records an event.
+            </summary>
+            <param name="title">The title of the event.</param>
+            <param name="text">The text body of the event.</param>
+            <param name="alertType">error, warning, success, or info (defaults to info).</param>
+            <param name="aggregationKey">A key to use for aggregating events.</param>
+            <param name="sourceType">The source type name.</param>
+            <param name="dateHappened">The epoch timestamp for the event (defaults to the current time from the DogStatsD server).</param>
+            <param name="priority">Specifies the priority of the event (normal or low).</param>
+            <param name="hostname">The name of the host.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Counter(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Adjusts the specified counter by a given delta.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">A given delta.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Increment(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Increments the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of increment.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Decrement(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Decrements the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of decrement.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Gauge(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records the latest fixed value for the specified named gauge.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the gauge.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Histogram(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named histogram.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the histogram.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Distribution(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named distribution.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the distribution.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Set``1(System.String,``0,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the value.</typeparam>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Set(System.String,System.String,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Timer(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records an execution time in milliseconds.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The time in millisecond.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.StartTimer(System.String,System.Double,System.String[])">
+            <summary>
+            Creates a timer that records the execution time until Dispose is called on the returned value.
+            </summary>
+            <param name="name">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <returns>A disposable object that records the execution time until Dispose is called.</returns>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Time(System.Action,System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given action.
+            </summary>
+            <param name="action">The given action.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Time``1(System.Func{``0},System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given function.
+            </summary>
+            <param name="func">The given function.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the returned value of <paramref name="func"/>.</typeparam>
+            <returns>The returned value of <paramref name="func"/>.</returns>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.ServiceCheck(System.String,StatsdClient.Status,System.Nullable{System.Int32},System.String,System.String[],System.String)">
+            <summary>
+            Records a run status for the specified named service check.
+            </summary>
+            <param name="name">The name of the service check.</param>
+            <param name="status">A constant describing the service status.</param>
+            <param name="timestamp">The epoch timestamp for the service check (defaults to the current time from the DogStatsD server).</param>
+            <param name="hostname">The hostname to associate with the service check.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <param name="message">Additional information or a description of why the status occurred.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Flush">
+            <summary>
+            Flushes all metrics.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.DogStatsd.Dispose">
+            <summary>
+            Disposes the instance of DogStatsdService.
+            Flushes all metrics.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.DogStatsdEndPoint">
+            <summary>
+            DogStatsdEndPoint is a DogStatsd endpoint (UDP or UDS).
+            </summary>
+        </member>
+        <member name="P:StatsdClient.DogStatsdEndPoint.ServerName">
+            <summary>
+            Gets or sets a value defining the name of the endpoint
+            </summary>
+        </member>
+        <member name="P:StatsdClient.DogStatsdEndPoint.Port">
+            <summary>
+            Gets or sets a value defining the port number if any
+            </summary>
+        </member>
+        <member name="P:StatsdClient.DogStatsdEndPoint.PipeName">
+            <summary>
+            Gets or sets the name of the pipe. INTERNAL USAGE ONLY.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.DogStatsdEndPoint.AreEquals(StatsdClient.DogStatsdEndPoint)">
+            <summary>
+            AreEquals returns whether `this` and `endPoint` have the same values
+            </summary>
+            <param name="endPoint">The endpoint to compare with `this`</param>
+            <returns>Returns whether `this` and `endPoint` have the same values</returns>
+        </member>
+        <member name="T:StatsdClient.DogStatsdService">
+            <summary>
+            DogStatsdService is a <a href="https://docs.datadoghq.com/developers/dogstatsd/?tab=net">DogStatsD client</a>.
+            Dispose must be called to flush all the metrics.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.DogStatsdService.TelemetryCounters">
+            <summary>
+            Gets the telemetry counters
+            </summary>
+            <value>The telemetry counters.</value>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Configure(StatsdClient.StatsdConfig)">
+            <summary>
+            Configures the instance.
+            Must be called before any other methods.
+            </summary>
+            <param name="config">The value of the config.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Event(System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String,System.String,System.String[])">
+            <summary>
+            Records an event.
+            </summary>
+            <param name="title">The title of the event.</param>
+            <param name="text">The text body of the event.</param>
+            <param name="alertType">error, warning, success, or info (defaults to info).</param>
+            <param name="aggregationKey">A key to use for aggregating events.</param>
+            <param name="sourceType">The source type name.</param>
+            <param name="dateHappened">The epoch timestamp for the event (defaults to the current time from the DogStatsD server).</param>
+            <param name="priority">Specifies the priority of the event (normal or low).</param>
+            <param name="hostname">The name of the host.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Counter(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Adjusts the specified counter by a given delta.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">A given delta.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Increment(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Increments the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of increment.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Decrement(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Decrements the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of decrement.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Gauge(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records the latest fixed value for the specified named gauge.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the gauge.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Histogram(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named histogram.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the histogram.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Distribution(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named distribution.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the distribution.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Set``1(System.String,``0,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the value.</typeparam>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Set(System.String,System.String,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Timer(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records an execution time in milliseconds.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The time in millisecond.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.StartTimer(System.String,System.Double,System.String[])">
+            <summary>
+            Creates a timer that records the execution time until Dispose is called on the returned value.
+            </summary>
+            <param name="name">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <returns>A disposable object that records the execution time until Dispose is called.</returns>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Time(System.Action,System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given action.
+            </summary>
+            <param name="action">The given action.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Time``1(System.Func{``0},System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given function.
+            </summary>
+            <param name="func">The given function.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the returned value of <paramref name="func"/>.</typeparam>
+            <returns>The returned value of <paramref name="func"/>.</returns>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.ServiceCheck(System.String,StatsdClient.Status,System.Nullable{System.Int32},System.String,System.String[],System.String)">
+            <summary>
+            Records a run status for the specified named service check.
+            </summary>
+            <param name="name">The name of the service check.</param>
+            <param name="status">A constant describing the service status.</param>
+            <param name="timestamp">The epoch timestamp for the service check (defaults to the current time from the DogStatsD server).</param>
+            <param name="hostname">The hostname to associate with the service check.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <param name="message">Additional information or a description of why the status occurred.</param>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Flush">
+            <summary>
+            Flushes all metrics.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.DogStatsdService.Dispose">
+            <summary>
+            Disposes an instance of DogStatsdService.
+            Flushes all metrics.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.IDogStatsd">
+            <summary>
+            IDogStatsd is an interface over DogStatsdService.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.IDogStatsd.TelemetryCounters">
+            <summary>
+            Gets the telemetry counters
+            </summary>
+            <value>The telemetry counters.</value>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Configure(StatsdClient.StatsdConfig)">
+            <summary>
+            Configures the instance.
+            Must be called before any other methods.
+            </summary>
+            <param name="config">The value of the config.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Counter(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Adjusts the specified counter by a given delta.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">A given delta.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Decrement(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Decrements the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of decrement.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Event(System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int32},System.String,System.String,System.String[])">
+            <summary>
+            Records an event.
+            </summary>
+            <param name="title">The title of the event.</param>
+            <param name="text">The text body of the event.</param>
+            <param name="alertType">error, warning, success, or info (defaults to info).</param>
+            <param name="aggregationKey">A key to use for aggregating events.</param>
+            <param name="sourceType">The source type name.</param>
+            <param name="dateHappened">The epoch timestamp for the event (defaults to the current time from the DogStatsD server).</param>
+            <param name="priority">Specifies the priority of the event (normal or low).</param>
+            <param name="hostname">The name of the host.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Gauge(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records the latest fixed value for the specified named gauge.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the gauge.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Histogram(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named histogram.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the histogram.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Distribution(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified named distribution.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value of the distribution.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Increment(System.String,System.Int32,System.Double,System.String[])">
+            <summary>
+            Increments the specified counter.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The amount of increment.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Set``1(System.String,``0,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the value.</typeparam>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Set(System.String,System.String,System.Double,System.String[])">
+            <summary>
+            Records a value for the specified set.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The value to set.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.StartTimer(System.String,System.Double,System.String[])">
+            <summary>
+            Creates a timer that records the execution time until Dispose is called on the returned value.
+            </summary>
+            <param name="name">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <returns>A disposable object that records the execution time until Dispose is called.</returns>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Time(System.Action,System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given action.
+            </summary>
+            <param name="action">The given action.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Time``1(System.Func{``0},System.String,System.Double,System.String[])">
+            <summary>
+            Records an execution time for the given function.
+            </summary>
+            <param name="func">The given function.</param>
+            <param name="statName">The name of the metric.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <typeparam name="T">The type of the returned value of <paramref name="func"/>.</typeparam>
+            <returns>The returned value of <paramref name="func"/>.</returns>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.Timer(System.String,System.Double,System.Double,System.String[])">
+            <summary>
+            Records an execution time in milliseconds.
+            </summary>
+            <param name="statName">The name of the metric.</param>
+            <param name="value">The time in millisecond.</param>
+            <param name="sampleRate">Percentage of metric to be sent.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+        </member>
+        <member name="M:StatsdClient.IDogStatsd.ServiceCheck(System.String,StatsdClient.Status,System.Nullable{System.Int32},System.String,System.String[],System.String)">
+            <summary>
+            Records a run status for the specified named service check.
+            </summary>
+            <param name="name">The name of the service check.</param>
+            <param name="status">A constant describing the service status.</param>
+            <param name="timestamp">The epoch timestamp for the service check (defaults to the current time from the DogStatsD server).</param>
+            <param name="hostname">The hostname to associate with the service check.</param>
+            <param name="tags">Array of tags to be added to the data.</param>
+            <param name="message">Additional information or a description of why the status occurred.</param>
+        </member>
+        <member name="T:StatsdClient.ITelemetryCounters">
+            <summary>
+            ITelemetryCounters contains the telemetry counters.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.MetricsSent">
+            <summary>
+            Gets the number of metrics sent.
+            </summary>
+            <value>The number of metrics sent.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.EventsSent">
+            <summary>
+            Gets the number of events sent.
+            </summary>
+            <value>The number of events sent.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.ServiceChecksSent">
+            <summary>
+            Gets the number of service checks sent.
+            </summary>
+            <value>The number of service checks sent.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.BytesSent">
+            <summary>
+            Gets the total number of bytes sent.
+            </summary>
+            <value>The total number of bytes sent.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.BytesDropped">
+            <summary>
+            Gets the total number of bytes dropped.
+            </summary>
+            <value>The total number of bytes dropped.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.PacketsSent">
+            <summary>
+            Gets the number of packets (UDP or UDS) sent.
+            </summary>
+            <value>The number of packets (UDP or UDS) sent.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.PacketsDropped">
+            <summary>
+            Gets the number of packets (UDP or UDS) dropped.
+            </summary>
+            <value>The number of packets (UDP or UDS) dropped.</value>
+        </member>
+        <member name="P:StatsdClient.ITelemetryCounters.PacketsDroppedQueue">
+            <summary>
+            Gets the number of packets (UDP or UDS) dropped because the queue is full.
+            </summary>
+            <value>The number of packets (UDP or UDS) dropped because the queue is full.</value>
+        </member>
+        <member name="T:StatsdClient.Statistic.Stats">
+            <summary>
+            Stats stores the data for a metric or a service check or an event.
+            The field `Metric`, `ServiceCheck` and `Event` are structures for performance reasons. These
+            fields are embeded inside Stats and so do not require extra allocations.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Statistic.StatsEvent">
+            <summary>
+            Store the data for an event.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Statistic.StatsMetric">
+            <summary>
+            Store the data for a metric.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Statistic.StatsServiceCheck">
+            <summary>
+            Store the data for a service check.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.StatsdBuilder">
+            <summary>
+            StatsdBuilder builds an instance of `Statsd` from StatsdConfig.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.StatsdConfig">
+            <summary>
+            The configuration options for DogStatsdService.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.DefaultStatsdPort">
+            <summary>
+            The default port for UDP.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.DefaultStatsdMaxUDPPacketSize">
+            <summary>
+            The default UDP maximum packet size.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.EntityIdEnvVar">
+            <summary>
+            The name of the environment variable defining the global tags to be applied to every metric, event, and service check.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.DogStatsdPortEnvVar">
+            <summary>
+            The name of the environment variable defining the port of the targeted StatsD server.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.AgentHostEnvVar">
+            <summary>
+            The name of the environment variable defining the host name of the targeted StatsD server.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.AgentPipeNameEnvVar">
+            <summary>
+            The name of the environment variable defining the name of the pipe. INTERNAL USAGE ONLY.
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.ServiceEnvVar">
+            <summary>
+            The name of the environment variable defining the service name
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.EnvironmentEnvVar">
+            <summary>
+            The name of the environment variable defining the environment name
+            </summary>
+        </member>
+        <member name="F:StatsdClient.StatsdConfig.VersionEnvVar">
+            <summary>
+            The name of the environment variable defining the version of the service
+            </summary>
+        </member>
+        <member name="M:StatsdClient.StatsdConfig.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:StatsdClient.StatsdConfig"/> class.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.StatsdServerName">
+            <summary>
+            Gets or sets the host name of the targeted StatsD server.
+            </summary>
+            <value>The host name of the targeted StatsD server.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.PipeName">
+            <summary>
+            Gets or sets the name of the pipe. INTERNAL USAGE ONLY.
+            </summary>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.StatsdPort">
+            <summary>
+            Gets or sets the port of the targeted StatsD server.
+            </summary>
+            <value>The port of the targeted StatsD server.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.StatsdMaxUDPPacketSize">
+            <summary>
+            Gets or sets the maximum UDP packet size.
+            </summary>
+            <value>The maximum UDP packet size.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.StatsdMaxUnixDomainSocketPacketSize">
+            <summary>
+            Gets or sets the maximum Unix domain socket packet size.
+            </summary>
+            <value>The maximum Unix domain socket packet size.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.StatsdTruncateIfTooLong">
+            <summary>
+            Gets or sets a value indicating whether we truncate the metric if it is too long.
+            </summary>
+            <value>The value indicating whether we truncate the metric if it is too long.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.Prefix">
+            <summary>
+            Gets or sets the prefix to apply to every metric, event, and service check.
+            </summary>
+            <value>The prefix to apply to every metric, event, and service check.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.Advanced">
+            <summary>
+            Gets the advanced configuration.
+            </summary>
+            <value>The advanced configuration</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.Environment">
+            <summary>
+            Gets or sets the environment tag
+            </summary>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.ServiceVersion">
+            <summary>
+            Gets or sets the service version tag
+            </summary>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.ServiceName">
+            <summary>
+            Gets or sets the service name tag
+            </summary>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.ConstantTags">
+            <summary>
+            Gets or sets the global tags to be applied to every metric, event, and service check.
+            </summary>
+            <value>The global tags to be applied to every metric, event, and service check.</value>
+        </member>
+        <member name="P:StatsdClient.StatsdConfig.ClientSideAggregation">
+            <summary>
+            Gets or sets a value defining the client side aggregation config.
+            If the value is null, the client side aggregation is not enabled.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.StatsRouter">
+            <summary>
+            Route `Stats` instances.
+            Route a metric of type <see cref="F:StatsdClient.MetricType.Count"/>, <see cref="F:StatsdClient.MetricType.Gauge"/>
+            and <see cref="F:StatsdClient.MetricType.Set"/> respectively to <see cref="T:StatsdClient.Aggregator.CountAggregator"/>,
+            <see cref="T:StatsdClient.Aggregator.GaugeAggregator"/> and <see cref="T:StatsdClient.Aggregator.SetAggregator"/>.
+            Others stats are routed to <see cref="T:StatsdClient.Bufferize.BufferBuilder"/>.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Telemetry">
+            <summary>
+            Telemetry sends telemetry metrics.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.Transport.ITransport.Send(System.Byte[],System.Int32)">
+            <summary>
+            Send the buffer.
+            Must be thread safe as it is called to send metrics and the telemetry.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.Transport.UDPTransport.Send(System.Byte[],System.Int32)">
+            <summary>
+            Send the buffer.
+            Must be thread safe.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.Transport.UnixDomainSocketTransport.Send(System.Byte[],System.Int32)">
+            <summary>
+            Send the buffer.
+            Must be thread safe.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Worker.AsynchronousWorker`1">
+            <summary>
+            AsynchronousWorker performs tasks asynchronously.
+            `handler` must be thread safe if `workerThreadCount` > 1.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Worker.ConcurrentBoundedBlockingQueue`1">
+            <summary>
+            ConcurrentBoundedBlockingQueue is the same as ConcurrentBoundedQueue but
+            it waits for `waitTimeout` before dropping the value when the queue is full.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Worker.ConcurrentBoundedQueue`1">
+            <summary>
+            ConcurrentBoundedQueue is a ConcurrentQueue with a bounded number of items.
+            Note: Value is not enqueued when the queue is full.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.Worker.IAsynchronousWorkerHandler`1.OnNewValue(`0)">
+            <summary>
+            Called when a new value is ready to be handled by the worker.
+            </summary>
+        </member>
+        <member name="M:StatsdClient.Worker.IAsynchronousWorkerHandler`1.OnIdle">
+            <summary>
+            Called when the worker is waiting for new value to handle.
+            </summary>
+            <returns>Return true to make the worker in a sleep state, false otherwise.</returns>
+        </member>
+        <member name="M:StatsdClient.Worker.IAsynchronousWorkerHandler`1.Flush">
+            <summary>
+            Called when AsynchronousWorker request a flush operation.
+            </summary>
+        </member>
+        <member name="T:StatsdClient.Worker.ManualResetEventWrapper">
+            <summary>
+            Simple wrapper arround ManualResetEventSlim.
+            </summary>
+        </member>
+    </members>
+</doc>

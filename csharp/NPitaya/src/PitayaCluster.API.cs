@@ -28,7 +28,6 @@ namespace NPitaya
     {
         private static readonly int ProcessorsCount = Environment.ProcessorCount;
         private static ISerializer _serializer = new ProtobufSerializer();
-        private static Sidecar.SidecarClient _client = null;
         public delegate string RemoteNameFunc(string methodName);
         private delegate void OnSignalFunc();
         private static readonly Dictionary<string, RemoteMethod> RemotesDict = new Dictionary<string, RemoteMethod>();
@@ -72,7 +71,7 @@ namespace NPitaya
         {
             var stream = client.ListenSD(new Google.Protobuf.WellKnownTypes.Empty());
             new Thread(async () =>{
-                while (await stream.ResponseStream.MoveNext(CancellationToken.None))
+                while (await stream.ResponseStream.MoveNext(_channel.ShutdownToken))
                 {
                     var current = stream.ResponseStream.Current;
                     if (_onSDEvent != null){
@@ -87,8 +86,7 @@ namespace NPitaya
             var stream = client.ListenRPC();
 
             new Thread(async () =>{
-                // TODO see what I can do with this cancellation token
-                while (await stream.ResponseStream.MoveNext(CancellationToken.None))
+                while (await stream.ResponseStream.MoveNext(_channel.ShutdownToken))
                 {
                     var current = stream.ResponseStream.Current;
                     queueRead.Add(current);
@@ -109,11 +107,9 @@ namespace NPitaya
                 new Thread(async () =>
                 {
                     Logger.Debug($"[Consumer thread {threadId}] Started");
-                    for (;;) // TODO must exit somehow and log that the thread is exiting
-//                  Logger.Debug($"[Consumer thread {threadId}] No more incoming RPCs, exiting");
+                    while (!_channel.ShutdownToken.IsCancellationRequested)
                     {
-                        var req = queueRead.Take();
-                        // TODO receive a span here and propagate
+                        var req = queueRead.Take(_channel.ShutdownToken);
                         //#pragma warning disable 4014
                         var res = await HandleIncomingRpc(req.Req);
                         //#pragma warning restore 4014
@@ -137,13 +133,17 @@ namespace NPitaya
 
         public static void Initialize(
                 string sidecarListenAddr,
+                int sidecarPort,
                 Server server,
                 bool debug,
                 Action<SDEvent> cbServiceDiscovery = null
                 )
         {
-            _client = InitializeSidecarClient(sidecarListenAddr, server, _tracer, debug);
-
+            if (_isInitialized){
+                Logger.Warn("Initialize called but pitaya is already initialized");
+                return;
+            }
+            InitializeSidecarClient(sidecarListenAddr, sidecarPort, server, debug);
             if (_client == null)
             {
                 throw new PitayaException("Initialization failed");
@@ -199,7 +199,7 @@ namespace NPitaya
                 _processedSigint = true;
                 Console.WriteLine("Received SIGINT (Ctrl+C), executing on signal function");
                 OnSignal();
-                _client.StopPitaya(new Google.Protobuf.WellKnownTypes.Empty());
+                Terminate();
             };
 
             AppDomain.CurrentDomain.ProcessExit += (_, ea) =>
@@ -209,7 +209,7 @@ namespace NPitaya
                 } else{
                     Console.WriteLine("Received SIGTERM, executing on signal function");
                     OnSignal();
-                    _client.StopPitaya(new Google.Protobuf.WellKnownTypes.Empty());
+                    Terminate();
                 }
             };
         }
@@ -264,27 +264,36 @@ namespace NPitaya
         {
             _serializer = s;
         }
+        public static void Terminate()
+        {
+            if (_isInitialized){
+                UnsetServiceDiscoveryListener();
+                _client.StopPitaya(new Google.Protobuf.WellKnownTypes.Empty());
+                ShutdownSidecar();
+            }
+        }
 
-// TODO do I need this method?
-//        public static void Terminate()
-//        {
-//            RemoveServiceDiscoveryListener(_serviceDiscoveryListener);
-//            TerminateInternal();
-//            MetricsReporters.Terminate();
-//        }
-//
+        public static async void TerminateAsync()
+        {
+            if (_isInitialized){
+                UnsetServiceDiscoveryListener();
+                await _client.StopPitayaAsync(new Google.Protobuf.WellKnownTypes.Empty());
+                await ShutdownSidecarAsync();
+            }
+        }
+
         public static Server GetServerById(string serverId)
         {
             try{
                 var protoSv = _client.GetServer(new NPitaya.Protos.Server{Id=serverId});
                 return protoSv;
-            } catch (Exception _){
+            } catch (Exception){
                 return null;
             }
         }
-//
+
         // TODO deprecate this frontendId field, it's not useful when using nats
-        public static unsafe Task<PushResponse> SendPushToUser(string serverType, string route, string uid,
+        public static Task<PushResponse> SendPushToUser(string serverType, string route, string uid,
             object pushMsg)
         {
           // TODO see if this taskfactory is still required
@@ -306,7 +315,7 @@ namespace NPitaya
             });
         }
 
-        public static unsafe Task<PushResponse> SendKickToUser(string serverType, KickMsg kick)
+        public static Task<PushResponse> SendKickToUser(string serverType, KickMsg kick)
         {
             return _rpcTaskFactory.StartNew(() =>
             {
@@ -332,7 +341,7 @@ namespace NPitaya
             return metadata;
         }
 
-        public static unsafe Task<T> Rpc<T>(string serverId, Route route, object msg)
+        public static Task<T> Rpc<T>(string serverId, Route route, object msg)
         {
             return _rpcTaskFactory.StartNew(() =>
             {
@@ -348,12 +357,8 @@ namespace NPitaya
                 {
                     var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
                     sw = Stopwatch.StartNew();
-                    fixed (byte* p = data)
-                    {
-                        // TODO this can be optimized I think by using a readonly span
-                        res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}}, GRPCMetadataWithSpanContext(span));
-                    }
-
+                    // TODO this can be optimized I think by using a readonly span
+                    res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}});
                     sw.Stop();
                     var protoRet = GetProtoMessageFromResponse<T>(res);
                     return protoRet;

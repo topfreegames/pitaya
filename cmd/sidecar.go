@@ -16,12 +16,18 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/pitaya/pkg/config"
 	"github.com/topfreegames/pitaya/sidecar"
 )
 
 var debug bool
+var bind string
+var bindProtocol string
 
 // sidecarCmd represents the start command
 var sidecarCmd = &cobra.Command{
@@ -30,11 +36,13 @@ var sidecarCmd = &cobra.Command{
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.NewConfig()
-		sidecar.StartSidecar(cfg, debug)
+		sidecar.StartSidecar(cfg, debug, bind, bindProtocol)
 	},
 }
 
 func init() {
 	sidecarCmd.Flags().BoolVarP(&debug, "debug", "d", false, "turn debug on")
+	sidecarCmd.Flags().StringVarP(&bind, "bind", "b", filepath.FromSlash(fmt.Sprintf("%s/pitaya.sock", os.TempDir())), "bind address of the sidecar")
+	sidecarCmd.Flags().StringVarP(&bindProtocol, "bindProtocol", "p", "unix", "bind address of the sidecar")
 	rootCmd.AddCommand(sidecarCmd)
 }
