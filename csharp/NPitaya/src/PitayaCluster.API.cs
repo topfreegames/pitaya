@@ -358,7 +358,7 @@ namespace NPitaya
                     var data = SerializerUtils.SerializeOrRaw(msg, _serializer);
                     sw = Stopwatch.StartNew();
                     // TODO this can be optimized I think by using a readonly span
-                    res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}});
+                    res = _client.SendRPC(new RequestTo{ServerID=serverId, Msg=new Msg{Route=route.ToString(), Data=ByteString.CopyFrom(data.AsSpan()), Type=MsgType.MsgRequest}}, GRPCMetadataWithSpanContext(span));
                     sw.Stop();
                     var protoRet = GetProtoMessageFromResponse<T>(res);
                     return protoRet;

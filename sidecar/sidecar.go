@@ -254,11 +254,11 @@ func getCtxWithParentSpan(ctx context.Context, op string) context.Context {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		carrier := opentracing.HTTPHeadersCarrier(md)
-		clientContext, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
+		spanContext, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
 		if err != nil {
 			logger.Log.Debugf("tracing: could not extract span from context!")
 		} else {
-			return tracing.StartSpan(ctx, op, opentracing.Tags{}, clientContext)
+			return tracing.StartSpan(ctx, op, opentracing.Tags{}, spanContext)
 		}
 	}
 	return ctx
@@ -267,7 +267,10 @@ func getCtxWithParentSpan(ctx context.Context, op string) context.Context {
 // SendRPC is called by the sidecar client when it wants to send RPC requests to
 // other pitaya servers
 func (s *SidecarServer) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
-	return pitaya.RawRPC(getCtxWithParentSpan(ctx, in.Msg.Route), in.ServerID, in.Msg.Route, in.Msg.Data)
+	pCtx := getCtxWithParentSpan(ctx, in.Msg.Route)
+	ret, err := pitaya.RawRPC(pCtx, in.ServerID, in.Msg.Route, in.Msg.Data)
+	defer tracing.FinishSpan(pCtx, err)
+	return ret, err
 }
 
 // SendPush is called by the sidecar client when it wants to send a push to an
