@@ -12,7 +12,7 @@ require (
 	github.com/customerio/gospec v0.0.0-20130710230057-a5cc0e48aa39 // indirect
 	github.com/garyburd/redigo v1.6.3 // indirect
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/golang/mock v1.6.0
+	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.9.0
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber/jaeger-client-go v2.28.0+incompatible
