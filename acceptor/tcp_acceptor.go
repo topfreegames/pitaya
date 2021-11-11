@@ -138,6 +138,9 @@ func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
 
 	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
+	if err != nil {
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
+	}
 	a.listener = listener
 	a.running = true
 	a.serve()

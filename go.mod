@@ -3,8 +3,8 @@ module github.com/topfreegames/pitaya
 go 1.16
 
 require (
-	github.com/DataDog/datadog-go v4.5.1+incompatible
-	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
+	github.com/DataDog/datadog-go v4.8.2+incompatible
+	github.com/HdrHistogram/hdrhistogram-go v1.1.1 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -20,16 +20,17 @@ require (
 	github.com/nats-io/nats-server/v2 v2.2.2
 	github.com/nats-io/nats.go v1.10.1-0.20210419223411-20527524c393
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber/jaeger-client-go v2.28.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/tests/v3 v3.5.0-alpha.0
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	go.etcd.io/etcd/api/v3 v3.5.0
+	go.etcd.io/etcd/client/v3 v3.5.0
+	go.etcd.io/etcd/tests/v3 v3.5.0
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	google.golang.org/grpc v1.37.0
+	google.golang.org/protobuf v1.26.0
 )

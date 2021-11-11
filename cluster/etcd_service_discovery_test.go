@@ -142,7 +142,7 @@ func TestEtcdSDBootstrapLeaseError(t *testing.T) {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
 			c, cli := helpers.GetTestEtcd(t)
-			c.Terminate(t)
+			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			err := e.grantLease()
 			assert.Error(t, err)
@@ -220,7 +220,8 @@ func TestEtcdSDDeleteLocalInvalidServers(t *testing.T) {
 	for _, table := range etcdSDTables {
 		t.Run(table.server.ID, func(t *testing.T) {
 			config := getConfig()
-			_, cli := helpers.GetTestEtcd(t)
+			c, cli := helpers.GetTestEtcd(t)
+			defer c.Terminate(t)
 			e := getEtcdSD(t, config, table.server, cli)
 			invalidServer := &Server{
 				ID:   "invalid",

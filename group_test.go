@@ -33,6 +33,9 @@ import (
 )
 
 func TestCreateDuplicatedGroup(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	err := GroupCreate(ctx, "testCreateDuplicatedGroup")
@@ -43,6 +46,9 @@ func TestCreateDuplicatedGroup(t *testing.T) {
 }
 
 func TestCreateGroup(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	err := GroupCreate(ctx, "testCreateGroup")
@@ -55,6 +61,9 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestCreateGroupWithTTL(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	err := GroupCreateWithTTL(ctx, "testCreateGroupWithTTL", 10)
@@ -67,6 +76,9 @@ func TestCreateGroupWithTTL(t *testing.T) {
 }
 
 func TestGroupAddMember(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -105,6 +117,9 @@ func TestGroupAddMember(t *testing.T) {
 }
 
 func TestGroupAddDuplicatedMember(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	err := GroupCreate(ctx, "testGroupAddDuplicatedMember")
@@ -117,6 +132,9 @@ func TestGroupAddDuplicatedMember(t *testing.T) {
 }
 
 func TestGroupContainsMember(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -159,6 +177,9 @@ func TestGroupContainsMember(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -192,6 +213,9 @@ func TestRemove(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -233,6 +257,9 @@ func TestDelete(t *testing.T) {
 }
 
 func TestRemoveAll(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -274,6 +301,9 @@ func TestRemoveAll(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	tables := []struct {
@@ -308,6 +338,9 @@ func TestCount(t *testing.T) {
 }
 
 func TestMembers(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	ctrl := gomock.NewController(t)
@@ -328,6 +361,9 @@ func TestMembers(t *testing.T) {
 }
 
 func TestBroadcast(t *testing.T) {
+	c := initGroups(t)
+	defer c.Terminate(t)
+
 	ctx := context.Background()
 	t.Parallel()
 	ctrl := gomock.NewController(t)

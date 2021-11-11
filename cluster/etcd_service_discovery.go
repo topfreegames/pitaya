@@ -309,7 +309,7 @@ func (sd *etcdServiceDiscovery) GetServersByType(serverType string) (map[string]
 		// Create a new map to avoid concurrent read and write access to the
 		// map, this also prevents accidental changes to the list of servers
 		// kept by the service discovery.
-		ret := make(map[string]*Server, len(sd.serverMapByType))
+		ret := make(map[string]*Server, len(sd.serverMapByType[serverType]))
 		for k, v := range sd.serverMapByType[serverType] {
 			ret[k] = v
 		}
@@ -383,7 +383,10 @@ func (sd *etcdServiceDiscovery) Init() error {
 	var err error
 
 	if sd.cli == nil {
-		sd.InitETCDClient()
+		err = sd.InitETCDClient()
+		if err != nil {
+			return err
+		}
 	} else {
 		sd.cli.KV = namespace.NewKV(sd.cli.KV, sd.etcdPrefix)
 		sd.cli.Watcher = namespace.NewWatcher(sd.cli.Watcher, sd.etcdPrefix)
@@ -429,6 +432,7 @@ func parseServer(value []byte) (*Server, error) {
 	err := json.Unmarshal(value, &sv)
 	if err != nil {
 		logger.Log.Warnf("failed to load server %s, error: %s", sv, err.Error())
+		return nil, err
 	}
 	return sv, nil
 }
@@ -670,7 +674,10 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 					failedWatchAttempts++
 					time.Sleep(1000 * time.Millisecond)
 					if failedWatchAttempts > 10 {
-						sd.InitETCDClient()
+						if err := sd.InitETCDClient(); err != nil {
+							failedWatchAttempts = 0
+							continue
+						}
 						chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
 						failedWatchAttempts = 0
 					}

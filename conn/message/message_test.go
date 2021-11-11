@@ -3,6 +3,7 @@ package message
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -14,6 +15,8 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func resetDicts(t *testing.T) {
 	t.Helper()
+	routesCodesMutex.Lock()
+	defer routesCodesMutex.Unlock()
 	routes = make(map[string]uint16)
 	codes = make(map[uint16]string)
 }
@@ -156,7 +159,7 @@ var dictTables = map[string]struct {
 		map[uint16]string{1: "a"}, errors.New("duplicated route(route: b, code: 1)")},
 }
 
-func TestSetDictionaty(t *testing.T) {
+func TestSetDictionary(t *testing.T) {
 	for name, table := range dictTables {
 		t.Run(name, func(t *testing.T) {
 			for _, dict := range table.dicts {
@@ -169,4 +172,40 @@ func TestSetDictionaty(t *testing.T) {
 			resetDicts(t)
 		})
 	}
+}
+
+func TestSetDictionaryRace(t *testing.T) {
+	defer resetDicts(t)
+
+	done := make(chan bool, 2)
+
+	setDictRace := func(dict map[string]uint16) {
+		assert.Nil(t, SetDictionary(dict))
+		done <- true
+	}
+
+	go setDictRace(map[string]uint16{"a": 1})
+	go setDictRace(map[string]uint16{"b": 2})
+
+	// wait for both setDictRace to finish
+	<-done
+	<-done
+
+	expected_codes := map[uint16]string{1: "a", 2: "b"}
+	assert.EqualValues(t, expected_codes, codes)
+
+	expected_routes := map[string]uint16{"a": 1, "b": 2}
+	assert.EqualValues(t, expected_routes, routes)
+}
+
+func TestGetDictionary(t *testing.T) {
+	defer resetDicts(t)
+	expected := map[string]uint16{"a": 1, "b": 2}
+	assert.Nil(t, SetDictionary(expected))
+
+	dict := GetDictionary()
+	assert.Equal(t, expected, dict)
+
+	// make sure we're copying the routes maps
+	assert.NotEqual(t, fmt.Sprintf("%p", routes), fmt.Sprintf("%p", dict))
 }
