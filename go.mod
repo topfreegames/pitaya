@@ -19,6 +19,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.2.2
 	github.com/nats-io/nats.go v1.10.1-0.20210419223411-20527524c393
+	github.com/nats-io/nuid v1.0.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
@@ -31,6 +32,6 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.etcd.io/etcd/tests/v3 v3.5.0
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
-	google.golang.org/grpc v1.37.0
+	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 )
