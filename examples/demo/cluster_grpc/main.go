@@ -75,8 +75,6 @@ func configureFrontend(port int) {
 	}
 }
 
-
-
 func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
