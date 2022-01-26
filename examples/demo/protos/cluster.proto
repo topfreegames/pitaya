@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package protos;
+package cluster_protos;
 option go_package = "examples/demo/protos";
 
 // RPCMsg message to be sent using rpc
