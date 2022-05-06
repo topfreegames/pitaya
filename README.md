@@ -1,6 +1,7 @@
 # pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
-*WARNING*: The [version v1.x](https://github.com/topfreegames/pitaya/tree/v1) of pitaya is under deprecation, complete guide of the new version v2.x can be found [here](https://github.com/topfreegames/pitaya/issues/240).
+*WARNING*: The [version v1.x](https://github.com/topfreegames/pitaya/tree/v1) of pitaya is deprecated, complete guide of the new version v2.x can be found [here](https://github.com/topfreegames/pitaya/issues/240).
+The current README is for version 2, make sure you look at branch v1 if you'd like to see the documentation for the older version.
 
 ---
 
@@ -24,10 +25,10 @@ It provides a basic development framework for distributed multiplayer games and 
 
 ### Prerequisites
 
-* [Go](https://golang.org/) >= 1.10
-* [etcd](https://github.com/coreos/etcd) (used for service discovery)
-* [nats](https://github.com/nats-io/nats.go) (optional, used for sending and receiving rpc, grpc implementations can be used too if prefered)
-* [docker](https://www.docker.com) (optional: used for running etcd and nats dependencies on containers)
+* [Go](https://golang.org/) >= 1.16
+* [etcd](https://github.com/coreos/etcd) (optional, used for service discovery)
+* [nats](https://github.com/nats-io/nats.go) (optional, used for sending and receiving rpc)
+* [docker](https://www.docker.com) (optional, used for running etcd and nats dependencies on containers)
 
 ### Installing
 clone the repo
@@ -87,11 +88,9 @@ This command will run both unit and e2e tests.
 * [pomelo](https://github.com/NetEase/pomelo) authors for the inspiration on the distributed design and protocol
 
 ## Security
-
 If you have found a security vulnerability, please email security@tfgco.com
 
 ## Resources
-
 - Other pitaya-related projects
   + [libpitaya-cluster](https://github.com/topfreegames/libpitaya-cluster)
   + [libpitaya](https://github.com/topfreegames/libpitaya)
