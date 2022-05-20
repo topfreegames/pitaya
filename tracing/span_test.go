@@ -146,3 +146,25 @@ func TestFinishSpan(t *testing.T) {
 	ctxWithSpan := StartSpan(context.Background(), "my-op", opentracing.Tags{"hi": "hello"})
 	assert.NotPanics(t, func() { FinishSpan(ctxWithSpan, nil) })
 }
+
+func TestModuleTracerStartSpan(t *testing.T) {
+	origCtx := context.Background()
+	moduleTracer := NewModuleTracer()
+	paramTags := map[string]interface{}{
+		"teste-tag": "test-tag-value",
+	}
+	ctxWithSpan := moduleTracer.StartSpan(origCtx, "teste-operation", "test-pitaya", paramTags)
+	assert.NotEqual(t, origCtx, ctxWithSpan)
+
+	span := opentracing.SpanFromContext(ctxWithSpan)
+	assert.NotNil(t, span)
+}
+
+func TestModuleTracerFinishSpan(t *testing.T) {
+	moduleTracer := NewModuleTracer()
+	paramTags := map[string]interface{}{
+		"teste-tag": "test-tag-value",
+	}
+	ctxWithSpan := moduleTracer.StartSpan(context.Background(), "teste-span", "test-pitaya", paramTags)
+	moduleTracer.FinishSpan(ctxWithSpan)
+}

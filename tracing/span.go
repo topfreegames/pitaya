@@ -92,6 +92,7 @@ func InjectSpan(ctx context.Context) (context.Context, error) {
 
 // StartSpan starts a new span with a given parent context, operation name, tags and
 // optional parent span. It returns a context with the created span.
+// Deprecated: This StartSpan method is deprecated please use StartSpan method provided by ModuleTracer interface.
 func StartSpan(
 	parentCtx context.Context,
 	opName string,
@@ -107,6 +108,7 @@ func StartSpan(
 }
 
 // FinishSpan finishes a span retrieved from the given context and logs the error if it exists
+// Deprecated: This FinishSpan method is deprecated please use FinishSpan method provided by ModuleTracer interface.
 func FinishSpan(ctx context.Context, err error) {
 	if ctx == nil {
 		return
@@ -118,5 +120,53 @@ func FinishSpan(ctx context.Context, err error) {
 	defer span.Finish()
 	if err != nil {
 		LogError(span, err.Error())
+	}
+}
+
+// ModuleTracer interface declares methods related to Tracing,
+// namely methods that provide management of tracing.
+type ModuleTracer interface {
+	// StartSpan starts a new span with a given parent context, operation name and module name.
+	// It returns a context with the created span.
+	StartSpan(ctx context.Context, operationName string, modulename string, paramTags map[string]interface{}) context.Context
+
+	// FinishSpan finishes a span retrieved from the given context and logs the error if it exists
+	FinishSpan(ctx context.Context)
+}
+
+type moduleTracerImpl struct {
+}
+
+// NewModuleTracer creates a new instance of ModuleTracer and returns a pointer to it.
+func NewModuleTracer() ModuleTracer {
+	return &moduleTracerImpl{}
+}
+
+func (tp *moduleTracerImpl) StartSpan(ctx context.Context, operationName string, modulename string,
+	paramTags map[string]interface{}) context.Context {
+	var parent opentracing.SpanContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		parent = span.Context()
+	}
+
+	//Parsing tags received as method parameter to opentracing tags map
+	tags := opentracing.Tags{}
+	for key, element := range paramTags {
+		tags[key] = element
+	}
+	//Adding module name as a span tag
+	tags["module.name"] = modulename
+
+	span := opentracing.StartSpan(operationName, opentracing.ChildOf(parent), tags)
+	return opentracing.ContextWithSpan(ctx, span)
+}
+
+func (tp *moduleTracerImpl) FinishSpan(ctx context.Context) {
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span.Finish()
 	}
 }
