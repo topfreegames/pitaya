@@ -25,11 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nats-io/nuid"
-	"os"
-	"reflect"
-	"runtime/debug"
-	"strconv"
-
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
 	pcontext "github.com/topfreegames/pitaya/v2/context"
@@ -41,6 +36,11 @@ import (
 	"github.com/topfreegames/pitaya/v2/serialize/json"
 	"github.com/topfreegames/pitaya/v2/serialize/protobuf"
 	"github.com/topfreegames/pitaya/v2/tracing"
+	"github.com/uber/jaeger-client-go"
+	"os"
+	"reflect"
+	"runtime/debug"
+	"strconv"
 
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -179,13 +179,23 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 	} else {
 		requestID = nuid.New()
 	}
-	defaultLogger := logger.Log.WithFields(
-		map[string]interface{}{
-			"route":     route,
-			"requestId": requestID,
-			"userId":    userID,
-		},
-	)
+
+	logFields := map[string]interface{}{
+		"route":     route,
+		"requestId": requestID,
+		"userId":    userID,
+	}
+
+	// add tracing fields
+	span, ok := opentracing.SpanFromContext(ctx).(*jaeger.Span)
+	if ok {
+		spanCtx := span.SpanContext()
+		logFields["traceId"] = spanCtx.TraceID().String()
+		logFields["spanId"] = spanCtx.SpanID().String()
+		logFields["parentId"] = spanCtx.ParentID().String()
+	}
+
+	defaultLogger := logger.Log.WithFields(logFields)
 
 	return context.WithValue(ctx, constants.LoggerCtxKey, defaultLogger)
 }
