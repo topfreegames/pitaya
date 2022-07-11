@@ -79,7 +79,8 @@ namespace PitayaCSharpExample
         var sockAddr = "unix://" + System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pitaya.sock");
         PitayaCluster.StartJaeger(sv, "pitaya-csharp-example", 1.0f);
         PitayaCluster.Initialize(
-          sockAddr,
+          "localhost",
+          5000,
           sv,
           true,
           (sdEvent) => {
