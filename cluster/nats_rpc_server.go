@@ -50,11 +50,10 @@ type NatsRPCServer struct {
 	messagesBufferSize     int
 	config                 *config.Config
 	stopChan               chan bool
-	subChan                chan *nats.Msg // subChan is the channel used by the server to receive network messages addressed to itself
-	bindingsChan           chan *nats.Msg // bindingsChan receives notify from other servers on every user bind to session
-	unhandledReqCh         chan *protos.Request
+	subChan                chan *nats.Msg     // subChan is the channel used by the server to receive network messages addressed to itself
+	bindingsChan           chan *nats.Msg     // bindingsChan receives notify from other servers on every user bind to session
+	bindingsSub            *nats.Subscription // the subscription for the bindings channel, this needs to be unsubscribed on shutdown so we can drain only the subChan
 	responses              []*protos.Response
-	requests               []*protos.Request
 	userPushCh             chan *protos.Push
 	userKickCh             chan *protos.KickMsg
 	sub                    *nats.Subscription
@@ -62,6 +61,7 @@ type NatsRPCServer struct {
 	pitayaServer           protos.PitayaServer
 	metricsReporters       []metrics.Reporter
 	appDieChan             chan bool
+	maxPending             float64
 }
 
 // NewNatsRPCServer ctor
@@ -75,11 +75,11 @@ func NewNatsRPCServer(
 		config:            config,
 		server:            server,
 		stopChan:          make(chan bool),
-		unhandledReqCh:    make(chan *protos.Request),
 		dropped:           0,
 		metricsReporters:  metricsReporters,
 		appDieChan:        appDieChan,
 		connectionTimeout: nats.DefaultTimeout,
+		maxPending:        float64(0),
 	}
 	if err := ns.configure(); err != nil {
 		return nil, err
@@ -153,9 +153,9 @@ func (ns *NatsRPCServer) SetPitayaServer(ps protos.PitayaServer) {
 	ns.pitayaServer = ps
 }
 
-func (ns *NatsRPCServer) subscribeToBindingsChannel() error {
-	_, err := ns.conn.ChanSubscribe(GetBindBroadcastTopic(ns.server.Type), ns.bindingsChan)
-	return err
+func (ns *NatsRPCServer) subscribeToBindingsChannel() (*nats.Subscription, error) {
+	return ns.conn.ChanSubscribe(GetBindBroadcastTopic(ns.server.Type), ns.bindingsChan)
+
 }
 
 func (ns *NatsRPCServer) subscribeToUserKickChannel(uid string, svType string) (*nats.Subscription, error) {
@@ -185,50 +185,6 @@ func (ns *NatsRPCServer) subscribeToUserMessages(uid string, svType string) (*na
 	return sub, nil
 }
 
-func (ns *NatsRPCServer) handleMessages() {
-	defer (func() {
-		ns.conn.Drain()
-		close(ns.unhandledReqCh)
-		close(ns.subChan)
-		close(ns.bindingsChan)
-	})()
-	maxPending := float64(0)
-	for {
-		select {
-		case msg := <-ns.subChan:
-			ns.reportMetrics()
-			dropped, err := ns.sub.Dropped()
-			if err != nil {
-				logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
-			}
-			if dropped > ns.dropped {
-				logger.Log.Warnf("[rpc server] some messages were dropped! numDropped: %d", dropped)
-				ns.dropped = dropped
-			}
-			subsChanLen := float64(len(ns.subChan))
-			maxPending = math.Max(float64(maxPending), subsChanLen)
-			logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", subsChanLen, maxPending, dropped)
-			req := &protos.Request{}
-			// TODO: Add tracing here to report delay to start processing message in spans
-			err = proto.Unmarshal(msg.Data, req)
-			if err != nil {
-				// should answer rpc with an error
-				logger.Log.Error("error unmarshalling rpc message:", err.Error())
-				continue
-			}
-			req.Msg.Reply = msg.Reply
-			ns.unhandledReqCh <- req
-		case <-ns.stopChan:
-			return
-		}
-	}
-}
-
-// GetUnhandledRequestsChannel gets the unhandled requests channel from nats rpc server
-func (ns *NatsRPCServer) GetUnhandledRequestsChannel() chan *protos.Request {
-	return ns.unhandledReqCh
-}
-
 func (ns *NatsRPCServer) getUserPushChannel() chan *protos.Push {
 	return ns.userPushCh
 }
@@ -256,9 +212,20 @@ func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 }
 
 func (ns *NatsRPCServer) processMessages(threadID int) {
-	for ns.requests[threadID] = range ns.GetUnhandledRequestsChannel() {
-		logger.Log.Debugf("(%d) processing message %v", threadID, ns.requests[threadID].GetMsg().GetId())
-		ctx, err := util.GetContextFromRequest(ns.requests[threadID], ns.server.ID)
+	for msg := range ns.subChan {
+
+		req := &protos.Request{}
+		// TODO: Add tracing here to report delay to start processing message in spans
+		err := proto.Unmarshal(msg.Data, req)
+		if err != nil {
+			// should answer rpc with an error
+			logger.Log.Error("error unmarshalling rpc message:", err.Error())
+			continue
+		}
+		req.Msg.Reply = msg.Reply
+		logger.Log.Debugf("(%d) processing message %v", threadID, req.GetMsg().GetId())
+
+		ctx, err := util.GetContextFromRequest(req, ns.server.ID)
 		if err != nil {
 			ns.responses[threadID] = &protos.Response{
 				Error: &protos.Error{
@@ -267,13 +234,25 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 				},
 			}
 		} else {
-			ns.responses[threadID], _ = ns.pitayaServer.Call(ctx, ns.requests[threadID])
+			ns.responses[threadID], _ = ns.pitayaServer.Call(ctx, req)
 		}
 		p, err := ns.marshalResponse(ns.responses[threadID])
-		err = ns.conn.Publish(ns.requests[threadID].GetMsg().GetReply(), p)
+		err = ns.conn.Publish(req.GetMsg().GetReply(), p)
 		if err != nil {
-			logger.Log.Error("error sending message response")
+			logger.Log.Errorf("error sending message response to %s: %s", req.GetMsg().GetReply(), err.Error())
 		}
+		ns.reportMetrics()
+		dropped, err := ns.sub.Dropped()
+		if err != nil {
+			logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
+		}
+		if dropped > ns.dropped {
+			logger.Log.Warnf("[rpc server] some messages were dropped! numDropped: %d", dropped)
+			ns.dropped = dropped
+		}
+		subsChanLen := float64(len(ns.subChan))
+		ns.maxPending = math.Max(float64(ns.maxPending), subsChanLen)
+		logger.Log.Debugf("subs channel size: %f, max: %f, dropped: %d", subsChanLen, ns.maxPending, dropped)
 	}
 }
 
@@ -312,9 +291,23 @@ func (ns *NatsRPCServer) processKick() {
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
 	ns.responses = make([]*protos.Response, ns.config.GetInt("pitaya.concurrency.remote.service"))
-	ns.requests = make([]*protos.Request, ns.config.GetInt("pitaya.concurrency.remote.service"))
-	// TODO should we have concurrency here? it feels like we should
-	go ns.handleMessages()
+
+	go func() {
+		<-ns.stopChan
+		logger.Log.Info("Received stop signal")
+		logger.Log.Info("Draining requests subscription")
+		if err := ns.sub.Drain(); err != nil { // drain subscription to ensure all in-flight requests are processed
+			logger.Log.Errorf("error draing nats subscription: %v", err)
+		}
+		logger.Log.Info("Unsubscribing from bindinds subscription")
+		if err := ns.bindingsSub.Unsubscribe(); err != nil { // No need to drain the bindings subscription at this point
+			logger.Log.Errorf("error unsubscribing from bindings chan: %v", err)
+		}
+		logger.Log.Info("Draining nats connection")
+		if err := ns.conn.Drain(); err != nil { // finally, drain the connection
+			logger.Log.Errorf("error draining the nats connection: %v", err)
+		}
+	}()
 
 	logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
 	conn, err := setupNatsConn(
@@ -331,7 +324,7 @@ func (ns *NatsRPCServer) Init() error {
 		return err
 	}
 
-	err = ns.subscribeToBindingsChannel()
+	ns.bindingsSub, err = ns.subscribeToBindingsChannel()
 	if err != nil {
 		return err
 	}

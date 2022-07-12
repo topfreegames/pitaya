@@ -99,15 +99,6 @@ func TestNatsRPCServerGetUserKickTopic(t *testing.T) {
 	assert.Equal(t, "pitaya/game/user/11/kick", GetUserKickTopic("11", "game"))
 }
 
-func TestNatsRPCServerGetUnhandledRequestsChannel(t *testing.T) {
-	t.Parallel()
-	cfg := getConfig()
-	sv := getServer()
-	n, _ := NewNatsRPCServer(cfg, sv, nil, nil)
-	assert.NotNil(t, n.GetUnhandledRequestsChannel())
-	assert.IsType(t, make(chan *protos.Request), n.GetUnhandledRequestsChannel())
-}
-
 func TestNatsRPCServerGetBindingsChannel(t *testing.T) {
 	t.Parallel()
 	cfg := getConfig()
@@ -145,8 +136,9 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
-	err = rpcServer.subscribeToBindingsChannel()
+	sub, err := rpcServer.subscribeToBindingsChannel()
 	assert.NoError(t, err)
+	assert.NotNil(t, sub)
 	dt := []byte("somedata")
 	conn.Publish(GetBindBroadcastTopic(sv.Type), dt)
 	msg := helpers.ShouldEventuallyReceive(t, rpcServer.GetBindingsChannel()).(*nats.Msg)
@@ -267,19 +259,23 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
+	rpcServer.responses = make([]*protos.Response, 1)
 	tables := []struct {
 		topic string
 		req   *protos.Request
 	}{
-		{"user1/messages", &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{Id: 1, Reply: "ae"}}},
-		{"user2/messages", &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{Id: 1}}},
+		{"user1/messages", &protos.Request{Type: protos.RPCType_Sys, FrontendID: "bla", Msg: &protos.Msg{Id: 1, Reply: "aaa"}}},
+		{"user2/messages", &protos.Request{Type: protos.RPCType_User, FrontendID: "bla2", Msg: &protos.Msg{Id: 1, Reply: "bbb"}}},
 	}
 
-	go rpcServer.handleMessages()
+	go rpcServer.processMessages(0)
 
 	for _, table := range tables {
 		t.Run(table.topic, func(t *testing.T) {
+			c := make(chan *nats.Msg)
+			rpcServer.conn.ChanSubscribe(table.req.Msg.Reply, c)
 			subs, err := rpcServer.subscribe(table.topic)
+			rpcServer.sub = subs
 			assert.NoError(t, err)
 			assert.Equal(t, true, subs.IsValid())
 			b, err := proto.Marshal(table.req)
@@ -288,10 +284,19 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(0))
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
 
-			conn.Publish(table.topic, b)
-			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
-			assert.Equal(t, table.req.FrontendID, r.FrontendID)
-			assert.Equal(t, table.req.Msg.Id, r.Msg.Id)
+			msg := &nats.Msg{
+				Subject: table.topic,
+				Data:    b,
+				Reply:   table.req.Msg.Reply,
+			}
+			err = conn.PublishMsg(msg)
+			assert.NoError(t, err)
+
+			r := helpers.ShouldEventuallyReceive(t, c).(*nats.Msg)
+			assert.NotNil(t, r.Data)
+			resp := &protos.Response{}
+			err = proto.Unmarshal(r.Data, resp)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -335,7 +340,13 @@ func TestNatsRPCServerInit(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			c := make(chan *nats.Msg)
 			rpcServer.conn.ChanSubscribe(table.req.Msg.Reply, c)
-			rpcServer.unhandledReqCh <- table.req
+			data, err := proto.Marshal(table.req)
+			assert.NoError(t, err)
+			msg := &nats.Msg{
+				Data:  data,
+				Reply: table.req.Msg.Reply,
+			}
+			rpcServer.subChan <- msg
 			r := helpers.ShouldEventuallyReceive(t, c).(*nats.Msg)
 			assert.NotNil(t, r.Data)
 		})
