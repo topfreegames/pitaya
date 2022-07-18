@@ -33,6 +33,7 @@ import (
 type Client interface {
 	Count(name string, value int64, tags []string, rate float64) error
 	Gauge(name string, value float64, tags []string, rate float64) error
+	SimpleEvent(title string, text string) error
 	TimeInMilliseconds(name string, value float64, tags []string, rate float64) error
 }
 
@@ -134,6 +135,17 @@ func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string,
 	err := s.client.TimeInMilliseconds(metric, float64(value), fullTags, s.rate)
 	if err != nil {
 		logger.Log.Errorf("failed to report summary: %q", err)
+	}
+
+	return err
+}
+
+// ReportEvent sends an event with provided title and text description to statsd
+func (s *StatsdReporter) ReportEvent(title string, text string) error {
+
+	err := s.client.SimpleEvent(title, text)
+	if err != nil {
+		logger.Log.Errorf("failed to report event: %q", err)
 	}
 
 	return err

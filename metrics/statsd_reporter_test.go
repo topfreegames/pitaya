@@ -23,6 +23,7 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/xerrors"
 	"testing"
 	"time"
 
@@ -126,34 +127,33 @@ func TestReportCount(t *testing.T) {
 }
 
 func TestReportGauge(t *testing.T) {
-        ctrl := gomock.NewController(t)
-        defer ctrl.Finish()
-        mockClient := metricsmocks.NewMockClient(ctrl)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
 
-        cfg := config.NewConfig()
-        sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
-                "defaultTag": "value",
-        }, mockClient)
-        assert.NoError(t, err)
+	cfg := config.NewConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+		"defaultTag": "value",
+	}, mockClient)
+	assert.NoError(t, err)
 
-        expectedValue := 123.1
-        expectedMetric := uuid.New().String()
-        customTags := map[string]string{
-                "tag1:": uuid.New().String(),
-                "tag2:": uuid.New().String(),
-        }
-        mockClient.EXPECT().Gauge(expectedMetric, expectedValue, gomock.Any(), sr.rate).Do(func(n string, v float64, tags []string, r float64) {
-                for k, v := range customTags {
-                        assert.Contains(t, tags, fmt.Sprintf("%s:%s", k, v))
-                }
-                assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
-                assert.Contains(t, tags, "defaultTag:value")
-        })
+	expectedValue := 123.1
+	expectedMetric := uuid.New().String()
+	customTags := map[string]string{
+		"tag1:": uuid.New().String(),
+		"tag2:": uuid.New().String(),
+	}
+	mockClient.EXPECT().Gauge(expectedMetric, expectedValue, gomock.Any(), sr.rate).Do(func(n string, v float64, tags []string, r float64) {
+		for k, v := range customTags {
+			assert.Contains(t, tags, fmt.Sprintf("%s:%s", k, v))
+		}
+		assert.Contains(t, tags, fmt.Sprintf("serverType:%s", sr.serverType))
+		assert.Contains(t, tags, "defaultTag:value")
+	})
 
-        err = sr.ReportGauge(expectedMetric, customTags, float64(expectedValue))
-        assert.NoError(t, err)
+	err = sr.ReportGauge(expectedMetric, customTags, float64(expectedValue))
+	assert.NoError(t, err)
 }
-
 
 func TestReportCountError(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -172,18 +172,61 @@ func TestReportCountError(t *testing.T) {
 }
 
 func TestReportGaugeError(t *testing.T) {
-        ctrl := gomock.NewController(t)
-        defer ctrl.Finish()
-        mockClient := metricsmocks.NewMockClient(ctrl)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
 
-        cfg := config.NewConfig()
-        sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
-        assert.NoError(t, err)
+	cfg := config.NewConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{}, mockClient)
+	assert.NoError(t, err)
 
-        expectedError := errors.New("some error")
-        mockClient.EXPECT().Gauge(gomock.Any(), gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
+	expectedError := errors.New("some error")
+	mockClient.EXPECT().Gauge(gomock.Any(), gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
 
-        err = sr.ReportGauge("123", map[string]string{}, float64(123.1))
-        assert.Equal(t, expectedError, err)
+	err = sr.ReportGauge("123", map[string]string{}, float64(123.1))
+	assert.Equal(t, expectedError, err)
 }
 
+func TestReportEvent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
+
+	cfg := config.NewConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+		"defaultTag": "value",
+	}, mockClient)
+	assert.NoError(t, err)
+
+	expectedTitle := "EventTitle"
+	expectedDescription := "Deployment of service X"
+
+	mockClient.EXPECT().SimpleEvent(expectedTitle, expectedDescription).Do(func(title string, desc string) {
+
+		assert.Equal(t, expectedTitle, title)
+		assert.Equal(t, expectedDescription, desc)
+	})
+
+	err = sr.ReportEvent(expectedTitle, expectedDescription)
+	assert.NoError(t, err)
+}
+
+func TestReportEventError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
+
+	cfg := config.NewConfig()
+	sr, err := NewStatsdReporter(cfg, "svType", map[string]string{
+		"defaultTag": "value",
+	}, mockClient)
+	assert.NoError(t, err)
+
+	expectedError := xerrors.Errorf("Cannot write to channel")
+
+	mockClient.EXPECT().SimpleEvent(gomock.Any(), gomock.Any()).Return(expectedError)
+
+	err = sr.ReportEvent("EventTitle", "Deployment of service X")
+	assert.Error(t, err)
+	assert.EqualError(t, expectedError, expectedError.Error())
+}

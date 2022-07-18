@@ -344,6 +344,11 @@ func (p *PrometheusReporter) ReportGauge(metric string, labels map[string]string
 	return constants.ErrMetricNotKnown
 }
 
+// ReportEvent is not implemented by PrometheusReporter
+func (p *PrometheusReporter) ReportEvent(title string, text string) error {
+	return nil
+}
+
 // ensureLabels checks if labels contains the additionalLabels values,
 // otherwise adds them with the default values
 func (p *PrometheusReporter) ensureLabels(labels map[string]string) map[string]string {
