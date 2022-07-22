@@ -11,7 +11,7 @@ require (
 	github.com/customerio/gospec v0.0.0-20130710230057-a5cc0e48aa39 // indirect
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.4.2
@@ -23,15 +23,15 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.11.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/topfreegames/go-workers v1.0.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
-	go.etcd.io/etcd/api/v3 v3.5.4
-	go.etcd.io/etcd/client/v3 v3.5.4
-	go.etcd.io/etcd/tests/v3 v3.5.4
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
-	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
+	go.etcd.io/etcd/api/v3 v3.6.0-alpha.0
+	go.etcd.io/etcd/client/v3 v3.6.0-alpha.0
+	go.etcd.io/etcd/tests/v3 v3.6.0-alpha.0
+	golang.org/x/net v0.0.0-20220105145211-5b0dc2dfae98
+	google.golang.org/grpc v1.41.0
+	google.golang.org/protobuf v1.27.1
 )
