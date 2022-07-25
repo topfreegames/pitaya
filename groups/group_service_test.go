@@ -32,7 +32,7 @@ import (
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
+	//t.Parallel()
 	err := gs.GroupCreate(ctx, "testCreateDuplicatedGroup")
 	assert.NoError(t, err)
 	err = gs.GroupCreate(ctx, "testCreateDuplicatedGroup")
@@ -42,7 +42,6 @@ func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {
 
 func testCreateGroup(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreate(ctx, "testCreateGroup")
 	assert.NoError(t, err)
 	count, err := gs.GroupCountMembers(ctx, "testCreateGroup")
@@ -54,7 +53,6 @@ func testCreateGroup(gs GroupService, t *testing.T) {
 
 func testCreateGroupWithTTL(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreateWithTTL(ctx, "testCreateGroupWithTTL", 10)
 	assert.NoError(t, err)
 	count, err := gs.GroupCountMembers(ctx, "testCreateGroupWithTTL")
@@ -66,7 +64,6 @@ func testCreateGroupWithTTL(gs GroupService, t *testing.T) {
 
 func testGroupAddMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -93,7 +90,6 @@ func testGroupAddMember(gs GroupService, t *testing.T) {
 
 func testGroupAddDuplicatedMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreate(ctx, "testGroupAddDuplicatedMember")
 	assert.NoError(t, err)
 	err = gs.GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
@@ -105,7 +101,6 @@ func testGroupAddDuplicatedMember(gs GroupService, t *testing.T) {
 
 func testGroupContainsMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -134,7 +129,6 @@ func testGroupContainsMember(gs GroupService, t *testing.T) {
 
 func testRemove(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -165,7 +159,6 @@ func testRemove(gs GroupService, t *testing.T) {
 
 func testDelete(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -204,7 +197,6 @@ func testDelete(gs GroupService, t *testing.T) {
 
 func testRemoveAll(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -243,7 +235,6 @@ func testRemoveAll(gs GroupService, t *testing.T) {
 
 func testCount(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -275,7 +266,6 @@ func testCount(gs GroupService, t *testing.T) {
 
 func testMembers(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	err := gs.GroupCreate(ctx, "testGroupMembers")

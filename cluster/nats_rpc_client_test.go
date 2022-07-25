@@ -377,9 +377,11 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			ss := sessionmocks.NewMockSession(ctrl)
-			ss.EXPECT().ID().Return(sessionID).Times(1)
-			ss.EXPECT().UID().Return(uid).Times(1)
-			ss.EXPECT().GetDataEncoded().Return(data2).Times(1)
+                        if table.rpcType == protos.RPCType_Sys {
+				ss.EXPECT().ID().Return(sessionID).Times(1)
+				ss.EXPECT().UID().Return(uid).Times(1)
+				ss.EXPECT().GetDataEncoded().Return(data2).Times(1)
+			}
 
 			rpcClient.server.Frontend = table.frontendServer
 			req, err := buildRequest(context.Background(), table.rpcType, table.route, ss, table.msg, rpcClient.server)

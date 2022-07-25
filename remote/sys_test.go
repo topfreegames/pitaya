@@ -43,7 +43,6 @@ func TestBindSession(t *testing.T) {
 	assert.NoError(t, err)
 
 	ss := mocks.NewMockSession(ctrl)
-	ss.EXPECT().Bind(nil, uid)
 
 	sessionPool := mocks.NewMockSessionPool(ctrl)
 	sessionPool.EXPECT().GetSessionByID(id).Return(ss).Times(1)

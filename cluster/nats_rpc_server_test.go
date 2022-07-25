@@ -335,7 +335,7 @@ func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
 	rpcServer, _ := NewNatsRPCServer(*cfg, sv, nil, nil, mockSessionPool)
-	mockSessionPool.EXPECT().OnSessionBind(rpcServer.onSessionBind)
+	//mockSessionPool.EXPECT().OnSessionBind(rpcServer.onSessionBind)
 	err := rpcServer.Init()
 	assert.Error(t, err)
 }
