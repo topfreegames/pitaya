@@ -298,8 +298,8 @@ func TestPushToUsers(t *testing.T) {
 	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false)()
 	port2 := helpers.GetFreePort(t)
 	defer helpers.StartServer(t, true, true, "connector", port2, sdPrefix, *grpc, false)()
-	c1 := client.New(logrus.InfoLevel)
-	c2 := client.New(logrus.InfoLevel)
+	c1 := client.New(logrus.DebugLevel)
+	c2 := client.New(logrus.DebugLevel)
 
 	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
 	assert.NoError(t, err)
@@ -334,7 +334,10 @@ func TestPushToUsers(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			c1.SendNotify(table.route, []byte(msg))
+			go func() {
+				time.Sleep(10 * time.Millisecond)
+				c1.SendNotify(table.route, []byte(msg))
+			}()
 			msg1 = helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan).(*message.Message)
 			msg2 = helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan).(*message.Message)
 

@@ -86,7 +86,7 @@ func mustConnectToWS(t *testing.T, write []byte, w *WSAcceptor, protocol string)
 		conn.WriteMessage(websocket.BinaryMessage, write)
 		defer conn.Close()
 		return err
-	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+	}, nil, 30*time.Millisecond, 100*time.Millisecond)
 }
 
 func TestWSAcceptorListenAndServe(t *testing.T) {
