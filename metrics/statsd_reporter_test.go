@@ -23,7 +23,7 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/xerrors"
+	"github.com/topfreegames/pitaya/constants"
 	"testing"
 	"time"
 
@@ -222,7 +222,7 @@ func TestReportEventError(t *testing.T) {
 	}, mockClient)
 	assert.NoError(t, err)
 
-	expectedError := xerrors.Errorf("Cannot write to channel")
+	expectedError := constants.ErrBrokenPipe
 
 	mockClient.EXPECT().SimpleEvent(gomock.Any(), gomock.Any()).Return(expectedError)
 

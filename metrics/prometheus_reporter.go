@@ -23,7 +23,6 @@ package metrics
 import (
 	"fmt"
 	"github.com/topfreegames/pitaya/logger"
-	"golang.org/x/xerrors"
 	"net/http"
 	"sync"
 
@@ -347,7 +346,7 @@ func (p *PrometheusReporter) ReportGauge(metric string, labels map[string]string
 
 // ReportEvent is not implemented by PrometheusReporter
 func (p *PrometheusReporter) ReportEvent(title string, text string) error {
-	return xerrors.Errorf("Event reporting is not supported by PrometheusReporter")
+	return constants.ErrNotImplemented
 }
 
 // ensureLabels checks if labels contains the additionalLabels values,
