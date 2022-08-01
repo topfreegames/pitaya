@@ -7,7 +7,6 @@ package mocks
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	proto "github.com/golang/protobuf/proto"
 	cluster "github.com/topfreegames/pitaya/v2/cluster"
 	component "github.com/topfreegames/pitaya/v2/component"
 	config "github.com/topfreegames/pitaya/v2/config"
@@ -16,6 +15,7 @@ import (
 	router "github.com/topfreegames/pitaya/v2/router"
 	session "github.com/topfreegames/pitaya/v2/session"
 	worker "github.com/topfreegames/pitaya/v2/worker"
+	protoiface "google.golang.org/protobuf/runtime/protoiface"
 	reflect "reflect"
 	time "time"
 )
@@ -373,7 +373,7 @@ func (mr *MockPitayaMockRecorder) IsRunning() *gomock.Call {
 }
 
 // RPC mocks base method
-func (m *MockPitaya) RPC(arg0 context.Context, arg1 string, arg2, arg3 proto.Message) error {
+func (m *MockPitaya) RPC(arg0 context.Context, arg1 string, arg2, arg3 protoiface.MessageV1) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RPC", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
@@ -387,7 +387,7 @@ func (mr *MockPitayaMockRecorder) RPC(arg0, arg1, arg2, arg3 interface{}) *gomoc
 }
 
 // RPCTo mocks base method
-func (m *MockPitaya) RPCTo(arg0 context.Context, arg1, arg2 string, arg3, arg4 proto.Message) error {
+func (m *MockPitaya) RPCTo(arg0 context.Context, arg1, arg2 string, arg3, arg4 protoiface.MessageV1) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RPCTo", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
@@ -491,7 +491,7 @@ func (mr *MockPitayaMockRecorder) RegisterRemote(arg0 interface{}, arg1 ...inter
 }
 
 // ReliableRPC mocks base method
-func (m *MockPitaya) ReliableRPC(arg0 string, arg1 map[string]interface{}, arg2, arg3 proto.Message) (string, error) {
+func (m *MockPitaya) ReliableRPC(arg0 string, arg1 map[string]interface{}, arg2, arg3 protoiface.MessageV1) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReliableRPC", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
@@ -506,7 +506,7 @@ func (mr *MockPitayaMockRecorder) ReliableRPC(arg0, arg1, arg2, arg3 interface{}
 }
 
 // ReliableRPCWithOptions mocks base method
-func (m *MockPitaya) ReliableRPCWithOptions(arg0 string, arg1 map[string]interface{}, arg2, arg3 proto.Message, arg4 *config.EnqueueOpts) (string, error) {
+func (m *MockPitaya) ReliableRPCWithOptions(arg0 string, arg1 map[string]interface{}, arg2, arg3 protoiface.MessageV1, arg4 *config.EnqueueOpts) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReliableRPCWithOptions", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(string)
