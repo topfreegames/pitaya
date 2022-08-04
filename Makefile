@@ -141,7 +141,7 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
 
-mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock acceptor-mock
+mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
 
 agent-mock:
 	@mockgen github.com/topfreegames/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
@@ -154,6 +154,10 @@ networkentity-mock:
 
 pitaya-mock:
 	@mockgen github.com/topfreegames/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
+
+metrics-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
 
 serializer-mock:
 	@mockgen github.com/topfreegames/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
