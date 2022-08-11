@@ -69,6 +69,20 @@ func (p *PrometheusReporter) registerCustomMetrics(
 		)
 	}
 
+	for _, histogram := range spec.Histograms {
+		p.histogramReportersMap[histogram.Name] = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace:   "pitaya",
+				Subsystem:   histogram.Subsystem,
+				Name:        histogram.Name,
+				Help:        histogram.Help,
+				Buckets:     histogram.Buckets,
+				ConstLabels: constLabels,
+			},
+			append(additionalLabelsKeys, histogram.Labels...),
+		)
+	}
+
 	for _, gauge := range spec.Gauges {
 		p.gaugeReportersMap[gauge.Name] = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
