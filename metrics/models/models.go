@@ -9,6 +9,15 @@ type Summary struct {
 	Labels     []string
 }
 
+// Histogram defines a histogram metric
+type Histogram struct {
+	Subsystem  string
+	Name       string
+	Help       string
+	Buckets    []float64
+	Labels     []string
+}
+
 // Gauge defines a gauge metric
 type Gauge struct {
 	Subsystem string
@@ -27,7 +36,8 @@ type Counter struct {
 
 // CustomMetricsSpec has all metrics specs
 type CustomMetricsSpec struct {
-	Summaries []*Summary
-	Gauges    []*Gauge
-	Counters  []*Counter
+	Summaries  []*Summary
+	Histograms []*Histogram
+	Gauges     []*Gauge
+	Counters   []*Counter
 }
