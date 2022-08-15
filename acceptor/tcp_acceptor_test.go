@@ -58,11 +58,9 @@ func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 				})
 
 				if len(table.certs) == 2 {
-					assert.Equal(t, table.certs[0], a.certFile)
-					assert.Equal(t, table.certs[1], a.keyFile)
+					assert.Len(t, a.certs, 1)
 				} else {
-					assert.Equal(t, "", a.certFile)
-					assert.Equal(t, "", a.keyFile)
+					assert.Len(t, a.certs, 0)
 				}
 				assert.NotNil(t, a)
 			}
