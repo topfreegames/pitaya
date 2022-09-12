@@ -2,16 +2,11 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp5</TargetFramework>
+        <TargetFramework>netcoreapp6</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\NPitaya\NPitaya.csproj" />
     </ItemGroup>
-
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec Condition=" '$(OS)' == 'OSX' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.dylib&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE&#xA;              fi&#xA;            " />
-        <Exec Condition=" '$(OS)' == 'Unix' " Command="&#xA;              LINK_FILE=$(ProjectDir)$(OutDir)/libpitaya_cpp.so&#xA;              if [[ ! -f $LINK_FILE ]]; then&#xA;                  ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.so $LINK_FILE&#xA;              fi&#xA;            " />
-    </Target>
 
 </Project>

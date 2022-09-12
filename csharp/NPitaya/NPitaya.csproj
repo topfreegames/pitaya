@@ -44,8 +44,4 @@
         </Content>
     </ItemGroup>
 
-    <Target BeforeTargets="PreBuildEvent" Name="PreBuild">
-        <Exec Command="LINK_FILE=$(ProjectDir)$(OutDir)libpitaya_cpp.dylib; if [[ ! -f $LINK_FILE ]]; then ln -s $(ProjectDir)../../precompiled/libpitaya_cpp.dylib $LINK_FILE; fi " Condition=" '$(OS)' == 'Unix' " />
-    </Target>
-
 </Project>

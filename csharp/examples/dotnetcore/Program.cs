@@ -77,10 +77,10 @@ namespace PitayaCSharpExample
       {
         PitayaCluster.SetSerializer(new NPitaya.Serializer.JSONSerializer());
         var sockAddr = "unix://" + System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pitaya.sock");
+        Logger.Info("Connecting to pitaya sidecar at addr: {0}", sockAddr);
         PitayaCluster.StartJaeger(sv, "pitaya-csharp-example", 1.0f);
         PitayaCluster.Initialize(
-          "localhost",
-          5000,
+          sockAddr,
           sv,
           true,
           (sdEvent) => {

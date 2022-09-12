@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/pitaya/pkg/config"
@@ -41,8 +42,9 @@ var sidecarCmd = &cobra.Command{
 }
 
 func init() {
+	tmpDir := os.TempDir()
 	sidecarCmd.Flags().BoolVarP(&debug, "debug", "d", false, "turn debug on")
-	sidecarCmd.Flags().StringVarP(&bind, "bind", "b", filepath.FromSlash(fmt.Sprintf("%s/pitaya.sock", os.TempDir())), "bind address of the sidecar")
+	sidecarCmd.Flags().StringVarP(&bind, "bind", "b", filepath.FromSlash(fmt.Sprintf("%s/pitaya.sock", strings.TrimSuffix(tmpDir, "/"))), "bind address of the sidecar")
 	sidecarCmd.Flags().StringVarP(&bindProtocol, "bindProtocol", "p", "unix", "bind address of the sidecar")
 	rootCmd.AddCommand(sidecarCmd)
 }

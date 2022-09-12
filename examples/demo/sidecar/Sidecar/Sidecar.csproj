@@ -8,6 +8,7 @@
     <PackageReference Include="Google.Protobuf" Version="3.16.0" />
     <PackageReference Include="Grpc" Version="2.37.0" />
     <PackageReference Include="Grpc.Tools" Version="2.37.0" PrivateAssets="All" />
+    <ProjectReference Include="../../../../csharp/NPitaya/NPitaya.csproj" />
   </ItemGroup>
 
   <ItemGroup>

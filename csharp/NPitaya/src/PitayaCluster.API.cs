@@ -131,6 +131,33 @@ namespace NPitaya
             }
         }
 
+
+        public static void Initialize(
+                string sidecarListenSocket,
+                Server server,
+                bool debug,
+                Action<SDEvent> cbServiceDiscovery = null
+                )
+        {
+            if (_isInitialized){
+                Logger.Warn("Initialize called but pitaya is already initialized");
+                return;
+            }
+            InitializeSidecarClient(sidecarListenSocket, server, debug);
+            if (_client == null)
+            {
+                throw new PitayaException("Initialization failed");
+            }
+
+            RegisterRemotesAndHandlers();
+
+            ListenToIncomingRPCs(_client);
+            SetServiceDiscoveryListener(cbServiceDiscovery);
+            ListenSDEvents(_client);
+            RegisterGracefulShutdown();
+        }
+
+
         public static void Initialize(
                 string sidecarListenAddr,
                 int sidecarPort,
