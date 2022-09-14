@@ -22,16 +22,16 @@ package docgenerator
 
 import (
 	"context"
+	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v2/pkg/protos/test"
 )
 
 type MyComp struct {
-	component.Base
+	component2.Base
 }
 
 type MyStruct struct {
@@ -80,8 +80,8 @@ func (m *MyComp) RemoteStruct(ctx context.Context, ss *test.SomeStruct) (*test.S
 func TestHandlersDoc(t *testing.T) {
 	t.Parallel()
 
-	handlerServices := map[string]*component.Service{}
-	s := component.NewService(&MyComp{}, []component.Option{})
+	handlerServices := map[string]*component2.Service{}
+	s := component2.NewService(&MyComp{}, []component2.Option{})
 	err := s.ExtractHandler()
 	assert.NoError(t, err)
 	handlerServices[s.Name] = s
@@ -167,8 +167,8 @@ func TestHandlersDoc(t *testing.T) {
 func TestHandlersDocTrue(t *testing.T) {
 	t.Parallel()
 
-	handlerServices := map[string]*component.Service{}
-	s := component.NewService(&MyComp{}, []component.Option{})
+	handlerServices := map[string]*component2.Service{}
+	s := component2.NewService(&MyComp{}, []component2.Option{})
 	err := s.ExtractHandler()
 	assert.NoError(t, err)
 	handlerServices[s.Name] = s
@@ -253,8 +253,8 @@ func TestHandlersDocTrue(t *testing.T) {
 func TestRemotesDoc(t *testing.T) {
 	t.Parallel()
 
-	remoteServices := map[string]*component.Service{}
-	s := component.NewService(&MyComp{}, []component.Option{})
+	remoteServices := map[string]*component2.Service{}
+	s := component2.NewService(&MyComp{}, []component2.Option{})
 	err := s.ExtractRemote()
 	assert.NoError(t, err)
 	remoteServices[s.Name] = s
@@ -280,8 +280,8 @@ func TestRemotesDoc(t *testing.T) {
 
 func TestRemotesDocTrue(t *testing.T) {
 	t.Parallel()
-	remoteServices := map[string]*component.Service{}
-	s := component.NewService(&MyComp{}, []component.Option{})
+	remoteServices := map[string]*component2.Service{}
+	s := component2.NewService(&MyComp{}, []component2.Option{})
 	err := s.ExtractRemote()
 	assert.NoError(t, err)
 	remoteServices[s.Name] = s

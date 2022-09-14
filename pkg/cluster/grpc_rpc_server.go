@@ -22,28 +22,28 @@ package cluster
 
 import (
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
 	"net"
 
 	"google.golang.org/grpc"
 
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/metrics"
-	"github.com/topfreegames/pitaya/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
 )
 
 // GRPCServer rpc server struct
 type GRPCServer struct {
 	server           *Server
-	config           *config.Config
+	port             int
 	metricsReporters []metrics.Reporter
 	grpcSv           *grpc.Server
 	pitayaServer     protos.PitayaServer
 }
 
 // NewGRPCServer constructor
-func NewGRPCServer(config *config.Config, server *Server, metricsReporters []metrics.Reporter) (*GRPCServer, error) {
+func NewGRPCServer(config config.GRPCServerConfig, server *Server, metricsReporters []metrics.Reporter) (*GRPCServer, error) {
 	gs := &GRPCServer{
-		config:           config,
+		port:             config.Port,
 		server:           server,
 		metricsReporters: metricsReporters,
 	}
@@ -52,9 +52,8 @@ func NewGRPCServer(config *config.Config, server *Server, metricsReporters []met
 
 // Init inits grpc rpc server
 func (gs *GRPCServer) Init() error {
-	address := gs.config.GetString("pitaya.cluster.rpc.server.grpc.address")
-	port := gs.config.GetInt("pitaya.cluster.rpc.server.grpc.port")
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, port))
+	port := gs.port
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return err
 	}

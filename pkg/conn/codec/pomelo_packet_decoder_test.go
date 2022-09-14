@@ -2,39 +2,39 @@ package codec
 
 import (
 	"bytes"
+	packet2 "github.com/topfreegames/pitaya/v2/pkg/conn/packet"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
 )
 
 var forwardTables = map[string]struct {
 	buf []byte
 	err error
 }{
-	"test_handshake_type":     {[]byte{packet.Handshake, 0x00, 0x00, 0x00}, nil},
-	"test_handshake_ack_type": {[]byte{packet.HandshakeAck, 0x00, 0x00, 0x00}, nil},
-	"test_heartbeat_type":     {[]byte{packet.Heartbeat, 0x00, 0x00, 0x00}, nil},
-	"test_data_type":          {[]byte{packet.Data, 0x00, 0x00, 0x00}, nil},
-	"test_kick_type":          {[]byte{packet.Kick, 0x00, 0x00, 0x00}, nil},
+	"test_handshake_type":     {[]byte{packet2.Handshake, 0x00, 0x00, 0x00}, nil},
+	"test_handshake_ack_type": {[]byte{packet2.HandshakeAck, 0x00, 0x00, 0x00}, nil},
+	"test_heartbeat_type":     {[]byte{packet2.Heartbeat, 0x00, 0x00, 0x00}, nil},
+	"test_data_type":          {[]byte{packet2.Data, 0x00, 0x00, 0x00}, nil},
+	"test_kick_type":          {[]byte{packet2.Kick, 0x00, 0x00, 0x00}, nil},
 
-	"test_wrong_packet_type": {[]byte{0x06, 0x00, 0x00, 0x00}, packet.ErrWrongPomeloPacketType},
+	"test_wrong_packet_type": {[]byte{0x06, 0x00, 0x00, 0x00}, packet2.ErrWrongPomeloPacketType},
 }
 
 var (
-	handshakeHeaderPacket = []byte{packet.Handshake, 0x00, 0x00, 0x01, 0x01}
+	handshakeHeaderPacket = []byte{packet2.Handshake, 0x00, 0x00, 0x01, 0x01}
 	invalidHeader         = []byte{0xff, 0x00, 0x00, 0x01}
 )
 
 var decodeTables = map[string]struct {
 	data   []byte
-	packet []*packet.Packet
+	packet []*packet2.Packet
 	err    error
 }{
 	"test_not_enough_bytes": {[]byte{0x01}, nil, nil},
-	"test_error_on_forward": {invalidHeader, nil, packet.ErrWrongPomeloPacketType},
-	"test_forward":          {handshakeHeaderPacket, []*packet.Packet{{packet.Handshake, 1, []byte{0x01}}}, nil},
-	"test_forward_many":     {append(handshakeHeaderPacket, handshakeHeaderPacket...), []*packet.Packet{{packet.Handshake, 1, []byte{0x01}}, {packet.Handshake, 1, []byte{0x01}}}, nil},
+	"test_error_on_forward": {invalidHeader, nil, packet2.ErrWrongPomeloPacketType},
+	"test_forward":          {handshakeHeaderPacket, []*packet2.Packet{{packet2.Handshake, 1, []byte{0x01}}}, nil},
+	"test_forward_many":     {append(handshakeHeaderPacket, handshakeHeaderPacket...), []*packet2.Packet{{packet2.Handshake, 1, []byte{0x01}}, {packet2.Handshake, 1, []byte{0x01}}}, nil},
 }
 
 func TestNewPomeloPacketDecoder(t *testing.T) {
@@ -54,7 +54,7 @@ func TestForward(t *testing.T) {
 
 			sz, typ, err := ppd.forward(bytes.NewBuffer(table.buf))
 			if table.err == nil {
-				assert.Equal(t, packet.Type(table.buf[0]), typ)
+				assert.Equal(t, packet2.Type(table.buf[0]), typ)
 				assert.Equal(t, 0, sz)
 			}
 

@@ -24,55 +24,63 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	agent2 "github.com/topfreegames/pitaya/v2/pkg/agent"
+	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
+	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/codec"
+	message2 "github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v2/pkg/docgenerator"
+	e "github.com/topfreegames/pitaya/v2/pkg/errors"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/topfreegames/pitaya/pkg/agent"
-	"github.com/topfreegames/pitaya/pkg/cluster"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/docgenerator"
-	e "github.com/topfreegames/pitaya/pkg/errors"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/router"
-	"github.com/topfreegames/pitaya/pkg/serialize"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/tracing"
-	"github.com/topfreegames/pitaya/pkg/util"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/pipeline"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/router"
+	"github.com/topfreegames/pitaya/v2/pkg/serialize"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/tracing"
+	"github.com/topfreegames/pitaya/v2/pkg/util"
 )
 
 // RemoteService struct
 type RemoteService struct {
-	rpcServer              cluster.RPCServer
-	serviceDiscovery       cluster.ServiceDiscovery
+	baseService
+	rpcServer              cluster2.RPCServer
+	serviceDiscovery       cluster2.ServiceDiscovery
 	serializer             serialize.Serializer
 	encoder                codec.PacketEncoder
-	rpcClient              cluster.RPCClient
-	services               map[string]*component.Service // all registered service
+	rpcClient              cluster2.RPCClient
+	services               map[string]*component2.Service // all registered service
 	router                 *router.Router
-	messageEncoder         message.Encoder
-	server                 *cluster.Server // server obj
-	remoteBindingListeners []cluster.RemoteBindingListener
+	messageEncoder         message2.Encoder
+	server                 *cluster2.Server // server obj
+	remoteBindingListeners []cluster2.RemoteBindingListener
+	sessionPool            session.SessionPool
+	handlerPool            *HandlerPool
+	remotes                map[string]*component2.Remote // all remote method
 }
 
 // NewRemoteService creates and return a new RemoteService
 func NewRemoteService(
-	rpcClient cluster.RPCClient,
-	rpcServer cluster.RPCServer,
-	sd cluster.ServiceDiscovery,
+	rpcClient cluster2.RPCClient,
+	rpcServer cluster2.RPCServer,
+	sd cluster2.ServiceDiscovery,
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	router *router.Router,
-	messageEncoder message.Encoder,
-	server *cluster.Server,
+	messageEncoder message2.Encoder,
+	server *cluster2.Server,
+	sessionPool session.SessionPool,
+	handlerHooks *pipeline.HandlerHooks,
+	handlerPool *HandlerPool,
 ) *RemoteService {
-	return &RemoteService{
-		services:               make(map[string]*component.Service),
+	remote := &RemoteService{
+		services:               make(map[string]*component2.Service),
 		rpcClient:              rpcClient,
 		rpcServer:              rpcServer,
 		encoder:                encoder,
@@ -81,33 +89,38 @@ func NewRemoteService(
 		router:                 router,
 		messageEncoder:         messageEncoder,
 		server:                 server,
-		remoteBindingListeners: make([]cluster.RemoteBindingListener, 0),
+		remoteBindingListeners: make([]cluster2.RemoteBindingListener, 0),
+		sessionPool:            sessionPool,
+		handlerPool:            handlerPool,
+		remotes:                make(map[string]*component2.Remote),
 	}
-}
 
-var remotes = make(map[string]*component.Remote) // all remote method
+	remote.handlerHooks = handlerHooks
+
+	return remote
+}
 
 func (r *RemoteService) remoteProcess(
 	ctx context.Context,
-	server *cluster.Server,
-	a *agent.Agent,
+	server *cluster2.Server,
+	a agent2.Agent,
 	route *route.Route,
-	msg *message.Message,
+	msg *message2.Message,
 ) {
-	res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.Session, msg)
+	res, err := r.remoteCall(ctx, server, protos.RPCType_Sys, route, a.GetSession(), msg)
 	switch msg.Type {
-	case message.Request:
+	case message2.Request:
 		if err != nil {
 			logger.Log.Errorf("Failed to process remote server: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 			return
 		}
-		err := a.Session.ResponseMID(ctx, msg.ID, res.Data)
+		err := a.GetSession().ResponseMID(ctx, msg.ID, res.Data)
 		if err != nil {
 			logger.Log.Errorf("Failed to respond to remote server: %s", err.Error())
 			a.AnswerWithError(ctx, msg.ID, err)
 		}
-	case message.Notify:
+	case message2.Notify:
 		defer tracing.FinishSpan(ctx, err)
 		if err == nil && res.Error != nil {
 			err = errors.New(res.Error.GetMsg())
@@ -119,7 +132,7 @@ func (r *RemoteService) remoteProcess(
 }
 
 // AddRemoteBindingListener adds a listener
-func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteBindingListener) {
+func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster2.RemoteBindingListener) {
 	r.remoteBindingListeners = append(r.remoteBindingListeners, bindingListener)
 }
 
@@ -160,7 +173,7 @@ func (r *RemoteService) SessionBindRemote(ctx context.Context, msg *protos.BindM
 // PushToUser sends a push to user
 func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*protos.Response, error) {
 	logger.Log.Debugf("sending push to user %s: %v", push.GetUid(), string(push.Data))
-	s := session.GetSessionByUID(push.GetUid())
+	s := r.sessionPool.GetSessionByUID(push.GetUid())
 	if s != nil {
 		err := s.Push(push.Route, push.Data)
 		if err != nil {
@@ -176,7 +189,7 @@ func (r *RemoteService) PushToUser(ctx context.Context, push *protos.Push) (*pro
 // KickUser sends a kick to user
 func (r *RemoteService) KickUser(ctx context.Context, kick *protos.KickMsg) (*protos.KickAnswer, error) {
 	logger.Log.Debugf("sending kick to user %s", kick.GetUserId())
-	s := session.GetSessionByUID(kick.GetUserId())
+	s := r.sessionPool.GetSessionByUID(kick.GetUserId())
 	if s != nil {
 		err := s.Kick(ctx)
 		if err != nil {
@@ -191,14 +204,18 @@ func (r *RemoteService) KickUser(ctx context.Context, kick *protos.KickMsg) (*pr
 
 // DoRPC do rpc and get answer
 func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route.Route, protoData []byte) (*protos.Response, error) {
-	msg := &message.Message{
-		Type:  message.Request,
+	msg := &message2.Message{
+		Type:  message2.Request,
 		Route: route.Short(),
 		Data:  protoData,
 	}
 
+	if serverID == "" {
+		return r.remoteCall(ctx, nil, protos.RPCType_User, route, nil, msg)
+	}
+
 	target, _ := r.serviceDiscovery.GetServer(serverID)
-	if serverID != "" && target == nil {
+	if target == nil {
 		return nil, constants.ErrServerNotFound
 	}
 
@@ -238,8 +255,8 @@ func (r *RemoteService) RPC(ctx context.Context, serverID string, route *route.R
 }
 
 // Register registers components
-func (r *RemoteService) Register(comp component.Component, opts []component.Option) error {
-	s := component.NewService(comp, opts)
+func (r *RemoteService) Register(comp component2.Component, opts []component2.Option) error {
+	s := component2.NewService(comp, opts)
 
 	if _, ok := r.services[s.Name]; ok {
 		return fmt.Errorf("remote: service already defined: %s", s.Name)
@@ -252,7 +269,7 @@ func (r *RemoteService) Register(comp component.Component, opts []component.Opti
 	r.services[s.Name] = s
 	// register all remotes
 	for name, remote := range s.Remotes {
-		remotes[fmt.Sprintf("%s.%s", s.Name, name)] = remote
+		r.remotes[fmt.Sprintf("%s.%s", s.Name, name)] = remote
 	}
 
 	return nil
@@ -294,7 +311,7 @@ func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteSer
 func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
 	response := &protos.Response{}
 
-	remote, ok := remotes[rt.Short()]
+	remote, ok := r.remotes[rt.Short()]
 	if !ok {
 		logger.Log.Warnf("pitaya/remote: %s not found", rt.Short())
 		response := &protos.Response{
@@ -371,7 +388,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 	reply := req.GetMsg().GetReply()
 	response := &protos.Response{}
 	// (warning) a new agent is created for every new request
-	a, err := agent.NewRemote(
+	a, err := agent2.NewRemote(
 		req.GetSession(),
 		reply,
 		r.rpcClient,
@@ -380,6 +397,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		r.serviceDiscovery,
 		req.FrontendID,
 		r.messageEncoder,
+		r.sessionPool,
 	)
 	if err != nil {
 		logger.Log.Warn("pitaya/handler: cannot instantiate remote agent")
@@ -392,7 +410,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 		return response
 	}
 
-	ret, err := processHandlerMessage(ctx, rt, r.serializer, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
+	ret, err := r.handlerPool.ProcessHandlerMessage(ctx, rt, r.serializer, r.handlerHooks, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
 	if err != nil {
 		logger.Log.Warnf(err.Error())
 		response = &protos.Response{
@@ -415,11 +433,11 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 
 func (r *RemoteService) remoteCall(
 	ctx context.Context,
-	server *cluster.Server,
+	server *cluster2.Server,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
-	msg *message.Message,
+	session session.Session,
+	msg *message2.Message,
 ) (*protos.Response, error) {
 	svType := route.SvType
 
@@ -435,7 +453,7 @@ func (r *RemoteService) remoteCall(
 
 	res, err := r.rpcClient.Call(ctx, rpcType, route, session, msg, target)
 	if err != nil {
-		logger.Log.Errorf("error making call to target with id %s and host %s: %w", target.ID, target.Hostname, err)
+		logger.Log.Errorf("error making call to target with id %s, route %s and host %s: %w", target.ID, route.String(), target.Hostname, err)
 		return nil, err
 	}
 	return res, err
@@ -443,7 +461,7 @@ func (r *RemoteService) remoteCall(
 
 // DumpServices outputs all registered services
 func (r *RemoteService) DumpServices() {
-	for name := range remotes {
+	for name := range r.remotes {
 		logger.Log.Infof("registered remote %s", name)
 	}
 }

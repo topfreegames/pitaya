@@ -22,14 +22,16 @@ package metrics
 
 import (
 	"fmt"
-	"log"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/constants"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics/models"
 )
 
 var (
@@ -39,18 +41,19 @@ var (
 
 // PrometheusReporter reports metrics to prometheus
 type PrometheusReporter struct {
-	serverType          string
-	game                string
-	countReportersMap   map[string]*prometheus.CounterVec
-	summaryReportersMap map[string]*prometheus.SummaryVec
-	gaugeReportersMap   map[string]*prometheus.GaugeVec
-	additionalLabels    map[string]string
+	serverType            string
+	game                  string
+	countReportersMap     map[string]*prometheus.CounterVec
+	summaryReportersMap   map[string]*prometheus.SummaryVec
+	histogramReportersMap map[string]*prometheus.HistogramVec
+	gaugeReportersMap     map[string]*prometheus.GaugeVec
+	additionalLabels      map[string]string
 }
 
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
 	additionalLabelsKeys []string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 	for _, summary := range spec.Summaries {
 		p.summaryReportersMap[summary.Name] = prometheus.NewSummaryVec(
@@ -63,6 +66,20 @@ func (p *PrometheusReporter) registerCustomMetrics(
 				ConstLabels: constLabels,
 			},
 			append(additionalLabelsKeys, summary.Labels...),
+		)
+	}
+
+	for _, histogram := range spec.Histograms {
+		p.histogramReportersMap[histogram.Name] = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace:   "pitaya",
+				Subsystem:   histogram.Subsystem,
+				Name:        histogram.Name,
+				Help:        histogram.Help,
+				Buckets:     histogram.Buckets,
+				ConstLabels: constLabels,
+			},
+			append(additionalLabelsKeys, histogram.Labels...),
 		)
 	}
 
@@ -95,7 +112,7 @@ func (p *PrometheusReporter) registerCustomMetrics(
 
 func (p *PrometheusReporter) registerMetrics(
 	constLabels, additionalLabels map[string]string,
-	spec *CustomMetricsSpec,
+	spec *models.CustomMetricsSpec,
 ) {
 
 	constLabels["game"] = p.game
@@ -117,6 +134,18 @@ func (p *PrometheusReporter) registerMetrics(
 			Name:        ResponseTime,
 			Help:        "the time to process a msg in nanoseconds",
 			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
+			ConstLabels: constLabels,
+		},
+		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
+	)
+
+	p.histogramReportersMap[ResponseTime] = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "handler",
+			Name:        ResponseTime,
+			Help:        "the time to process a msg in nanoseconds",
+			Buckets:     []float64{1, 5, 10, 50, 100, 300, 500, 1000, 5000, 10000},
 			ConstLabels: constLabels,
 		},
 		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
@@ -276,32 +305,33 @@ func (p *PrometheusReporter) registerMetrics(
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
 	serverType string,
-	config *config.Config,
-	constLabels map[string]string,
+	config config.PrometheusConfig,
+	metricsSpecs models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
-	var (
-		port             = config.GetInt("pitaya.metrics.prometheus.port")
-		game             = config.GetString("pitaya.game")
-		additionalLabels = config.GetStringMapString("pitaya.metrics.additionalTags")
-	)
+	return getPrometheusReporter(serverType, config, &metricsSpecs)
+}
 
-	spec, err := NewCustomMetricsSpec(config)
-	if err != nil {
-		return nil, err
-	}
-
+func getPrometheusReporter(
+	serverType string,
+	config config.PrometheusConfig,
+	metricsSpecs *models.CustomMetricsSpec,
+) (*PrometheusReporter, error) {
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
-			serverType:          serverType,
-			game:                game,
-			countReportersMap:   make(map[string]*prometheus.CounterVec),
-			summaryReportersMap: make(map[string]*prometheus.SummaryVec),
-			gaugeReportersMap:   make(map[string]*prometheus.GaugeVec),
+			serverType:            serverType,
+			game:                  config.Game,
+			countReportersMap:     make(map[string]*prometheus.CounterVec),
+			histogramReportersMap: make(map[string]*prometheus.HistogramVec),
+			summaryReportersMap:   make(map[string]*prometheus.SummaryVec),
+			gaugeReportersMap:     make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(constLabels, additionalLabels, spec)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.Prometheus.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+			err := http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil)
+			if err != nil {
+				logger.Log.Error("prometheus reporter serve start failed, err: ", err)
+			}
 		})()
 	})
 
@@ -314,6 +344,17 @@ func (p *PrometheusReporter) ReportSummary(metric string, labels map[string]stri
 	if sum != nil {
 		labels = p.ensureLabels(labels)
 		sum.With(labels).Observe(value)
+		return nil
+	}
+	return constants.ErrMetricNotKnown
+}
+
+// ReportHistogram reports a histogram metric
+func (p *PrometheusReporter) ReportHistogram(metric string, labels map[string]string, value float64) error {
+	hist := p.histogramReportersMap[metric]
+	if hist != nil {
+		labels = p.ensureLabels(labels)
+		hist.With(labels).Observe(value)
 		return nil
 	}
 	return constants.ErrMetricNotKnown

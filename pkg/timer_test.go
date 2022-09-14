@@ -18,15 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/timer"
+	"github.com/topfreegames/pitaya/v2/pkg/timer"
 )
 
 type MyCond struct{}

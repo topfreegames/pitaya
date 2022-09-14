@@ -22,12 +22,12 @@ package modules
 
 import (
 	"bufio"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"os/exec"
 	"syscall"
 	"time"
 
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 // Binary is a pitaya module that starts a binary as a child process and

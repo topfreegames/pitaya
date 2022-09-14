@@ -21,7 +21,7 @@
 package codec
 
 import (
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
+	packet2 "github.com/topfreegames/pitaya/v2/pkg/conn/packet"
 )
 
 // PomeloPacketEncoder struct
@@ -39,16 +39,16 @@ func NewPomeloPacketEncoder() *PomeloPacketEncoder {
 // -<type>-|--------<length>--------|-<data>-
 // --------|------------------------|--------
 // 1 byte packet type, 3 bytes packet data length(big end), and data segment
-func (e *PomeloPacketEncoder) Encode(typ packet.Type, data []byte) ([]byte, error) {
-	if typ < packet.Handshake || typ > packet.Kick {
-		return nil, packet.ErrWrongPomeloPacketType
+func (e *PomeloPacketEncoder) Encode(typ packet2.Type, data []byte) ([]byte, error) {
+	if typ < packet2.Handshake || typ > packet2.Kick {
+		return nil, packet2.ErrWrongPomeloPacketType
 	}
 
 	if len(data) > MaxPacketSize {
 		return nil, ErrPacketSizeExcced
 	}
 
-	p := &packet.Packet{Type: typ, Length: len(data)}
+	p := &packet2.Packet{Type: typ, Length: len(data)}
 	buf := make([]byte, p.Length+HeadLength)
 	buf[0] = byte(p.Type)
 

@@ -20,7 +20,9 @@
 
 package codec
 
-import "github.com/topfreegames/pitaya/pkg/conn/packet"
+import (
+	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+)
 
 // PacketDecoder interface
 type PacketDecoder interface {

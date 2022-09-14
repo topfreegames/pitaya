@@ -22,16 +22,16 @@ package acceptor
 
 import (
 	"crypto/tls"
+	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
 	"io"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/topfreegames/pitaya/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 // WSAcceptor struct
@@ -48,7 +48,7 @@ func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
 	keyFile := ""
 	certFile := ""
 	if len(certs) != 2 && len(certs) != 0 {
-		panic(constants.ErrInvalidCertificates)
+		panic(constants2.ErrInvalidCertificates)
 	} else if len(certs) == 2 {
 		certFile = certs[0]
 		keyFile = certs[1]
@@ -108,8 +108,8 @@ func (w *WSAcceptor) ListenAndServe() {
 	}
 
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  constants.IOBufferBytesSize,
-		WriteBufferSize: constants.IOBufferBytesSize,
+		ReadBufferSize:  constants2.IOBufferBytesSize,
+		WriteBufferSize: constants2.IOBufferBytesSize,
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -127,8 +127,8 @@ func (w *WSAcceptor) ListenAndServe() {
 // ListenAndServeTLS listens and serve in the specified addr using tls
 func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  constants.IOBufferBytesSize,
-		WriteBufferSize: constants.IOBufferBytesSize,
+		ReadBufferSize:  constants2.IOBufferBytesSize,
+		WriteBufferSize: constants2.IOBufferBytesSize,
 	}
 
 	crt, err := tls.LoadX509KeyPair(cert, key)
@@ -183,19 +183,19 @@ func (c *WSConn) GetNextMessage() (b []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(msgBytes) < codec.HeadLength {
+	if len(msgBytes) < codec2.HeadLength {
 		return nil, packet.ErrInvalidPomeloHeader
 	}
-	header := msgBytes[:codec.HeadLength]
-	msgSize, _, err := codec.ParseHeader(header)
+	header := msgBytes[:codec2.HeadLength]
+	msgSize, _, err := codec2.ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
-	dataLen := len(msgBytes[codec.HeadLength:])
+	dataLen := len(msgBytes[codec2.HeadLength:])
 	if dataLen < msgSize {
-		return nil, constants.ErrReceivedMsgSmallerThanExpected
+		return nil, constants2.ErrReceivedMsgSmallerThanExpected
 	} else if dataLen > msgSize {
-		return nil, constants.ErrReceivedMsgBiggerThanExpected
+		return nil, constants2.ErrReceivedMsgBiggerThanExpected
 	}
 	return msgBytes, err
 }

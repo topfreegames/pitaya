@@ -3,14 +3,14 @@ package acceptor
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/helpers"
+	"github.com/topfreegames/pitaya/v2/pkg/helpers"
 )
 
 var wsAcceptorTables = []struct {
@@ -86,7 +86,7 @@ func mustConnectToWS(t *testing.T, write []byte, w *WSAcceptor, protocol string)
 		conn.WriteMessage(websocket.BinaryMessage, write)
 		defer conn.Close()
 		return err
-	}, nil, 10*time.Millisecond, 100*time.Millisecond)
+	}, nil, 30*time.Millisecond, 100*time.Millisecond)
 }
 
 func TestWSAcceptorListenAndServe(t *testing.T) {

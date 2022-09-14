@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 var (

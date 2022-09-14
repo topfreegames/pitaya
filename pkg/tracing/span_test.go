@@ -23,15 +23,15 @@ package tracing
 import (
 	"context"
 	"errors"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
 	"io"
 	"os"
 	"testing"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	"github.com/topfreegames/pitaya/pkg/tracing/jaeger"
+	"github.com/topfreegames/pitaya/v2/pkg/tracing/jaeger"
 )
 
 var closer io.Closer
@@ -74,22 +74,20 @@ func TestExtractSpan(t *testing.T) {
 }
 
 func TestExtractSpanInjectedSpan(t *testing.T) {
-        
 	span := opentracing.StartSpan("someOp")
-        span.SetBaggageItem("some_key", "12345")
+	span.SetBaggageItem("some_key", "12345")
 	span.SetBaggageItem("some-other-key", "42")
-        expectedBaggage := map[string]string{"some_key": "12345", "some-other-key": "42"}
+	expectedBaggage := map[string]string{"some_key": "12345", "some-other-key": "42"}
 
 	spanData := opentracing.TextMapCarrier{}
 	tracer := opentracing.GlobalTracer()
-
 	err := tracer.Inject(span.Context(), opentracing.TextMap, spanData)
 	assert.NoError(t, err)
-	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.SpanPropagateCtxKey, spanData)
+	ctx := pcontext.AddToPropagateCtx(context.Background(), constants2.SpanPropagateCtxKey, spanData)
 
 	spanCtx, err := ExtractSpan(ctx)
 	assert.NoError(t, err)
-        assertBaggage(t, spanCtx, expectedBaggage)
+	assertBaggage(t, spanCtx, expectedBaggage)
 }
 
 func TestExtractSpanNoSpan(t *testing.T) {
@@ -99,9 +97,9 @@ func TestExtractSpanNoSpan(t *testing.T) {
 }
 
 func TestExtractSpanBadInjected(t *testing.T) {
-	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.SpanPropagateCtxKey, []byte("nope"))
+	ctx := pcontext.AddToPropagateCtx(context.Background(), constants2.SpanPropagateCtxKey, []byte("nope"))
 	spanCtx, err := ExtractSpan(ctx)
-	assert.Equal(t, constants.ErrInvalidSpanCarrier, err)
+	assert.Equal(t, constants2.ErrInvalidSpanCarrier, err)
 	assert.Nil(t, spanCtx)
 }
 
@@ -118,7 +116,7 @@ func TestInjectSpan(t *testing.T) {
 	ctx, err := InjectSpan(origCtx)
 	assert.NoError(t, err)
 	assert.NotEqual(t, origCtx, ctx)
-	encodedCtx := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey)
+	encodedCtx := pcontext.GetFromPropagateCtx(ctx, constants2.SpanPropagateCtxKey)
 	assert.NotNil(t, encodedCtx)
 }
 

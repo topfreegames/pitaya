@@ -23,32 +23,31 @@ package service
 import (
 	"context"
 	"errors"
+	agentmocks "github.com/topfreegames/pitaya/v2/pkg/agent/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/cluster"
+	"github.com/topfreegames/pitaya/v2/pkg/cluster/mocks"
+	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/codec"
+	message2 "github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	messagemocks "github.com/topfreegames/pitaya/v2/pkg/conn/message/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	e "github.com/topfreegames/pitaya/v2/pkg/errors"
 	"math/rand"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/agent"
-	"github.com/topfreegames/pitaya/pkg/cluster"
-	clustermocks "github.com/topfreegames/pitaya/pkg/cluster/mocks"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	messagemocks "github.com/topfreegames/pitaya/pkg/conn/message/mocks"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	e "github.com/topfreegames/pitaya/pkg/errors"
-	connmock "github.com/topfreegames/pitaya/pkg/mocks"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/protos/test"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/router"
-	serializemocks "github.com/topfreegames/pitaya/pkg/serialize/mocks"
-	"github.com/topfreegames/pitaya/pkg/session"
-	sessionmocks "github.com/topfreegames/pitaya/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/pipeline"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/router"
+	serializemocks "github.com/topfreegames/pitaya/v2/pkg/serialize/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	sessionmocks "github.com/topfreegames/pitaya/v2/pkg/session/mocks"
 )
 
 func (m *MyComp) Remote1(ctx context.Context, ss *test.SomeStruct) (*test.SomeStruct, error) {
@@ -74,13 +73,16 @@ func TestNewRemoteService(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockSerializer := serializemocks.NewMockSerializer(ctrl)
-	mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
-	mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-	mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
+	mockSD := mocks.NewMockServiceDiscovery(ctrl)
+	mockRPCClient := mocks.NewMockRPCClient(ctrl)
+	mockRPCServer := mocks.NewMockRPCServer(ctrl)
 	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
 	router := router.New()
 	sv := &cluster.Server{}
-	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv)
+	sessionPool := session.NewSessionPool()
+	handlerHooks := pipeline.NewHandlerHooks()
+	handlerPool := NewHandlerPool()
+	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv, sessionPool, handlerHooks, handlerPool)
 
 	assert.NotNil(t, svc)
 	assert.Empty(t, svc.services)
@@ -91,46 +93,49 @@ func TestNewRemoteService(t *testing.T) {
 	assert.Equal(t, mockSerializer, svc.serializer)
 	assert.Equal(t, router, svc.router)
 	assert.Equal(t, sv, svc.server)
+	assert.Equal(t, sessionPool, svc.sessionPool)
+	assert.Equal(t, handlerHooks, svc.handlerHooks)
+	assert.Equal(t, handlerPool, svc.handlerPool)
 }
 
 func TestRemoteServiceRegister(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
-	err := svc.Register(&MyComp{}, []component.Option{})
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	err := svc.Register(&MyComp{}, []component2.Option{})
 	assert.NoError(t, err)
-	defer func() { remotes = make(map[string]*component.Remote, 0) }()
+	defer func() { svc.remotes = make(map[string]*component2.Remote, 0) }()
 	assert.Len(t, svc.services, 1)
 	val, ok := svc.services["MyComp"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
-	val2, ok := remotes["MyComp.Remote1"]
+	val2, ok := svc.remotes["MyComp.Remote1"]
 	assert.True(t, ok)
 	assert.NotNil(t, val2)
-	val2, ok = remotes["MyComp.Remote2"]
+	val2, ok = svc.remotes["MyComp.Remote2"]
 	assert.True(t, ok)
 	assert.NotNil(t, val2)
-	val2, ok = remotes["MyComp.RemoteErr"]
+	val2, ok = svc.remotes["MyComp.RemoteErr"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
-	val2, ok = remotes["MyComp.RemoteRes"]
+	val2, ok = svc.remotes["MyComp.RemoteRes"]
 	assert.True(t, ok)
 	assert.NotNil(t, val)
 }
 
 func TestRemoteServiceAddRemoteBindingListener(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
+	mockBindingListener := mocks.NewMockRemoteBindingListener(ctrl)
 
 	svc.AddRemoteBindingListener(mockBindingListener)
 	assert.Equal(t, mockBindingListener, svc.remoteBindingListeners[0])
 }
 
 func TestRemoteServiceSessionBindRemote(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockBindingListener := clustermocks.NewMockRemoteBindingListener(ctrl)
+	mockBindingListener := mocks.NewMockRemoteBindingListener(ctrl)
 
 	svc.AddRemoteBindingListener(mockBindingListener)
 	assert.Equal(t, mockBindingListener, svc.remoteBindingListeners[0])
@@ -148,37 +153,42 @@ func TestRemoteServiceSessionBindRemote(t *testing.T) {
 }
 
 func TestRemoteServicePushToUser(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockNetEntity := sessionmocks.NewMockNetworkEntity(ctrl)
+	existingUID := "uid1"
+	nonexistingUID := "uid2"
+
+	mockSession := sessionmocks.NewMockSession(ctrl)
+
+	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
+	mockSessionPool.EXPECT().GetSessionByUID(existingUID).Return(mockSession).Times(1)
+	mockSessionPool.EXPECT().GetSessionByUID(nonexistingUID).Return(nil).Times(1)
+
 	tables := []struct {
 		name string
 		uid  string
-		sess *session.Session
+		sess session.Session
 		p    *protos.Push
 		err  error
 	}{
-		{"success", "uid1", session.New(mockNetEntity, true), &protos.Push{
+		{"success", "uid1", mockSession, &protos.Push{
 			Route: "sv.svc.mth",
-			Uid:   "uid1",
+			Uid:   existingUID,
 			Data:  []byte{0x01},
 		}, nil},
 		{"no_sess_found", "uid2", nil, &protos.Push{
 			Route: "sv.svc.mth",
-			Uid:   "uid2",
+			Uid:   nonexistingUID,
 			Data:  []byte{0x01},
 		}, constants.ErrSessionNotFound},
 	}
 
+	mockSession.EXPECT().Push(tables[0].p.Route, tables[0].p.Data).Times(1)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil, nil)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			if table.sess != nil {
-				err := table.sess.Bind(context.Background(), table.uid)
-				assert.NoError(t, err)
-				mockNetEntity.EXPECT().Push(table.p.Route, table.p.Data)
-			}
 			_, err := svc.PushToUser(context.Background(), table.p)
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())
@@ -190,34 +200,38 @@ func TestRemoteServicePushToUser(t *testing.T) {
 }
 
 func TestRemoteServiceKickUser(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
 	ctrl := gomock.NewController(t)
+	mockSessionPool := sessionmocks.NewMockSessionPool(ctrl)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, mockSessionPool, nil, nil)
+
+	existingUID := "uid1"
+	nonexistingUID := "uid2"
+
+	mockSession := sessionmocks.NewMockSession(ctrl)
+	mockSession.EXPECT().Kick(context.Background()).Times(1)
+
+	mockSessionPool.EXPECT().GetSessionByUID(existingUID).Return(mockSession).Times(1)
+	mockSessionPool.EXPECT().GetSessionByUID(nonexistingUID).Return(nil).Times(1)
+
 	defer ctrl.Finish()
 
-	mockNetEntity := sessionmocks.NewMockNetworkEntity(ctrl)
 	tables := []struct {
 		name string
 		uid  string
-		sess *session.Session
+		sess session.Session
 		p    *protos.KickMsg
 		err  error
 	}{
-		{"success", "uid1", session.New(mockNetEntity, true), &protos.KickMsg{
-			UserId: "uid1",
+		{"success", existingUID, mockSession, &protos.KickMsg{
+			UserId: existingUID,
 		}, nil},
-		{"sessionNotFound", "uid2", nil, &protos.KickMsg{
-			UserId: "uid2",
+		{"sessionNotFound", nonexistingUID, nil, &protos.KickMsg{
+			UserId: nonexistingUID,
 		}, constants.ErrSessionNotFound},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			if table.sess != nil {
-				err := table.sess.Bind(context.Background(), table.uid)
-				assert.NoError(t, err)
-				mockNetEntity.EXPECT().Kick(context.Background())
-				mockNetEntity.EXPECT().Close()
-			}
 			_, err := svc.KickUser(context.Background(), table.p)
 			if table.err != nil {
 				assert.EqualError(t, err, table.err.Error())
@@ -230,21 +244,20 @@ func TestRemoteServiceKickUser(t *testing.T) {
 }
 
 func TestRemoteServiceRegisterFailsIfRegisterTwice(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
-	err := svc.Register(&MyComp{}, []component.Option{})
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	err := svc.Register(&MyComp{}, []component2.Option{})
 	assert.NoError(t, err)
-	err = svc.Register(&MyComp{}, []component.Option{})
+	err = svc.Register(&MyComp{}, []component2.Option{})
 	assert.Contains(t, err.Error(), "remote: service already defined")
 }
 
 func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil)
-	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	err := svc.Register(&NoHandlerRemoteComp{}, []component2.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of remote type"), err)
 }
 
 func TestRemoteServiceRemoteCall(t *testing.T) {
-	ss := session.New(nil, true)
 	rt := route.NewRoute("sv", "svc", "method")
 	sv := &cluster.Server{}
 	tables := []struct {
@@ -262,17 +275,19 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
+			mockSession := sessionmocks.NewMockSession(ctrl)
+			mockRPCClient := mocks.NewMockRPCClient(ctrl)
+			sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil)
+			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
-			msg := &message.Message{}
+			msg := &message2.Message{}
 			ctx := context.Background()
 			if table.server != nil {
-				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, ss, msg, sv).Return(table.res, table.err)
+				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, mockSession, msg, sv).Return(table.res, table.err)
 			}
-			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, ss, msg)
+			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, mockSession, msg)
 			assert.Equal(t, table.err, err)
 			assert.Equal(t, table.res, res)
 		})
@@ -280,28 +295,32 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 }
 
 func TestRemoteServiceHandleRPCUser(t *testing.T) {
+	handlerPool := NewHandlerPool()
+
 	tObj := &MyComp{}
 	m, ok := reflect.TypeOf(tObj).MethodByName("Remote1")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rt.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	comp := &component2.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("RemoteErr")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtErr := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtErr.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	compErr := &component2.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("Remote2")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtStr := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtStr.Short()] = &component.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+	compStr := &component2.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2}
+
 	m, ok = reflect.TypeOf(tObj).MethodByName("RemoteRes")
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rtRes := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	remotes[rtRes.Short()] = &component.Remote{
-		Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2, Type: reflect.TypeOf(&test.SomeStruct{B: "aa"})}
+	compRes := &component2.Remote{Receiver: reflect.ValueOf(tObj), Method: m, HasArgs: m.Type.NumIn() > 2, Type: reflect.TypeOf(&test.SomeStruct{B: "aa"})}
 
 	b, err := proto.Marshal(&test.SomeStruct{B: "aa"})
 	assert.NoError(t, err)
@@ -324,12 +343,19 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
-			mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-			messageEncoder := message.NewMessagesEncoder(false)
+			mockSD := mocks.NewMockServiceDiscovery(ctrl)
+			mockRPCClient := mocks.NewMockRPCClient(ctrl)
+			mockRPCServer := mocks.NewMockRPCServer(ctrl)
+			messageEncoder := message2.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			sessionPool := session.NewSessionPool()
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
+
+			svc.remotes[rt.Short()] = comp
+			svc.remotes[rtErr.Short()] = compErr
+			svc.remotes[rtStr.Short()] = compStr
+			svc.remotes[rtRes.Short()] = compRes
+
 			assert.NotNil(t, svc)
 			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
 			assert.NoError(t, err)
@@ -348,7 +374,6 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, m)
 	rt := route.NewRoute("", uuid.New().String(), uuid.New().String())
-	handlers[rt.Short()] = &component.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
 
 	tables := []struct {
 		name         string
@@ -370,12 +395,15 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
-			mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-			messageEncoder := message.NewMessagesEncoder(false)
+			mockSD := mocks.NewMockServiceDiscovery(ctrl)
+			mockRPCClient := mocks.NewMockRPCClient(ctrl)
+			mockRPCServer := mocks.NewMockRPCServer(ctrl)
+			messageEncoder := message2.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			sessionPool := session.NewSessionPool()
+			handlerPool := NewHandlerPool()
+			handlerPool.handlers[rt.Short()] = &component2.Handler{Receiver: reflect.ValueOf(tObj), Method: m, Type: m.Type.In(2)}
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), handlerPool)
 			assert.NotNil(t, svc)
 
 			if table.errSubstring == "" {
@@ -398,54 +426,57 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 	rt := route.NewRoute("sv", "svc", "method")
 
 	tables := []struct {
-		name           string
-		msgType        message.Type
-		remoteCallErr  error
-		responseMIDErr bool
+		name          string
+		msgType       message2.Type
+		remoteCallErr error
+		responseMIDErr error
 	}{
-		{"failed_remote_call", message.Request, errors.New("rpc failed"), false},
-		{"failed_response_mid", message.Request, nil, true},
-		{"success_request", message.Request, nil, false},
-		{"success_notify", message.Notify, nil, false},
+		{"failed_remote_call", message2.Request, errors.New("rpc failed"), nil},
+		{"failed_response_mid", message2.Request, nil, errors.New("err")},
+		{"success_request", message2.Request, nil, nil},
+		{"success_notify", message2.Notify, nil, nil},
 	}
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			packetEncoder := codec.NewPomeloPacketEncoder()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockSerializer := serializemocks.NewMockSerializer(ctrl)
-			mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-			messageEncoder := message.NewMessagesEncoder(false)
-			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
-			assert.NotNil(t, svc)
 
-			expectedMsg := &message.Message{
+			expectedMsg := &message2.Message{
 				ID:    uint(rand.Int()),
 				Type:  table.msgType,
 				Route: rt.Short(),
 				Data:  []byte("ok"),
 			}
 			ctx := context.Background()
+
+			packetEncoder := codec.NewPomeloPacketEncoder()
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockSD := mocks.NewMockServiceDiscovery(ctrl)
+			mockRPCClient := mocks.NewMockRPCClient(ctrl)
+			mockRPCServer := mocks.NewMockRPCServer(ctrl)
+			messageEncoder := message2.NewMessagesEncoder(false)
+			router := router.New()
+			sessionPool := session.NewSessionPool()
+			mockSession := sessionmocks.NewMockSession(ctrl)
+
+			mockAgent := agentmocks.NewMockAgent(ctrl)
+			mockAgent.EXPECT().GetSession().Return(mockSession).AnyTimes()
+
 			mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: []byte("ok")}, table.remoteCallErr)
 
 			if table.remoteCallErr != nil {
-				mockSerializer.EXPECT().Marshal(gomock.Any()).Return([]byte("err"), nil)
+				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, gomock.Any())
+			} else if expectedMsg.Type != message2.Notify {
+				mockSession.EXPECT().ResponseMID(ctx, expectedMsg.ID, gomock.Any()).Return(table.responseMIDErr)
 			}
 
-			encoder := codec.NewPomeloPacketEncoder()
-			mockConn := connmock.NewMockPlayerConn(ctrl)
-			mockSerializer.EXPECT().GetName()
-			ag := agent.NewAgent(mockConn, nil, encoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil)
-
-			if table.responseMIDErr {
-				ag.SetStatus(constants.StatusClosed)
-				mockSerializer.EXPECT().Marshal(gomock.Any()).Return([]byte("err"), nil)
+			if table.responseMIDErr != nil {
+				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, table.responseMIDErr)
 			}
-			svc.remoteProcess(ctx, sv, ag, rt, expectedMsg)
+
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), nil)
+			svc.remoteProcess(ctx, sv, mockAgent, rt, expectedMsg)
 		})
 	}
 }
@@ -472,12 +503,13 @@ func TestRemoteServiceRPC(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockSerializer := serializemocks.NewMockSerializer(ctrl)
-			mockSD := clustermocks.NewMockServiceDiscovery(ctrl)
-			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
-			mockRPCServer := clustermocks.NewMockRPCServer(ctrl)
-			messageEncoder := message.NewMessagesEncoder(false)
+			mockSD := mocks.NewMockServiceDiscovery(ctrl)
+			mockRPCClient := mocks.NewMockRPCClient(ctrl)
+			mockRPCServer := mocks.NewMockRPCServer(ctrl)
+			messageEncoder := message2.NewMessagesEncoder(false)
 			router := router.New()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{})
+			sessionPool := session.NewSessionPool()
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
 			if table.serverID != "" {
@@ -492,8 +524,8 @@ func TestRemoteServiceRPC(t *testing.T) {
 			ctx := context.Background()
 			if table.foundServer {
 				expectedData, _ := proto.Marshal(table.arg)
-				expectedMsg := &message.Message{
-					Type:  message.Request,
+				expectedMsg := &message2.Message{
+					Type:  message2.Request,
 					Route: rt.Short(),
 					Data:  expectedData,
 				}

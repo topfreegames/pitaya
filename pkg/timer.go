@@ -18,14 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"math"
 	"time"
 
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/timer"
+	"github.com/topfreegames/pitaya/v2/pkg/timer"
 )
 
 // NewTimer returns a new Timer containing a function that will be called

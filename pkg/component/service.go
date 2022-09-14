@@ -22,10 +22,9 @@ package component
 
 import (
 	"errors"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"reflect"
-
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
 )
 
 type (

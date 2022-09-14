@@ -23,34 +23,24 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	e "github.com/topfreegames/pitaya/v2/pkg/errors"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	e "github.com/topfreegames/pitaya/pkg/errors"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/pipeline"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/serialize"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/util"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger/interfaces"
+	"github.com/topfreegames/pitaya/v2/pkg/pipeline"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/serialize"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/util"
 )
 
 var errInvalidMsg = errors.New("invalid message type provided")
-
-func getHandler(rt *route.Route) (*component.Handler, error) {
-	handler, ok := handlers[rt.Short()]
-	if !ok {
-		e := fmt.Errorf("pitaya/handler: %s not found", rt.String())
-		return nil, e
-	}
-	return handler, nil
-
-}
 
 func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serializer, payload []byte) (interface{}, error) {
 	if handler.IsRawArg {
@@ -74,7 +64,7 @@ func unmarshalRemoteArg(remote *component.Remote, payload []byte) (interface{}, 
 		arg = reflect.New(remote.Type.Elem()).Interface()
 		pb, ok := arg.(proto.Message)
 		if !ok {
-			return nil, constants.ErrWrongValueType
+			return nil, constants2.ErrWrongValueType
 		}
 		err := proto.Unmarshal(payload, pb)
 		if err != nil {
@@ -96,31 +86,6 @@ func getMsgType(msgTypeIface interface{}) (message.Type, error) {
 	return msgType, nil
 }
 
-func executeBeforePipeline(ctx context.Context, data interface{}) (context.Context, interface{}, error) {
-	var err error
-	res := data
-	if len(pipeline.BeforeHandler.Handlers) > 0 {
-		for _, h := range pipeline.BeforeHandler.Handlers {
-			ctx, res, err = h(ctx, res)
-			if err != nil {
-				logger.Log.Debugf("pitaya/handler: broken pipeline: %s", err.Error())
-				return ctx, res, err
-			}
-		}
-	}
-	return ctx, res, nil
-}
-
-func executeAfterPipeline(ctx context.Context, res interface{}, err error) (interface{}, error) {
-	ret := res
-	if len(pipeline.AfterHandler.Handlers) > 0 {
-		for _, h := range pipeline.AfterHandler.Handlers {
-			ret, err = h(ctx, ret, err)
-		}
-	}
-	return ret, err
-}
-
 func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) {
 	res, err := util.SerializeOrRaw(ser, ret)
 	if err != nil {
@@ -137,8 +102,10 @@ func serializeReturn(ser serialize.Serializer, ret interface{}) ([]byte, error) 
 func processHandlerMessage(
 	ctx context.Context,
 	rt *route.Route,
+	handler *component.Handler,
 	serializer serialize.Serializer,
-	session *session.Session,
+	handlerHooks *pipeline.HandlerHooks,
+	session session.Session,
 	data []byte,
 	msgTypeIface interface{},
 	remote bool,
@@ -146,21 +113,16 @@ func processHandlerMessage(
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = context.WithValue(ctx, constants.SessionCtxKey, session)
+	ctx = context.WithValue(ctx, constants2.SessionCtxKey, session)
 	ctx = util.CtxWithDefaultLogger(ctx, rt.String(), session.UID())
-
-	h, err := getHandler(rt)
-	if err != nil {
-		return nil, e.NewError(err, e.ErrNotFoundCode)
-	}
 
 	msgType, err := getMsgType(msgTypeIface)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrInternalCode)
 	}
 
-	logger := ctx.Value(constants.LoggerCtxKey).(logger.Logger)
-	exit, err := h.ValidateMessageType(msgType)
+	logger := ctx.Value(constants2.LoggerCtxKey).(interfaces.Logger)
+	exit, err := handler.ValidateMessageType(msgType)
 	if err != nil && exit {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	} else if err != nil {
@@ -169,23 +131,23 @@ func processHandlerMessage(
 
 	// First unmarshal the handler arg that will be passed to
 	// both handler and pipeline functions
-	arg, err := unmarshalHandlerArg(h, serializer, data)
+	arg, err := unmarshalHandlerArg(handler, serializer, data)
 	if err != nil {
 		return nil, e.NewError(err, e.ErrBadRequestCode)
 	}
 
-	ctx, arg, err = executeBeforePipeline(ctx, arg)
+	ctx, arg, err = handlerHooks.BeforeHandler.ExecuteBeforePipeline(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
 
 	logger.Debugf("SID=%d, Data=%s", session.ID(), data)
-	args := []reflect.Value{h.Receiver, reflect.ValueOf(ctx)}
+	args := []reflect.Value{handler.Receiver, reflect.ValueOf(ctx)}
 	if arg != nil {
 		args = append(args, reflect.ValueOf(arg))
 	}
 
-	resp, err := util.Pcall(h.Method, args)
+	resp, err := util.Pcall(handler.Method, args)
 	if remote && msgType == message.Notify {
 		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout
@@ -195,7 +157,7 @@ func processHandlerMessage(
 		resp = []byte("ack")
 	}
 
-	resp, err = executeAfterPipeline(ctx, resp, err)
+	resp, err = handlerHooks.AfterHandler.ExecuteAfterPipeline(ctx, resp, err)
 	if err != nil {
 		return nil, err
 	}

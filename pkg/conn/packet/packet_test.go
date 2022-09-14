@@ -34,8 +34,8 @@ func TestNewPacket(t *testing.T) {
 
 func TestString(t *testing.T) {
 	tables := []struct {
-		tp     Type
-		data   []byte
+		tp   Type
+		data []byte
 		strOut string
 	}{
 		{Handshake, []byte{0x01}, fmt.Sprintf("Type: %d, Length: %d, Data: %s", Handshake, 1, string([]byte{0x01}))},

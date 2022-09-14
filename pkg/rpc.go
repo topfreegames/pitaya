@@ -18,42 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
 	"context"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/worker"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
 )
 
 // RPC calls a method in a different server
-func RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error {
-	return doSendRPC(ctx, "", routeStr, reply, arg)
+func (app *App) RPC(ctx context.Context, routeStr string, reply proto.Message, arg proto.Message) error {
+	return app.doSendRPC(ctx, "", routeStr, reply, arg)
 }
 
 // RPCTo send a rpc to a specific server
-func RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
-	return doSendRPC(ctx, serverID, routeStr, reply, arg)
+func (app *App) RPCTo(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
+	return app.doSendRPC(ctx, serverID, routeStr, reply, arg)
 }
 
 // RawRPC send a rpc to a specific server, in and out will be a byte array, it
 // is used by the sidecar
-func RawRPC(ctx context.Context, serverID, routeStr string, arg []byte) (*protos.Response, error) {
+func (app *App) RawRPC(ctx context.Context, serverID, routeStr string, arg []byte) (*protos.Response, error) {
 	var r *route.Route
 	var err error
-	if r, err = basicCheckRPC(ctx, serverID, routeStr); err != nil {
+	if r, err = app.basicCheckRPC(ctx, serverID, routeStr); err != nil {
 		return nil, err
 	}
 
-	return remoteService.DoRPC(ctx, serverID, r, arg)
+	return app.remoteService.DoRPC(ctx, serverID, r, arg)
 }
 
-func basicCheckRPC(ctx context.Context, serverID, routeStr string) (*route.Route, error) {
+func (app *App) basicCheckRPC(ctx context.Context, serverID, routeStr string) (*route.Route, error) {
 	if app.rpcServer == nil {
 		return nil, constants.ErrRPCServerNotInitialized
 	}
@@ -63,7 +63,7 @@ func basicCheckRPC(ctx context.Context, serverID, routeStr string) (*route.Route
 		return nil, err
 	}
 
-	if r.SvType == "" && serverID == "" {
+	if r.SvType == "" {
 		return nil, constants.ErrNoServerTypeChosenForRPC
 	}
 
@@ -76,7 +76,7 @@ func basicCheckRPC(ctx context.Context, serverID, routeStr string) (*route.Route
 
 // ReliableRPC enqueues RPC to worker so it's executed asynchronously
 // Default enqueue options are used
-func ReliableRPC(
+func (app *App) ReliableRPC(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
@@ -86,19 +86,19 @@ func ReliableRPC(
 
 // ReliableRPCWithOptions enqueues RPC to worker
 // Receive worker options for this specific RPC
-func ReliableRPCWithOptions(
+func (app *App) ReliableRPCWithOptions(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
-	opts *worker.EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) (jid string, err error) {
 	return app.worker.EnqueueRPCWithOptions(routeStr, metadata, reply, arg, opts)
 }
 
-func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
+func (app *App) doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Message, arg proto.Message) error {
 	var r *route.Route
 	var err error
-	if r, err = basicCheckRPC(ctx, serverID, routeStr); err != nil {
+	if r, err = app.basicCheckRPC(ctx, serverID, routeStr); err != nil {
 		return err
 	}
 
@@ -106,5 +106,5 @@ func doSendRPC(ctx context.Context, serverID, routeStr string, reply proto.Messa
 		return constants.ErrReplyShouldBePtr
 	}
 
-	return remoteService.RPC(ctx, serverID, r, reply, arg)
+	return app.remoteService.RPC(ctx, serverID, r, reply, arg)
 }

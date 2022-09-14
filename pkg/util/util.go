@@ -24,36 +24,36 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nats-io/nuid"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
+	e "github.com/topfreegames/pitaya/v2/pkg/errors"
 	"os"
 	"reflect"
 	"runtime/debug"
 	"strconv"
 
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	e "github.com/topfreegames/pitaya/pkg/errors"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/serialize"
-	"github.com/topfreegames/pitaya/pkg/serialize/json"
-	"github.com/topfreegames/pitaya/pkg/serialize/protobuf"
-	"github.com/topfreegames/pitaya/pkg/tracing"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger/interfaces"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/serialize"
+	"github.com/topfreegames/pitaya/v2/pkg/serialize/json"
+	"github.com/topfreegames/pitaya/v2/pkg/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v2/pkg/tracing"
 
-	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 )
 
-func getLoggerFromArgs(args []reflect.Value) logger.Logger {
+func getLoggerFromArgs(args []reflect.Value) interfaces.Logger {
 	for _, a := range args {
 		if !a.IsValid() {
 			continue
 		}
 		if ctx, ok := a.Interface().(context.Context); ok {
-			logVal := ctx.Value(constants.LoggerCtxKey)
+			logVal := ctx.Value(constants2.LoggerCtxKey)
 			if logVal != nil {
-				log := logVal.(logger.Logger)
+				log := logVal.(interfaces.Logger)
 				return log
 			}
 		}
@@ -88,7 +88,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 		} else if !r[0].IsNil() {
 			rets = r[0].Interface()
 		} else {
-			err = constants.ErrReplyShouldBeNotNull
+			err = constants2.ErrReplyShouldBeNotNull
 		}
 	}
 	return
@@ -171,28 +171,23 @@ func ConvertProtoToMessageType(protoMsgType protos.MsgType) message.Type {
 // If using logrus, userId, route and requestId will be added as fields.
 // Otherwise the pitaya logger will be used as it is.
 func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Context {
-	var defaultLogger logger.Logger
-	logrusLogger, ok := logger.Log.(logrus.FieldLogger)
-	if ok {
-		requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
-		if rID, ok := requestID.(string); ok {
-			if rID == "" {
-				requestID = uuid.New()
-			}
-		} else {
-			requestID = uuid.New()
+	requestID := pcontext.GetFromPropagateCtx(ctx, constants2.RequestIDKey)
+	if rID, ok := requestID.(string); ok {
+		if rID == "" {
+			requestID = nuid.New()
 		}
-		defaultLogger = logrusLogger.WithFields(
-			logrus.Fields{
-				"route":     route,
-				"requestId": requestID,
-				"userId":    userID,
-			})
 	} else {
-		defaultLogger = logger.Log
+		requestID = nuid.New()
 	}
+	defaultLogger := logger.Log.WithFields(
+		map[string]interface{}{
+			"route":     route,
+			"requestId": requestID,
+			"userId":    userID,
+		},
+	)
 
-	return context.WithValue(ctx, constants.LoggerCtxKey, defaultLogger)
+	return context.WithValue(ctx, constants2.LoggerCtxKey, defaultLogger)
 }
 
 // StartSpanFromRequest starts a tracing span from the request
@@ -206,9 +201,9 @@ func StartSpanFromRequest(
 	tags := opentracing.Tags{
 		"local.id":     serverID,
 		"span.kind":    "server",
-		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey),
-		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey),
-		"request.id":   pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey),
+		"peer.id":      pcontext.GetFromPropagateCtx(ctx, constants2.PeerIDKey),
+		"peer.service": pcontext.GetFromPropagateCtx(ctx, constants2.PeerServiceKey),
+		"request.id":   pcontext.GetFromPropagateCtx(ctx, constants2.RequestIDKey),
 	}
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
@@ -225,7 +220,7 @@ func GetContextFromRequest(req *protos.Request, serverID string) (context.Contex
 		return nil, err
 	}
 	if ctx == nil {
-		return nil, constants.ErrNoContextFound
+		return nil, constants2.ErrNoContextFound
 	}
 	ctx = CtxWithDefaultLogger(ctx, req.GetMsg().GetRoute(), "")
 	return ctx, nil

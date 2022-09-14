@@ -22,16 +22,16 @@ package cluster
 
 import (
 	"context"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
 
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	"github.com/topfreegames/pitaya/pkg/interfaces"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/tracing"
+	"github.com/topfreegames/pitaya/v2/pkg/interfaces"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/tracing"
 )
 
 // RPCServer interface
@@ -47,7 +47,7 @@ type RPCClient interface {
 	SendPush(userID string, frontendSv *Server, push *protos.Push) error
 	SendKick(userID string, serverType string, kick *protos.KickMsg) error
 	BroadcastSessionBind(uid string) error
-	Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session *session.Session, msg *message.Message, server *Server) (*protos.Response, error)
+	Call(ctx context.Context, rpcType protos.RPCType, route *route.Route, session session.Session, msg *message.Message, server *Server) (*protos.Response, error)
 	interfaces.Module
 }
 
@@ -82,7 +82,7 @@ func buildRequest(
 	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
+	session session.Session,
 	msg *message.Message,
 	thisServer *Server,
 ) (protos.Request, error) {

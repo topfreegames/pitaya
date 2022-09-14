@@ -22,11 +22,11 @@ package component
 
 import (
 	"errors"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
 )
 
 type unexportedTestType struct {
@@ -38,9 +38,9 @@ type ExportedTypeWithNoHandlerAndNoRemote struct {
 }
 
 var tables = []struct {
-	name     string
-	comp     Component
-	err      error
+	name string
+	comp Component
+	err  error
 	handlers []string
 	remotes  []string
 }{

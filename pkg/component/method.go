@@ -22,12 +22,12 @@ package component
 
 import (
 	"context"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
 	"reflect"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
 )
 
 var (

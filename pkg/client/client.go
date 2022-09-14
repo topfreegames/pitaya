@@ -26,23 +26,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
+	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
+	message2 "github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	packet2 "github.com/topfreegames/pitaya/v2/pkg/conn/packet"
 	"net"
 	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/topfreegames/pitaya/pkg/acceptor"
-
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/pkg"
-	"github.com/topfreegames/pitaya/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/util/compression"
+	pitaya "github.com/topfreegames/pitaya/v2/pkg"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	logruswrapper "github.com/topfreegames/pitaya/v2/pkg/logger/logrus"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/util/compression"
 )
 
 // HandshakeSys struct
@@ -59,7 +59,7 @@ type HandshakeData struct {
 }
 
 type pendingRequest struct {
-	msg    *message.Message
+	msg    *message2.Message
 	sentAt time.Time
 }
 
@@ -67,22 +67,22 @@ type pendingRequest struct {
 type Client struct {
 	conn                net.Conn
 	Connected           bool
-	packetEncoder       codec.PacketEncoder
-	packetDecoder       codec.PacketDecoder
-	packetChan          chan *packet.Packet
-	IncomingMsgChan     chan *message.Message
+	packetEncoder       codec2.PacketEncoder
+	packetDecoder       codec2.PacketDecoder
+	packetChan          chan *packet2.Packet
+	IncomingMsgChan     chan *message2.Message
 	pendingChan         chan bool
 	pendingRequests     map[uint]*pendingRequest
 	pendingReqMutex     sync.Mutex
 	requestTimeout      time.Duration
 	closeChan           chan struct{}
 	nextID              uint32
-	messageEncoder      message.Encoder
+	messageEncoder      message2.Encoder
 	clientHandshakeData *session.HandshakeData
 }
 
 // MsgChannel return the incoming message channel
-func (c *Client) MsgChannel() chan *message.Message {
+func (c *Client) MsgChannel() chan *message2.Message {
 	return c.IncomingMsgChan
 }
 
@@ -97,7 +97,7 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logLevel)
 
-	logger.Log = l
+	logger.Log = logruswrapper.NewWithFieldLogger(l)
 
 	reqTimeout := 5 * time.Second
 	if len(requestTimeout) > 0 {
@@ -106,15 +106,15 @@ func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 
 	return &Client{
 		Connected:       false,
-		packetEncoder:   codec.NewPomeloPacketEncoder(),
-		packetDecoder:   codec.NewPomeloPacketDecoder(),
-		packetChan:      make(chan *packet.Packet, 10),
+		packetEncoder:   codec2.NewPomeloPacketEncoder(),
+		packetDecoder:   codec2.NewPomeloPacketDecoder(),
+		packetChan:      make(chan *packet2.Packet, 10),
 		pendingRequests: make(map[uint]*pendingRequest),
 		requestTimeout:  reqTimeout,
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
-		messageEncoder: message.NewMessagesEncoder(false),
+		messageEncoder: message2.NewMessagesEncoder(false),
 		clientHandshakeData: &session.HandshakeData{
 			Sys: session.HandshakeClientData{
 				Platform:    "mac",
@@ -140,7 +140,7 @@ func (c *Client) sendHandshakeRequest() error {
 		return err
 	}
 
-	p, err := c.packetEncoder.Encode(packet.Handshake, enc)
+	p, err := c.packetEncoder.Encode(packet2.Handshake, enc)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (c *Client) handleHandshakeResponse() error {
 	}
 
 	handshakePacket := packets[0]
-	if handshakePacket.Type != packet.Handshake {
+	if handshakePacket.Type != packet2.Handshake {
 		return fmt.Errorf("got first packet from server that is not a handshake, aborting")
 	}
 
@@ -177,9 +177,9 @@ func (c *Client) handleHandshakeResponse() error {
 	logger.Log.Debug("got handshake from sv, data: %v", handshake)
 
 	if handshake.Sys.Dict != nil {
-		message.SetDictionary(handshake.Sys.Dict)
+		message2.SetDictionary(handshake.Sys.Dict)
 	}
-	p, err := c.packetEncoder.Encode(packet.HandshakeAck, []byte{})
+	p, err := c.packetEncoder.Encode(packet2.HandshakeAck, []byte{})
 	if err != nil {
 		return err
 	}
@@ -216,8 +216,8 @@ func (c *Client) pendingRequestsReaper() {
 				err := pitaya.Error(errors.New("request timeout"), "PIT-504")
 				errMarshalled, _ := json.Marshal(err)
 				// send a timeout to incoming msg chan
-				m := &message.Message{
-					Type:  message.Response,
+				m := &message2.Message{
+					Type:  message2.Response,
 					ID:    pendingReq.msg.ID,
 					Route: pendingReq.msg.Route,
 					Data:  errMarshalled,
@@ -239,14 +239,14 @@ func (c *Client) handlePackets() {
 		select {
 		case p := <-c.packetChan:
 			switch p.Type {
-			case packet.Data:
+			case packet2.Data:
 				//handle data
 				logger.Log.Debug("got data: %s", string(p.Data))
-				m, err := message.Decode(p.Data)
+				m, err := message2.Decode(p.Data)
 				if err != nil {
 					logger.Log.Errorf("error decoding msg from sv: %s", string(m.Data))
 				}
-				if m.Type == message.Response {
+				if m.Type == message2.Response {
 					c.pendingReqMutex.Lock()
 					if _, ok := c.pendingRequests[m.ID]; ok {
 						delete(c.pendingRequests, m.ID)
@@ -258,7 +258,7 @@ func (c *Client) handlePackets() {
 					c.pendingReqMutex.Unlock()
 				}
 				c.IncomingMsgChan <- m
-			case packet.Kick:
+			case packet2.Kick:
 				logger.Log.Warn("got kick packet from the server! disconnecting...")
 				c.Disconnect()
 			}
@@ -268,7 +268,7 @@ func (c *Client) handlePackets() {
 	}
 }
 
-func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
+func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet2.Packet, error) {
 	// listen for sv messages
 	data := make([]byte, 1024)
 	n := len(data)
@@ -287,7 +287,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	}
 	totalProcessed := 0
 	for _, p := range packets {
-		totalProcessed += codec.HeadLength + p.Length
+		totalProcessed += codec2.HeadLength + p.Length
 	}
 	buf.Next(totalProcessed)
 
@@ -319,7 +319,7 @@ func (c *Client) sendHeartbeats(interval int) {
 	for {
 		select {
 		case <-t.C:
-			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
+			p, _ := c.packetEncoder.Encode(packet2.Heartbeat, []byte{})
 			_, err := c.conn.Write(p)
 			if err != nil {
 				logger.Log.Errorf("error sending heartbeat to server: %s", err.Error())
@@ -354,7 +354,7 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 		return err
 	}
 	c.conn = conn
-	c.IncomingMsgChan = make(chan *message.Message, 10)
+	c.IncomingMsgChan = make(chan *message2.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {
 		return err
@@ -385,7 +385,7 @@ func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config)
 		return err
 	}
 
-	c.IncomingMsgChan = make(chan *message.Message, 10)
+	c.IncomingMsgChan = make(chan *message2.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {
 		return err
@@ -409,21 +409,21 @@ func (c *Client) handleHandshake() error {
 
 // SendRequest sends a request to the server
 func (c *Client) SendRequest(route string, data []byte) (uint, error) {
-	return c.sendMsg(message.Request, route, data)
+	return c.sendMsg(message2.Request, route, data)
 }
 
 // SendNotify sends a notify to the server
 func (c *Client) SendNotify(route string, data []byte) error {
-	_, err := c.sendMsg(message.Notify, route, data)
+	_, err := c.sendMsg(message2.Notify, route, data)
 	return err
 }
 
-func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
+func (c *Client) buildPacket(msg message2.Message) ([]byte, error) {
 	encMsg, err := c.messageEncoder.Encode(&msg)
 	if err != nil {
 		return nil, err
 	}
-	p, err := c.packetEncoder.Encode(packet.Data, encMsg)
+	p, err := c.packetEncoder.Encode(packet2.Data, encMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -432,9 +432,9 @@ func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
 }
 
 // sendMsg sends the request to the server
-func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint, error) {
+func (c *Client) sendMsg(msgType message2.Type, route string, data []byte) (uint, error) {
 	// TODO mount msg and encode
-	m := message.Message{
+	m := message2.Message{
 		Type:  msgType,
 		ID:    uint(atomic.AddUint32(&c.nextID, 1)),
 		Route: route,
@@ -442,7 +442,7 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 		Err:   false,
 	}
 	p, err := c.buildPacket(m)
-	if msgType == message.Request {
+	if msgType == message2.Request {
 		c.pendingChan <- true
 		c.pendingReqMutex.Lock()
 		if _, ok := c.pendingRequests[m.ID]; !ok {

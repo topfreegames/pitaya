@@ -22,13 +22,11 @@ package metrics
 
 import (
 	"context"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
+	"github.com/topfreegames/pitaya/v2/pkg/errors"
 	"runtime"
 	"time"
-
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/errors"
-
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
 )
 
 // ReportTimingFromCtx reports the latency from the context

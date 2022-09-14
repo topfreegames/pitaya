@@ -22,42 +22,16 @@ package groups
 
 import (
 	"context"
-	"os"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"testing"
 
-	"go.etcd.io/etcd/tests/v3/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/session/mocks"
 )
-
-var etcdGroupService *EtcdGroupService
-var memoryGroupService *MemoryGroupService
-
-func TestMain(m *testing.M) {
-	setup()
-	exit := m.Run()
-	os.Exit(exit)
-}
-
-func setup() {
-	var err error
-	conf := config.NewConfig()
-	c := integration.NewClusterV3(nil, &integration.ClusterConfig{Size: 1})
-	cli := c.RandClient()
-	etcdGroupService, err = NewEtcdGroupService(conf, cli)
-	if err != nil {
-		panic(err)
-	}
-	memoryGroupService = NewMemoryGroupService(conf)
-}
 
 func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
+	//t.Parallel()
 	err := gs.GroupCreate(ctx, "testCreateDuplicatedGroup")
 	assert.NoError(t, err)
 	err = gs.GroupCreate(ctx, "testCreateDuplicatedGroup")
@@ -67,7 +41,6 @@ func testCreateDuplicatedGroup(gs GroupService, t *testing.T) {
 
 func testCreateGroup(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreate(ctx, "testCreateGroup")
 	assert.NoError(t, err)
 	count, err := gs.GroupCountMembers(ctx, "testCreateGroup")
@@ -79,7 +52,6 @@ func testCreateGroup(gs GroupService, t *testing.T) {
 
 func testCreateGroupWithTTL(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreateWithTTL(ctx, "testCreateGroupWithTTL", 10)
 	assert.NoError(t, err)
 	count, err := gs.GroupCountMembers(ctx, "testCreateGroupWithTTL")
@@ -91,7 +63,6 @@ func testCreateGroupWithTTL(gs GroupService, t *testing.T) {
 
 func testGroupAddMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -108,9 +79,7 @@ func testGroupAddMember(gs GroupService, t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testGroupAddMember", s.UID())
+			err = gs.GroupAddMember(ctx, "testGroupAddMember", table.UID)
 			assert.NoError(t, err)
 			_, err := gs.GroupContainsMember(ctx, "testGroupAddMember", table.UID)
 			assert.NoError(t, err)
@@ -120,7 +89,6 @@ func testGroupAddMember(gs GroupService, t *testing.T) {
 
 func testGroupAddDuplicatedMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	err := gs.GroupCreate(ctx, "testGroupAddDuplicatedMember")
 	assert.NoError(t, err)
 	err = gs.GroupAddMember(ctx, "testGroupAddDuplicatedMember", "duplicatedUid")
@@ -132,7 +100,6 @@ func testGroupAddDuplicatedMember(gs GroupService, t *testing.T) {
 
 func testGroupContainsMember(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -150,9 +117,7 @@ func testGroupContainsMember(gs GroupService, t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testGroupContainsMember", s.UID())
+			err = gs.GroupAddMember(ctx, "testGroupContainsMember", table.UID)
 			assert.NoError(t, err)
 			b, err := gs.GroupContainsMember(ctx, "testGroupContainsMember", table.UID)
 			assert.True(t, b)
@@ -163,7 +128,6 @@ func testGroupContainsMember(gs GroupService, t *testing.T) {
 
 func testRemove(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -181,11 +145,9 @@ func testRemove(gs GroupService, t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testRemove", s.UID())
+			err = gs.GroupAddMember(ctx, "testRemove", table.UID)
 			assert.NoError(t, err)
-			err = gs.GroupRemoveMember(ctx, "testRemove", s.UID())
+			err = gs.GroupRemoveMember(ctx, "testRemove", table.UID)
 			assert.NoError(t, err)
 			res, err := gs.GroupContainsMember(ctx, "testRemove", table.UID)
 			assert.NoError(t, err)
@@ -196,7 +158,6 @@ func testRemove(gs GroupService, t *testing.T) {
 
 func testDelete(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -216,11 +177,9 @@ func testDelete(gs GroupService, t *testing.T) {
 			defer ctrl.Finish()
 			err = gs.GroupCreate(ctx, "testDelete")
 			assert.NoError(t, err)
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testDeleteSufix", s.UID())
+			err = gs.GroupAddMember(ctx, "testDeleteSufix", table.UID)
 			assert.NoError(t, err)
-			err = gs.GroupAddMember(ctx, "testDelete", s.UID())
+			err = gs.GroupAddMember(ctx, "testDelete", table.UID)
 			assert.NoError(t, err)
 			err = gs.GroupDelete(ctx, "testDelete")
 			assert.NoError(t, err)
@@ -237,7 +196,6 @@ func testDelete(gs GroupService, t *testing.T) {
 
 func testRemoveAll(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -257,11 +215,9 @@ func testRemoveAll(gs GroupService, t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testRemoveAllSufix", s.UID())
+			err = gs.GroupAddMember(ctx, "testRemoveAllSufix", table.UID)
 			assert.NoError(t, err)
-			err = gs.GroupAddMember(ctx, "testRemoveAll", s.UID())
+			err = gs.GroupAddMember(ctx, "testRemoveAll", table.UID)
 			assert.NoError(t, err)
 			err = gs.GroupRemoveAll(ctx, "testRemoveAll")
 			assert.NoError(t, err)
@@ -278,7 +234,6 @@ func testRemoveAll(gs GroupService, t *testing.T) {
 
 func testCount(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	tables := []struct {
 		name     string
 		frontend bool
@@ -296,9 +251,7 @@ func testCount(gs GroupService, t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-			s := session.New(mockNetworkEntity, table.frontend, table.UID)
-			err = gs.GroupAddMember(ctx, "testCount", s.UID())
+			err = gs.GroupAddMember(ctx, "testCount", table.UID)
 			assert.NoError(t, err)
 			res, err := gs.GroupCountMembers(ctx, "testCount")
 			assert.NoError(t, err)
@@ -312,17 +265,15 @@ func testCount(gs GroupService, t *testing.T) {
 
 func testMembers(gs GroupService, t *testing.T) {
 	ctx := context.Background()
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	err := gs.GroupCreate(ctx, "testGroupMembers")
 	assert.NoError(t, err)
-	mockNetworkEntity := mocks.NewMockNetworkEntity(ctrl)
-	s1 := session.New(mockNetworkEntity, true, "someid1")
-	s2 := session.New(mockNetworkEntity, true, "someid2")
-	err = gs.GroupAddMember(ctx, "testGroupMembers", s1.UID())
+	uid1 := "someid1"
+	uid2 := "someid2"
+	err = gs.GroupAddMember(ctx, "testGroupMembers", uid1)
 	assert.NoError(t, err)
-	err = gs.GroupAddMember(ctx, "testGroupMembers", s2.UID())
+	err = gs.GroupAddMember(ctx, "testGroupMembers", uid2)
 	assert.NoError(t, err)
 
 	res, err := gs.GroupMembers(ctx, "testGroupMembers")

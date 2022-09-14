@@ -22,8 +22,7 @@ package codec
 
 import (
 	"bytes"
-
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
+	packet2 "github.com/topfreegames/pitaya/v2/pkg/conn/packet"
 )
 
 // PomeloPacketDecoder reads and decodes network data slice following pomelo's protocol
@@ -34,18 +33,18 @@ func NewPomeloPacketDecoder() *PomeloPacketDecoder {
 	return &PomeloPacketDecoder{}
 }
 
-func (c *PomeloPacketDecoder) forward(buf *bytes.Buffer) (int, packet.Type, error) {
+func (c *PomeloPacketDecoder) forward(buf *bytes.Buffer) (int, packet2.Type, error) {
 	header := buf.Next(HeadLength)
 	return ParseHeader(header)
 }
 
 // Decode decode the network bytes slice to packet.Packet(s)
-func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
+func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet2.Packet, error) {
 	buf := bytes.NewBuffer(nil)
 	buf.Write(data)
 
 	var (
-		packets []*packet.Packet
+		packets []*packet2.Packet
 		err     error
 	)
 	// check length
@@ -60,7 +59,7 @@ func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
 	}
 
 	for size <= buf.Len() {
-		p := &packet.Packet{Type: typ, Length: size, Data: buf.Next(size)}
+		p := &packet2.Packet{Type: typ, Length: size, Data: buf.Next(size)}
 		packets = append(packets, p)
 
 		// if no more packets, break

@@ -23,7 +23,7 @@ package message
 import (
 	"encoding/binary"
 
-	"github.com/topfreegames/pitaya/pkg/util/compression"
+	"github.com/topfreegames/pitaya/v2/pkg/util/compression"
 )
 
 // Encoder interface
@@ -60,7 +60,7 @@ func (me *MessagesEncoder) IsCompressionEnabled() bool {
 // | push     |----011-|<route>             |
 // ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
-// See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/topfreegames/pitaya/v2/pkg/blob/master/docs/communication_protocol.md
 func (me *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	if invalidType(message.Type) {
 		return nil, ErrWrongMessageType
@@ -69,7 +69,9 @@ func (me *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	buf := make([]byte, 0)
 	flag := byte(message.Type) << 1
 
+	routesCodesMutex.RLock()
 	code, compressed := routes[message.Route]
+	routesCodesMutex.RUnlock()
 	if compressed {
 		flag |= msgRouteCompressMask
 	}
@@ -127,7 +129,7 @@ func (me *MessagesEncoder) Decode(data []byte) (*Message, error) {
 }
 
 // Decode unmarshal the bytes slice to a message
-// See ref: https://github.com/topfreegames/pitaya/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/topfreegames/pitaya/v2/pkg/blob/master/docs/communication_protocol.md
 func Decode(data []byte) (*Message, error) {
 	if len(data) < msgHeadLength {
 		return nil, ErrInvalidMessage
@@ -163,7 +165,9 @@ func Decode(data []byte) (*Message, error) {
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
+			routesCodesMutex.RLock()
 			route, ok := codes[code]
+			routesCodesMutex.RUnlock()
 			if !ok {
 				return nil, ErrRouteInfoNotFound
 			}

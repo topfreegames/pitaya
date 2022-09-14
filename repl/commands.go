@@ -23,11 +23,11 @@ package repl
 import (
 	"encoding/json"
 	"errors"
+	"github.com/topfreegames/pitaya/v2/pkg/client"
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/pkg/client"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 func connect(addr string, onMessageCallback func([]byte)) (err error) {

@@ -22,20 +22,20 @@ package router
 
 import (
 	"context"
+	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"math/rand"
 	"time"
 
-	"github.com/topfreegames/pitaya/pkg/cluster"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
 )
 
 // Router struct
 type Router struct {
-	serviceDiscovery cluster.ServiceDiscovery
+	serviceDiscovery cluster2.ServiceDiscovery
 	routesMap        map[string]RoutingFunc
 }
 
@@ -44,8 +44,8 @@ type RoutingFunc func(
 	ctx context.Context,
 	route *route.Route,
 	payload []byte,
-	servers map[string]*cluster.Server,
-) (*cluster.Server, error)
+	servers map[string]*cluster2.Server,
+) (*cluster2.Server, error)
 
 // New returns the router
 func New() *Router {
@@ -55,14 +55,14 @@ func New() *Router {
 }
 
 // SetServiceDiscovery sets the sd client
-func (r *Router) SetServiceDiscovery(sd cluster.ServiceDiscovery) {
+func (r *Router) SetServiceDiscovery(sd cluster2.ServiceDiscovery) {
 	r.serviceDiscovery = sd
 }
 
 func (r *Router) defaultRoute(
-	servers map[string]*cluster.Server,
-) *cluster.Server {
-	srvList := make([]*cluster.Server, 0)
+	servers map[string]*cluster2.Server,
+) *cluster2.Server {
+	srvList := make([]*cluster2.Server, 0)
 	s := rand.NewSource(time.Now().Unix())
 	rnd := rand.New(s)
 	for _, v := range servers {
@@ -79,7 +79,7 @@ func (r *Router) Route(
 	svType string,
 	route *route.Route,
 	msg *message.Message,
-) (*cluster.Server, error) {
+) (*cluster2.Server, error) {
 	if r.serviceDiscovery == nil {
 		return nil, constants.ErrServiceDiscoveryNotInitialized
 	}

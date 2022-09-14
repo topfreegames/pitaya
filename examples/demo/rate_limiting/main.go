@@ -3,51 +3,57 @@ package main
 import (
 	"flag"
 	"fmt"
+	acceptor2 "github.com/topfreegames/pitaya/v2/pkg/acceptor"
+	acceptorwrapper2 "github.com/topfreegames/pitaya/v2/pkg/acceptorwrapper"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
+	config2 "github.com/topfreegames/pitaya/v2/pkg/config"
+	"strings"
 	"time"
 
-	"strings"
-
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya/pkg"
-	"github.com/topfreegames/pitaya/pkg/acceptor"
-	"github.com/topfreegames/pitaya/pkg/acceptorwrapper"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/examples/demo/rate_limiting/services"
-	"github.com/topfreegames/pitaya/pkg/serialize/json"
+	pitaya "github.com/topfreegames/pitaya/v2/pkg"
+	"github.com/topfreegames/pitaya/v2/examples/demo/rate_limiting/services"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics"
 )
 
-func configureFrontend(port int) {
-	room := services.NewRoom()
-	pitaya.Register(room,
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower))
+func createAcceptor(port int, reporters []metrics.Reporter) acceptor2.Acceptor {
 
 	// 5 requests in 1 minute. Doesn't make sense, just to test
 	// rate limiting
 	vConfig := viper.New()
 	vConfig.Set("pitaya.conn.ratelimiting.limit", 5)
 	vConfig.Set("pitaya.conn.ratelimiting.interval", time.Minute)
-	pConfig := config.NewConfig(vConfig)
+	pConfig := config2.NewConfig(vConfig)
 
-	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-	wrapped := acceptorwrapper.WithWrappers(
+	rateLimitConfig := config2.NewRateLimitingConfig(pConfig)
+
+	tcp := acceptor2.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+	return acceptorwrapper2.WithWrappers(
 		tcp,
-		acceptorwrapper.NewRateLimitingWrapper(pConfig))
-	pitaya.AddAcceptor(wrapped)
+		acceptorwrapper2.NewRateLimitingWrapper(reporters, *rateLimitConfig))
 }
 
-func main() {
-	defer pitaya.Shutdown()
+var app pitaya.Pitaya
 
+func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := "room"
 
 	flag.Parse()
 
-	pitaya.SetSerializer(json.NewSerializer())
-	configureFrontend(*port)
+	config := config2.NewDefaultBuilderConfig()
+	builder := pitaya.NewDefaultBuilder(true, svType, pitaya.Cluster, map[string]string{}, *config)
+	builder.AddAcceptor(createAcceptor(*port, builder.MetricsReporters))
 
-	pitaya.Configure(true, svType, pitaya.Cluster, map[string]string{})
-	pitaya.Start()
+	app = builder.Build()
+
+	defer app.Shutdown()
+
+	room := services.NewRoom()
+	app.Register(room,
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
+
+	app.Start()
 }

@@ -18,87 +18,92 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/logger"
-)
-
-var (
-	handlerComp = make([]regComp, 0)
-	remoteComp  = make([]regComp, 0)
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
 )
 
 type regComp struct {
-	comp component.Component
-	opts []component.Option
+	comp component2.Component
+	opts []component2.Option
 }
 
 // Register register a component with options
-func Register(c component.Component, options ...component.Option) {
-	handlerComp = append(handlerComp, regComp{c, options})
+func (app *App) Register(c component2.Component, options ...component2.Option) {
+	app.handlerComp = append(app.handlerComp, regComp{c, options})
 }
 
 // RegisterRemote register a remote component with options
-func RegisterRemote(c component.Component, options ...component.Option) {
-	remoteComp = append(remoteComp, regComp{c, options})
+func (app *App) RegisterRemote(c component2.Component, options ...component2.Option) {
+	app.remoteComp = append(app.remoteComp, regComp{c, options})
 }
 
-func startupComponents() {
-	// component initialize hooks
-	for _, c := range handlerComp {
+func (app *App) startupComponents() {
+	// handler component initialize hooks
+	for _, c := range app.handlerComp {
 		c.comp.Init()
 	}
 
-	// component after initialize hooks
-	for _, c := range handlerComp {
+	// handler component after initialize hooks
+	for _, c := range app.handlerComp {
+		c.comp.AfterInit()
+	}
+
+	// remote component initialize hooks
+	for _, c := range app.remoteComp {
+		c.comp.Init()
+	}
+
+	// remote component after initialize hooks
+	for _, c := range app.remoteComp {
 		c.comp.AfterInit()
 	}
 
 	// register all components
-	for _, c := range handlerComp {
-		if err := handlerService.Register(c.comp, c.opts); err != nil {
+	for _, c := range app.handlerComp {
+		if err := app.handlerService.Register(c.comp, c.opts); err != nil {
 			logger.Log.Errorf("Failed to register handler: %s", err.Error())
 		}
 	}
 
 	// register all remote components
-	for _, c := range remoteComp {
-		if remoteService == nil {
+	for _, c := range app.remoteComp {
+		if app.remoteService == nil {
 			logger.Log.Warn("registered a remote component but remoteService is not running! skipping...")
 		} else {
-			if err := remoteService.Register(c.comp, c.opts); err != nil {
+			if err := app.remoteService.Register(c.comp, c.opts); err != nil {
 				logger.Log.Errorf("Failed to register remote: %s", err.Error())
 			}
 		}
 	}
 
-	handlerService.DumpServices()
-	if remoteService != nil {
-		remoteService.DumpServices()
+	app.handlerService.DumpServices()
+	if app.remoteService != nil {
+		app.remoteService.DumpServices()
 	}
 }
 
-func shutdownComponents() {
+func (app *App) shutdownComponents() {
 	// reverse call `BeforeShutdown` hooks
-	length := len(handlerComp)
+	length := len(app.handlerComp)
 	for i := length - 1; i >= 0; i-- {
-		handlerComp[i].comp.BeforeShutdown()
+		app.handlerComp[i].comp.BeforeShutdown()
 	}
 
 	// reverse call `Shutdown` hooks
 	for i := length - 1; i >= 0; i-- {
-		handlerComp[i].comp.Shutdown()
+		app.handlerComp[i].comp.Shutdown()
 	}
 
-	length = len(remoteComp)
+	length = len(app.remoteComp)
 	for i := length - 1; i >= 0; i-- {
-		remoteComp[i].comp.BeforeShutdown()
+		app.remoteComp[i].comp.BeforeShutdown()
 	}
 
 	// reverse call `Shutdown` hooks
 	for i := length - 1; i >= 0; i-- {
-		remoteComp[i].comp.Shutdown()
+		app.remoteComp[i].comp.Shutdown()
 	}
 }

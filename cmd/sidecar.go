@@ -17,13 +17,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v2/sidecar"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/sidecar"
 )
 
 var debug bool
@@ -36,8 +36,9 @@ var sidecarCmd = &cobra.Command{
 	Short: "starts pitaya in sidecar mode",
 	Long:  `starts pitaya in sidecar mode`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.NewConfig()
-		sidecar.StartSidecar(cfg, debug, bind, bindProtocol)
+		cfg := config.NewBuilderConfig(config.NewConfig())
+		sidecar := sidecar.NewSidecar(*cfg, debug)
+		sidecar.StartSidecar(bind, bindProtocol)
 	},
 }
 

@@ -22,13 +22,12 @@ package acceptorwrapper
 
 import (
 	"container/list"
+	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"time"
 
-	"github.com/topfreegames/pitaya/pkg"
-	"github.com/topfreegames/pitaya/pkg/acceptor"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/metrics"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics"
 )
 
 // RateLimiter wraps net.Conn by applying rate limiting and return empty
@@ -42,6 +41,7 @@ import (
 // be prepared to handle it.
 type RateLimiter struct {
 	acceptor.PlayerConn
+	reporters    []metrics.Reporter
 	limit        int
 	interval     time.Duration
 	times        list.List
@@ -50,6 +50,7 @@ type RateLimiter struct {
 
 // NewRateLimiter returns an initialized *RateLimiting
 func NewRateLimiter(
+	reporters []metrics.Reporter,
 	conn acceptor.PlayerConn,
 	limit int,
 	interval time.Duration,
@@ -57,6 +58,7 @@ func NewRateLimiter(
 ) *RateLimiter {
 	r := &RateLimiter{
 		PlayerConn:   conn,
+		reporters:    reporters,
 		limit:        limit,
 		interval:     interval,
 		forceDisable: forceDisable,
@@ -82,7 +84,7 @@ func (r *RateLimiter) GetNextMessage() (msg []byte, err error) {
 		now := time.Now()
 		if r.shouldRateLimit(now) {
 			logger.Log.Errorf("Data=%s, Error=%s", msg, constants.ErrRateLimitExceeded)
-			metrics.ReportExceededRateLimiting(pitaya.GetMetricsReporters())
+			metrics.ReportExceededRateLimiting(r.reporters)
 			continue
 		}
 

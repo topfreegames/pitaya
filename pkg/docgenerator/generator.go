@@ -22,12 +22,12 @@ package docgenerator
 
 import (
 	"encoding/json"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
 	"reflect"
 	"strings"
 	"unicode"
 
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
 )
 
 type docs struct {

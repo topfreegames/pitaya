@@ -18,19 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
-	"github.com/topfreegames/pitaya/pkg/cluster"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/util"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/cluster"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/util"
 )
 
 // SendPushToUsers sends a message to the given list of users
-func SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error) {
+func (app *App) SendPushToUsers(route string, v interface{}, uids []string, frontendType string) ([]string, error) {
 	data, err := util.SerializeOrRaw(app.serializer, v)
 	if err != nil {
 		return uids, err
@@ -47,7 +46,7 @@ func SendPushToUsers(route string, v interface{}, uids []string, frontendType st
 	// TODO we could use concurrency for sending the pushes here, not see why not
 	// doing it
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
+		if s := app.sessionPool.GetSessionByUID(uid); s != nil && app.server.Type == frontendType {
 			if err := s.Push(route, data); err != nil {
 				notPushedUids = append(notPushedUids, uid)
 				logger.Log.Errorf("Session push message error, ID=%d, UID=%s, Error=%s",

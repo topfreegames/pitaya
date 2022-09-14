@@ -23,16 +23,16 @@ package metrics
 import (
 	"context"
 	"errors"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
+	e "github.com/topfreegames/pitaya/v2/pkg/errors"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	e "github.com/topfreegames/pitaya/pkg/errors"
-	"github.com/topfreegames/pitaya/pkg/metrics/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics/mocks"
 )
 
 func TestReportTimingFromCtx(t *testing.T) {

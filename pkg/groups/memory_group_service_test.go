@@ -20,7 +20,19 @@
 
 package groups
 
-import "testing"
+import (
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"os"
+	"testing"
+)
+
+var memoryGroupService *MemoryGroupService
+
+func TestMain(m *testing.M) {
+	memoryGroupService = NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
+	exit := m.Run()
+	os.Exit(exit)
+}
 
 func TestMemoryCreateDuplicatedGroup(t *testing.T) {
 	testCreateDuplicatedGroup(memoryGroupService, t)

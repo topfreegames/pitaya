@@ -23,27 +23,26 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
+	"github.com/topfreegames/pitaya/v2/pkg/errors"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	"github.com/topfreegames/pitaya/pkg/errors"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/metrics"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/route"
-	"github.com/topfreegames/pitaya/pkg/session"
-	"github.com/topfreegames/pitaya/pkg/tracing"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/route"
+	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/tracing"
 )
 
 // NatsRPCClient struct
 type NatsRPCClient struct {
-	config                 *config.Config
 	conn                   *nats.Conn
 	connString             string
 	connectionTimeout      time.Duration
@@ -57,35 +56,34 @@ type NatsRPCClient struct {
 
 // NewNatsRPCClient ctor
 func NewNatsRPCClient(
-	config *config.Config,
+	config config.NatsRPCClientConfig,
 	server *Server,
 	metricsReporters []metrics.Reporter,
 	appDieChan chan bool,
 ) (*NatsRPCClient, error) {
 	ns := &NatsRPCClient{
-		config:            config,
 		server:            server,
 		running:           false,
 		metricsReporters:  metricsReporters,
 		appDieChan:        appDieChan,
 		connectionTimeout: nats.DefaultTimeout,
 	}
-	if err := ns.configure(); err != nil {
+	if err := ns.configure(config); err != nil {
 		return nil, err
 	}
 	return ns, nil
 }
 
-func (ns *NatsRPCClient) configure() error {
-	ns.connString = ns.config.GetString("pitaya.cluster.rpc.client.nats.connect")
+func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
+	ns.connString = config.Connect
 	if ns.connString == "" {
-		return constants.ErrNoNatsConnectionString
+		return constants2.ErrNoNatsConnectionString
 	}
-	ns.connectionTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.connectiontimeout")
-	ns.maxReconnectionRetries = ns.config.GetInt("pitaya.cluster.rpc.client.nats.maxreconnectionretries")
-	ns.reqTimeout = ns.config.GetDuration("pitaya.cluster.rpc.client.nats.requesttimeout")
+	ns.connectionTimeout = config.ConnectionTimeout
+	ns.maxReconnectionRetries = config.MaxReconnectionRetries
+	ns.reqTimeout = config.RequestTimeout
 	if ns.reqTimeout == 0 {
-		return constants.ErrNatsNoRequestTimeout
+		return constants2.ErrNatsNoRequestTimeout
 	}
 	return nil
 }
@@ -106,7 +104,7 @@ func (ns *NatsRPCClient) BroadcastSessionBind(uid string) error {
 // Send publishes a message in a given topic
 func (ns *NatsRPCClient) Send(topic string, data []byte) error {
 	if !ns.running {
-		return constants.ErrRPCClientNotInitialized
+		return constants2.ErrRPCClientNotInitialized
 	}
 	return ns.conn.Publish(topic, data)
 }
@@ -136,7 +134,7 @@ func (ns *NatsRPCClient) Call(
 	ctx context.Context,
 	rpcType protos.RPCType,
 	route *route.Route,
-	session *session.Session,
+	session session.Session,
 	msg *message.Message,
 	server *Server,
 ) (*protos.Response, error) {
@@ -154,7 +152,7 @@ func (ns *NatsRPCClient) Call(
 	defer tracing.FinishSpan(ctx, err)
 
 	if !ns.running {
-		err = constants.ErrRPCClientNotInitialized
+		err = constants2.ErrRPCClientNotInitialized
 		return nil, err
 	}
 	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
@@ -170,8 +168,8 @@ func (ns *NatsRPCClient) Call(
 
 	if ns.metricsReporters != nil {
 		startTime := time.Now()
-		ctx = pcontext.AddToPropagateCtx(ctx, constants.StartTimeKey, startTime.UnixNano())
-		ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, route.String())
+		ctx = pcontext.AddToPropagateCtx(ctx, constants2.StartTimeKey, startTime.UnixNano())
+		ctx = pcontext.AddToPropagateCtx(ctx, constants2.RouteKey, route.String())
 		defer func() {
 			typ := "rpc"
 			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, err)

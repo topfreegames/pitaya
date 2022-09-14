@@ -21,8 +21,8 @@
 package modules
 
 import (
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
 )
 
 // APIDocsGen is a pitaya module that generates api docs for pitaya servers

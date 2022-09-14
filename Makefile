@@ -67,6 +67,9 @@ run-custom-metrics-example:
 run-rate-limiting-example:
 	@go run examples/demo/rate_limiting/main.go
 
+protos-compile-demo:
+	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
 	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=./pkg/protos/ --go_opt paths=source_relative --go-grpc_out ./pkg/protos/ --go-grpc_opt paths=source_relative --go-grpc_opt require_unimplemented_servers=false
@@ -156,8 +159,29 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
 
+mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock cluster-mock
+
+agent-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > pkg/agent/mocks/agent.go
+
+session-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/session Session,SessionPool | sed 's/mock_session/mocks/' > pkg/session/mocks/session.go
+
+networkentity-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/networkentity NetworkEntitgit y | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
+
+pitaya-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg Pitaya | sed 's/mock_v2/mocks/' > pkg/mocks/app.go
+
+metrics-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/metrics Client | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/statsd_reporter.go
+
 serializer-mock:
-	@mockgen github.com/topfreegames/pitaya/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/serialize Serializer | sed 's/mock_serialize/mocks/' > pkg/serialize/mocks/serializer.go
 
 acceptor-mock:
-	@mockgen github.com/topfreegames/pitaya/acceptor Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
+
+cluster-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/pkg/cluster RPCServer,RPCClient,SDListener,RemoteBindingListener,InfoRetriever | sed 's/mock_cluster/mocks/' > pkg/cluster/mocks/cluster.go

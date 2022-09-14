@@ -1,12 +1,12 @@
-package pitaya
+package pkg
 
 import (
 	"context"
 	"encoding/json"
 	"strings"
 
-	"github.com/topfreegames/pitaya/pkg/component"
-	pitayaprotos "github.com/topfreegames/pitaya/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
+	pitayaprotos "github.com/topfreegames/pitaya/v2/pkg/protos"
 )
 
 // Docs is the handler that will serve protos

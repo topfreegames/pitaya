@@ -1,179 +1,650 @@
-// Copyright (c) TFG Co. All Rights Reserved.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
 package config
 
 import (
-	"strings"
+	"fmt"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/topfreegames/pitaya/v2/pkg/metrics/models"
 )
 
-// Config is a wrapper around a viper config
-type Config struct {
-	config *viper.Viper
+// PitayaConfig provides configuration for a pitaya app
+type PitayaConfig struct {
+	Heartbeat struct {
+		Interval time.Duration
+	}
+	Handler struct {
+		Messages struct {
+			Compression bool
+		}
+	}
+	Buffer struct {
+		Agent struct {
+			Messages int
+		}
+		Handler struct {
+			LocalProcess  int
+			RemoteProcess int
+		}
+	}
+	Concurrency struct {
+		Handler struct {
+			Dispatch int
+		}
+	}
+	Session struct {
+		Unique bool
+	}
+	Metrics struct {
+		Period time.Duration
+	}
+	Sidecar struct{
+		CallTimeout time.Duration
+	}
 }
 
-// NewConfig creates a new config with a given viper config if given
-func NewConfig(cfgs ...*viper.Viper) *Config {
-	var cfg *viper.Viper
-	if len(cfgs) > 0 {
-		cfg = cfgs[0]
-	} else {
-		cfg = viper.New()
+// NewDefaultPitayaConfig provides default configuration for Pitaya App
+func NewDefaultPitayaConfig() *PitayaConfig {
+	return &PitayaConfig{
+		Heartbeat: struct{ Interval time.Duration }{
+			Interval: time.Duration(30 * time.Second),
+		},
+		Handler: struct {
+			Messages struct {
+				Compression bool
+			}
+		}{
+			Messages: struct {
+				Compression bool
+			}{
+				Compression: true,
+			},
+		},
+		Buffer: struct {
+			Agent struct {
+				Messages int
+			}
+			Handler struct {
+				LocalProcess  int
+				RemoteProcess int
+			}
+		}{
+			Agent: struct {
+				Messages int
+			}{
+				Messages: 100,
+			},
+			Handler: struct {
+				LocalProcess  int
+				RemoteProcess int
+			}{
+				LocalProcess:  20,
+				RemoteProcess: 20,
+			},
+		},
+		Concurrency: struct {
+			Handler struct {
+				Dispatch int
+			}
+		}{
+			Handler: struct {
+				Dispatch int
+			}{
+				Dispatch: 25,
+			},
+		},
+		Session: struct {
+			Unique bool
+		}{
+			Unique: true,
+		},
+		Metrics: struct {
+			Period time.Duration
+		}{
+			Period: time.Duration(15 * time.Second),
+		},
+		Sidecar: struct {
+			CallTimeout time.Duration
+		}{
+			CallTimeout: time.Duration(1 * time.Second),
+		},
 	}
-
-	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	cfg.AutomaticEnv()
-	c := &Config{config: cfg}
-	c.fillDefaultValues()
-	return c
 }
 
-func (c *Config) fillDefaultValues() {
-	defaultsMap := map[string]interface{}{
-		"pitaya.buffer.agent.messages": 100,
-		// the max buffer size that nats will accept, if this buffer overflows, messages will begin to be dropped
-		"pitaya.buffer.cluster.rpc.server.nats.messages":        75,
-		"pitaya.buffer.cluster.rpc.server.nats.push":            100,
-		"pitaya.buffer.handler.localprocess":                    20,
-		"pitaya.buffer.handler.remoteprocess":                   20,
-		"pitaya.cluster.info.region":                            "",
-		"pitaya.cluster.rpc.client.grpc.dialtimeout":            "5s",
-		"pitaya.cluster.rpc.client.grpc.requesttimeout":         "5s",
-		"pitaya.cluster.rpc.client.grpc.lazyconnection":         false,
-		"pitaya.cluster.rpc.client.nats.connect":                "nats://localhost:4222",
-		"pitaya.cluster.rpc.client.nats.connectiontimeout":      "2s",
-		"pitaya.cluster.rpc.client.nats.maxreconnectionretries": 15,
-		"pitaya.cluster.rpc.client.nats.requesttimeout":         "5s",
-		"pitaya.cluster.rpc.server.grpc.externalport":           3434,
-		"pitaya.cluster.rpc.server.grpc.port":                   3434,
-		"pitaya.cluster.rpc.server.nats.connect":                "nats://localhost:4222",
-		"pitaya.cluster.rpc.server.nats.connectiontimeout":      "2s",
-		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": 15,
-		"pitaya.cluster.sd.etcd.dialtimeout":                    "5s",
-		"pitaya.cluster.sd.etcd.endpoints":                      "localhost:2379",
-		"pitaya.cluster.sd.etcd.grantlease.maxretries":          15,
-		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       "5s",
-		"pitaya.cluster.sd.etcd.grantlease.timeout":             "60s",
-		"pitaya.cluster.sd.etcd.heartbeat.log":                  false,
-		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  "60s",
-		"pitaya.cluster.sd.etcd.prefix":                         "pitaya/",
-		"pitaya.cluster.sd.etcd.revoke.timeout":                 "5s",
-		"pitaya.cluster.sd.etcd.syncservers.interval":           "120s",
-		"pitaya.cluster.sd.etcd.shutdown.delay":                 "10ms",
-		"pitaya.cluster.sd.etcd.servertypeblacklist":            nil,
-		"pitaya.cluster.sd.etcd.syncserversparallelism":         10,
-		// the sum of this config among all the frontend servers should always be less than
-		// the sum of pitaya.buffer.cluster.rpc.server.nats.messages, for covering the worst case scenario
-		// a single backend server should have the config pitaya.buffer.cluster.rpc.server.nats.messages bigger
-		// than the sum of the config pitaya.concurrency.handler.dispatch among all frontend servers
-		"pitaya.concurrency.handler.dispatch":              25,
-		"pitaya.concurrency.remote.service":                30,
-		"pitaya.defaultpipelines.structvalidation.enabled": false,
-		"pitaya.groups.etcd.dialtimeout":                   "5s",
-		"pitaya.groups.etcd.endpoints":                     "localhost:2379",
-		"pitaya.groups.etcd.prefix":                        "pitaya/",
-		"pitaya.groups.etcd.transactiontimeout":            "5s",
-		"pitaya.groups.memory.tickduration":                "30s",
-		"pitaya.handler.messages.compression":              true,
-		"pitaya.heartbeat.interval":                        "30s",
-		"pitaya.metrics.additionalTags":                    map[string]string{},
-		"pitaya.metrics.constTags":                         map[string]string{},
-		"pitaya.metrics.custom":                            map[string]interface{}{},
-		"pitaya.metrics.periodicMetrics.period":            "15s",
-		"pitaya.metrics.prometheus.enabled":                false,
-		"pitaya.metrics.prometheus.port":                   9090,
-		"pitaya.metrics.statsd.enabled":                    false,
-		"pitaya.metrics.statsd.host":                       "localhost:9125",
-		"pitaya.metrics.statsd.prefix":                     "pitaya.",
-		"pitaya.metrics.statsd.rate":                       1,
-		"pitaya.modules.bindingstorage.etcd.dialtimeout":   "5s",
-		"pitaya.modules.bindingstorage.etcd.endpoints":     "localhost:2379",
-		"pitaya.modules.bindingstorage.etcd.leasettl":      "1h",
-		"pitaya.modules.bindingstorage.etcd.prefix":        "pitaya/",
-		"pitaya.conn.ratelimiting.limit":                   20,
-		"pitaya.conn.ratelimiting.interval":                "1s",
-		"pitaya.conn.ratelimiting.forcedisable":            false,
-		"pitaya.session.unique":                            true,
-		"pitaya.sidecar.calltimeout":                       "1000ms",
-		"pitaya.worker.concurrency":                        1,
-		"pitaya.worker.redis.pool":                         "10",
-		"pitaya.worker.redis.url":                          "localhost:6379",
-		"pitaya.worker.retry.enabled":                      true,
-		"pitaya.worker.retry.exponential":                  2,
-		"pitaya.worker.retry.max":                          5,
-		"pitaya.worker.retry.maxDelay":                     10,
-		"pitaya.worker.retry.maxRandom":                    10,
-		"pitaya.worker.retry.minDelay":                     0,
+// NewPitayaConfig returns a config instance with values extracted from default config paths
+func NewPitayaConfig(config *Config) *PitayaConfig {
+	conf := NewDefaultPitayaConfig()
+	if err := config.UnmarshalKey("pitaya", &conf); err != nil {
+		panic(err)
 	}
+	return conf
+}
 
-	for param := range defaultsMap {
-		if c.config.Get(param) == nil {
-			c.config.SetDefault(param, defaultsMap[param])
+// BuilderConfig provides configuration for Builder
+type BuilderConfig struct {
+	Pitaya  PitayaConfig
+	Metrics struct {
+		Prometheus struct {
+			Enabled bool
+		}
+		Statsd struct {
+			Enabled bool
+		}
+	}
+	DefaultPipelines struct {
+		StructValidation struct {
+			Enabled bool
 		}
 	}
 }
 
-// GetViper returns the underlying viper config object
-func (c *Config) GetViper() *viper.Viper {
-	return c.config
+// NewDefaultBuilderConfig provides default builder configuration
+func NewDefaultBuilderConfig() *BuilderConfig {
+	return &BuilderConfig{
+		Pitaya: *NewDefaultPitayaConfig(),
+		Metrics: struct {
+			Prometheus struct {
+				Enabled bool
+			}
+			Statsd struct {
+				Enabled bool
+			}
+		}{
+			Prometheus: struct {
+				Enabled bool
+			}{
+				Enabled: false,
+			},
+			Statsd: struct {
+				Enabled bool
+			}{
+				Enabled: false,
+			},
+		},
+		DefaultPipelines: struct {
+			StructValidation struct {
+				Enabled bool
+			}
+		}{
+			StructValidation: struct {
+				Enabled bool
+			}{
+				Enabled: false,
+			},
+		},
+	}
 }
 
-// GetDuration returns a duration from the inner config
-func (c *Config) GetDuration(s string) time.Duration {
-	return c.config.GetDuration(s)
+// NewBuilderConfig reads from config to build builder configuration
+func NewBuilderConfig(config *Config) *BuilderConfig {
+	conf := NewDefaultBuilderConfig()
+	if err := config.Unmarshal(&conf); err != nil {
+		panic(err)
+	}
+	fmt.Println(conf)
+	return conf
 }
 
-// GetString returns a string from the inner config
-func (c *Config) GetString(s string) string {
-	return c.config.GetString(s)
+// GRPCClientConfig rpc client config struct
+type GRPCClientConfig struct {
+	DialTimeout    time.Duration
+	LazyConnection bool
+	RequestTimeout time.Duration
 }
 
-// GetInt returns an int from the inner config
-func (c *Config) GetInt(s string) int {
-	return c.config.GetInt(s)
+// NewDefaultGRPCClientConfig rpc client default config struct
+func NewDefaultGRPCClientConfig() *GRPCClientConfig {
+	return &GRPCClientConfig{
+		DialTimeout:    time.Duration(5 * time.Second),
+		LazyConnection: false,
+		RequestTimeout: time.Duration(5 * time.Second),
+	}
 }
 
-// GetBool returns an boolean from the inner config
-func (c *Config) GetBool(s string) bool {
-	return c.config.GetBool(s)
+// NewGRPCClientConfig reads from config to build GRPCCLientConfig
+func NewGRPCClientConfig(config *Config) *GRPCClientConfig {
+	conf := NewDefaultGRPCClientConfig()
+	if err := config.UnmarshalKey("pitaya.cluster.rpc.client.grpc", &conf); err != nil {
+		panic(err)
+	}
+	return conf
 }
 
-// GetStringSlice returns a string slice from the inner config
-func (c *Config) GetStringSlice(s string) []string {
-	return c.config.GetStringSlice(s)
+// GRPCServerConfig provides configuration for GRPCServer
+type GRPCServerConfig struct {
+	Port int
 }
 
-// Get returns an interface from the inner config
-func (c *Config) Get(s string) interface{} {
-	return c.config.Get(s)
+// NewDefaultGRPCServerConfig returns a default GRPCServerConfig
+func NewDefaultGRPCServerConfig() *GRPCServerConfig {
+	return &GRPCServerConfig{
+		Port: 3434,
+	}
 }
 
-// GetStringMapString returns a string map string from the inner config
-func (c *Config) GetStringMapString(s string) map[string]string {
-	return c.config.GetStringMapString(s)
+// NewGRPCServerConfig reads from config to build GRPCServerConfig
+func NewGRPCServerConfig(config *Config) *GRPCServerConfig {
+	return &GRPCServerConfig{
+		Port: config.GetInt("pitaya.cluster.rpc.server.grpc.port"),
+	}
 }
 
-// UnmarshalKey unmarshals key into v
-func (c *Config) UnmarshalKey(s string, v interface{}) error {
-	return c.config.UnmarshalKey(s, v)
+// NatsRPCClientConfig provides nats client configuration
+type NatsRPCClientConfig struct {
+	Connect                string
+	MaxReconnectionRetries int
+	RequestTimeout         time.Duration
+	ConnectionTimeout      time.Duration
+}
+
+// NewDefaultNatsRPCClientConfig provides default nats client configuration
+func NewDefaultNatsRPCClientConfig() *NatsRPCClientConfig {
+	return &NatsRPCClientConfig{
+		Connect:                "nats://localhost:4222",
+		MaxReconnectionRetries: 15,
+		RequestTimeout:         time.Duration(5 * time.Second),
+		ConnectionTimeout:      time.Duration(2 * time.Second),
+	}
+}
+
+// NewNatsRPCClientConfig reads from config to build nats client configuration
+func NewNatsRPCClientConfig(config *Config) *NatsRPCClientConfig {
+	conf := NewDefaultNatsRPCClientConfig()
+	if err := config.UnmarshalKey("pitaya.cluster.rpc.client.nats", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// NatsRPCServerConfig provides nats server configuration
+type NatsRPCServerConfig struct {
+	Connect                string
+	MaxReconnectionRetries int
+	Buffer                 struct {
+		Messages int
+		Push     int
+	}
+	Services          int
+	ConnectionTimeout time.Duration
+}
+
+// NewDefaultNatsRPCServerConfig provides default nats server configuration
+func NewDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
+	return &NatsRPCServerConfig{
+		Connect:                "nats://localhost:4222",
+		MaxReconnectionRetries: 15,
+		Buffer: struct {
+			Messages int
+			Push     int
+		}{
+			Messages: 75,
+			Push:     100,
+		},
+		Services:          30,
+		ConnectionTimeout: time.Duration(2 * time.Second),
+	}
+}
+
+// NewNatsRPCServerConfig reads from config to build nats server configuration
+func NewNatsRPCServerConfig(config *Config) *NatsRPCServerConfig {
+	conf := NewDefaultNatsRPCServerConfig()
+	if err := config.UnmarshalKey("pitaya.cluster.rpc.server.nats", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// InfoRetrieverConfig provides InfoRetriever configuration
+type InfoRetrieverConfig struct {
+	Region string
+}
+
+// NewDefaultInfoRetrieverConfig provides default configuration for InfoRetriever
+func NewDefaultInfoRetrieverConfig() *InfoRetrieverConfig {
+	return &InfoRetrieverConfig{
+		Region: "",
+	}
+}
+
+// NewInfoRetrieverConfig reads from config to build configuration for InfoRetriever
+func NewInfoRetrieverConfig(c *Config) *InfoRetrieverConfig {
+	conf := NewDefaultInfoRetrieverConfig()
+	if err := c.UnmarshalKey("pitaya.cluster.info", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// EtcdServiceDiscoveryConfig Etcd service discovery config
+type EtcdServiceDiscoveryConfig struct {
+	Endpoints   []string
+	User        string
+	Pass        string
+	DialTimeout time.Duration
+	Prefix      string
+	Heartbeat   struct {
+		TTL time.Duration
+		Log bool
+	}
+	SyncServers struct {
+		Interval    time.Duration
+		Parallelism int
+	}
+	Revoke struct {
+		Timeout time.Duration
+	}
+	GrantLease struct {
+		Timeout       time.Duration
+		MaxRetries    int
+		RetryInterval time.Duration
+	}
+	Shutdown struct {
+		Delay time.Duration
+	}
+	ServerTypesBlacklist []string
+}
+
+// NewDefaultEtcdServiceDiscoveryConfig Etcd service discovery default config
+func NewDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
+	return &EtcdServiceDiscoveryConfig{
+		Endpoints:   []string{"localhost:2379"},
+		User:        "",
+		Pass:        "",
+		DialTimeout: time.Duration(5 * time.Second),
+		Prefix:      "pitaya/",
+		Heartbeat: struct {
+			TTL time.Duration
+			Log bool
+		}{
+			TTL: time.Duration(60 * time.Second),
+			Log: false,
+		},
+		SyncServers: struct {
+			Interval    time.Duration
+			Parallelism int
+		}{
+			Interval:    time.Duration(120 * time.Second),
+			Parallelism: 10,
+		},
+		Revoke: struct {
+			Timeout time.Duration
+		}{
+			Timeout: time.Duration(5 * time.Second),
+		},
+		GrantLease: struct {
+			Timeout       time.Duration
+			MaxRetries    int
+			RetryInterval time.Duration
+		}{
+			Timeout:       time.Duration(60 * time.Second),
+			MaxRetries:    15,
+			RetryInterval: time.Duration(5 * time.Second),
+		},
+		Shutdown: struct {
+			Delay time.Duration
+		}{
+			Delay: time.Duration(300 * time.Millisecond),
+		},
+		ServerTypesBlacklist: nil,
+	}
+}
+
+// NewEtcdServiceDiscoveryConfig Etcd service discovery config with default config paths
+func NewEtcdServiceDiscoveryConfig(config *Config) *EtcdServiceDiscoveryConfig {
+	conf := NewDefaultEtcdServiceDiscoveryConfig()
+	if err := config.UnmarshalKey("pitaya.cluster.sd.etcd", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// NewDefaultCustomMetricsSpec returns an empty *CustomMetricsSpec
+func NewDefaultCustomMetricsSpec() *models.CustomMetricsSpec {
+	return &models.CustomMetricsSpec{
+		Summaries: []*models.Summary{},
+		Gauges:    []*models.Gauge{},
+		Counters:  []*models.Counter{},
+	}
+}
+
+// NewCustomMetricsSpec returns a *CustomMetricsSpec by reading config key (DEPRECATED)
+func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
+	spec := &models.CustomMetricsSpec{}
+
+	if err := config.UnmarshalKey("pitaya.metrics.custom", &spec); err != nil {
+		return NewDefaultCustomMetricsSpec()
+	}
+
+	return spec
+}
+
+// PrometheusConfig provides configuration for PrometheusReporter
+type PrometheusConfig struct {
+	Prometheus struct {
+		Port             int
+		AdditionalLabels map[string]string
+	}
+	Game        string
+	ConstLabels map[string]string
+}
+
+// NewDefaultPrometheusConfig provides default configuration for PrometheusReporter
+func NewDefaultPrometheusConfig() *PrometheusConfig {
+	return &PrometheusConfig{
+		Prometheus: struct {
+			Port             int
+			AdditionalLabels map[string]string
+		}{
+			Port:             9090,
+			AdditionalLabels: map[string]string{},
+		},
+		ConstLabels: map[string]string{},
+	}
+}
+
+// NewPrometheusConfig reads from config to build configuration for PrometheusReporter
+func NewPrometheusConfig(config *Config) *PrometheusConfig {
+	conf := NewDefaultPrometheusConfig()
+	if err := config.UnmarshalKey("pitaya.metrics", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// StatsdConfig provides configuration for statsd
+type StatsdConfig struct {
+	Statsd struct {
+		Host   string
+		Prefix string
+		Rate   float64
+	}
+	ConstLabels map[string]string
+}
+
+// NewDefaultStatsdConfig provides default configuration for statsd
+func NewDefaultStatsdConfig() *StatsdConfig {
+	return &StatsdConfig{
+		Statsd: struct {
+			Host   string
+			Prefix string
+			Rate   float64
+		}{
+			Host:   "localhost:9125",
+			Prefix: "pitaya.",
+			Rate:   1,
+		},
+		ConstLabels: map[string]string{},
+	}
+}
+
+// NewStatsdConfig reads from config to build configuration for statsd
+func NewStatsdConfig(config *Config) *StatsdConfig {
+	conf := NewDefaultStatsdConfig()
+	if err := config.UnmarshalKey("pitaya.metrics", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// WorkerConfig provides worker configuration
+type WorkerConfig struct {
+	Redis struct {
+		ServerURL string
+		Pool      string
+		Password  string
+	}
+	Namespace   string
+	Concurrency int
+}
+
+// NewDefaultWorkerConfig provides worker default configuration
+func NewDefaultWorkerConfig() *WorkerConfig {
+	return &WorkerConfig{
+		Redis: struct {
+			ServerURL string
+			Pool      string
+			Password  string
+		}{
+			ServerURL: "localhost:6379",
+			Pool:      "10",
+		},
+		Concurrency: 1,
+	}
+}
+
+// NewWorkerConfig provides worker configuration based on default string paths
+func NewWorkerConfig(config *Config) *WorkerConfig {
+	conf := NewDefaultWorkerConfig()
+	if err := config.UnmarshalKey("pitaya.worker", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// EnqueueOpts has retry options for worker
+type EnqueueOpts struct {
+	Enabled     bool
+	Max         int
+	Exponential int
+	MinDelay    int
+	MaxDelay    int
+	MaxRandom   int
+}
+
+// NewDefaultEnqueueOpts provides default EnqueueOpts
+func NewDefaultEnqueueOpts() *EnqueueOpts {
+	return &EnqueueOpts{
+		Enabled:     true,
+		Max:         2,
+		Exponential: 5,
+		MinDelay:    10,
+		MaxDelay:    10,
+		MaxRandom:   0,
+	}
+}
+
+// NewEnqueueOpts reads from config to build *EnqueueOpts
+func NewEnqueueOpts(config *Config) *EnqueueOpts {
+	conf := NewDefaultEnqueueOpts()
+	if err := config.UnmarshalKey("pitaya.worker.retry", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// MemoryGroupConfig provides configuration for MemoryGroup
+type MemoryGroupConfig struct {
+	TickDuration time.Duration
+}
+
+// NewDefaultMemoryGroupConfig returns a new, default group instance
+func NewDefaultMemoryGroupConfig() *MemoryGroupConfig {
+	return &MemoryGroupConfig{TickDuration: time.Duration(30 * time.Second)}
+}
+
+// NewMemoryGroupConfig returns a new, default group instance
+func NewMemoryGroupConfig(conf *Config) *MemoryGroupConfig {
+	c := NewDefaultMemoryGroupConfig()
+	if err := conf.UnmarshalKey("pitaya.groups.memory", &c); err != nil {
+		panic(err)
+	}
+	return c
+}
+
+// EtcdGroupServiceConfig provides ETCD configuration
+type EtcdGroupServiceConfig struct {
+	DialTimeout        time.Duration
+	Endpoints          []string
+	Prefix             string
+	TransactionTimeout time.Duration
+}
+
+// NewDefaultEtcdGroupServiceConfig provides default ETCD configuration
+func NewDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
+	return &EtcdGroupServiceConfig{
+		DialTimeout:        time.Duration(5 * time.Second),
+		Endpoints:          []string{"localhost:2379"},
+		Prefix:             "pitaya/",
+		TransactionTimeout: time.Duration(5 * time.Second),
+	}
+}
+
+// NewEtcdGroupServiceConfig reads from config to build ETCD configuration
+func NewEtcdGroupServiceConfig(config *Config) *EtcdGroupServiceConfig {
+	conf := NewDefaultEtcdGroupServiceConfig()
+	if err := config.UnmarshalKey("pitaya.groups.etcd", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// ETCDBindingConfig provides configuration for ETCDBindingStorage
+type ETCDBindingConfig struct {
+	DialTimeout time.Duration
+	Endpoints   []string
+	Prefix      string
+	LeaseTTL    time.Duration
+}
+
+// NewDefaultETCDBindingConfig provides default configuration for ETCDBindingStorage
+func NewDefaultETCDBindingConfig() *ETCDBindingConfig {
+	return &ETCDBindingConfig{
+		DialTimeout: time.Duration(5 * time.Second),
+		Endpoints:   []string{"localhost:2379"},
+		Prefix:      "pitaya/",
+		LeaseTTL:    time.Duration(5 * time.Hour),
+	}
+}
+
+// NewETCDBindingConfig reads from config to build ETCDBindingStorage configuration
+func NewETCDBindingConfig(config *Config) *ETCDBindingConfig {
+	conf := NewDefaultETCDBindingConfig()
+	if err := config.UnmarshalKey("pitaya.modules.bindingstorage.etcd", &conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// RateLimitingConfig rate limits config
+type RateLimitingConfig struct {
+	Limit        int
+	Interval     time.Duration
+	ForceDisable bool
+}
+
+// NewDefaultRateLimitingConfig rate limits default config
+func NewDefaultRateLimitingConfig() *RateLimitingConfig {
+	return &RateLimitingConfig{
+		Limit:        20,
+		Interval:     time.Duration(time.Second),
+		ForceDisable: false,
+	}
+}
+
+// NewRateLimitingConfig reads from config to build rate limiting configuration
+func NewRateLimitingConfig(config *Config) *RateLimitingConfig {
+	conf := NewDefaultRateLimitingConfig()
+	if err := config.UnmarshalKey("pitaya.conn.ratelimiting", &conf); err != nil {
+		panic(err)
+	}
+	return conf
 }

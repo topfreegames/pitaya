@@ -23,49 +23,47 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"os"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
-
 	workers "github.com/topfreegames/go-workers"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger/interfaces"
 )
 
 // Worker executes RPCs with retry and backoff time
 type Worker struct {
 	concurrency int
 	registered  bool
-	opts        *EnqueueOpts
-	config      *config.Config
+	opts        *config.EnqueueOpts
 	started     bool
 }
 
 // NewWorker configures and returns a *Worker
-func NewWorker(config *config.Config) (*Worker, error) {
+func NewWorker(config config.WorkerConfig, opts config.EnqueueOpts) (*Worker, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
 	workers.Configure(map[string]string{
-		"server":    config.GetString("pitaya.worker.redis.url"),
-		"pool":      config.GetString("pitaya.worker.redis.pool"),
-		"password":  config.GetString("pitaya.worker.redis.password"),
-		"namespace": config.GetString("pitaya.worker.namespace"),
+		"server":    config.Redis.ServerURL,
+		"pool":      config.Redis.Pool,
+		"password":  config.Redis.Password,
+		"namespace": config.Namespace,
 		"process":   hostname,
 	})
 
 	return &Worker{
-		concurrency: config.GetInt("pitaya.worker.concurrency"),
-		opts:        NewEnqueueOpts(config),
-		config:      config,
+		concurrency: config.Concurrency,
+		opts:        &opts,
 	}, nil
 }
 
 // SetLogger overwrites worker logger
-func (w *Worker) SetLogger(logger logger.Logger) {
+func (w *Worker) SetLogger(logger interfaces.Logger) {
 	workers.Logger = logger
 }
 
@@ -100,7 +98,7 @@ func (w *Worker) EnqueueRPCWithOptions(
 	routeStr string,
 	metadata map[string]interface{},
 	reply, arg proto.Message,
-	opts *EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) (jid string, err error) {
 	return workers.EnqueueWithOptions(rpcQueue, class, &rpcInfo{
 		Route:    routeStr,
@@ -170,15 +168,15 @@ func (w *Worker) parsedRPCJob(rpcJob RPCJob) func(*workers.Msg) {
 }
 
 func (w *Worker) enqueueOptions(
-	opts *EnqueueOpts,
+	opts *config.EnqueueOpts,
 ) workers.EnqueueOptions {
 	return workers.EnqueueOptions{
-		Retry:    opts.RetryEnabled,
-		RetryMax: opts.MaxRetries,
+		Retry:    opts.Enabled,
+		RetryMax: opts.Max,
 		RetryOptions: workers.RetryOptions{
-			Exp:      opts.ExponentialFactor,
-			MinDelay: opts.MinDelayToRetry,
-			MaxDelay: opts.MaxDelayToRetry,
+			Exp:      opts.Exponential,
+			MinDelay: opts.MinDelay,
+			MaxDelay: opts.MaxDelay,
 			MaxRand:  opts.MaxRandom,
 		},
 	}

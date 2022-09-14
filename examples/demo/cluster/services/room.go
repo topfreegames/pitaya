@@ -3,14 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/component"
 	"time"
 
-	"github.com/topfreegames/pitaya/examples/demo/protos"
-	pitaya "github.com/topfreegames/pitaya/pkg"
-	"github.com/topfreegames/pitaya/pkg/component"
-	"github.com/topfreegames/pitaya/pkg/config"
-	"github.com/topfreegames/pitaya/pkg/groups"
-	"github.com/topfreegames/pitaya/pkg/timer"
+	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
+	pitaya "github.com/topfreegames/pitaya/v2/pkg"
+	"github.com/topfreegames/pitaya/v2/pkg/timer"
 )
 
 type (
@@ -19,7 +17,8 @@ type (
 	Room struct {
 		component.Base
 		timer *timer.Timer
-		Stats *Stats
+		app   pitaya.Pitaya
+		Stats *protos.Stats
 	}
 
 	// UserMessage represents a message that user sent
@@ -64,46 +63,45 @@ type (
 )
 
 // NewRoom returns a new room
-func NewRoom() *Room {
+func NewRoom(app pitaya.Pitaya) *Room {
 	return &Room{
-		Stats: &Stats{},
+		app:   app,
+		Stats: &protos.Stats{},
 	}
 }
 
 // Init runs on service initialization
 func (r *Room) Init() {
-	gsi := groups.NewMemoryGroupService(config.NewConfig())
-	pitaya.InitGroups(gsi)
-	pitaya.GroupCreate(context.Background(), "room")
+	r.app.GroupCreate(context.Background(), "room")
 }
 
 // AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	r.timer = pitaya.NewTimer(time.Minute, func() {
-		count, err := pitaya.GroupCountMembers(context.Background(), "room")
+		count, err := r.app.GroupCountMembers(context.Background(), "room")
 		println("UserCount: Time=>", time.Now().String(), "Count=>", count, "Error=>", err)
-		println("OutboundBytes", r.Stats.outboundBytes)
-		println("InboundBytes", r.Stats.outboundBytes)
+		println("OutboundBytes", r.Stats.OutboundBytes)
+		println("InboundBytes", r.Stats.OutboundBytes)
 	})
 }
 
 // Entry is the entrypoint
-func (r *Room) Entry(ctx context.Context, msg []byte) (*JoinResponse, error) {
+func (r *Room) Entry(ctx context.Context, msg []byte) (*protos.JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx) // The default logger contains a requestId, the route being executed and the sessionId
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 
-	err := s.Bind(ctx, "helroow")
+	err := s.Bind(ctx, "banana")
 	if err != nil {
 		logger.Error("Failed to bind session")
 		logger.Error(err)
 		return nil, pitaya.Error(err, "RH-000", map[string]string{"failed": "bind"})
 	}
-	return &JoinResponse{Result: "ok"}, nil
+	return &protos.JoinResponse{Result: "ok"}, nil
 }
 
 // GetSessionData gets the session data
 func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	return &SessionData{
 		Data: s.GetData(),
 	}, nil
@@ -112,7 +110,7 @@ func (r *Room) GetSessionData(ctx context.Context) (*SessionData, error) {
 // SetSessionData sets the session data
 func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	s := pitaya.GetSessionFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
 		logger.Error("Failed to set session data")
@@ -127,35 +125,35 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 }
 
 // Join room
-func (r *Room) Join(ctx context.Context) (*JoinResponse, error) {
+func (r *Room) Join(ctx context.Context) (*protos.JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	s := pitaya.GetSessionFromCtx(ctx)
-	err := pitaya.GroupAddMember(ctx, "room", s.UID())
+	s := r.app.GetSessionFromCtx(ctx)
+	err := r.app.GroupAddMember(ctx, "room", s.UID())
 	if err != nil {
 		logger.Error("Failed to join room")
 		logger.Error(err)
 		return nil, err
 	}
-	members, err := pitaya.GroupMembers(ctx, "room")
+	members, err := r.app.GroupMembers(ctx, "room")
 	if err != nil {
 		logger.Error("Failed to get members")
 		logger.Error(err)
 		return nil, err
 	}
-	s.Push("onMembers", &AllMembers{Members: members})
-	err = pitaya.GroupBroadcast(ctx, "connector", "room", "onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	s.Push("onMembers", &protos.AllMembers{Members: members})
+	err = r.app.GroupBroadcast(ctx, "connector", "room", "onNewUser", &protos.NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	if err != nil {
 		logger.Error("Failed to broadcast onNewUser")
 		logger.Error(err)
 		return nil, err
 	}
-	return &JoinResponse{Result: "success"}, nil
+	return &protos.JoinResponse{Result: "success"}, nil
 }
 
 // Message sync last message to all members
-func (r *Room) Message(ctx context.Context, msg *UserMessage) {
+func (r *Room) Message(ctx context.Context, msg *protos.UserMessage) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
-	err := pitaya.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
+	err := r.app.GroupBroadcast(ctx, "connector", "room", "onMessage", msg)
 	if err != nil {
 		logger.Error("Error broadcasting message")
 		logger.Error(err)
@@ -163,12 +161,12 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, error) {
+func (r *Room) SendRPC(ctx context.Context, msg *protos.SendRPCMsg) (*protos.RPCRes, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
 	ret := &protos.RPCRes{}
-	err := pitaya.RPCTo(ctx, msg.ServerID, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
+	err := r.app.RPCTo(ctx, msg.ServerId, msg.Route, ret, &protos.RPCMsg{Msg: msg.Msg})
 	if err != nil {
-		logger.Errorf("Failed to execute RPCTo %s - %s", msg.ServerID, msg.Route)
+		logger.Errorf("Failed to execute RPCTo %s - %s", msg.ServerId, msg.Route)
 		logger.Error(err)
 		return nil, pitaya.Error(err, "RPC-000")
 	}
@@ -176,6 +174,6 @@ func (r *Room) SendRPC(ctx context.Context, msg *SendRPCMsg) (*protos.RPCRes, er
 }
 
 // MessageRemote just echoes the given message
-func (r *Room) MessageRemote(ctx context.Context, msg *UserMessage) (*UserMessage, error) {
+func (r *Room) MessageRemote(ctx context.Context, msg *protos.UserMessage, b bool, s string) (*protos.UserMessage, error) {
 	return msg, nil
 }

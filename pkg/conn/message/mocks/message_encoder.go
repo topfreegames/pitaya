@@ -6,7 +6,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	message "github.com/topfreegames/pitaya/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
 	reflect "reflect"
 )
 

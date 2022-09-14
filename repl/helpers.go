@@ -24,13 +24,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/pkg/client"
 	"log"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/pkg/client"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 	"gopkg.in/abiosoft/ishell.v2"
 )
 

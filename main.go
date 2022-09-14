@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/topfreegames/pitaya/cmd"
+import "github.com/topfreegames/pitaya/v2/cmd"
 
 func main() {
 	cmd.Execute()

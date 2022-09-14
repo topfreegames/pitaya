@@ -22,11 +22,11 @@ package tracing
 
 import (
 	"context"
+	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/pkg/context"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 func castValueToCarrier(val interface{}) (opentracing.TextMapCarrier, error) {
@@ -44,7 +44,7 @@ func castValueToCarrier(val interface{}) (opentracing.TextMapCarrier, error) {
 		}
 		return opentracing.TextMapCarrier(carrier), nil
 	}
-	return nil, constants.ErrInvalidSpanCarrier
+	return nil, constants2.ErrInvalidSpanCarrier
 }
 
 // ExtractSpan retrieves an opentracing span context from the given context.Context
@@ -54,7 +54,7 @@ func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
 	var spanCtx opentracing.SpanContext
 	span := opentracing.SpanFromContext(ctx)
 	if span == nil {
-		if s := pcontext.GetFromPropagateCtx(ctx, constants.SpanPropagateCtxKey); s != nil {
+		if s := pcontext.GetFromPropagateCtx(ctx, constants2.SpanPropagateCtxKey); s != nil {
 			var err error
 			carrier, err := castValueToCarrier(s)
 			if err != nil {
@@ -87,7 +87,7 @@ func InjectSpan(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pcontext.AddToPropagateCtx(ctx, constants.SpanPropagateCtxKey, spanData), nil
+	return pcontext.AddToPropagateCtx(ctx, constants2.SpanPropagateCtxKey, spanData), nil
 }
 
 // StartSpan starts a new span with a given parent context, operation name, tags and

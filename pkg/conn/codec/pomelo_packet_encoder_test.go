@@ -1,10 +1,10 @@
 package codec
 
 import (
+	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/conn/packet"
 )
 
 func helperConcatBytes(packetType packet.Type, length, data []byte) []byte {

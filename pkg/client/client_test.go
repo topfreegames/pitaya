@@ -1,15 +1,15 @@
 package client
 
 import (
+	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/pkg/conn/message"
-	"github.com/topfreegames/pitaya/pkg/helpers"
-	"github.com/topfreegames/pitaya/pkg/mocks"
+	"github.com/topfreegames/pitaya/v2/pkg/helpers"
+	"github.com/topfreegames/pitaya/v2/pkg/mocks"
 )
 
 func TestSendRequestShouldTimeout(t *testing.T) {

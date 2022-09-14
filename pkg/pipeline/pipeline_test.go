@@ -35,7 +35,7 @@ var (
 	handler2 = func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 		return ctx, nil, nil
 	}
-	p = &pipelineChannel{}
+	p = &Channel{}
 )
 
 func TestPushFront(t *testing.T) {

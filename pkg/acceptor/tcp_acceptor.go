@@ -22,13 +22,13 @@ package acceptor
 
 import (
 	"crypto/tls"
+	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"io"
 	"io/ioutil"
 	"net"
 
-	"github.com/topfreegames/pitaya/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
 )
 
 // TCPAcceptor struct
@@ -47,7 +47,7 @@ type tcpPlayerConn struct {
 
 // GetNextMessage reads the next message available in the stream
 func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
-	header, err := ioutil.ReadAll(io.LimitReader(t.Conn, codec.HeadLength))
+	header, err := ioutil.ReadAll(io.LimitReader(t.Conn, codec2.HeadLength))
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 	if len(header) == 0 {
 		return nil, constants.ErrConnectionClosed
 	}
-	msgSize, _, err := codec.ParseHeader(header)
+	msgSize, _, err := codec2.ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +138,9 @@ func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
 
 	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
+	if err != nil {
+		logger.Log.Fatalf("Failed to listen: %s", err.Error())
+	}
 	a.listener = listener
 	a.running = true
 	a.serve()

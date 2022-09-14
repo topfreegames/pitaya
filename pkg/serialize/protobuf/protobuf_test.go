@@ -22,14 +22,14 @@ package protobuf
 
 import (
 	"flag"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/helpers"
-	"github.com/topfreegames/pitaya/pkg/protos"
+	"github.com/topfreegames/pitaya/v2/pkg/helpers"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
 )
 
 var update = flag.Bool("update", false, "update .golden files")

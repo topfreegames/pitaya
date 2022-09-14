@@ -18,19 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package pitaya
+package pkg
 
 import (
 	"context"
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 
-	"github.com/topfreegames/pitaya/pkg/constants"
-	"github.com/topfreegames/pitaya/pkg/logger"
-	"github.com/topfreegames/pitaya/pkg/protos"
-	"github.com/topfreegames/pitaya/pkg/session"
+	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v2/pkg/protos"
 )
 
 // SendKickToUsers sends kick to an user array
-func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
+func (app *App) SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	if !app.server.Frontend && frontendType == "" {
 		return uids, constants.ErrFrontendTypeNotSpecified
 	}
@@ -38,7 +37,7 @@ func SendKickToUsers(uids []string, frontendType string) ([]string, error) {
 	var notKickedUids []string
 
 	for _, uid := range uids {
-		if s := session.GetSessionByUID(uid); s != nil {
+		if s := app.sessionPool.GetSessionByUID(uid); s != nil {
 			if err := s.Kick(context.Background()); err != nil {
 				notKickedUids = append(notKickedUids, uid)
 				logger.Log.Errorf("Session kick error, ID=%d, UID=%s, ERROR=%s", s.ID(), s.UID(), err.Error())

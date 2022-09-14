@@ -1,6 +1,8 @@
 package codec
 
-import "github.com/topfreegames/pitaya/pkg/conn/packet"
+import (
+	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+)
 
 // ParseHeader parses a packet header and returns its dataLen and packetType or an error
 func ParseHeader(header []byte) (int, packet.Type, error) {

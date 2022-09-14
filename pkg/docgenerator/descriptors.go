@@ -1,11 +1,11 @@
 package docgenerator
 
 import (
+	"github.com/topfreegames/pitaya/v2/pkg/constants"
 	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/pkg/constants"
 )
 
 // ProtoDescriptors returns the descriptor for a given message name or .proto file
