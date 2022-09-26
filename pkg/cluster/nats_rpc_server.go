@@ -24,19 +24,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	e "github.com/topfreegames/pitaya/v2/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"math"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/util"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
 )
 
 // NatsRPCServer struct

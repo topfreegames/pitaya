@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topfreegames/pitaya/v2/repl"
+	"github.com/topfreegames/pitaya/v3/repl"
 )
 
 var docsRoute string

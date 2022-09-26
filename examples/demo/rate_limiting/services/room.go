@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
 )
 
 // Room represents a component that contains a bundle of room related handler

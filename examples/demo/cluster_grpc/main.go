@@ -4,20 +4,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	"github.com/topfreegames/pitaya/v2/pkg/groups"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"strconv"
 
 	"strings"
 
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/examples/demo/cluster_grpc/services"
-	"github.com/topfreegames/pitaya/v2/pkg/modules"
-	"github.com/topfreegames/pitaya/v2/pkg/route"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
+	"github.com/topfreegames/pitaya/v3/pkg/modules"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
 )
 
 var app pitaya.Pitaya

@@ -23,9 +23,9 @@ package cluster
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"math"
 	"testing"

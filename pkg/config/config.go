@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/pkg/metrics/models"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics/models"
 )
 
 // PitayaConfig provides configuration for a pitaya app

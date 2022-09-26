@@ -23,22 +23,22 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
-	"github.com/topfreegames/pitaya/v2/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
+	"github.com/topfreegames/pitaya/v3/pkg/errors"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/route"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/tracing"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 )
 
 // NatsRPCClient struct

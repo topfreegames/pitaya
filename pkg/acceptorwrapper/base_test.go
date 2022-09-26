@@ -21,12 +21,12 @@
 package acceptorwrapper
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/mocks"
 )
 
 func TestListenAndServe(t *testing.T) {

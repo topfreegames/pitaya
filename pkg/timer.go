@@ -21,11 +21,11 @@
 package pkg
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"math"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/pkg/timer"
+	"github.com/topfreegames/pitaya/v3/pkg/timer"
 )
 
 // NewTimer returns a new Timer containing a function that will be called

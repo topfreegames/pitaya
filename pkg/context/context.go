@@ -23,7 +23,7 @@ package context
 import (
 	"context"
 	"encoding/json"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 )
 
 // AddToPropagateCtx adds a key and value that will be propagated through RPC calls

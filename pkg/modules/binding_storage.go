@@ -23,13 +23,13 @@ package modules
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/cluster"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
 )

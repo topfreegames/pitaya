@@ -23,15 +23,15 @@ package tracing
 import (
 	"context"
 	"errors"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
 	"io"
 	"os"
 	"testing"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/tracing/jaeger"
+	"github.com/topfreegames/pitaya/v3/pkg/tracing/jaeger"
 )
 
 var closer io.Closer

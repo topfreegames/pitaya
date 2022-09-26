@@ -24,7 +24,7 @@ import (
 	"fmt"
 
 	nats "github.com/nats-io/nats.go"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 func getChannel(serverType, serverID string) string {

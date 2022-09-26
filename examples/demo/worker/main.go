@@ -3,15 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 
 	"strings"
 
 	"github.com/spf13/viper"
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/examples/demo/worker/services"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/examples/demo/worker/services"
 )
 
 var app pitaya.Pitaya

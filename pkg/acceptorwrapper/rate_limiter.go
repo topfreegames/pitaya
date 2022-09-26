@@ -22,12 +22,12 @@ package acceptorwrapper
 
 import (
 	"container/list"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
 )
 
 // RateLimiter wraps net.Conn by applying rate limiting and return empty

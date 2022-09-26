@@ -22,7 +22,7 @@ package groups
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"testing"
 
 	"github.com/golang/mock/gomock"

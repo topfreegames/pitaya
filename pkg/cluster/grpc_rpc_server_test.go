@@ -2,16 +2,16 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"net"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	protosmocks "github.com/topfreegames/pitaya/v2/pkg/protos/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	protosmocks "github.com/topfreegames/pitaya/v3/pkg/protos/mocks"
 )
 
 func TestNewGRPCServer(t *testing.T) {

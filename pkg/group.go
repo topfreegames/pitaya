@@ -22,10 +22,10 @@ package pkg
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 // Group represents an agglomeration of UIDs which is used to manage

@@ -162,26 +162,26 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock cluster-mock
 
 agent-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > pkg/agent/mocks/agent.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > pkg/agent/mocks/agent.go
 
 session-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/session Session,SessionPool | sed 's/mock_session/mocks/' > pkg/session/mocks/session.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/session Session,SessionPool | sed 's/mock_session/mocks/' > pkg/session/mocks/session.go
 
 networkentity-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/networkentity NetworkEntitgit y | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/networkentity NetworkEntitgit y | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
 
 pitaya-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg Pitaya | sed 's/mock_v2/mocks/' > pkg/mocks/app.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg Pitaya | sed 's/mock_v2/mocks/' > pkg/mocks/app.go
 
 metrics-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/metrics Client | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/statsd_reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Client | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/statsd_reporter.go
 
 serializer-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/serialize Serializer | sed 's/mock_serialize/mocks/' > pkg/serialize/mocks/serializer.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/serialize Serializer | sed 's/mock_serialize/mocks/' > pkg/serialize/mocks/serializer.go
 
 acceptor-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
 
 cluster-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/pkg/cluster RPCServer,RPCClient,SDListener,RemoteBindingListener,InfoRetriever | sed 's/mock_cluster/mocks/' > pkg/cluster/mocks/cluster.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/cluster RPCServer,RPCClient,SDListener,RemoteBindingListener,InfoRetriever | sed 's/mock_cluster/mocks/' > pkg/cluster/mocks/cluster.go

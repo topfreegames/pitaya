@@ -22,9 +22,9 @@ package modules
 
 import (
 	"context"
-	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
 
-	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 )
 
 // UniqueSession module watches for sessions using the same UID and kicks them

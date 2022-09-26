@@ -2,12 +2,12 @@ package sidecar
 
 import (
 	"context"
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/pkg/errors"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/logger/logrus"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/tracing"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

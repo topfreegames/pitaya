@@ -22,13 +22,13 @@ package pkg
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/session/mocks"
 )
 
 func createGroupTestApp() Pitaya {

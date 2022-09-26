@@ -3,8 +3,8 @@ package sidecar
 import (
 	"context"
 	"github.com/opentracing/opentracing-go"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/tracing"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"google.golang.org/grpc/metadata"
 )

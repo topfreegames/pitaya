@@ -22,21 +22,21 @@ package agent
 
 import (
 	"context"
-	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/codec"
-	message2 "github.com/topfreegames/pitaya/v2/pkg/conn/message"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	message2 "github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
 	"net"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/route"
-	"github.com/topfreegames/pitaya/v2/pkg/serialize"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/util"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
 )
 
 // Remote corresponding to another server

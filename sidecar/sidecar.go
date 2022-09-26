@@ -2,10 +2,10 @@ package sidecar
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/cluster"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"google.golang.org/grpc"
 	"net"
 	"os"
@@ -15,7 +15,7 @@ import (
 
 	"sync/atomic"
 
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 )
 
 // TODO: implement jaeger into this, test everything, if connection dies this

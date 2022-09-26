@@ -21,12 +21,12 @@
 package acceptorwrapper
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
 )
 
 func TestNewRateLimitingWrapper(t *testing.T) {

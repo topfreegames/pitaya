@@ -23,14 +23,14 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"os"
 
 	"github.com/golang/protobuf/proto"
 	workers "github.com/topfreegames/go-workers"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/logger/interfaces"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
 )
 
 // Worker executes RPCs with retry and backoff time

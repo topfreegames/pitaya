@@ -27,7 +27,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 func executeFromFile(fileName string) {

@@ -22,13 +22,13 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"net"
 
 	"google.golang.org/grpc"
 
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 )
 
 // GRPCServer rpc server struct

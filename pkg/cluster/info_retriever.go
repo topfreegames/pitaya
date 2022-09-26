@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 )
 
 // infoRetriever gets cluster info from config

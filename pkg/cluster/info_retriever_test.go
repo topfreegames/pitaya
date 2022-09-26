@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	config2 "github.com/topfreegames/pitaya/v2/pkg/config"
+	config2 "github.com/topfreegames/pitaya/v3/pkg/config"
 	"testing"
 
 	"github.com/spf13/viper"

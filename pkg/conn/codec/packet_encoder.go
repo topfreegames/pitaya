@@ -21,7 +21,7 @@
 package codec
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 )
 
 // PacketEncoder interface

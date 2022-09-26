@@ -3,17 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	acceptor2 "github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	acceptorwrapper2 "github.com/topfreegames/pitaya/v2/pkg/acceptorwrapper"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
-	config2 "github.com/topfreegames/pitaya/v2/pkg/config"
+	acceptor2 "github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	acceptorwrapper2 "github.com/topfreegames/pitaya/v3/pkg/acceptorwrapper"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	config2 "github.com/topfreegames/pitaya/v3/pkg/config"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/examples/demo/rate_limiting/services"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/examples/demo/rate_limiting/services"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
 )
 
 func createAcceptor(port int, reporters []metrics.Reporter) acceptor2.Acceptor {

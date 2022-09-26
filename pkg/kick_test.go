@@ -22,16 +22,16 @@ package pkg
 
 import (
 	"context"
-	clustermocks "github.com/topfreegames/pitaya/v2/pkg/cluster/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	clustermocks "github.com/topfreegames/pitaya/v3/pkg/cluster/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	sessionmocks "github.com/topfreegames/pitaya/v2/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
 )
 
 func TestSendKickToUsersLocalSession(t *testing.T) {

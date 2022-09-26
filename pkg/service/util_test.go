@@ -24,8 +24,8 @@ import (
 	"context"
 	"errors"
 	"flag"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -34,11 +34,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/pipeline"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/protos/test"
-	"github.com/topfreegames/pitaya/v2/pkg/serialize/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/pipeline"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 )
 
 var update = flag.Bool("update", false, "update .golden files")

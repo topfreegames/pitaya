@@ -23,8 +23,8 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"reflect"
 	"testing"
 	"time"
@@ -33,12 +33,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	metricsmocks "github.com/topfreegames/pitaya/v2/pkg/metrics/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	protosmocks "github.com/topfreegames/pitaya/v2/pkg/protos/mocks"
-	sessionmocks "github.com/topfreegames/pitaya/v2/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	metricsmocks "github.com/topfreegames/pitaya/v3/pkg/metrics/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	protosmocks "github.com/topfreegames/pitaya/v3/pkg/protos/mocks"
+	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
 )
 
 type funcPtrMatcher struct {

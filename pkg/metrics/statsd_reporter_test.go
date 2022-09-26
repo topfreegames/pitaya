@@ -23,14 +23,14 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	metricsmocks "github.com/topfreegames/pitaya/v2/pkg/metrics/mocks"
+	metricsmocks "github.com/topfreegames/pitaya/v3/pkg/metrics/mocks"
 )
 
 func TestNewStatsdReporter(t *testing.T) {

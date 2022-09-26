@@ -2,7 +2,7 @@ package sidecar
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"sync"
 )

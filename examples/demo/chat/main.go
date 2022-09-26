@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/groups"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,9 +14,9 @@ import (
 
 	"strings"
 
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/timer"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/timer"
 )
 
 type (

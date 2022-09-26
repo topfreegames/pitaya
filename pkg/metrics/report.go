@@ -22,9 +22,9 @@ package metrics
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	pcontext "github.com/topfreegames/pitaya/v2/pkg/context"
-	"github.com/topfreegames/pitaya/v2/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
+	"github.com/topfreegames/pitaya/v3/pkg/errors"
 	"runtime"
 	"time"
 )

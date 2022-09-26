@@ -24,10 +24,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	e "github.com/topfreegames/pitaya/v2/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"testing"
 	"time"
 
@@ -36,12 +36,12 @@ import (
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	metricsmocks "github.com/topfreegames/pitaya/v2/pkg/metrics/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
-	"github.com/topfreegames/pitaya/v2/pkg/route"
-	sessionmocks "github.com/topfreegames/pitaya/v2/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	metricsmocks "github.com/topfreegames/pitaya/v3/pkg/metrics/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
+	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
 )
 
 func TestNewNatsRPCClient(t *testing.T) {

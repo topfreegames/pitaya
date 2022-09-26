@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	cluster2 "github.com/topfreegames/pitaya/v2/pkg/cluster"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"

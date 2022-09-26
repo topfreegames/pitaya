@@ -1,7 +1,7 @@
 package docgenerator
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"reflect"
 	"strings"
 

@@ -22,19 +22,19 @@ package pkg
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/cluster"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
-	config2 "github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/cluster"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	config2 "github.com/topfreegames/pitaya/v3/pkg/config"
 	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya/v2/pkg/interfaces"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	"github.com/topfreegames/pitaya/v2/pkg/router"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/worker"
+	"github.com/topfreegames/pitaya/v3/pkg/interfaces"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/router"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/worker"
 )
 
 var DefaultApp Pitaya

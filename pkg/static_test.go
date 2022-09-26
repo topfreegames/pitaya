@@ -23,9 +23,9 @@ package pkg
 import (
 	"context"
 	"errors"
-	"github.com/topfreegames/pitaya/v2/pkg/cluster"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/cluster"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"testing"
 	"time"
 
@@ -34,13 +34,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/topfreegames/pitaya/v2/pkg/interfaces"
-	"github.com/topfreegames/pitaya/v2/pkg/metrics"
-	"github.com/topfreegames/pitaya/v2/pkg/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	sessionmocks "github.com/topfreegames/pitaya/v2/pkg/session/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/worker"
-	workermocks "github.com/topfreegames/pitaya/v2/pkg/worker/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/interfaces"
+	"github.com/topfreegames/pitaya/v3/pkg/metrics"
+	"github.com/topfreegames/pitaya/v3/pkg/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/worker"
+	workermocks "github.com/topfreegames/pitaya/v3/pkg/worker/mocks"
 	"google.golang.org/protobuf/runtime/protoiface"
 )
 

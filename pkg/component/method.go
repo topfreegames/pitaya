@@ -22,7 +22,7 @@ package component
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"reflect"
 	"unicode"
 	"unicode/utf8"

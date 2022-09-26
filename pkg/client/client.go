@@ -26,10 +26,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
-	message2 "github.com/topfreegames/pitaya/v2/pkg/conn/message"
-	packet2 "github.com/topfreegames/pitaya/v2/pkg/conn/packet"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	codec2 "github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	message2 "github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	packet2 "github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 	"net"
 	"net/url"
 	"sync"
@@ -38,11 +38,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	logruswrapper "github.com/topfreegames/pitaya/v2/pkg/logger/logrus"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/util/compression"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	logruswrapper "github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util/compression"
 )
 
 // HandshakeSys struct

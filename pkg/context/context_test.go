@@ -25,13 +25,13 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
 )
 
 var update = flag.Bool("update", false, "update .golden files")

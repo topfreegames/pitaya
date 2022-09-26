@@ -17,10 +17,10 @@ limitations under the License.
 package repl
 
 import (
-	"github.com/topfreegames/pitaya/v2/pkg/client"
+	"github.com/topfreegames/pitaya/v3/pkg/client"
 	"sync"
 
-	"github.com/topfreegames/pitaya/v2/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 )
 
 var (

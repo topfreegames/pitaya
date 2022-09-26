@@ -23,8 +23,8 @@ package e2e
 import (
 	"flag"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/client"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/client"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"os"
 	"os/exec"
 	"testing"
@@ -33,7 +33,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
 )
 
 var update = flag.Bool("update", false, "update server binary")

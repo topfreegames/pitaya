@@ -22,12 +22,12 @@ package docgenerator
 
 import (
 	"context"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v3/pkg/protos/test"
 )
 
 type MyComp struct {

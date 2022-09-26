@@ -3,14 +3,14 @@ package acceptor
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
 )
 
 var wsAcceptorTables = []struct {

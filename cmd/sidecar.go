@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
-	"github.com/topfreegames/pitaya/v2/sidecar"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/sidecar"
 	"os"
 	"path/filepath"
 	"strings"

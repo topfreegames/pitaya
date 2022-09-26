@@ -22,16 +22,16 @@ package acceptor
 
 import (
 	"crypto/tls"
-	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/packet"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	codec2 "github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
 	"io"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 // WSAcceptor struct

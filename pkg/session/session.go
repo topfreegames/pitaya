@@ -23,7 +23,7 @@ package session
 import (
 	"context"
 	"encoding/json"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
 	"net"
 	"reflect"
 	"sync"
@@ -32,9 +32,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
-	"github.com/topfreegames/pitaya/v2/pkg/networkentity"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/networkentity"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 )
 
 type sessionPoolImpl struct {

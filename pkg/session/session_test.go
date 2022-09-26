@@ -26,7 +26,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	constants2 "github.com/topfreegames/pitaya/v2/pkg/constants"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
 	"math/rand"
 	"path/filepath"
 	"testing"
@@ -37,9 +37,9 @@ import (
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/pkg/helpers"
-	"github.com/topfreegames/pitaya/v2/pkg/networkentity/mocks"
-	"github.com/topfreegames/pitaya/v2/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/networkentity/mocks"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 )
 
 var update = flag.Bool("update", false, "update .golden files")

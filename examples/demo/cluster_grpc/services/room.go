@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
 	"strconv"
 	"time"
 
-	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
-	"github.com/topfreegames/pitaya/v2/pkg/timer"
+	"github.com/topfreegames/pitaya/v3/examples/demo/protos"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/timer"
 )
 
 type (

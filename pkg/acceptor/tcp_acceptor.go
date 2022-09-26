@@ -22,13 +22,13 @@ package acceptor
 
 import (
 	"crypto/tls"
-	codec2 "github.com/topfreegames/pitaya/v2/pkg/conn/codec"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
+	codec2 "github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"io"
 	"io/ioutil"
 	"net"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 // TCPAcceptor struct

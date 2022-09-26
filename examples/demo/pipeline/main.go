@@ -4,11 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/acceptor"
-	component2 "github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 
-	pitaya "github.com/topfreegames/pitaya/v2/pkg"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 )
 
 // MetagameServer ...

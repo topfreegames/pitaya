@@ -3,18 +3,18 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/topfreegames/pitaya/v2/pkg/component"
-	"github.com/topfreegames/pitaya/v2/pkg/conn/message"
-	"github.com/topfreegames/pitaya/v2/pkg/constants"
-	e "github.com/topfreegames/pitaya/v2/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"reflect"
 
-	"github.com/topfreegames/pitaya/v2/pkg/logger/interfaces"
-	"github.com/topfreegames/pitaya/v2/pkg/pipeline"
-	"github.com/topfreegames/pitaya/v2/pkg/route"
-	"github.com/topfreegames/pitaya/v2/pkg/serialize"
-	"github.com/topfreegames/pitaya/v2/pkg/session"
-	"github.com/topfreegames/pitaya/v2/pkg/util"
+	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
+	"github.com/topfreegames/pitaya/v3/pkg/pipeline"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
 )
 
 // HandlerPool ...
