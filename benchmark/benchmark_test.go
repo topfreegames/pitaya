@@ -22,11 +22,11 @@ package benchmark
 
 import (
 	"fmt"
+	"github.com/topfreegames/pitaya/v3/pkg/client"
 	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/v2/client"
 )
 
 var clients []*client.Client

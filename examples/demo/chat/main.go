@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,20 +14,16 @@ import (
 
 	"strings"
 
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
-	"github.com/topfreegames/pitaya/v2/groups"
-	"github.com/topfreegames/pitaya/v2/logger"
-	"github.com/topfreegames/pitaya/v2/timer"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/timer"
 )
 
 type (
 	// Room represents a component that contains a bundle of room related handler
 	// like Join/Message
 	Room struct {
-		component.Base
+		component2.Base
 		timer *timer.Timer
 		app   pitaya.Pitaya
 	}
@@ -121,8 +121,8 @@ func main() {
 	// rewrite component and handler name
 	room := NewRoom(app)
 	app.Register(room,
-		component.WithName("room"),
-		component.WithNameFunc(strings.ToLower),
+		component2.WithName("room"),
+		component2.WithNameFunc(strings.ToLower),
 	)
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)

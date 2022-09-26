@@ -4,20 +4,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"strconv"
 
 	"strings"
 
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/cluster"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
-	"github.com/topfreegames/pitaya/v2/constants"
-	"github.com/topfreegames/pitaya/v2/examples/demo/cluster_grpc/services"
-	"github.com/topfreegames/pitaya/v2/groups"
-	"github.com/topfreegames/pitaya/v2/modules"
-	"github.com/topfreegames/pitaya/v2/route"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
+	"github.com/topfreegames/pitaya/v3/pkg/modules"
+	"github.com/topfreegames/pitaya/v3/pkg/route"
 )
 
 var app pitaya.Pitaya
@@ -49,8 +49,8 @@ func configureFrontend(port int) {
 		ctx context.Context,
 		route *route.Route,
 		payload []byte,
-		servers map[string]*cluster.Server,
-	) (*cluster.Server, error) {
+		servers map[string]*cluster2.Server,
+	) (*cluster2.Server, error) {
 		// will return the first server
 		for k := range servers {
 			return servers[k], nil
@@ -107,7 +107,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 
 	grpcServerConfig := config.NewDefaultGRPCServerConfig()
 	grpcServerConfig.Port = rpcServerPort
-	gs, err := cluster.NewGRPCServer(*grpcServerConfig, builder.Server, builder.MetricsReporters)
+	gs, err := cluster2.NewGRPCServer(*grpcServerConfig, builder.Server, builder.MetricsReporters)
 	if err != nil {
 		panic(err)
 	}
@@ -116,12 +116,12 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 
 	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewDefaultETCDBindingConfig())
 
-	gc, err := cluster.NewGRPCClient(
+	gc, err := cluster2.NewGRPCClient(
 		*config.NewDefaultGRPCClientConfig(),
 		builder.Server,
 		builder.MetricsReporters,
 		bs,
-		cluster.NewInfoRetriever(*config.NewDefaultInfoRetrieverConfig()),
+		cluster2.NewInfoRetriever(*config.NewDefaultInfoRetrieverConfig()),
 	)
 	if err != nil {
 		panic(err)
