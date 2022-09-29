@@ -7,6 +7,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	sync "sync"
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
@@ -606,9 +607,11 @@ func (mr *MockPitayaMockRecorder) SetHeartbeatTime(arg0 interface{}) *gomock.Cal
 }
 
 // Shutdown mocks base method.
-func (m *MockPitaya) Shutdown() {
+func (m *MockPitaya) Shutdown() *sync.WaitGroup {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Shutdown")
+	ret := m.ctrl.Call(m, "Shutdown")
+	ret0, _ := ret[0].(*sync.WaitGroup)
+	return ret0
 }
 
 // Shutdown indicates an expected call of Shutdown.
