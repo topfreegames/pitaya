@@ -3,14 +3,7 @@ package sidecar
 import (
 	"context"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
-	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
-	"github.com/topfreegames/pitaya/v3/pkg/logger"
-	"google.golang.org/grpc"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"sync/atomic"
@@ -30,72 +23,14 @@ import (
 
 // Sidecar main struct to keep state
 type Sidecar struct {
-	config config.BuilderConfig
-	debug  bool
+	callTimeout time.Duration
 }
 
-func NewSidecar(config config.BuilderConfig, debug bool) *Sidecar {
+func NewSidecar(callTimeout time.Duration) *Sidecar {
 	return &Sidecar{
-		config: config,
-		debug:  debug,
+		callTimeout: callTimeout,
 	}
 }
-
-// StartSidecar starts the sidecar server, it instantiates the GRPC server and
-// listens for incoming client connections. This is the very first method that
-// is called when the sidecar is starting.
-func (s *Sidecar) StartSidecar(bindAddr, bindProto string) {
-	if bindProto != "unix" && bindProto != "tcp" {
-		logger.Log.Fatal("only supported schemes are unix and tcp, review your bindaddr config")
-	}
-	var err error
-	listener, err := net.Listen(bindProto, bindAddr)
-	checkError(err)
-
-	defer listener.Close()
-
-	server := &Server{
-		sidecar: s,
-	}
-
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	protos.RegisterSidecarServer(grpcServer, server)
-	go func() {
-		err = grpcServer.Serve(listener)
-		if err != nil {
-			logger.Log.Errorf("error serving GRPC: %s", err)
-			select {
-			case <-stopChan:
-				break
-			default:
-				close(stopChan)
-			}
-		}
-	}()
-
-	// TODO: what to do if received sigint/term without receiving stop request from client?
-	logger.Log.Infof("sidecar listening at %s", listener.Addr())
-
-	sg := make(chan os.Signal)
-	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
-
-	// TODO make jaeger optional and configure with configs
-	configureJaeger(true)
-
-	// stop server
-	select {
-	case <-sg:
-		logger.Log.Warn("got signal: ", sg, ", shutting down...")
-		close(stopChan)
-		break
-	case <-stopChan:
-		logger.Log.Warn("the app will shutdown in a few seconds")
-	}
-
-	server.pitayaApp.Shutdown().Wait()
-}
-
 
 // AddServer is called by the ServiceDiscovery when a new  pitaya server is
 // added. We have it here so that we stream add and removed servers to sidecar
@@ -155,7 +90,7 @@ func (s *Sidecar) Call(ctx context.Context, req *protos.Request) (*protos.Respon
 	select {
 	case <-call.done:
 		return call.res, nil
-	case <-time.After(s.config.Pitaya.Sidecar.CallTimeout):
+	case <-time.After(s.callTimeout):
 		close(call.done)
 		return &protos.Response{}, constants.ErrSidecarCallTimeout
 	}

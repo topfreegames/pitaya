@@ -3,20 +3,91 @@ package sidecar
 import (
 	"context"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/tracing"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // Server is the implementation of the GRPC server used to communicate
 // with the sidecar client
 type Server struct {
-	pitayaApp   pitaya.Pitaya
+	pitaya   pitaya.Pitaya
 	sidecar *Sidecar
+	config config.BuilderConfig
 	protos.UnimplementedPitayaServer
+}
+
+func NewServer(sidecar *Sidecar, config config.BuilderConfig) *Server{
+	return &Server{
+		sidecar: sidecar,
+		config: config,
+	}
+}
+
+func NewServerWithPitaya(pitaya pitaya.Pitaya) *Server{
+	return &Server{
+		pitaya: pitaya,
+	}
+}
+
+// Start starts the sidecar server, it instantiates the GRPC server and
+// listens for incoming client connections. This is the very first method that
+// is called when the sidecar is starting.
+func (s *Server) Start(bindAddr, bindProto string) {
+	if bindProto != "unix" && bindProto != "tcp" {
+		logger.Log.Fatal("only supported schemes are unix and tcp, review your bindaddr config")
+	}
+	var err error
+	listener, err := net.Listen(bindProto, bindAddr)
+	checkError(err)
+
+	defer listener.Close()
+
+	var opts []grpc.ServerOption
+	grpcServer := grpc.NewServer(opts...)
+	protos.RegisterSidecarServer(grpcServer, s)
+	go func() {
+		err = grpcServer.Serve(listener)
+		if err != nil {
+			logger.Log.Errorf("error serving GRPC: %s", err)
+			select {
+			case <-stopChan:
+				break
+			default:
+				close(stopChan)
+			}
+		}
+	}()
+
+	// TODO: what to do if received sigint/term without receiving stop request from client?
+	logger.Log.Infof("sidecar listening at %s", listener.Addr())
+
+	sg := make(chan os.Signal)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+
+	// TODO make jaeger optional and configure with configs
+	configureJaeger(true)
+
+	// stop server
+	select {
+	case <-sg:
+		logger.Log.Warn("got signal: ", sg, ", shutting down...")
+		close(stopChan)
+		break
+	case <-stopChan:
+		logger.Log.Warn("the app will shutdown in a few seconds")
+	}
+
+	s.pitaya.Shutdown().Wait()
 }
 
 
@@ -116,7 +187,7 @@ func (s *Server) finishRPC(ctx context.Context, res *protos.RPCResponse) {
 // other pitaya servers
 func (s *Server) SendRPC(ctx context.Context, in *protos.RequestTo) (*protos.Response, error) {
 	pCtx := getCtxWithParentSpan(ctx, in.Msg.Route)
-	ret, err := s.pitayaApp.RawRPC(pCtx, in.ServerID, in.Msg.Route, in.Msg.Data)
+	ret, err := s.pitaya.RawRPC(pCtx, in.ServerID, in.Msg.Route, in.Msg.Data)
 	defer tracing.FinishSpan(pCtx, err)
 	return ret, err
 }
@@ -156,20 +227,24 @@ func (s *Server) SendKick(ctx context.Context, in *protos.KickRequest) (*protos.
 // during the initialization of the sidecar client, all other methods will only
 // work when this one was already called
 func (s *Server) StartPitaya(ctx context.Context, req *protos.StartPitayaRequest) (*protos.Error, error) {
-	pitayaconfig := req.GetConfig()
+	if s.pitaya != nil {
+		logger.Log.Info("Pitaya already initialized")
+		return &protos.Error{}, nil
+	}
 
+	logger.Log.Info("Pitaya  sasas initialized")
 	builder := pitaya.NewDefaultBuilder(
-		pitayaconfig.GetFrontend(),
-		pitayaconfig.GetType(),
+		false,
+		req.Config.Type,
 		pitaya.Cluster,
-		pitayaconfig.GetMetadata(),
-		s.sidecar.config,
+		req.Config.Metadata,
+		s.config,
 	)
 
 	RPCServer := builder.RPCServer
 	builder.ServiceDiscovery.AddListener(s.sidecar)
 
-	s.pitayaApp = builder.Build()
+	s.pitaya = builder.Build()
 
 	// register the sidecar as the pitaya server so that calls will be delivered
 	// here and we can forward to the remote process
@@ -178,21 +253,12 @@ func (s *Server) StartPitaya(ctx context.Context, req *protos.StartPitayaRequest
 	// Start our own logger
 	log := logrus.New()
 
-	s.pitayaApp.SetDebug(req.GetDebugLog())
+	s.pitaya.SetDebug(req.DebugLog)
 
 	pitaya.SetLogger(log.WithField("source", "sidecar"))
 
-	// TODO support frontend servers
-	if pitayaconfig.GetFrontend() {
-		//t := acceptor.NewTCPAcceptor(":3250") pitaya.AddAcceptor(t)
-		logger.Log.Fatal("Frontend servers not supported yet")
-	}
+	go s.pitaya.Start()
 
-	// TODO maybe we should return error in pitaya start. maybe recover from fatal
-	// TODO make this method return error so that I can catch it
-	go func() {
-		s.pitayaApp.Start()
-	}()
 	return &protos.Error{}, nil
 }
 

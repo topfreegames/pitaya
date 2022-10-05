@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/topfreegames/pitaya/v3/pkg/metrics/models"
@@ -36,9 +39,6 @@ type PitayaConfig struct {
 	}
 	Metrics struct {
 		Period time.Duration
-	}
-	Sidecar struct{
-		CallTimeout time.Duration
 	}
 }
 
@@ -101,11 +101,6 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 			Period time.Duration
 		}{
 			Period: time.Duration(15 * time.Second),
-		},
-		Sidecar: struct {
-			CallTimeout time.Duration
-		}{
-			CallTimeout: time.Duration(1 * time.Second),
 		},
 	}
 }
@@ -182,6 +177,21 @@ func NewBuilderConfig(config *Config) *BuilderConfig {
 	}
 	fmt.Println(conf)
 	return conf
+}
+
+type SidecarConfig struct {
+	CallTimeout  time.Duration
+	Bind         string
+	BindProtocol string
+}
+
+func NewDefaultSidecarConfig() *SidecarConfig {
+	tmpDir := os.TempDir()
+	return &SidecarConfig{
+		CallTimeout: 1 * time.Second,
+		Bind: filepath.FromSlash(fmt.Sprintf("%s/pitaya.sock", strings.TrimSuffix(tmpDir, "/"))),
+		BindProtocol: "unix",
+	}
 }
 
 // GRPCClientConfig rpc client config struct
