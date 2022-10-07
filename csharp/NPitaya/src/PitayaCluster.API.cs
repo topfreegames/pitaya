@@ -132,6 +132,18 @@ namespace NPitaya
         }
 
 
+        public static void Initialize(string sidecarListenSocket, Action<SDEvent> cbServiceDiscovery = null){
+            Initialize(sidecarListenSocket, 0, cbServiceDiscovery);
+        }
+
+        public static void Initialize(string sidecarAddr, int sidecarPort, Action<SDEvent> cbServiceDiscovery = null){
+            if (_isInitialized){
+                Logger.Warn("Initialize called but pitaya is already initialized");
+                return;
+            }
+            InitializeSidecarClient(sidecarAddr, sidecarPort);
+            InitializeInternal(cbServiceDiscovery);
+        }
         public static void Initialize(
                 string sidecarListenSocket,
                 Server server,
@@ -139,22 +151,7 @@ namespace NPitaya
                 Action<SDEvent> cbServiceDiscovery = null
                 )
         {
-            if (_isInitialized){
-                Logger.Warn("Initialize called but pitaya is already initialized");
-                return;
-            }
-            InitializeSidecarClient(sidecarListenSocket, server, debug);
-            if (_client == null)
-            {
-                throw new PitayaException("Initialization failed");
-            }
-
-            RegisterRemotesAndHandlers();
-
-            ListenToIncomingRPCs(_client);
-            SetServiceDiscoveryListener(cbServiceDiscovery);
-            ListenSDEvents(_client);
-            RegisterGracefulShutdown();
+            Initialize(sidecarListenSocket, 0, server, debug, cbServiceDiscovery);
         }
 
 
@@ -170,7 +167,11 @@ namespace NPitaya
                 Logger.Warn("Initialize called but pitaya is already initialized");
                 return;
             }
-            InitializeSidecarClient(sidecarListenAddr, sidecarPort, server, debug);
+            InitializeSidecarClientWithPitaya(sidecarListenAddr, sidecarPort, server, debug);
+            InitializeInternal(cbServiceDiscovery);
+        }
+
+        static void InitializeInternal(Action<SDEvent> cbServiceDiscovery){
             if (_client == null)
             {
                 throw new PitayaException("Initialization failed");

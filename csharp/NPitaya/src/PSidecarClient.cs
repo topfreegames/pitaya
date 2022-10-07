@@ -17,7 +17,19 @@ namespace NPitaya
             GrpcEnvironment.SetThreadPoolSize(Environment.ProcessorCount);
         }
 
-        public static void InitializeSidecarClient(string sidecarAddr, int sidecarPort, NPitaya.Protos.Server server, bool debug = false)
+        public static void InitializeSidecarClientWithPitaya(string sidecarAddr, int sidecarPort, NPitaya.Protos.Server server, bool debug = false)
+        {
+            if (_isInitialized)
+            {
+                Logger.Warn("Pitaya is already initialized!");
+                return;
+            }
+
+           InitializeSidecarClient(sidecarAddr, sidecarPort);
+           InitializePitaya(server, debug);
+        }
+
+        public static void InitializeSidecarClient(string sidecarAddr, int sidecarPort)
         {
             if (_isInitialized)
             {
@@ -35,9 +47,7 @@ namespace NPitaya
             }
 
             _client = new Sidecar.SidecarClient(_channel);
-            var req = new StartPitayaRequest { Config = server, DebugLog = debug };
-
-            _client.StartPitaya(req);
+            
             // this is a hacky approach to detect if server is not running anymore, and if not, die
             new System.Threading.Thread(async() =>
             {
@@ -51,9 +61,9 @@ namespace NPitaya
             }).Start();
             _isInitialized = true;
         }
-        public static void InitializeSidecarClient(string sidecarSocketAddr, NPitaya.Protos.Server server, bool debug = false)
-        {
-            InitializeSidecarClient(sidecarSocketAddr, 0, server, debug);
+        static void InitializePitaya(NPitaya.Protos.Server server, bool debug = false){
+            var req = new StartPitayaRequest { Config = server, DebugLog = debug };
+            _client.StartPitaya(req);
         }
 
         public static void ShutdownSidecar(){
