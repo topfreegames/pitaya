@@ -36,8 +36,8 @@ namespace PitayaCSharpExample
       };
       var statsdMR = new StatsdMetricsReporter("localhost", 5000, "game", constantTags);
       MetricsReporters.AddMetricReporter(statsdMR);
-      //var prometheusMR = new PrometheusMetricsReporter("default", "game", 9090);
-      //MetricsReporters.AddMetricReporter(prometheusMR);
+      var prometheusMR = new PrometheusMetricsReporter("default", "game", 9090);
+      MetricsReporters.AddMetricReporter(prometheusMR);
 
       PitayaCluster.AddSignalHandler(() =>
       {
