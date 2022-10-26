@@ -4,16 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 )
 
 // MetagameServer ...
 type MetagameServer struct {
-	component.Base
+	component2.Base
 }
 
 // NewMetagameMock ...
@@ -110,7 +110,7 @@ func main() {
 	defer app.Shutdown()
 
 	app.Register(metagameServer,
-		component.WithName("metagameHandler"),
+		component2.WithName("metagameHandler"),
 	)
 
 	app.Start()

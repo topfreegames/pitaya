@@ -25,37 +25,37 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	cluster2 "github.com/topfreegames/pitaya/v3/pkg/cluster"
+	component2 "github.com/topfreegames/pitaya/v3/pkg/component"
+	config2 "github.com/topfreegames/pitaya/v3/pkg/config"
+	constants2 "github.com/topfreegames/pitaya/v3/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/cluster"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
-	"github.com/topfreegames/pitaya/v2/constants"
-	"github.com/topfreegames/pitaya/v2/examples/testing/protos"
-	"github.com/topfreegames/pitaya/v2/groups"
-	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
-	"github.com/topfreegames/pitaya/v2/modules"
-	"github.com/topfreegames/pitaya/v2/protos/test"
-	"github.com/topfreegames/pitaya/v2/serialize/json"
-	"github.com/topfreegames/pitaya/v2/serialize/protobuf"
-	"github.com/topfreegames/pitaya/v2/session"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/examples/testing/protos"
+	logruswrapper "github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
+	"github.com/topfreegames/pitaya/v3/pkg/modules"
+	"github.com/topfreegames/pitaya/v3/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 )
 
 // TestSvc service for e2e tests
 type TestSvc struct {
-	component.Base
+	component2.Base
 	app         pitaya.Pitaya
 	sessionPool session.SessionPool
 }
 
 // TestRemoteSvc remote service for e2e tests
 type TestRemoteSvc struct {
-	component.Base
+	component2.Base
 }
 
 // TestRPCRequest for e2e tests
@@ -111,7 +111,7 @@ func (t *TestSvc) Init() {
 func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*test.TestResponse, error) {
 	s := t.sessionPool.GetSessionByUID(string(userID))
 	if s == nil {
-		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
+		return nil, pitaya.Error(constants2.ErrSessionNotFound, "PIT-404")
 	}
 	err := s.Kick(ctx)
 	if err != nil {
@@ -127,7 +127,7 @@ func (t *TestSvc) TestRequestKickUser(ctx context.Context, userID []byte) (*test
 func (t *TestSvc) TestRequestKickMe(ctx context.Context) (*test.TestResponse, error) {
 	s := t.app.GetSessionFromCtx(ctx)
 	if s == nil {
-		return nil, pitaya.Error(constants.ErrSessionNotFound, "PIT-404")
+		return nil, pitaya.Error(constants2.ErrSessionNotFound, "PIT-404")
 	}
 	err := s.Kick(ctx)
 	if err != nil {
@@ -272,8 +272,8 @@ func main() {
 	pitaya.SetLogger(logruswrapper.NewWithFieldLogger(l))
 
 	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
-		constants.GRPCHostKey: "127.0.0.1",
-		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
+		constants2.GRPCHostKey: "127.0.0.1",
+		constants2.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
 	}, cfg)
 
 	if *grpc {
@@ -285,21 +285,21 @@ func main() {
 			app:         app,
 			sessionPool: sessionPool,
 		},
-		component.WithName("testsvc"),
-		component.WithNameFunc(strings.ToLower),
+		component2.WithName("testsvc"),
+		component2.WithNameFunc(strings.ToLower),
 	)
 
 	app.RegisterRemote(
 		&TestRemoteSvc{},
-		component.WithName("testremotesvc"),
-		component.WithNameFunc(strings.ToLower),
+		component2.WithName("testremotesvc"),
+		component2.WithNameFunc(strings.ToLower),
 	)
 
 	app.Start()
 }
 
 func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
-	conf := config.NewConfig(cfg...)
+	conf := config2.NewConfig(cfg...)
 	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, serverMode, metadata, conf)
 
 	if isFrontend {
@@ -307,7 +307,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		builder.AddAcceptor(tcp)
 	}
 
-	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(*config2.NewDefaultMemoryGroupConfig())
 
 	if serializer == "json" {
 		builder.Serializer = json.NewSerializer()
@@ -319,19 +319,19 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 
 	var bs *modules.ETCDBindingStorage
 	if grpc {
-		gs, err := cluster.NewGRPCServer(*config.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
+		gs, err := cluster2.NewGRPCServer(*config2.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
 		if err != nil {
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewETCDBindingConfig(conf))
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config2.NewETCDBindingConfig(conf))
 
-		gc, err := cluster.NewGRPCClient(
-			*config.NewGRPCClientConfig(conf),
+		gc, err := cluster2.NewGRPCClient(
+			*config2.NewGRPCClientConfig(conf),
 			builder.Server,
 			builder.MetricsReporters,
 			bs,
-			cluster.NewInfoRetriever(*config.NewInfoRetrieverConfig(conf)),
+			cluster2.NewInfoRetriever(*config2.NewInfoRetrieverConfig(conf)),
 		)
 		if err != nil {
 			panic(err)

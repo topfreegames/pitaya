@@ -77,7 +77,7 @@ This command will run both unit and e2e tests.
 #TODO
 
 ## Authors
-* **TFG Co** - Initial work
+* **Wildlife Studios** - Initial work
 
 ## License
 [MIT License](./LICENSE)

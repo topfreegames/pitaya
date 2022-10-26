@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package Gen.Protos;
+
+message AuthenticateArgs {
+    string token = 1;
+}

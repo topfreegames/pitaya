@@ -1,4 +1,21 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
+
+ifeq ($(OS), Windows_NT)
+	BIN := pitaya.exe
+	MKFOLDER := if not exist "build" mkdir build
+	GREP_CMD := findstr /V
+else
+	BIN := pitaya
+	MKFOLDER := mkdir -p build
+	GREP_CMD := grep -v
+endif
+
+TESTABLE_PACKAGES = $(shell go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark)
+
+.PHONY: build
+
+build:
+	@$(MKFOLDER)
+	@go build -o build/$(BIN)
 
 setup: init-submodules
 	@go get ./...
@@ -55,8 +72,9 @@ protos-compile-demo:
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=./pkg/protos/ --go_opt paths=source_relative --go-grpc_out ./pkg/protos/ --go-grpc_opt paths=source_relative --go-grpc_opt require_unimplemented_servers=false
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out ./pkg/protos/test/ --go_opt paths=source_relative
+	@protoc -I examples/demo/protos/ examples/demo/protos/*.proto --go_out ./examples/demo/protos --go_opt paths=source_relative
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*
@@ -141,26 +159,29 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
 
-mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
+mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock cluster-mock
 
 agent-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > pkg/agent/mocks/agent.go
 
 session-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/session Session,SessionPool | sed 's/mock_session/mocks/' > session/mocks/session.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/session Session,SessionPool | sed 's/mock_session/mocks/' > pkg/session/mocks/session.go
 
 networkentity-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > networkentity/mocks/networkentity.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/networkentity NetworkEntitgit y | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
 
 pitaya-mock:
-	@mockgen github.com/topfreegames/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg Pitaya | sed 's/mock_v2/mocks/' > pkg/mocks/app.go
 
 metrics-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Client | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/statsd_reporter.go
 
 serializer-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/serialize Serializer | sed 's/mock_serialize/mocks/' > pkg/serialize/mocks/serializer.go
 
 acceptor-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
+
+cluster-mock:
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/cluster RPCServer,RPCClient,SDListener,RemoteBindingListener,InfoRetriever | sed 's/mock_cluster/mocks/' > pkg/cluster/mocks/cluster.go

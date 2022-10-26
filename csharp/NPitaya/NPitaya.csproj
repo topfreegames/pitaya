@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="../netfx.props" />
+    <PropertyGroup>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PackageId>NPitayaSidecar</PackageId>
+        <PackageVersion>0.1.6</PackageVersion>
+        <Title>NPitayaSidecar</Title>
+        <Authors>TFG Co</Authors>
+        <Description>A full implementation of pitaya backend framework for .NET</Description>
+        <Copyright>2019, TFG Co</Copyright>
+        <PackageTags>pitaya,server,games,framework,rpc</PackageTags>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+        <RootNamespace>pitaya</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="DogStatsD-CSharp-Client" Version="6.0.0" />
+      <PackageReference Include="Grpc.Net.Client" Version="2.39.0" />
+      <PackageReference Include="Grpc" Version="2.41.0" />
+      <PackageReference Include="Contrib.Grpc.Core.M1" Version="2.41.0" />
+      <PackageReference Include="Grpc.Tools" Version="2.39.1" PrivateAssets="All" />
+      <PackageReference Include="Google.Protobuf" Version="3.16.0" />
+      <PackageReference Include="Jaeger" Version="1.0.3" />
+      <PackageReference Include="OpenTracing.Contrib.Grpc" Version="0.4.0" />
+      <PackageReference Include="prometheus-net" Version="6.0.0" />
+      <!-- <PackageReference Include="prometheus-net" Version="5.0.1" /> !-->
+    </ItemGroup>
+</Project>
