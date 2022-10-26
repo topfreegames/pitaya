@@ -55,8 +55,8 @@ namespace PitayaCSharpExample
         PitayaCluster.Initialize(
           sockAddr,
           sv,
-          true,
-          OnServiceDiscoveryEvent
+          OnServiceDiscoveryEvent,
+          debug: true
         );
       }
       catch (PitayaException exc)
