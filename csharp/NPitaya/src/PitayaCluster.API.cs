@@ -16,6 +16,7 @@ using Jaeger;
 using Jaeger.Samplers;
 using Jaeger.Reporters;
 using Jaeger.Senders.Thrift;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTracing.Util;
 
 // TODO profiling
@@ -47,7 +48,52 @@ namespace NPitaya
 
         // Tracer
         private static Tracer _tracer;
+        
+        public static void Initialize(string sidecarListenSocket, 
+            Server server = null, 
+            Action<SDEvent> cbServiceDiscovery = null, 
+            IServiceProvider serviceProvider = null, 
+            bool debug = false){
+            Initialize(sidecarListenSocket, 0, server, cbServiceDiscovery, serviceProvider, debug);
+        }
 
+        public static void Initialize(string sidecarAddr, 
+            int sidecarPort, 
+            Server server = null, 
+            Action<SDEvent> cbServiceDiscovery = null, 
+            IServiceProvider serviceProvider = null, 
+            bool debug = false){
+            if (_isInitialized){
+                Logger.Warn("Initialize called but pitaya is already initialized");
+                return;
+            }
+            
+            if (server != null)
+            {
+                InitializeSidecarClientWithPitaya(sidecarAddr, sidecarPort, server, debug);
+            }
+            else
+            {
+                InitializeSidecarClient(sidecarAddr, sidecarPort);
+            }
+            
+            InitializeInternal(cbServiceDiscovery, serviceProvider);
+        }
+        
+        static void InitializeInternal(Action<SDEvent> cbServiceDiscovery, IServiceProvider serviceProvider){
+            if (_client == null)
+            {
+                throw new PitayaException("Initialization failed");
+            }
+
+            RegisterRemotesAndHandlers(serviceProvider);
+
+            ListenToIncomingRPCs(_client);
+            SetServiceDiscoveryListener(cbServiceDiscovery);
+            ListenSDEvents(_client);
+            RegisterGracefulShutdown();
+        }
+        
         // TODO this should now be a pure csharp implementation of getting sigint/sigterm
         public static void AddSignalHandler(Action cb)
         {
@@ -119,70 +165,16 @@ namespace NPitaya
             }
         }
 
-        private static void RegisterRemotesAndHandlers(){
+        private static void RegisterRemotesAndHandlers(IServiceProvider serviceProvider){
             var handlers = GetAllInheriting(typeof(BaseHandler));
             foreach (var handler in handlers){
-                RegisterHandler((BaseHandler)Activator.CreateInstance(handler));
+                RegisterHandler((BaseHandler)ActivatorUtilities.CreateInstance(serviceProvider, handler));
             }
 
             var remotes = GetAllInheriting(typeof(BaseRemote));
             foreach (var remote in remotes){
-                RegisterRemote((BaseRemote)Activator.CreateInstance(remote));
+                RegisterRemote((BaseRemote)ActivatorUtilities.CreateInstance(serviceProvider, remote));
             }
-        }
-
-
-        public static void Initialize(string sidecarListenSocket, Action<SDEvent> cbServiceDiscovery = null){
-            Initialize(sidecarListenSocket, 0, cbServiceDiscovery);
-        }
-
-        public static void Initialize(string sidecarAddr, int sidecarPort, Action<SDEvent> cbServiceDiscovery = null){
-            if (_isInitialized){
-                Logger.Warn("Initialize called but pitaya is already initialized");
-                return;
-            }
-            InitializeSidecarClient(sidecarAddr, sidecarPort);
-            InitializeInternal(cbServiceDiscovery);
-        }
-        public static void Initialize(
-                string sidecarListenSocket,
-                Server server,
-                bool debug,
-                Action<SDEvent> cbServiceDiscovery = null
-                )
-        {
-            Initialize(sidecarListenSocket, 0, server, debug, cbServiceDiscovery);
-        }
-
-
-        public static void Initialize(
-                string sidecarListenAddr,
-                int sidecarPort,
-                Server server,
-                bool debug,
-                Action<SDEvent> cbServiceDiscovery = null
-                )
-        {
-            if (_isInitialized){
-                Logger.Warn("Initialize called but pitaya is already initialized");
-                return;
-            }
-            InitializeSidecarClientWithPitaya(sidecarListenAddr, sidecarPort, server, debug);
-            InitializeInternal(cbServiceDiscovery);
-        }
-
-        static void InitializeInternal(Action<SDEvent> cbServiceDiscovery){
-            if (_client == null)
-            {
-                throw new PitayaException("Initialization failed");
-            }
-
-            RegisterRemotesAndHandlers();
-
-            ListenToIncomingRPCs(_client);
-            SetServiceDiscoveryListener(cbServiceDiscovery);
-            ListenSDEvents(_client);
-            RegisterGracefulShutdown();
         }
 
         public static void StartJaeger(
