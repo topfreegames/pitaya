@@ -443,7 +443,7 @@ func (s *sessionImpl) Close() {
 	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		for _, sub := range s.Subscriptions {
-			err := sub.Unsubscribe()
+			err := sub.Drain()
 			if err != nil {
 				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
 			} else {
