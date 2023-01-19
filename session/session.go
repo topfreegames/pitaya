@@ -92,6 +92,7 @@ type sessionImpl struct {
 	frontendID        string                      // the id of the frontend that owns the session
 	frontendSessionID int64                       // the id of the session on the frontend server
 	Subscriptions     []*nats.Subscription        // subscription created on bind when using nats rpc server
+	requestsInFlight  map[string]string           // whether the session is waiting from a response from a remote
 	pool              *sessionPoolImpl
 }
 
@@ -106,6 +107,9 @@ type Session interface {
 	SetOnCloseCallbacks(callbacks []func())
 	SetIsFrontend(isFrontend bool)
 	SetSubscriptions(subscriptions []*nats.Subscription)
+	HasRequestsInFlight() bool
+	GetRequestsInFlight() map[string]string
+	SetRequestInFlight(reqID string, reqData string, inFlight bool)
 
 	Push(route string, v interface{}) error
 	ResponseMID(ctx context.Context, mid uint, v interface{}, err ...bool) error
@@ -172,6 +176,7 @@ func (pool *sessionPoolImpl) NewSession(entity networkentity.NetworkEntity, fron
 		OnCloseCallbacks: []func(){},
 		IsFrontend:       frontend,
 		pool:             pool,
+		requestsInFlight: make(map[string]string),
 	}
 	if frontend {
 		pool.sessionsByID.Store(s.id, s)
@@ -260,13 +265,26 @@ func (pool *sessionPoolImpl) OnSessionClose(f func(s Session)) {
 
 // CloseAll calls Close on all sessions
 func (pool *sessionPoolImpl) CloseAll() {
-	logger.Log.Debugf("closing all sessions, %d sessions", pool.SessionCount)
-	pool.sessionsByID.Range(func(_, value interface{}) bool {
-		s := value.(Session)
-		s.Close()
-		return true
-	})
-	logger.Log.Debug("finished closing sessions")
+	logger.Log.Infof("closing all sessions, %d sessions", pool.SessionCount)
+	for pool.SessionCount > 0 {
+		pool.sessionsByID.Range(func(_, value interface{}) bool {
+			s := value.(Session)
+			if s.HasRequestsInFlight() {
+				for _,route := range s.GetRequestsInFlight() {
+					logger.Log.Debugf("Session for user %s is waiting on a response for route %s from a remote server. Delaying session close.", s.UID(), route)
+				}
+				return false
+			} else {
+				s.Close()
+				return true
+			}
+		})
+		logger.Log.Debugf("%d sessions remaining", pool.SessionCount)
+		if pool.SessionCount > 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	logger.Log.Info("finished closing sessions")
 }
 
 func (s *sessionImpl) updateEncodedData() error {
@@ -780,4 +798,22 @@ func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, incl
 	}
 	logger.Log.Debugf("%s Got response: %+v", route, res)
 	return nil
+}
+
+func (s *sessionImpl) HasRequestsInFlight() bool {
+	return len(s.requestsInFlight) != 0
+}
+
+func (s *sessionImpl) GetRequestsInFlight() map[string]string {
+	return s.requestsInFlight
+}
+
+func (s *sessionImpl) SetRequestInFlight(reqID string, reqData string, inFlight bool) {
+	if inFlight {
+		s.requestsInFlight[reqID] = reqData
+	} else {
+		if _, ok := s.requestsInFlight[reqID]; ok {
+			delete(s.requestsInFlight, reqID)
+		}
+	}
 }

@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -140,7 +141,32 @@ func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteB
 func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	c, err := util.GetContextFromRequest(req, r.server.ID)
 	c = util.StartSpanFromRequest(c, r.server.ID, req.GetMsg().GetRoute())
+	defer tracing.FinishSpan(c, err)
 	var res *protos.Response
+
+	if err == nil {
+		result := make(chan *protos.Response, 1)
+		go func() {
+			result <- processRemoteMessage(c, req, r)
+		}()
+
+		// Set a timeout for processing the call
+		timeout := time.Duration(300) * time.Second
+		if ctx.Value("reqTimeout") != nil {
+			timeout, err = time.ParseDuration(fmt.Sprint(ctx.Value("reqTimeout")))
+			if err != nil {
+				logger.Log.Errorf("Error while parsing timeout duration: %s", err.Error())
+			}
+		}
+
+		select {
+		case <-time.After(timeout):
+			err = fmt.Errorf("Timed out calling route %s after %d seconds.", req.GetMsg().GetRoute(), timeout)
+		case res := <-result:
+			return res, nil
+		}
+	}
+
 	if err != nil {
 		res = &protos.Response{
 			Error: &protos.Error{
@@ -148,16 +174,13 @@ func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.
 				Msg:  err.Error(),
 			},
 		}
-	} else {
-		res = processRemoteMessage(c, req, r)
 	}
 
 	if res.Error != nil {
 		err = errors.New(res.Error.Msg)
 	}
 
-	defer tracing.FinishSpan(c, err)
-	return res, nil
+	return res, err
 }
 
 // SessionBindRemote is called when a remote server binds a user session and want us to acknowledge it
