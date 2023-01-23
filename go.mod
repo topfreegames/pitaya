@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.5.0
 	github.com/jhump/protoreflect v1.8.2
+	github.com/mailgun/proxyproto v1.0.0
 	github.com/nats-io/nats-server/v2 v2.8.4
 	github.com/nats-io/nats.go v1.15.0
 	github.com/nats-io/nuid v1.0.1
