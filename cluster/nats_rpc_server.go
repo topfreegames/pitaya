@@ -272,7 +272,10 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 				},
 			}
 		} else {
-			ns.responses[threadID], _ = ns.pitayaServer.Call(ctx, ns.requests[threadID])
+			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
+			if err != nil {
+				logger.Log.Errorf("error processing route %s: %s", ns.requests[threadID].GetMsg().GetRoute(), err)
+			}
 		}
 		p, err := ns.marshalResponse(ns.responses[threadID])
 		err = ns.conn.Publish(ns.requests[threadID].GetMsg().GetReply(), p)
