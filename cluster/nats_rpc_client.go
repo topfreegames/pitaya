@@ -213,7 +213,6 @@ func (ns *NatsRPCClient) Call(
 		}
 		return nil, err
 	}
-	logger.Log.Debug("returning response from remote (client)")
 	return res, nil
 }
 
