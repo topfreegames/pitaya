@@ -127,7 +127,8 @@ func (gs *GRPCClient) Call(
 		defer session.SetRequestInFlight(requestID, "", false)
 	}
 
-	req, err := buildRequest(context.WithValue(ctx, "reqTimeout", gs.reqTimeout.String()), rpcType, route, session, msg, gs.server)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, gs.reqTimeout.String())
+	req, err := buildRequest(ctx, rpcType, route, session, msg, gs.server)
 	if err != nil {
 		return nil, err
 	}

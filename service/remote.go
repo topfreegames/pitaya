@@ -35,6 +35,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/conn/codec"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
+	pcontext "github.com/topfreegames/pitaya/v2/context"
 	"github.com/topfreegames/pitaya/v2/docgenerator"
 	e "github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -141,19 +142,22 @@ func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteB
 func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	c, err := util.GetContextFromRequest(req, r.server.ID)
 	c = util.StartSpanFromRequest(c, r.server.ID, req.GetMsg().GetRoute())
+	cc, cancel := context.WithCancel(c)
 	defer tracing.FinishSpan(c, err)
 	var res *protos.Response
 
 	if err == nil {
 		result := make(chan *protos.Response, 1)
 		go func() {
-			result <- processRemoteMessage(c, req, r)
+			result <- processRemoteMessage(cc, req, r)
 		}()
 
 		// Set a timeout for processing the call
 		timeout := time.Duration(300) * time.Second
-		if ctx.Value("reqTimeout") != nil {
-			timeout, err = time.ParseDuration(fmt.Sprint(ctx.Value("reqTimeout")))
+
+		reqTimeout := pcontext.GetFromPropagateCtx(ctx, constants.RequestTimeout)
+		if reqTimeout != nil {
+			timeout, err = time.ParseDuration(reqTimeout.(string))
 			if err != nil {
 				logger.Log.Errorf("Error while parsing timeout duration: %s", err.Error())
 			}
@@ -161,7 +165,8 @@ func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.
 
 		select {
 		case <-time.After(timeout):
-			err = fmt.Errorf("Timed out calling route %s after %d seconds.", req.GetMsg().GetRoute(), timeout)
+			err = fmt.Errorf("Timed out calling route %s after %s .", req.GetMsg().GetRoute(), timeout)
+			cancel()
 		case res := <-result:
 			return res, nil
 		}

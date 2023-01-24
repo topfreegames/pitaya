@@ -168,9 +168,10 @@ func (ns *NatsRPCClient) Call(
 		defer session.SetRequestInFlight(requestID, "", false)
 	}
 
-	logger.Log.Debugf("sending remote nats request (client) with timeout of %s", ns.connectionTimeout)
+	logger.Log.Debugf("[rpc_client] sending remote nats request for route %s with timeout of %s", route, ns.reqTimeout)
 
-	req, err := buildRequest(context.WithValue(ctx, "reqTimeout", ns.reqTimeout.String()), rpcType, route, session, msg, ns.server)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, ns.reqTimeout.String())
+	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
 	if err != nil {
 		return nil, err
 	}
