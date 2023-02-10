@@ -102,3 +102,6 @@ const (
 
 // IOBufferBytesSize will be used when reading messages from clients
 var IOBufferBytesSize = 4096
+
+// RequestTimeout is the time it will take for a caller to timeout a request
+var RequestTimeout = "reqTimeout"

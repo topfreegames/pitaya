@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/v2/config"
@@ -129,7 +130,7 @@ func (ns *NatsRPCClient) SendKick(userID string, serverType string, kick *protos
 	return ns.Send(topic, msg)
 }
 
-// Call calls a method remotelly
+// Call calls a method remotely
 func (ns *NatsRPCClient) Call(
 	ctx context.Context,
 	rpcType protos.RPCType,
@@ -155,6 +156,21 @@ func (ns *NatsRPCClient) Call(
 		err = constants.ErrRPCClientNotInitialized
 		return nil, err
 	}
+
+	if session != nil {
+		requestID := uuid.New().String()
+		requestInfo := ""
+		if route != nil {
+			requestInfo = route.Method
+		}
+
+		session.SetRequestInFlight(requestID, requestInfo, true)
+		defer session.SetRequestInFlight(requestID, "", false)
+	}
+
+	logger.Log.Debugf("[rpc_client] sending remote nats request for route %s with timeout of %s", route, ns.reqTimeout)
+
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, ns.reqTimeout.String())
 	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
 	if err != nil {
 		return nil, err

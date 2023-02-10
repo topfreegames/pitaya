@@ -62,6 +62,7 @@ func TestCall(t *testing.T) {
 	sess.EXPECT().ID().Return(int64(1)).Times(2)
 	sess.EXPECT().UID().Return(uid).Times(2)
 	sess.EXPECT().GetDataEncoded().Return(nil).Times(2)
+	sess.EXPECT().SetRequestInFlight(gomock.Any(),gomock.Any(),gomock.Any()).Times(2)
 
 	expected, err := buildRequest(ctx, rpcType, r, sess, msg, g.server)
 	assert.NoError(t, err)

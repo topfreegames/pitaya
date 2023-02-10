@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/message"
@@ -116,6 +117,17 @@ func (gs *GRPCClient) Call(
 	ctx = tracing.StartSpan(ctx, "GRPC RPC Call", tags, parent)
 	defer tracing.FinishSpan(ctx, err)
 
+	if session != nil {
+		requestID := uuid.New().String()
+		requestInfo := ""
+		if route != nil {
+			requestInfo = route.Method
+		}
+		session.SetRequestInFlight(requestID, requestInfo, true)
+		defer session.SetRequestInFlight(requestID, "", false)
+	}
+
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, gs.reqTimeout.String())
 	req, err := buildRequest(ctx, rpcType, route, session, msg, gs.server)
 	if err != nil {
 		return nil, err
