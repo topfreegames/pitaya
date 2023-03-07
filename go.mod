@@ -25,7 +25,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.6
 	go.etcd.io/etcd/client/v3 v3.5.6
 	go.etcd.io/etcd/tests/v3 v3.5.6
-	golang.org/x/net v0.0.0-20220105145211-5b0dc2dfae98
+	golang.org/x/net v0.7.0
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 )
@@ -99,8 +99,8 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
-	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
