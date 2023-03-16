@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	cluster "github.com/topfreegames/pitaya/v2/cluster"
+	cluster "github.com/long12310225/pitaya/v2/cluster"
 )
 
 // MockServiceDiscovery is a mock of ServiceDiscovery interface.

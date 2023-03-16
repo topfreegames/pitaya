@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/long12310225/pitaya/v2/conn/packet"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/conn/packet"
 )
 
 var forwardTables = map[string]struct {

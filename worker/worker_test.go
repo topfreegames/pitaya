@@ -8,7 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	workers "github.com/topfreegames/go-workers"
-	"github.com/topfreegames/pitaya/v2/worker/mocks"
+	"github.com/long12310225/pitaya/v2/worker/mocks"
 )
 
 type fakeProtoMessage struct {
@@ -68,7 +68,7 @@ func TestParsedRPCJob(t *testing.T) {
 		"test_error_on_unmarshal_rpc_info": {
 			arg: func() *workers.Msg {
 				msg, err := workers.NewMsg(`{
-					"args": { 
+					"args": {
 						"route": "server.svc.method",
 						"arg": { "field": 10 }
 					}
@@ -88,7 +88,7 @@ func TestParsedRPCJob(t *testing.T) {
 		"test_error_on_server_discovery": {
 			arg: func() *workers.Msg {
 				msg, err := workers.NewMsg(`{
-					"args": { 
+					"args": {
 						"route": "server.svc.method",
 						"arg": { "field": "string" },
 						"metadata": { "stack": "a" }
@@ -112,7 +112,7 @@ func TestParsedRPCJob(t *testing.T) {
 		"test_error_on_rpc": {
 			arg: func() *workers.Msg {
 				msg, err := workers.NewMsg(`{
-					"args": { 
+					"args": {
 						"route": "server.svc.method",
 						"arg": { "field": "string" },
 						"metadata": { "stack": "a" }
@@ -139,7 +139,7 @@ func TestParsedRPCJob(t *testing.T) {
 		"test_execute_rpc": {
 			arg: func() *workers.Msg {
 				msg, err := workers.NewMsg(`{
-					"args": { 
+					"args": {
 						"route": "server.svc.method",
 						"arg": { "field": "string" },
 						"metadata": { "stack": "a" }

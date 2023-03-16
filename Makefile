@@ -144,23 +144,23 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
 
 agent-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
+	@mockgen github.com/long12310225/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
 
 session-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/session Session,SessionPool | sed 's/mock_session/mocks/' > session/mocks/session.go
+	@mockgen github.com/long12310225/pitaya/v2/session Session,SessionPool | sed 's/mock_session/mocks/' > session/mocks/session.go
 
 networkentity-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > networkentity/mocks/networkentity.go
+	@mockgen github.com/long12310225/pitaya/v2/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > networkentity/mocks/networkentity.go
 
 pitaya-mock:
-	@mockgen github.com/topfreegames/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
+	@mockgen github.com/long12310225/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
 
 metrics-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
+	@mockgen github.com/long12310225/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
+	@mockgen github.com/long12310225/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
 
 serializer-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
+	@mockgen github.com/long12310225/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
 
 acceptor-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go
+	@mockgen github.com/long12310225/pitaya/v2/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go

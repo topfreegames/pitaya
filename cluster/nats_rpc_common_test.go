@@ -25,9 +25,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/long12310225/pitaya/v2/helpers"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/topfreegames/pitaya/v2/helpers"
 )
 
 func getServer() *Server {

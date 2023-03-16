@@ -23,7 +23,7 @@ package groups
 import (
 	"testing"
 
-	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/long12310225/pitaya/v2/config"
 	"go.etcd.io/etcd/tests/v3/framework/integration"
 )
 

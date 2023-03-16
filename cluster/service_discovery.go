@@ -20,7 +20,7 @@
 
 package cluster
 
-import "github.com/topfreegames/pitaya/v2/interfaces"
+import "github.com/long12310225/pitaya/v2/interfaces"
 
 // ServiceDiscovery is the interface for a service discovery client
 type ServiceDiscovery interface {

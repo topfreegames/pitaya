@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/long12310225/pitaya/v2"
+	"github.com/long12310225/pitaya/v2/acceptor"
+	"github.com/long12310225/pitaya/v2/acceptorwrapper"
+	"github.com/long12310225/pitaya/v2/component"
+	"github.com/long12310225/pitaya/v2/config"
+	"github.com/long12310225/pitaya/v2/examples/demo/rate_limiting/services"
+	"github.com/long12310225/pitaya/v2/metrics"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/acceptorwrapper"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
-	"github.com/topfreegames/pitaya/v2/examples/demo/rate_limiting/services"
-	"github.com/topfreegames/pitaya/v2/metrics"
 )
 
 func createAcceptor(port int, reporters []metrics.Reporter) acceptor.Acceptor {

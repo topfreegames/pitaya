@@ -5,9 +5,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/long12310225/pitaya/v2/session"
+	"github.com/long12310225/pitaya/v2/session/mocks"
 	"github.com/stretchr/testify/require"
-	"github.com/topfreegames/pitaya/v2/session"
-	"github.com/topfreegames/pitaya/v2/session/mocks"
 )
 
 func TestStaticGetSessionByUID(t *testing.T) {

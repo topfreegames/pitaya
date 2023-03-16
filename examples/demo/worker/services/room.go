@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/examples/demo/worker/protos"
-	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/long12310225/pitaya/v2"
+	"github.com/long12310225/pitaya/v2/component"
+	"github.com/long12310225/pitaya/v2/examples/demo/worker/protos"
+	"github.com/long12310225/pitaya/v2/logger"
 )
 
 // Room server

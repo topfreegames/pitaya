@@ -26,9 +26,9 @@ import (
 	"io/ioutil"
 	"net"
 
-	"github.com/topfreegames/pitaya/v2/conn/codec"
-	"github.com/topfreegames/pitaya/v2/constants"
-	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/long12310225/pitaya/v2/conn/codec"
+	"github.com/long12310225/pitaya/v2/constants"
+	"github.com/long12310225/pitaya/v2/logger"
 )
 
 // TCPAcceptor struct
