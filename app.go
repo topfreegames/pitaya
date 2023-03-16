@@ -70,6 +70,9 @@ const (
 
 // Pitaya App interface
 type Pitaya interface {
+	//定制接口
+	GetRemoteService() *service.RemoteService
+
 	GetDieChan() chan bool
 	SetDebug(debug bool)
 	SetHeartbeatTime(interval time.Duration)
@@ -206,6 +209,10 @@ func NewApp(
 
 	app.initSysRemotes()
 	return app
+}
+
+func (app *App) GetRemoteService() *service.RemoteService {
+	return app.remoteService
 }
 
 // GetDieChan gets the channel that the app sinalizes when its going to die
