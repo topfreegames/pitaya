@@ -25,6 +25,7 @@ import "net"
 // PlayerConn iface
 type PlayerConn interface {
 	GetNextMessage() (b []byte, err error)
+	RemoteAddr() net.Addr
 	net.Conn
 }
 
@@ -34,4 +35,5 @@ type Acceptor interface {
 	Stop()
 	GetAddr() string
 	GetConnChan() chan PlayerConn
+	EnableProxyProtocol()
 }

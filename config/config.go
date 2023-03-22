@@ -37,6 +37,9 @@ type PitayaConfig struct {
 	Metrics struct {
 		Period time.Duration
 	}
+	Acceptor struct {
+		ProxyProtocol bool
+	}
 }
 
 // NewDefaultPitayaConfig provides default configuration for Pitaya App
@@ -99,6 +102,11 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		}{
 			Period: time.Duration(15 * time.Second),
 		},
+                Acceptor: struct {
+                        ProxyProtocol bool
+                }{
+                        ProxyProtocol: false,
+                },
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"net"
 
+	"github.com/mailgun/proxyproto"
 	"github.com/topfreegames/pitaya/v2/conn/codec"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -33,15 +34,21 @@ import (
 
 // TCPAcceptor struct
 type TCPAcceptor struct {
-	addr     string
-	connChan chan PlayerConn
-	listener net.Listener
-	running  bool
-	certs    []tls.Certificate
+	addr          string
+	connChan      chan PlayerConn
+	listener      net.Listener
+	running       bool
+	certs         []tls.Certificate
+	proxyProtocol bool
 }
 
 type tcpPlayerConn struct {
 	net.Conn
+	remoteAddr net.Addr
+}
+
+func (t *tcpPlayerConn) RemoteAddr() net.Addr {
+	return t.remoteAddr
 }
 
 // GetNextMessage reads the next message available in the stream
@@ -86,10 +93,11 @@ func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 
 func NewTCP(addr string, certs ...tls.Certificate) *TCPAcceptor {
 	return &TCPAcceptor{
-		addr:     addr,
-		connChan: make(chan PlayerConn),
-		running:  false,
-		certs:    certs,
+		addr:          addr,
+		connChan:      make(chan PlayerConn),
+		running:       false,
+		certs:         certs,
+		proxyProtocol: false,
 	}
 }
 
@@ -157,6 +165,10 @@ func (a *TCPAcceptor) listenAndServeTLS() {
 	a.serve()
 }
 
+func (a *TCPAcceptor) EnableProxyProtocol() {
+	a.proxyProtocol = true
+}
+
 func (a *TCPAcceptor) serve() {
 	defer a.Stop()
 	for a.running {
@@ -165,9 +177,27 @@ func (a *TCPAcceptor) serve() {
 			logger.Log.Errorf("Failed to accept TCP connection: %s", err.Error())
 			continue
 		}
+		var remoteAddr net.Addr
+		if a.proxyProtocol == true {
+			h, err := proxyproto.ReadHeader(conn)
+			if err != nil {
+				logger.Log.Errorf("Failed to read Proxy Protocol TCP header: %s", err.Error())
+				conn.Close()
+				continue
+			} else if h.Source == nil {
+				conn.Close()
+				continue
+			} else {
+				remoteAddr = h.Source
+			}
+		} else {
 
+			remoteAddr = conn.RemoteAddr()
+
+		}
 		a.connChan <- &tcpPlayerConn{
-			Conn: conn,
+			Conn:       conn,
+			remoteAddr: remoteAddr,
 		}
 	}
 }

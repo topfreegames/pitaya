@@ -92,7 +92,13 @@ type sessionImpl struct {
 	frontendID        string                      // the id of the frontend that owns the session
 	frontendSessionID int64                       // the id of the session on the frontend server
 	Subscriptions     []*nats.Subscription        // subscription created on bind when using nats rpc server
+	requestsInFlight  ReqInFlight           // whether the session is waiting from a response from a remote
 	pool              *sessionPoolImpl
+}
+
+type ReqInFlight struct {
+	m map[string]string
+	mu sync.RWMutex
 }
 
 // Session represents a client session, which can store data during the connection.
@@ -106,6 +112,9 @@ type Session interface {
 	SetOnCloseCallbacks(callbacks []func())
 	SetIsFrontend(isFrontend bool)
 	SetSubscriptions(subscriptions []*nats.Subscription)
+	HasRequestsInFlight() bool
+	GetRequestsInFlight() ReqInFlight
+	SetRequestInFlight(reqID string, reqData string, inFlight bool)
 
 	Push(route string, v interface{}) error
 	ResponseMID(ctx context.Context, mid uint, v interface{}, err ...bool) error
@@ -172,6 +181,7 @@ func (pool *sessionPoolImpl) NewSession(entity networkentity.NetworkEntity, fron
 		OnCloseCallbacks: []func(){},
 		IsFrontend:       frontend,
 		pool:             pool,
+		requestsInFlight: ReqInFlight{m: make(map[string]string)},
 	}
 	if frontend {
 		pool.sessionsByID.Store(s.id, s)
@@ -260,13 +270,29 @@ func (pool *sessionPoolImpl) OnSessionClose(f func(s Session)) {
 
 // CloseAll calls Close on all sessions
 func (pool *sessionPoolImpl) CloseAll() {
-	logger.Log.Debugf("closing all sessions, %d sessions", pool.SessionCount)
-	pool.sessionsByID.Range(func(_, value interface{}) bool {
-		s := value.(Session)
-		s.Close()
-		return true
-	})
-	logger.Log.Debug("finished closing sessions")
+	logger.Log.Infof("closing all sessions, %d sessions", pool.SessionCount)
+	for pool.SessionCount > 0 {
+		pool.sessionsByID.Range(func(_, value interface{}) bool {
+			s := value.(Session)
+			if s.HasRequestsInFlight() {
+				reqsInFlight := s.GetRequestsInFlight()
+				reqsInFlight.mu.RLock()
+				for _,route := range reqsInFlight.m {
+					logger.Log.Debugf("Session for user %s is waiting on a response for route %s from a remote server. Delaying session close.", s.UID(), route)
+				}
+				reqsInFlight.mu.RUnlock()
+				return false
+			} else {
+				s.Close()
+				return true
+			}
+		})
+		logger.Log.Debugf("%d sessions remaining", pool.SessionCount)
+		if pool.SessionCount > 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	logger.Log.Info("finished closing sessions")
 }
 
 func (s *sessionImpl) updateEncodedData() error {
@@ -443,7 +469,7 @@ func (s *sessionImpl) Close() {
 	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		for _, sub := range s.Subscriptions {
-			err := sub.Unsubscribe()
+			err := sub.Drain()
 			if err != nil {
 				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
 			} else {
@@ -780,4 +806,24 @@ func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, incl
 	}
 	logger.Log.Debugf("%s Got response: %+v", route, res)
 	return nil
+}
+
+func (s *sessionImpl) HasRequestsInFlight() bool {
+	return len(s.requestsInFlight.m) != 0
+}
+
+func (s *sessionImpl) GetRequestsInFlight() ReqInFlight {
+	return s.requestsInFlight
+}
+
+func (s *sessionImpl) SetRequestInFlight(reqID string, reqData string, inFlight bool) {
+	s.requestsInFlight.mu.Lock()
+	if inFlight {
+		s.requestsInFlight.m[reqID] = reqData
+	} else {
+		if _, ok := s.requestsInFlight.m[reqID]; ok {
+			delete(s.requestsInFlight.m, reqID)
+		}
+	}
+	s.requestsInFlight.mu.Unlock()
 }

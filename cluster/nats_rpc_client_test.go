@@ -467,6 +467,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			ss.EXPECT().ID().Return(sessionID).Times(1)
 			ss.EXPECT().UID().Return(uid).Times(1)
 			ss.EXPECT().GetDataEncoded().Return(data2).Times(1)
+			ss.EXPECT().SetRequestInFlight(gomock.Any(),gomock.Any(),gomock.Any()).Times(2)
 
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
 			assert.Equal(t, table.expected, res)
