@@ -40,7 +40,8 @@ var tcpAcceptorTables = []struct {
 	{"test_1", "0.0.0.0:0", []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
 	{"test_2", "0.0.0.0:0", []string{}, nil},
 	{"test_3", "127.0.0.1:0", []string{"wqd"}, constants.ErrInvalidCertificates},
-	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
+	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd"}, constants.ErrInvalidCertificates},
+	{"test_5", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
