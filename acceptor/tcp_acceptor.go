@@ -88,10 +88,10 @@ func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 		certificates = append(certificates, cert)
 	}
 
-	return NewTCP(addr, certificates...)
+	return NewTLSAcceptor(addr, certificates...)
 }
 
-func NewTCP(addr string, certs ...tls.Certificate) *TCPAcceptor {
+func NewTLSAcceptor(addr string, certs ...tls.Certificate) *TCPAcceptor {
 	return &TCPAcceptor{
 		addr:          addr,
 		connChan:      make(chan PlayerConn),
