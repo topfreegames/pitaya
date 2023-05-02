@@ -38,8 +38,7 @@ type TCPAcceptor struct {
 	connChan      chan PlayerConn
 	listener      net.Listener
 	running       bool
-	certFile      string
-	keyFile       string
+	certs         []tls.Certificate
 	proxyProtocol bool
 }
 
@@ -78,21 +77,26 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 
 // NewTCPAcceptor creates a new instance of tcp acceptor
 func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
-	keyFile := ""
-	certFile := ""
+	certificates := []tls.Certificate{}
 	if len(certs) != 2 && len(certs) != 0 {
 		panic(constants.ErrInvalidCertificates)
 	} else if len(certs) == 2 {
-		certFile = certs[0]
-		keyFile = certs[1]
+		cert, err := tls.LoadX509KeyPair(certs[0], certs[1])
+		if err != nil {
+			panic(constants.ErrInvalidCertificates)
+		}
+		certificates = append(certificates, cert)
 	}
 
+	return NewTLSAcceptor(addr, certificates...)
+}
+
+func NewTLSAcceptor(addr string, certs ...tls.Certificate) *TCPAcceptor {
 	return &TCPAcceptor{
 		addr:          addr,
 		connChan:      make(chan PlayerConn),
 		running:       false,
-		certFile:      certFile,
-		keyFile:       keyFile,
+		certs:         certs,
 		proxyProtocol: false,
 	}
 }
@@ -117,13 +121,13 @@ func (a *TCPAcceptor) Stop() {
 }
 
 func (a *TCPAcceptor) hasTLSCertificates() bool {
-	return a.certFile != "" && a.keyFile != ""
+	return len(a.certs) > 0
 }
 
 // ListenAndServe using tcp acceptor
 func (a *TCPAcceptor) ListenAndServe() {
 	if a.hasTLSCertificates() {
-		a.ListenAndServeTLS(a.certFile, a.keyFile)
+		a.listenAndServeTLS()
 		return
 	}
 
@@ -143,7 +147,14 @@ func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 
-	tlsCfg := &tls.Config{Certificates: []tls.Certificate{crt}}
+	a.certs = append(a.certs, crt)
+
+	a.listenAndServeTLS()
+}
+
+// ListenAndServeTLS listens using tls
+func (a *TCPAcceptor) listenAndServeTLS() {
+	tlsCfg := &tls.Config{Certificates: a.certs}
 
 	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
 	if err != nil {

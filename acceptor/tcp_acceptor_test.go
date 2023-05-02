@@ -40,7 +40,8 @@ var tcpAcceptorTables = []struct {
 	{"test_1", "0.0.0.0:0", []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
 	{"test_2", "0.0.0.0:0", []string{}, nil},
 	{"test_3", "127.0.0.1:0", []string{"wqd"}, constants.ErrInvalidCertificates},
-	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
+	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd"}, constants.ErrInvalidCertificates},
+	{"test_5", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
@@ -58,11 +59,9 @@ func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 				})
 
 				if len(table.certs) == 2 {
-					assert.Equal(t, table.certs[0], a.certFile)
-					assert.Equal(t, table.certs[1], a.keyFile)
+					assert.Len(t, a.certs, 1)
 				} else {
-					assert.Equal(t, "", a.certFile)
-					assert.Equal(t, "", a.keyFile)
+					assert.Len(t, a.certs, 0)
 				}
 				assert.NotNil(t, a)
 			}
