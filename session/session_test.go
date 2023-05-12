@@ -1448,3 +1448,29 @@ func TestSessionSetHandshakeData(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionPoolAddHandshakeValidator(t *testing.T) {
+	fa := func(data *HandshakeData) error { return nil }
+	fb := func(data *HandshakeData) error { return errors.New("error") }
+
+	tables := []struct {
+		name       string
+		validators []func(data *HandshakeData) error
+		result     int
+	}{
+		{"add validator", []func(data *HandshakeData) error{fa}, 1},
+		{"add many validators", []func(data *HandshakeData) error{fa, fb}, 2},
+		{"do not add duplicated validators", []func(data *HandshakeData) error{fa, fa}, 1},
+	}
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			sessionPool := NewSessionPool()
+			for _, fun := range table.validators {
+				sessionPool.AddHandshakeValidator(fun)
+			}
+			session := sessionPool.NewSession(nil, false).(*sessionImpl)
+			validators := session.GetHandshakeValidators()
+			assert.Equal(t, len(validators), table.result)
+		})
+	}
+}

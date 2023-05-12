@@ -227,6 +227,13 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 			return fmt.Errorf("Invalid handshake data. Id=%d", a.GetSession().ID())
 		}
 
+		for _, fun := range a.GetSession().GetHandshakeValidators() {
+			if err := fun(handshakeData); err != nil {
+				a.SetStatus(constants.StatusClosed)
+				return fmt.Errorf("Handshake validation failed: %w. Id=%d", err, a.GetSession().ID())
+			}
+		}
+
 		a.GetSession().SetHandshakeData(handshakeData)
 		a.SetStatus(constants.StatusHandshake)
 		err = a.GetSession().Set(constants.IPVersionKey, a.IPVersion())

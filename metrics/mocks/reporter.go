@@ -5,34 +5,35 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockReporter is a mock of Reporter interface
+// MockReporter is a mock of Reporter interface.
 type MockReporter struct {
 	ctrl     *gomock.Controller
 	recorder *MockReporterMockRecorder
 }
 
-// MockReporterMockRecorder is the mock recorder for MockReporter
+// MockReporterMockRecorder is the mock recorder for MockReporter.
 type MockReporterMockRecorder struct {
 	mock *MockReporter
 }
 
-// NewMockReporter creates a new mock instance
+// NewMockReporter creates a new mock instance.
 func NewMockReporter(ctrl *gomock.Controller) *MockReporter {
 	mock := &MockReporter{ctrl: ctrl}
 	mock.recorder = &MockReporterMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockReporter) EXPECT() *MockReporterMockRecorder {
 	return m.recorder
 }
 
-// ReportCount mocks base method
+// ReportCount mocks base method.
 func (m *MockReporter) ReportCount(arg0 string, arg1 map[string]string, arg2 float64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportCount", arg0, arg1, arg2)
@@ -40,13 +41,13 @@ func (m *MockReporter) ReportCount(arg0 string, arg1 map[string]string, arg2 flo
 	return ret0
 }
 
-// ReportCount indicates an expected call of ReportCount
+// ReportCount indicates an expected call of ReportCount.
 func (mr *MockReporterMockRecorder) ReportCount(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportCount", reflect.TypeOf((*MockReporter)(nil).ReportCount), arg0, arg1, arg2)
 }
 
-// ReportGauge mocks base method
+// ReportGauge mocks base method.
 func (m *MockReporter) ReportGauge(arg0 string, arg1 map[string]string, arg2 float64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportGauge", arg0, arg1, arg2)
@@ -54,13 +55,13 @@ func (m *MockReporter) ReportGauge(arg0 string, arg1 map[string]string, arg2 flo
 	return ret0
 }
 
-// ReportGauge indicates an expected call of ReportGauge
+// ReportGauge indicates an expected call of ReportGauge.
 func (mr *MockReporterMockRecorder) ReportGauge(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportGauge", reflect.TypeOf((*MockReporter)(nil).ReportGauge), arg0, arg1, arg2)
 }
 
-// ReportHistogram mocks base method
+// ReportHistogram mocks base method.
 func (m *MockReporter) ReportHistogram(arg0 string, arg1 map[string]string, arg2 float64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportHistogram", arg0, arg1, arg2)
@@ -68,13 +69,13 @@ func (m *MockReporter) ReportHistogram(arg0 string, arg1 map[string]string, arg2
 	return ret0
 }
 
-// ReportHistogram indicates an expected call of ReportHistogram
+// ReportHistogram indicates an expected call of ReportHistogram.
 func (mr *MockReporterMockRecorder) ReportHistogram(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportHistogram", reflect.TypeOf((*MockReporter)(nil).ReportHistogram), arg0, arg1, arg2)
 }
 
-// ReportSummary mocks base method
+// ReportSummary mocks base method.
 func (m *MockReporter) ReportSummary(arg0 string, arg1 map[string]string, arg2 float64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportSummary", arg0, arg1, arg2)
@@ -82,7 +83,7 @@ func (m *MockReporter) ReportSummary(arg0 string, arg1 map[string]string, arg2 f
 	return ret0
 }
 
-// ReportSummary indicates an expected call of ReportSummary
+// ReportSummary indicates an expected call of ReportSummary.
 func (mr *MockReporterMockRecorder) ReportSummary(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportSummary", reflect.TypeOf((*MockReporter)(nil).ReportSummary), arg0, arg1, arg2)
