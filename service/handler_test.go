@@ -416,6 +416,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 
 	mockSession := mocks.NewMockSession(ctrl)
 	mockSession.EXPECT().SetHandshakeData(gomock.Any()).Times(1)
+	mockSession.EXPECT().GetHandshakeValidators().Return([]func(data *session.HandshakeData) error{}).Times(1)
 	mockSession.EXPECT().UID().Return("uid").Times(1)
 	mockSession.EXPECT().ID().Return(int64(1)).Times(2)
 	mockSession.EXPECT().Set(constants.IPVersionKey, constants.IPv4)
@@ -423,7 +424,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 
 	mockAgent.EXPECT().String().Return("")
 	mockAgent.EXPECT().SetStatus(constants.StatusHandshake)
-	mockAgent.EXPECT().GetSession().Return(mockSession).Times(6)
+	mockAgent.EXPECT().GetSession().Return(mockSession).Times(7)
 	mockAgent.EXPECT().IPVersion().Return(constants.IPv4)
 	mockAgent.EXPECT().RemoteAddr().Return(&mockAddr{}).AnyTimes()
 	mockAgent.EXPECT().SetLastAt().Do(func() {
