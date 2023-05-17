@@ -377,7 +377,7 @@ func TestNatsRPCClientBuildRequest(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			ss := sessionmocks.NewMockSession(ctrl)
-                        if table.rpcType == protos.RPCType_Sys {
+			if table.rpcType == protos.RPCType_Sys {
 				ss.EXPECT().ID().Return(sessionID).Times(1)
 				ss.EXPECT().UID().Return(uid).Times(1)
 				ss.EXPECT().GetDataEncoded().Return(data2).Times(1)
@@ -434,7 +434,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 		{"test_ok", &protos.Response{Data: []byte("ok")}, &protos.Response{Data: []byte("ok")}, nil},
 		{"test_bad_response", []byte("invalid"), nil, errors.New("cannot parse invalid wire-format data")},
 		{"test_bad_proto", &protos.Session{Id: 1, Uid: "snap"}, nil, errors.New("cannot parse invalid wire-format data")},
-		{"test_no_response", nil, nil, errors.New("nats: timeout")},
+		{"test_no_response", nil, nil, constants.ErrRPCRequestTimeout},
 	}
 
 	for _, table := range tables {
@@ -467,7 +467,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			ss.EXPECT().ID().Return(sessionID).Times(1)
 			ss.EXPECT().UID().Return(uid).Times(1)
 			ss.EXPECT().GetDataEncoded().Return(data2).Times(1)
-			ss.EXPECT().SetRequestInFlight(gomock.Any(),gomock.Any(),gomock.Any()).Times(2)
+			ss.EXPECT().SetRequestInFlight(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
 			assert.Equal(t, table.expected, res)
