@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/topfreegames/pitaya/v2/metrics/models"
@@ -102,11 +101,11 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		}{
 			Period: time.Duration(15 * time.Second),
 		},
-                Acceptor: struct {
-                        ProxyProtocol bool
-                }{
-                        ProxyProtocol: false,
-                },
+		Acceptor: struct {
+			ProxyProtocol bool
+		}{
+			ProxyProtocol: false,
+		},
 	}
 }
 
@@ -180,7 +179,6 @@ func NewBuilderConfig(config *Config) *BuilderConfig {
 	if err := config.Unmarshal(&conf); err != nil {
 		panic(err)
 	}
-	fmt.Println(conf)
 	return conf
 }
 
