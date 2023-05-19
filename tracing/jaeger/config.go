@@ -25,6 +25,7 @@ package jaeger
 import (
 	"io"
 
+	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 )
@@ -38,6 +39,7 @@ type Options struct {
 
 // Configure configures a global Jaeger tracer
 func Configure(options Options) (io.Closer, error) {
+	logger.Log.Infof("Configuring Jaeger with options: %+v", options)
 	cfg := config.Configuration{
 		Disabled: options.Disabled,
 		Sampler: &config.SamplerConfig{

@@ -16,6 +16,7 @@ Welcome to Pitaya's documentation!
    configuration
    API
    examples
+   tracing
 
 
 Indices and tables

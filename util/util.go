@@ -24,11 +24,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nats-io/nuid"
 	"os"
 	"reflect"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/nats-io/nuid"
 
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
@@ -207,7 +208,9 @@ func StartSpanFromRequest(
 	}
 	parent, err := tracing.ExtractSpan(ctx)
 	if err != nil {
-		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		if err != opentracing.ErrSpanContextNotFound {
+			logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+		}
 	}
 	ctx = tracing.StartSpan(ctx, route, tags, parent)
 	return ctx
