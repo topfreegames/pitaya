@@ -15,7 +15,7 @@ setup: init-submodules
 
 build-cli:
 	@$(MKFOLDER)
-	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/cli
+	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/pitaya-cli
 	@echo "build pitaya-cli at ./build/$(BIN)"
  
 init-submodules:

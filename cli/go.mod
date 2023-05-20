@@ -1,4 +1,4 @@
-module github.com/topfreegames/pitaya/v2/cli
+module github.com/topfreegames/pitaya/v2/pitaya-cli
 
 go 1.18
 
