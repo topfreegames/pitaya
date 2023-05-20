@@ -15,6 +15,7 @@ Welcome to Pitaya's documentation!
    communication
    configuration
    API
+   cli
    examples
    tracing
 
