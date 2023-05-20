@@ -56,7 +56,7 @@ run the room backend server from the cluster_grpc example
 make run-cluster-grpc-example-room
 ```
 
-Now there should be 2 pitaya servers running, a frontend connector and a backend room. To send requests, use a REPL client for pitaya [pitaya-cli](https://github.com/topfreegames/pitaya/cli). 
+Now there should be 2 pitaya servers running, a frontend connector and a backend room. To send requests, use a REPL client for pitaya [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/cli). 
 
 ```
 $ pitaya-cli
@@ -97,7 +97,7 @@ If you have found a security vulnerability, please email security@tfgco.com
   + [libpitaya](https://github.com/topfreegames/libpitaya)
   + [pitaya-admin](https://github.com/topfreegames/pitaya-admin)
   + [pitaya-bot](https://github.com/topfreegames/pitaya-bot)
-  + [pitaya-cli](https://github.com/topfreegames/pitaya/cli)
+  + [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/cli)
   + [pitaya-protos](https://github.com/topfreegames/pitaya-protos)
 
 - Documents

@@ -1,5 +1,5 @@
-pitaya-cli
-==================
+Pitaya CLI
+==========
 
 A REPL cli client made in go for pitaya.
 
