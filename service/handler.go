@@ -213,31 +213,38 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
 		logger.Log.Debug("Received handshake packet")
+
+		// Parse the json sent with the handshake by the client
+		handshakeData := &session.HandshakeData{}
+		if err := json.Unmarshal(p.Data, handshakeData); err != nil {
+			logger.Log.Errorf("Failed to unmarshal handshake data: %s", err.Error())
+			if serr := a.SendHandshakeErrorResponse(); serr != nil {
+				logger.Log.Errorf("Error sending handshake error response: %s", err.Error())
+				return err
+			}
+
+			return fmt.Errorf("invalid handshake data. Id=%d", a.GetSession().ID())
+		}
+
+		if err := a.GetSession().ValidateHandshake(handshakeData); err != nil {
+			logger.Log.Errorf("Handshake validation failed: %s", err.Error())
+			if serr := a.SendHandshakeErrorResponse(); serr != nil {
+				logger.Log.Errorf("Error sending handshake error response: %s", err.Error())
+				return err
+			}
+
+			return fmt.Errorf("handshake validation failed: %w. SessionId=%d", err, a.GetSession().ID())
+		}
+
 		if err := a.SendHandshakeResponse(); err != nil {
 			logger.Log.Errorf("Error sending handshake response: %s", err.Error())
 			return err
 		}
 		logger.Log.Debugf("Session handshake Id=%d, Remote=%s", a.GetSession().ID(), a.RemoteAddr())
 
-		// Parse the json sent with the handshake by the client
-		handshakeData := &session.HandshakeData{}
-		err := json.Unmarshal(p.Data, handshakeData)
-		if err != nil {
-			a.SetStatus(constants.StatusClosed)
-			return fmt.Errorf("invalid handshake data. Id=%d", a.GetSession().ID())
-		}
-
-		for name, fun := range a.GetSession().GetHandshakeValidators() {
-			if err := fun(handshakeData); err != nil {
-				logger.Log.Error("Handshake validation failed '%s': %w", name, err)
-				a.SetStatus(constants.StatusClosed)
-				return fmt.Errorf("failed to run '%s' validator: %w. SessionId=%d", name, err, a.GetSession().ID())
-			}
-		}
-
 		a.GetSession().SetHandshakeData(handshakeData)
 		a.SetStatus(constants.StatusHandshake)
-		err = a.GetSession().Set(constants.IPVersionKey, a.IPVersion())
+		err := a.GetSession().Set(constants.IPVersionKey, a.IPVersion())
 		if err != nil {
 			logger.Log.Warnf("failed to save ip version on session: %q\n", err)
 		}

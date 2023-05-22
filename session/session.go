@@ -23,6 +23,7 @@ package session
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -156,6 +157,7 @@ type Session interface {
 	Clear()
 	SetHandshakeData(data *HandshakeData)
 	GetHandshakeData() *HandshakeData
+	ValidateHandshake(data *HandshakeData) error
 	GetHandshakeValidators() map[string]func(data *HandshakeData) error
 }
 
@@ -804,6 +806,16 @@ func (s *sessionImpl) GetHandshakeData() *HandshakeData {
 // GetHandshakeValidators return the handshake validators associated with the session.
 func (s *sessionImpl) GetHandshakeValidators() map[string]func(data *HandshakeData) error {
 	return s.handshakeValidators
+}
+
+func (s *sessionImpl) ValidateHandshake(data *HandshakeData) error {
+	for name, fun := range s.handshakeValidators {
+		if err := fun(data); err != nil {
+			return fmt.Errorf("failed to run '%s' validator: %w. SessionId=%d", name, err, s.ID())
+		}
+	}
+
+	return nil
 }
 
 func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
