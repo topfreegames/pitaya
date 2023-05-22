@@ -224,13 +224,14 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 		err := json.Unmarshal(p.Data, handshakeData)
 		if err != nil {
 			a.SetStatus(constants.StatusClosed)
-			return fmt.Errorf("Invalid handshake data. Id=%d", a.GetSession().ID())
+			return fmt.Errorf("invalid handshake data. Id=%d", a.GetSession().ID())
 		}
 
-		for _, fun := range a.GetSession().GetHandshakeValidators() {
+		for name, fun := range a.GetSession().GetHandshakeValidators() {
 			if err := fun(handshakeData); err != nil {
+				logger.Log.Error("Handshake validation failed '%s': %w", name, err)
 				a.SetStatus(constants.StatusClosed)
-				return fmt.Errorf("Handshake validation failed: %w. Id=%d", err, a.GetSession().ID())
+				return fmt.Errorf("failed to run '%s' validator: %w. SessionId=%d", name, err, a.GetSession().ID())
 			}
 		}
 
