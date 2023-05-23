@@ -84,7 +84,7 @@ func TestNewAgent(t *testing.T) {
 		func(typ packet.Type, d []byte) {
 			// cannot compare inside the expect because they are equivalent but not equal
 			assert.EqualValues(t, packet.Handshake, typ)
-		})
+		}).Times(2)
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
 		func(typ packet.Type, d []byte) {
 			assert.EqualValues(t, packet.Heartbeat, typ)

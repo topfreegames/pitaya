@@ -161,10 +161,10 @@ func (mr *MockSessionMockRecorder) GetHandshakeData() *gomock.Call {
 }
 
 // GetHandshakeValidators mocks base method.
-func (m *MockSession) GetHandshakeValidators() []func(*session.HandshakeData) error {
+func (m *MockSession) GetHandshakeValidators() map[string]func(*session.HandshakeData) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHandshakeValidators")
-	ret0, _ := ret[0].([]func(*session.HandshakeData) error)
+	ret0, _ := ret[0].(map[string]func(*session.HandshakeData) error)
 	return ret0
 }
 
@@ -657,6 +657,20 @@ func (mr *MockSessionMockRecorder) Uint8(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Uint8", reflect.TypeOf((*MockSession)(nil).Uint8), arg0)
 }
 
+// ValidateHandshake mocks base method.
+func (m *MockSession) ValidateHandshake(arg0 *session.HandshakeData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateHandshake", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateHandshake indicates an expected call of ValidateHandshake.
+func (mr *MockSessionMockRecorder) ValidateHandshake(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateHandshake", reflect.TypeOf((*MockSession)(nil).ValidateHandshake), arg0)
+}
+
 // Value mocks base method.
 func (m *MockSession) Value(arg0 string) interface{} {
 	m.ctrl.T.Helper()
@@ -695,15 +709,15 @@ func (m *MockSessionPool) EXPECT() *MockSessionPoolMockRecorder {
 }
 
 // AddHandshakeValidator mocks base method.
-func (m *MockSessionPool) AddHandshakeValidator(arg0 func(*session.HandshakeData) error) {
+func (m *MockSessionPool) AddHandshakeValidator(arg0 string, arg1 func(*session.HandshakeData) error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddHandshakeValidator", arg0)
+	m.ctrl.Call(m, "AddHandshakeValidator", arg0, arg1)
 }
 
 // AddHandshakeValidator indicates an expected call of AddHandshakeValidator.
-func (mr *MockSessionPoolMockRecorder) AddHandshakeValidator(arg0 interface{}) *gomock.Call {
+func (mr *MockSessionPoolMockRecorder) AddHandshakeValidator(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHandshakeValidator", reflect.TypeOf((*MockSessionPool)(nil).AddHandshakeValidator), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHandshakeValidator", reflect.TypeOf((*MockSessionPool)(nil).AddHandshakeValidator), arg0, arg1)
 }
 
 // CloseAll mocks base method.

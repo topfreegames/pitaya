@@ -1455,22 +1455,55 @@ func TestSessionPoolAddHandshakeValidator(t *testing.T) {
 
 	tables := []struct {
 		name       string
-		validators []func(data *HandshakeData) error
+		validators map[string]func(data *HandshakeData) error
 		result     int
 	}{
-		{"add validator", []func(data *HandshakeData) error{fa}, 1},
-		{"add many validators", []func(data *HandshakeData) error{fa, fb}, 2},
-		{"do not add duplicated validators", []func(data *HandshakeData) error{fa, fa}, 1},
+		{"add validator", map[string]func(data *HandshakeData) error{"fa": fa}, 1},
+		{"add many validators", map[string]func(data *HandshakeData) error{"fa": fa, "fb": fb}, 2},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			sessionPool := NewSessionPool()
-			for _, fun := range table.validators {
-				sessionPool.AddHandshakeValidator(fun)
+			for name, fun := range table.validators {
+				sessionPool.AddHandshakeValidator(name, fun)
 			}
 			session := sessionPool.NewSession(nil, false).(*sessionImpl)
 			validators := session.GetHandshakeValidators()
 			assert.Equal(t, len(validators), table.result)
+		})
+	}
+}
+
+func TestSessionValidateHandshake(t *testing.T) {
+	fa := func(data *HandshakeData) error { return nil }
+	fb := func(data *HandshakeData) error { return errors.New("error") }
+
+	tables := []struct {
+		name       string
+		validators map[string]func(data *HandshakeData) error
+		errStr     string
+	}{
+		{"one passing validator", map[string]func(data *HandshakeData) error{"fa": fa}, ""},
+		{"one failing validator", map[string]func(data *HandshakeData) error{"fb": fb}, "failed to run 'fb'"},
+		{"many validators all passing", map[string]func(data *HandshakeData) error{"fa": fa, "fb": fa}, ""},
+		{"many validators one failing", map[string]func(data *HandshakeData) error{"fa": fa, "fb": fb}, "failed to run 'fb'"},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			sessionPool := NewSessionPool()
+			for name, fun := range table.validators {
+				sessionPool.AddHandshakeValidator(name, fun)
+			}
+			session := sessionPool.NewSession(nil, false).(*sessionImpl)
+			err := session.ValidateHandshake(nil)
+
+			if table.errStr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), table.errStr)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
