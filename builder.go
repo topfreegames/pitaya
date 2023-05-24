@@ -25,6 +25,7 @@ import (
 // Builder holds dependency instances for a pitaya App
 type Builder struct {
 	acceptors        []acceptor.Acceptor
+	postBuildHooks   []func(app Pitaya)
 	Config           config.BuilderConfig
 	DieChan          chan bool
 	PacketDecoder    codec.PacketDecoder
@@ -46,6 +47,8 @@ type Builder struct {
 
 // PitayaBuilder Builder interface
 type PitayaBuilder interface {
+	// AddPostBuildHook adds a post-build hook to the builder, a function receiving a Pitaya instance as parameter.
+	AddPostBuildHook(hook func(app Pitaya))
 	Build() Pitaya
 }
 
@@ -185,6 +188,7 @@ func NewBuilder(isFrontend bool,
 
 	return &Builder{
 		acceptors:        []acceptor.Acceptor{},
+		postBuildHooks:   make([]func(app Pitaya), 0),
 		Config:           config,
 		DieChan:          dieChan,
 		PacketDecoder:    codec.NewPomeloPacketDecoder(),
@@ -212,6 +216,11 @@ func (builder *Builder) AddAcceptor(ac acceptor.Acceptor) {
 		return
 	}
 	builder.acceptors = append(builder.acceptors, ac)
+}
+
+// AddPostBuildHook adds a post-build hook to the builder, a function receiving a Pitaya instance as parameter.
+func (builder *Builder) AddPostBuildHook(hook func(app Pitaya)) {
+	builder.postBuildHooks = append(builder.postBuildHooks, hook)
 }
 
 // Build returns a valid App instance
@@ -270,7 +279,7 @@ func (builder *Builder) Build() Pitaya {
 		handlerPool,
 	)
 
-	return NewApp(
+	app := NewApp(
 		builder.ServerMode,
 		builder.Serializer,
 		builder.acceptors,
@@ -288,6 +297,12 @@ func (builder *Builder) Build() Pitaya {
 		builder.MetricsReporters,
 		builder.Config.Pitaya,
 	)
+
+	for _, postBuildHook := range builder.postBuildHooks {
+		postBuildHook(app)
+	}
+
+	return app
 }
 
 // NewDefaultApp returns a default pitaya app instance
