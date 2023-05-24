@@ -47,7 +47,11 @@ The application can define a dictionary of compressed routes before starting, th
 
 ### Handshake
 
-The first operation that happens when a client connects is the handshake. The handshake is initiated by the client, who sends informations about the client, such as platform, version of the client library, and others, and can also send user data in this step. This data is stored in the client's session and can be accessed later. The server replies with heartbeat interval, name of the serializer and the dictionary of compressed routes.
+The first operation that happens when a client connects is the handshake. The handshake is initiated by the client, who sends information about the client, such as platform, version of the client library, and others, and can also send user data in this step. This data is stored in the client's session and can be accessed later. The server replies with heartbeat interval, name of the serializer and the dictionary of compressed routes.
+
+In order to enforce specific requirements, validations can be performed on the data submitted by the client. These validations server as a means to verify that the client is adherent to predefined server rules. By that if the client does not comply with the specified criteria, access to the server capabilities can be restricted.
+
+You can find more about the handshake validation [here](./handshake-validators.md).
 
 ### Remote service
 
