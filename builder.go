@@ -225,22 +225,6 @@ func (builder *Builder) AddPostBuildHook(hook func(app Pitaya)) {
 	builder.postBuildHooks = append(builder.postBuildHooks, hook)
 }
 
-func (builder *Builder) SetPacketDecoder(pd codec.PacketDecoder) {
-	builder.PacketDecoder = pd
-}
-
-func (builder *Builder) SetPacketEncoder(pe codec.PacketEncoder) {
-	builder.PacketEncoder = pe
-}
-
-func (builder *Builder) SetMessageDecoder(md message.Decoder) {
-	builder.MessageDecoder = md
-}
-
-func (builder *Builder) SetMessageEncoder(me message.Encoder) {
-	builder.MessageEncoder = me
-}
-
 // Build returns a valid App instance
 func (builder *Builder) Build() Pitaya {
 	handlerPool := service.NewHandlerPool()
