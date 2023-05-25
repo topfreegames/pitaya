@@ -193,6 +193,14 @@ func (ns *NatsRPCClient) Call(
 	}
 	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
 	if err != nil {
+		if err == nats.ErrTimeout {
+			err = errors.NewError(constants.ErrRPCRequestTimeout, "PIT-408", map[string]string{
+				"timeout": ns.reqTimeout.String(),
+				"route":   route.String(),
+				"server":  ns.server.ID,
+				"peer.id": server.ID,
+			})
+		}
 		return nil, err
 	}
 

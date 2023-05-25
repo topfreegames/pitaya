@@ -5,34 +5,35 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockSerializer is a mock of Serializer interface
+// MockSerializer is a mock of Serializer interface.
 type MockSerializer struct {
 	ctrl     *gomock.Controller
 	recorder *MockSerializerMockRecorder
 }
 
-// MockSerializerMockRecorder is the mock recorder for MockSerializer
+// MockSerializerMockRecorder is the mock recorder for MockSerializer.
 type MockSerializerMockRecorder struct {
 	mock *MockSerializer
 }
 
-// NewMockSerializer creates a new mock instance
+// NewMockSerializer creates a new mock instance.
 func NewMockSerializer(ctrl *gomock.Controller) *MockSerializer {
 	mock := &MockSerializer{ctrl: ctrl}
 	mock.recorder = &MockSerializerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSerializer) EXPECT() *MockSerializerMockRecorder {
 	return m.recorder
 }
 
-// GetName mocks base method
+// GetName mocks base method.
 func (m *MockSerializer) GetName() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetName")
@@ -40,13 +41,13 @@ func (m *MockSerializer) GetName() string {
 	return ret0
 }
 
-// GetName indicates an expected call of GetName
+// GetName indicates an expected call of GetName.
 func (mr *MockSerializerMockRecorder) GetName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockSerializer)(nil).GetName))
 }
 
-// Marshal mocks base method
+// Marshal mocks base method.
 func (m *MockSerializer) Marshal(arg0 interface{}) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Marshal", arg0)
@@ -55,13 +56,13 @@ func (m *MockSerializer) Marshal(arg0 interface{}) ([]byte, error) {
 	return ret0, ret1
 }
 
-// Marshal indicates an expected call of Marshal
+// Marshal indicates an expected call of Marshal.
 func (mr *MockSerializerMockRecorder) Marshal(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Marshal", reflect.TypeOf((*MockSerializer)(nil).Marshal), arg0)
 }
 
-// Unmarshal mocks base method
+// Unmarshal mocks base method.
 func (m *MockSerializer) Unmarshal(arg0 []byte, arg1 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unmarshal", arg0, arg1)
@@ -69,7 +70,7 @@ func (m *MockSerializer) Unmarshal(arg0 []byte, arg1 interface{}) error {
 	return ret0
 }
 
-// Unmarshal indicates an expected call of Unmarshal
+// Unmarshal indicates an expected call of Unmarshal.
 func (mr *MockSerializerMockRecorder) Unmarshal(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*MockSerializer)(nil).Unmarshal), arg0, arg1)

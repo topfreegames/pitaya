@@ -1,8 +1,23 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
+ifeq ($(OS), Windows_NT)
+	BIN := pitaya-cli.exe
+	MKFOLDER := if not exist "build" mkdir build
+	GREP_CMD := findstr /V
+else
+	BIN := pitaya-cli
+	MKFOLDER := mkdir -p build
+	GREP_CMD := grep -v
+endif
+
+TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark`
 
 setup: init-submodules
 	@go get ./...
 
+build-cli:
+	@$(MKFOLDER)
+	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/pitaya-cli
+	@echo "build pitaya-cli at ./build/$(BIN)"
+ 
 init-submodules:
 	@git submodule init
 
@@ -14,8 +29,18 @@ setup-protobuf-macos:
 	@brew install protobuf
 	@go get github.com/golang/protobuf/protoc-gen-go
 
+run-jaeger-aio:
+	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
+	@echo "Access jaeger UI @ http://localhost:16686"
+
 run-chat-example:
 	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
+
+run-cluster-example-frontend-tracing:
+	@PITAYA_METRICS_PROMETHEUS_PORT=9090 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-frontend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go
+
+run-cluster-example-backend-tracing:
+	@PITAYA_METRICS_PROMETHEUS_PORT=9091 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-backend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
@@ -73,6 +98,9 @@ ensure-e2e-deps-grpc:
 
 kill-testing-deps:
 	@cd ./examples/testing && docker-compose down; true
+
+kill-jaeger:
+	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
 e2e-test: e2e-test-nats e2e-test-grpc
 

@@ -65,6 +65,7 @@ var (
 	ErrOnCloseBackend                 = errors.New("onclose callbacks are not allowed on backend servers")
 	ErrProtodescriptor                = errors.New("failed to get protobuf message descriptor")
 	ErrPushingToUsers                 = errors.New("failed to push message to users, check array with failed uids")
+	ErrRPCRequestTimeout              = errors.New("rpc client: request timeout")
 	ErrRPCClientNotInitialized        = errors.New("RPC client is not running")
 	ErrRPCJobAlreadyRegistered        = errors.New("rpc job was already registered")
 	ErrRPCLocal                       = errors.New("RPC must be to a different server type")

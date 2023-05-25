@@ -401,7 +401,7 @@ func (ns *NatsRPCServer) reportMetrics() {
 			}
 
 			// userpushch
-			userPushChanCapacity := ns.messagesBufferSize - len(ns.userPushCh)
+			userPushChanCapacity := ns.pushBufferSize - len(ns.userPushCh)
 			if userPushChanCapacity == 0 {
 				logger.Log.Warn("userPushChan is at maximum capacity")
 			}

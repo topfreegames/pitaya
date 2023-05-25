@@ -142,32 +142,29 @@ func (r *RemoteService) AddRemoteBindingListener(bindingListener cluster.RemoteB
 func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.Response, error) {
 	c, err := util.GetContextFromRequest(req, r.server.ID)
 	c = util.StartSpanFromRequest(c, r.server.ID, req.GetMsg().GetRoute())
-	cc, cancel := context.WithCancel(c)
 	defer tracing.FinishSpan(c, err)
 	var res *protos.Response
 
 	if err == nil {
 		result := make(chan *protos.Response, 1)
 		go func() {
-			result <- processRemoteMessage(cc, req, r)
+			result <- processRemoteMessage(ctx, req, r)
 		}()
-
-		// Set a timeout for processing the call
-		timeout := time.Duration(300) * time.Second
 
 		reqTimeout := pcontext.GetFromPropagateCtx(ctx, constants.RequestTimeout)
 		if reqTimeout != nil {
+			var timeout time.Duration
 			timeout, err = time.ParseDuration(reqTimeout.(string))
-			if err != nil {
-				logger.Log.Errorf("Error while parsing timeout duration: %s", err.Error())
+			if err == nil {
+				select {
+				case <-time.After(timeout):
+					err = constants.ErrRPCRequestTimeout
+				case res := <-result:
+					return res, nil
+				}
 			}
-		}
-
-		select {
-		case <-time.After(timeout):
-			err = fmt.Errorf("Timed out calling route %s after %s .", req.GetMsg().GetRoute(), timeout)
-			cancel()
-		case res := <-result:
+		} else {
+			res := <-result
 			return res, nil
 		}
 	}
