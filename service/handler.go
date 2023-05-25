@@ -71,6 +71,7 @@ type (
 		agentFactory     agent.AgentFactory
 		handlerPool      *HandlerPool
 		handlers         map[string]*component.Handler // all handler method
+		messageDecoder   message.Decoder
 	}
 
 	unhandledMessage struct {
@@ -93,6 +94,7 @@ func NewHandlerService(
 	metricsReporters []metrics.Reporter,
 	handlerHooks *pipeline.HandlerHooks,
 	handlerPool *HandlerPool,
+	messagesDecoder message.Decoder,
 ) *HandlerService {
 	h := &HandlerService{
 		services:         make(map[string]*component.Service),
@@ -106,6 +108,7 @@ func NewHandlerService(
 		metricsReporters: metricsReporters,
 		handlerPool:      handlerPool,
 		handlers:         make(map[string]*component.Handler),
+		messageDecoder:   messagesDecoder,
 	}
 
 	h.handlerHooks = handlerHooks
@@ -246,7 +249,8 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 				a.RemoteAddr().String())
 		}
 
-		msg, err := message.Decode(p.Data)
+		//msg, err := message.Decode(p.Data)
+		msg, err := h.messageDecoder.Decode(p.Data)
 		if err != nil {
 			return err
 		}

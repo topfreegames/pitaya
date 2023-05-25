@@ -97,14 +97,15 @@ func TestNewHandlerService(t *testing.T) {
 	svc := NewHandlerService(
 		packetDecoder,
 		serializer,
-		9, 8,
+		9,
+		8,
 		sv,
 		remoteSvc,
 		mockAgentFactory,
 		mockMetricsReporters,
 		handlerHooks,
 		handlerPool,
-	)
+		nil)
 
 	assert.NotNil(t, svc)
 	assert.Equal(t, packetDecoder, svc.decoder)
@@ -121,7 +122,7 @@ func TestNewHandlerService(t *testing.T) {
 
 func TestHandlerServiceRegister(t *testing.T) {
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool)
+	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	assert.Len(t, svc.services, 1)
@@ -141,7 +142,7 @@ func TestHandlerServiceRegister(t *testing.T) {
 
 func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool)
+	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	err = svc.Register(&MyComp{}, []component.Option{})
@@ -150,7 +151,7 @@ func TestHandlerServiceRegisterFailsIfRegisterTwice(t *testing.T) {
 
 func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool)
+	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool, nil)
 	err := svc.Register(&NoHandlerRemoteComp{}, []component.Option{})
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of handler type"), err)
 }
@@ -174,7 +175,7 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 
 			sv := &cluster.Server{}
 			handlerPool := NewHandlerPool()
-			svc := NewHandlerService(nil, nil, 1, 1, sv, &RemoteService{}, nil, nil, nil, handlerPool)
+			svc := NewHandlerService(nil, nil, 1, 1, sv, &RemoteService{}, nil, nil, nil, handlerPool, nil)
 
 			mockSession := mocks.NewMockSession(ctrl)
 			mockSession.EXPECT().UID().Return("uid").Times(1)
@@ -231,7 +232,7 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 			mockAgent := agentmocks.NewMockAgent(ctrl)
 			mockAgent.EXPECT().GetSession().Return(mockSession).AnyTimes()
 
-			svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, pipeline.NewHandlerHooks(), handlerPool)
+			svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, pipeline.NewHandlerHooks(), handlerPool, nil)
 
 			ctx := context.Background()
 
@@ -285,7 +286,7 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 			}
 
 			handlerPool := NewHandlerPool()
-			svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, pipeline.NewHandlerHooks(), handlerPool)
+			svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, pipeline.NewHandlerHooks(), handlerPool, nil)
 			err := svc.processPacket(mockAgent, table.packet)
 			if table.errStr == "" {
 				assert.Nil(t, err)
@@ -305,7 +306,7 @@ func TestHandlerServiceProcessPacketHandshakeAck(t *testing.T) {
 	mockSession.EXPECT().ID().Return(int64(1)).Times(1)
 
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, nil, handlerPool)
+	svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, nil, handlerPool, nil)
 
 	mockAgent := agentmocks.NewMockAgent(ctrl)
 	mockAgent.EXPECT().GetSession().Return(mockSession).Times(1)
@@ -325,7 +326,7 @@ func TestHandlerServiceProcessPacketHeartbeat(t *testing.T) {
 	mockAgent.EXPECT().SetLastAt()
 
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, nil, handlerPool)
+	svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, nil, handlerPool, nil)
 
 	err := svc.processPacket(mockAgent, &packet.Packet{Type: packet.Heartbeat})
 	assert.NoError(t, err)
@@ -370,7 +371,7 @@ func TestHandlerServiceProcessPacketData(t *testing.T) {
 			}
 
 			handlerPool := NewHandlerPool()
-			svc := NewHandlerService(nil, nil, 1, 1, &cluster.Server{}, nil, nil, nil, nil, handlerPool)
+			svc := NewHandlerService(nil, nil, 1, 1, &cluster.Server{}, nil, nil, nil, nil, handlerPool, nil)
 			err := svc.processPacket(mockAgent, table.packet)
 			if table.errStr != "" {
 				assert.Contains(t, err.Error(), table.errStr)
@@ -434,6 +435,6 @@ func TestHandlerServiceHandle(t *testing.T) {
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	handlerPool := NewHandlerPool()
-	svc := NewHandlerService(packetDecoder, mockSerializer, 1, 1, nil, nil, mockAgentFactory, nil, pipeline.NewHandlerHooks(), handlerPool)
+	svc := NewHandlerService(packetDecoder, mockSerializer, 1, 1, nil, nil, mockAgentFactory, nil, pipeline.NewHandlerHooks(), handlerPool, nil)
 	svc.Handle(mockConn)
 }

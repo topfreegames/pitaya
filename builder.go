@@ -29,7 +29,8 @@ type Builder struct {
 	DieChan          chan bool
 	PacketDecoder    codec.PacketDecoder
 	PacketEncoder    codec.PacketEncoder
-	MessageEncoder   *message.MessagesEncoder
+	MessageEncoder   message.Encoder
+	MessageDecoder   message.Decoder
 	Serializer       serialize.Serializer
 	Router           *router.Router
 	RPCClient        cluster.RPCClient
@@ -190,6 +191,7 @@ func NewBuilder(isFrontend bool,
 		PacketDecoder:    codec.NewPomeloPacketDecoder(),
 		PacketEncoder:    codec.NewPomeloPacketEncoder(),
 		MessageEncoder:   message.NewMessagesEncoder(config.Pitaya.Handler.Messages.Compression),
+		MessageDecoder:   message.NewMessagesDecoder(config.Pitaya.Handler.Messages.Compression),
 		Serializer:       json.NewSerializer(),
 		Router:           router.New(),
 		RPCClient:        rpcClient,
@@ -212,6 +214,22 @@ func (builder *Builder) AddAcceptor(ac acceptor.Acceptor) {
 		return
 	}
 	builder.acceptors = append(builder.acceptors, ac)
+}
+
+func (builder *Builder) SetPacketDecoder(pd codec.PacketDecoder) {
+	builder.PacketDecoder = pd
+}
+
+func (builder *Builder) SetPacketEncoder(pe codec.PacketEncoder) {
+	builder.PacketEncoder = pe
+}
+
+func (builder *Builder) SetMessageDecoder(md message.Decoder) {
+	builder.MessageDecoder = md
+}
+
+func (builder *Builder) SetMessageEncoder(me message.Encoder) {
+	builder.MessageEncoder = me
 }
 
 // Build returns a valid App instance
@@ -268,6 +286,7 @@ func (builder *Builder) Build() Pitaya {
 		builder.MetricsReporters,
 		builder.HandlerHooks,
 		handlerPool,
+		builder.MessageDecoder,
 	)
 
 	return NewApp(
