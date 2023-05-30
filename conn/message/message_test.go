@@ -39,15 +39,15 @@ var encodeTables = map[string]struct {
 	"test_wrong_type": {&Message{Type: 0xff, Data: []byte{}}, nil, false, 0x0, ErrWrongMessageType},
 
 	"test_request_type": {&Message{Type: Request, Route: "a", Data: []uint8{}}, nil, false, 0x0, nil},
-	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, compressed: true},
+	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_notify_type": {&Message{Type: Notify, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
-	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, compressed: true},
+	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_push_type": {&Message{Type: Push, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
-	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, compressed: true},
+	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_reponse_type":           {&Message{Type: Response, Data: []byte{}}, nil, false, 0x0, nil},
@@ -100,15 +100,15 @@ var decodeTables = map[string]struct {
 	"test_wrong_type": {&Message{Type: 0xff, Data: []byte{}}, nil, false, 0x0, ErrWrongMessageType},
 
 	"test_request_type": {&Message{Type: Request, Route: "a", Data: []uint8{}}, nil, false, 0x0, nil},
-	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, compressed: true},
+	"test_request_type_compressed": {&Message{Type: Request, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_notify_type": {&Message{Type: Notify, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
-	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, compressed: true},
+	"test_notify_type_compressed": {&Message{Type: Notify, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_push_type": {&Message{Type: Push, Route: "a", Data: []byte{}}, nil, false, 0x0, nil},
-	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, compressed: true},
+	"test_push_type_compressed": {&Message{Type: Push, Route: "a", Data: []byte{}, Compressed: true},
 		map[string]uint16{"a": 1}, false, 0x0, nil},
 
 	"test_reponse_type":           {&Message{Type: Response, Data: []byte{}}, nil, false, 0x0, nil},
