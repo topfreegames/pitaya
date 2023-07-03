@@ -442,7 +442,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 	// if code running on frontend server
 	if s.IsFrontend {
 		// If a session with the same UID already exists in this frontend server, close it
-		if val, ok := sessionsByUID.Load(uid); ok {
+		if val, ok := s.pool.sessionsByUID.Load(uid); ok {
 			val.(Session).Close()
 		}
 		s.pool.sessionsByUID.Store(uid, s)
@@ -485,7 +485,7 @@ func (s *sessionImpl) Close() {
 	s.pool.sessionsByID.Delete(s.ID())
 	// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
 	if val, ok := s.pool.sessionsByUID.Load(s.UID()); ok {
-		if (val.(Session)).id == s.ID() {
+		if (val.(Session)).ID() == s.ID() {
 			s.pool.sessionsByUID.Delete(s.UID())
 		}
 	}
