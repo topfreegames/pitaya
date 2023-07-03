@@ -441,7 +441,11 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 
 	// if code running on frontend server
 	if s.IsFrontend {
-		s.pool.sessionsByUID.Store(uid, s)
+		// If a session with the same UID already exists in this frontend server, close it
+		if val, ok := sessionsByUID.Load(uid); ok {
+			val.(*Session).Close()
+		}
+		sessionsByUID.Store(uid, s)
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
 		// is not the frontend server that received the user request
@@ -476,10 +480,15 @@ func (s *sessionImpl) OnClose(c func()) error {
 
 // Close terminates current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
-func (s *sessionImpl) Close() {
-	atomic.AddInt64(&s.pool.SessionCount, -1)
-	s.pool.sessionsByID.Delete(s.ID())
-	s.pool.sessionsByUID.Delete(s.UID())
+func (s *Session) Close() {
+	atomic.AddInt64(&SessionCount, -1)
+	sessionsByID.Delete(s.ID())
+	// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
+	if val, ok := sessionsByUID.Load(s.UID()); ok {
+		if (val.(*Session)).id == s.ID() {
+			sessionsByUID.Delete(s.UID())
+		}
+	}
 	// TODO: this logic should be moved to nats rpc server
 	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
