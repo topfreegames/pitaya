@@ -37,7 +37,7 @@ import (
 )
 
 var DefaultApp Pitaya
-var Builder Builder
+var DefaultBuilder Builder
 
 // Configure configures the app
 func Configure(
@@ -47,7 +47,7 @@ func Configure(
 	serverMetadata map[string]string,
 	cfgs ...*viper.Viper,
 ) {
-	Builder := NewBuilderWithConfigs(
+	DefaultBuilder := NewBuilderWithConfigs(
 		isFrontend,
 		serverType,
 		serverMode,
@@ -58,8 +58,8 @@ func Configure(
 }
 
 func Build() {
-	DefaultApp = Builder.Build()
-	session.DefaultSessionPool = builder.SessionPool
+	DefaultApp = DefaultBuilder.Build()
+	session.DefaultSessionPool = DefaultBuilder.SessionPool
 }
 
 func GetDieChan() chan bool {
