@@ -47,14 +47,13 @@ func Configure(
 	serverMetadata map[string]string,
 	cfgs ...*viper.Viper,
 ) {
-	DefaultBuilder := NewBuilderWithConfigs(
+	DefaultBuilder = NewBuilderWithConfigs(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
 		config.NewConfig(cfgs...),
 	)
-	session.DefaultSessionPool = builder.SessionPool
 }
 
 func Build() {
