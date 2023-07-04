@@ -37,6 +37,7 @@ import (
 )
 
 var DefaultApp Pitaya
+var Builder Builder
 
 // Configure configures the app
 func Configure(
@@ -46,14 +47,18 @@ func Configure(
 	serverMetadata map[string]string,
 	cfgs ...*viper.Viper,
 ) {
-	builder := NewBuilderWithConfigs(
+	Builder := NewBuilderWithConfigs(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
 		config.NewConfig(cfgs...),
 	)
-	DefaultApp = builder.Build()
+	session.DefaultSessionPool = builder.SessionPool
+}
+
+func Build() {
+	DefaultApp = Builder.Build()
 	session.DefaultSessionPool = builder.SessionPool
 }
 
