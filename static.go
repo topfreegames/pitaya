@@ -37,7 +37,7 @@ import (
 )
 
 var DefaultApp Pitaya
-var DefaultBuilder Builder
+var DefaultBuilder *Builder
 
 // Configure configures the app
 func Configure(
