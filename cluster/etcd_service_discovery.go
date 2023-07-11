@@ -165,7 +165,7 @@ func (sd *etcdServiceDiscovery) watchLeaseChan(c <-chan *clientv3.LeaseKeepAlive
 
 // renewLease reestablishes connection with etcd
 func (sd *etcdServiceDiscovery) renewLease() error {
-	c := make(chan error)
+	c := make(chan error, 1)
 	go func() {
 		defer close(c)
 		logger.Log.Infof("waiting for etcd lease")
