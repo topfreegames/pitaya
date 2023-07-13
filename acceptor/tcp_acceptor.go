@@ -25,6 +25,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"fmt"
 
 	"github.com/mailgun/proxyproto"
 	"github.com/topfreegames/pitaya/v2/conn/codec"
@@ -79,11 +80,11 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 	certificates := []tls.Certificate{}
 	if len(certs) != 2 && len(certs) != 0 {
-		panic(constants.ErrInvalidCertificates)
-	} else if len(certs) == 2 {
+		panic(constants.ErrIncorrectNumberOfCertificates)
+	} else if ( len(certs) == 2 && certs[0] != "" && certs[1] != "") {
 		cert, err := tls.LoadX509KeyPair(certs[0], certs[1])
 		if err != nil {
-			panic(constants.ErrInvalidCertificates)
+			panic(fmt.Errorf("%w: %w",constants.ErrInvalidCertificates,err))
 		}
 		certificates = append(certificates, cert)
 	}
