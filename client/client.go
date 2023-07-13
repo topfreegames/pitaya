@@ -79,9 +79,7 @@ type Client struct {
 	closeChan           chan struct{}
 	nextID              uint32
 	messageEncoder      message.Encoder
-	messageDecoder      message.Decoder
 	clientHandshakeData *session.HandshakeData
-	BeforeClose         func()
 }
 
 // MsgChannel return the incoming message channel
@@ -95,7 +93,7 @@ func (c *Client) ConnectedStatus() bool {
 }
 
 // New returns a new client
-func New(logLevel logrus.Level, options ...Options) *Client {
+func New(logLevel logrus.Level, requestTimeout ...time.Duration) *Client {
 	l := logrus.New()
 	l.Formatter = &logrus.TextFormatter{}
 	l.SetLevel(logLevel)
@@ -103,11 +101,11 @@ func New(logLevel logrus.Level, options ...Options) *Client {
 	logger.Log = logruswrapper.NewWithFieldLogger(l)
 
 	reqTimeout := 5 * time.Second
-	//if len(requestTimeout) > 0 {
-	//	reqTimeout = requestTimeout[0]
-	//}
+	if len(requestTimeout) > 0 {
+		reqTimeout = requestTimeout[0]
+	}
 
-	c := &Client{
+	return &Client{
 		Connected:       false,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
@@ -130,32 +128,6 @@ func New(logLevel logrus.Level, options ...Options) *Client {
 			},
 		},
 	}
-	for _, op := range options {
-		op(c)
-	}
-	return c
-}
-
-type Options func(client *Client)
-
-func WithPacketCodec(encoder codec.PacketEncoder, decoder codec.PacketDecoder) Options {
-	return func(c *Client) {
-		c.packetEncoder = encoder
-		c.packetDecoder = decoder
-	}
-}
-
-func WithMessageCodec(encoder message.Encoder, decoder message.Decoder) Options {
-	return func(client *Client) {
-		client.messageDecoder = decoder
-		client.messageEncoder = encoder
-	}
-}
-
-func WithRequestTimeout(timeout time.Duration) Options {
-	return func(client *Client) {
-		client.requestTimeout = timeout
-	}
 }
 
 // SetClientHandshakeData sets the data to send inside handshake
@@ -174,9 +146,7 @@ func (c *Client) sendHandshakeRequest() error {
 		return err
 	}
 
-	logger.Log.Debug("start handshake")
 	_, err = c.conn.Write(p)
-	logger.Log.Debug("end handshake")
 	return err
 }
 
@@ -318,8 +288,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	}
 	totalProcessed := 0
 	for _, p := range packets {
-		//totalProcessed += codec.HeadLength + p.Length
-		totalProcessed += 3 + p.Length
+		totalProcessed += codec.HeadLength + p.Length
 	}
 	buf.Next(totalProcessed)
 
@@ -388,7 +357,6 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 	c.conn = conn
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
-	logger.Log.Debug("conn established")
 	if err = c.handleHandshake(); err != nil {
 		return err
 	}
@@ -468,12 +436,11 @@ func (c *Client) buildPacket(msg message.Message) ([]byte, error) {
 func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint, error) {
 	// TODO mount msg and encode
 	m := message.Message{
-		Type:       msgType,
-		ID:         uint(atomic.AddUint32(&c.nextID, 1)),
-		Route:      route, //message.GetDictRoute(route),
-		Data:       data,
-		Err:        false,
-		Compressed: true,
+		Type:  msgType,
+		ID:    uint(atomic.AddUint32(&c.nextID, 1)),
+		Route: route,
+		Data:  data,
+		Err:   false,
 	}
 	p, err := c.buildPacket(m)
 	if msgType == message.Request {
