@@ -6,112 +6,112 @@ import (
 )
 
 type logrusImpl struct {
-	Impl logrus.FieldLogger
+	impl logrus.FieldLogger
 }
 
-// New returns a new interfaces.Logger Implementation based on logrus
+// New returns a new interfaces.Logger implementation based on logrus
 func New() interfaces.Logger {
 	log := logrus.New()
 	return NewWithLogger(log)
 }
 
-// NewWithEntry returns a new interfaces.Logger Implementation based on a provided logrus entry instance
+// NewWithEntry returns a new interfaces.Logger implementation based on a provided logrus entry instance
 // Deprecated: NewWithEntry is deprecated.
 func NewWithEntry(logger *logrus.Entry) interfaces.Logger {
-	return &logrusImpl{Impl: logger}
+	return &logrusImpl{impl: logger}
 }
 
-// NewWithLogger returns a new interfaces.Logger Implementation based on a provided logrus instance
+// NewWithLogger returns a new interfaces.Logger implementation based on a provided logrus instance
 // Deprecated: NewWithLogger is deprecated.
 func NewWithLogger(logger *logrus.Logger) interfaces.Logger {
-	return &logrusImpl{Impl: logrus.NewEntry(logger)}
+	return &logrusImpl{impl: logrus.NewEntry(logger)}
 }
 
-// NewWithFieldLogger returns a new interfaces.Logger Implementation based on a provided logrus instance
+// NewWithFieldLogger returns a new interfaces.Logger implementation based on a provided logrus instance
 func NewWithFieldLogger(logger logrus.FieldLogger) interfaces.Logger {
-	return &logrusImpl{Impl: logger}
+	return &logrusImpl{impl: logger}
 }
 
 func (l *logrusImpl) Fatal(format ...interface{}) {
-	l.Impl.Fatal(format...)
+	l.impl.Fatal(format...)
 }
 
 func (l *logrusImpl) Fatalf(format string, args ...interface{}) {
-	l.Impl.Fatalf(format, args...)
+	l.impl.Fatalf(format, args...)
 }
 
 func (l *logrusImpl) Fatalln(args ...interface{}) {
-	l.Impl.Fatalln(args...)
+	l.impl.Fatalln(args...)
 }
 
 func (l *logrusImpl) Debug(args ...interface{}) {
-	l.Impl.Debug(args...)
+	l.impl.Debug(args...)
 }
 
 func (l *logrusImpl) Debugf(format string, args ...interface{}) {
-	l.Impl.Debugf(format, args...)
+	l.impl.Debugf(format, args...)
 }
 
 func (l *logrusImpl) Debugln(args ...interface{}) {
-	l.Impl.Debugln(args...)
+	l.impl.Debugln(args...)
 }
 
 func (l *logrusImpl) Error(args ...interface{}) {
-	l.Impl.Error(args...)
+	l.impl.Error(args...)
 }
 
 func (l *logrusImpl) Errorf(format string, args ...interface{}) {
-	l.Impl.Errorf(format, args...)
+	l.impl.Errorf(format, args...)
 }
 
 func (l *logrusImpl) Errorln(args ...interface{}) {
-	l.Impl.Errorln(args...)
+	l.impl.Errorln(args...)
 }
 
 func (l *logrusImpl) Info(args ...interface{}) {
-	l.Impl.Info(args...)
+	l.impl.Info(args...)
 }
 
 func (l *logrusImpl) Infof(format string, args ...interface{}) {
-	l.Impl.Infof(format, args...)
+	l.impl.Infof(format, args...)
 }
 
 func (l *logrusImpl) Infoln(args ...interface{}) {
-	l.Impl.Infoln(args...)
+	l.impl.Infoln(args...)
 }
 
 func (l *logrusImpl) Warn(args ...interface{}) {
-	l.Impl.Warn(args...)
+	l.impl.Warn(args...)
 }
 
 func (l *logrusImpl) Warnf(format string, args ...interface{}) {
-	l.Impl.Warnf(format, args...)
+	l.impl.Warnf(format, args...)
 }
 
 func (l *logrusImpl) Warnln(args ...interface{}) {
-	l.Impl.Warnln(args...)
+	l.impl.Warnln(args...)
 }
 
 func (l *logrusImpl) Panic(args ...interface{}) {
-	l.Impl.Panic(args...)
+	l.impl.Panic(args...)
 }
 
 func (l *logrusImpl) Panicf(format string, args ...interface{}) {
-	l.Impl.Panicf(format, args...)
+	l.impl.Panicf(format, args...)
 }
 
 func (l *logrusImpl) Panicln(args ...interface{}) {
-	l.Impl.Panicln(args...)
+	l.impl.Panicln(args...)
 }
 
 func (l *logrusImpl) WithFields(fields map[string]interface{}) interfaces.Logger {
-	return &logrusImpl{Impl: l.Impl.WithFields(fields)}
+	return &logrusImpl{impl: l.impl.WithFields(fields)}
 }
 
 func (l *logrusImpl) WithField(key string, value interface{}) interfaces.Logger {
-	return &logrusImpl{Impl: l.Impl.WithField(key, value)}
+	return &logrusImpl{impl: l.impl.WithField(key, value)}
 }
 
 func (l *logrusImpl) WithError(err error) interfaces.Logger {
-	return &logrusImpl{Impl: l.Impl.WithError(err)}
+	return &logrusImpl{impl: l.impl.WithError(err)}
 }
