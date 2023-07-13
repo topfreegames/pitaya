@@ -208,6 +208,15 @@ func NewApp(
 	return app
 }
 
+// AddAcceptor adds a new acceptor to app
+func (app *App) AddAcceptor(ac acceptor.Acceptor) {
+	if !app.server.Frontend {
+		logger.Log.Error("tried to add an acceptor to a backend server, skipping")
+		return
+	}
+	app.acceptors = append(app.acceptors, ac)
+}
+
 // GetDieChan gets the channel that the app sinalizes when its going to die
 func (app *App) GetDieChan() chan bool {
 	return app.dieChan

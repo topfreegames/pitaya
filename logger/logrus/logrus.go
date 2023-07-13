@@ -6,7 +6,7 @@ import (
 )
 
 type logrusImpl struct {
-	impl logrus.FieldLogger
+	Impl logrus.FieldLogger
 }
 
 // New returns a new interfaces.Logger implementation based on logrus

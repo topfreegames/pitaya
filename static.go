@@ -220,3 +220,7 @@ func RegisterModuleBefore(module interfaces.Module, name string) error {
 func GetModule(name string) (interfaces.Module, error) {
 	return DefaultApp.GetModule(name)
 }
+
+func AddAcceptor(ac acceptor.Acceptor) {
+        return DefaultApp.AddAcceptor(ac)
+}
