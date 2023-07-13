@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+        acceptor "github.com/topfreegames/pitaya/v2/acceptor"
 	cluster "github.com/topfreegames/pitaya/v2/cluster"
 	component "github.com/topfreegames/pitaya/v2/component"
 	config "github.com/topfreegames/pitaya/v2/config"
@@ -624,3 +625,16 @@ func (mr *MockPitayaMockRecorder) StartWorker() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWorker", reflect.TypeOf((*MockPitaya)(nil).StartWorker))
 }
+
+// AddAcceptor mocks base method.
+func (m *MockPitaya) AddAcceptor(arg0 acceptor.Acceptor) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddAcceptor", arg0)
+}
+
+// AddAcceptor indicates an expected call of AddAcceptor.
+func (mr *MockPitayaMockRecorder) AddAcceptor(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAcceptor", reflect.TypeOf((*MockPitaya)(nil).AddAcceptor), arg0)
+}
+

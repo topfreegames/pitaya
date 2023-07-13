@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/viper"
+	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
 	"github.com/topfreegames/pitaya/v2/config"
@@ -222,5 +223,5 @@ func GetModule(name string) (interfaces.Module, error) {
 }
 
 func AddAcceptor(ac acceptor.Acceptor) {
-        return DefaultApp.AddAcceptor(ac)
+        DefaultApp.AddAcceptor(ac)
 }

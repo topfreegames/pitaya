@@ -70,6 +70,7 @@ const (
 
 // Pitaya App interface
 type Pitaya interface {
+	AddAcceptor(acceptor.Acceptor)
 	GetDieChan() chan bool
 	SetDebug(debug bool)
 	SetHeartbeatTime(interval time.Duration)
