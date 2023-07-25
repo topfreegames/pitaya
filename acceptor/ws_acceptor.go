@@ -76,6 +76,10 @@ func (w *WSAcceptor) GetConnChan() chan PlayerConn {
 	return w.connChan
 }
 
+// PROXY protocol support not implemented for WS acceptor
+func (w *WSAcceptor) EnableProxyProtocol() {
+}
+
 type connHandler struct {
 	upgrader *websocket.Upgrader
 	connChan chan PlayerConn

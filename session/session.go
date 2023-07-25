@@ -23,6 +23,7 @@ package session
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -40,6 +41,8 @@ import (
 type sessionPoolImpl struct {
 	sessionBindCallbacks []func(ctx context.Context, s Session) error
 	afterBindCallbacks   []func(ctx context.Context, s Session) error
+	handshakeValidators  map[string]func(data *HandshakeData) error
+
 	// SessionCloseCallbacks contains global session close callbacks
 	SessionCloseCallbacks []func(s Session)
 	sessionsByUID         sync.Map
@@ -60,6 +63,7 @@ type SessionPool interface {
 	OnAfterSessionBind(f func(ctx context.Context, s Session) error)
 	OnSessionClose(f func(s Session))
 	CloseAll()
+	AddHandshakeValidator(name string, f func(data *HandshakeData) error)
 }
 
 // HandshakeClientData represents information about the client sent on the handshake.
@@ -79,20 +83,27 @@ type HandshakeData struct {
 }
 
 type sessionImpl struct {
-	sync.RWMutex                                  // protect data
-	id                int64                       // session global unique id
-	uid               string                      // binding user id
-	lastTime          int64                       // last heartbeat time
-	entity            networkentity.NetworkEntity // low-level network entity
-	data              map[string]interface{}      // session data store
-	handshakeData     *HandshakeData              // handshake data received by the client
-	encodedData       []byte                      // session data encoded as a byte array
-	OnCloseCallbacks  []func()                    //onClose callbacks
-	IsFrontend        bool                        // if session is a frontend session
-	frontendID        string                      // the id of the frontend that owns the session
-	frontendSessionID int64                       // the id of the session on the frontend server
-	Subscriptions     []*nats.Subscription        // subscription created on bind when using nats rpc server
-	pool              *sessionPoolImpl
+	sync.RWMutex                                              // protect data
+	id                  int64                                 // session global unique id
+	uid                 string                                // binding user id
+	lastTime            int64                                 // last heartbeat time
+	entity              networkentity.NetworkEntity           // low-level network entity
+	data                map[string]interface{}                // session data store
+	handshakeData       *HandshakeData                        // handshake data received by the client
+	handshakeValidators map[string]func(*HandshakeData) error // validations to run on handshake
+	encodedData         []byte                                // session data encoded as a byte array
+	OnCloseCallbacks    []func()                              //onClose callbacks
+	IsFrontend          bool                                  // if session is a frontend session
+	frontendID          string                                // the id of the frontend that owns the session
+	frontendSessionID   int64                                 // the id of the session on the frontend server
+	Subscriptions       []*nats.Subscription                  // subscription created on bind when using nats rpc server
+	requestsInFlight    ReqInFlight                           // whether the session is waiting from a response from a remote
+	pool                *sessionPoolImpl
+}
+
+type ReqInFlight struct {
+	m  map[string]string
+	mu sync.RWMutex
 }
 
 // Session represents a client session, which can store data during the connection.
@@ -106,6 +117,9 @@ type Session interface {
 	SetOnCloseCallbacks(callbacks []func())
 	SetIsFrontend(isFrontend bool)
 	SetSubscriptions(subscriptions []*nats.Subscription)
+	HasRequestsInFlight() bool
+	GetRequestsInFlight() ReqInFlight
+	SetRequestInFlight(reqID string, reqData string, inFlight bool)
 
 	Push(route string, v interface{}) error
 	ResponseMID(ctx context.Context, mid uint, v interface{}, err ...bool) error
@@ -143,6 +157,8 @@ type Session interface {
 	Clear()
 	SetHandshakeData(data *HandshakeData)
 	GetHandshakeData() *HandshakeData
+	ValidateHandshake(data *HandshakeData) error
+	GetHandshakeValidators() map[string]func(data *HandshakeData) error
 }
 
 type sessionIDService struct {
@@ -164,14 +180,16 @@ func (c *sessionIDService) sessionID() int64 {
 // a networkentity.NetworkEntity is a low-level network instance
 func (pool *sessionPoolImpl) NewSession(entity networkentity.NetworkEntity, frontend bool, UID ...string) Session {
 	s := &sessionImpl{
-		id:               pool.sessionIDSvc.sessionID(),
-		entity:           entity,
-		data:             make(map[string]interface{}),
-		handshakeData:    nil,
-		lastTime:         time.Now().Unix(),
-		OnCloseCallbacks: []func(){},
-		IsFrontend:       frontend,
-		pool:             pool,
+		id:                  pool.sessionIDSvc.sessionID(),
+		entity:              entity,
+		data:                make(map[string]interface{}),
+		handshakeData:       nil,
+		handshakeValidators: pool.handshakeValidators,
+		lastTime:            time.Now().Unix(),
+		OnCloseCallbacks:    []func(){},
+		IsFrontend:          frontend,
+		pool:                pool,
+		requestsInFlight:    ReqInFlight{m: make(map[string]string)},
 	}
 	if frontend {
 		pool.sessionsByID.Store(s.id, s)
@@ -188,6 +206,7 @@ func NewSessionPool() SessionPool {
 	return &sessionPoolImpl{
 		sessionBindCallbacks:  make([]func(ctx context.Context, s Session) error, 0),
 		afterBindCallbacks:    make([]func(ctx context.Context, s Session) error, 0),
+		handshakeValidators:   make(map[string]func(data *HandshakeData) error, 0),
 		SessionCloseCallbacks: make([]func(s Session), 0),
 		sessionIDSvc:          newSessionIDService(),
 	}
@@ -260,13 +279,35 @@ func (pool *sessionPoolImpl) OnSessionClose(f func(s Session)) {
 
 // CloseAll calls Close on all sessions
 func (pool *sessionPoolImpl) CloseAll() {
-	logger.Log.Debugf("closing all sessions, %d sessions", pool.SessionCount)
-	pool.sessionsByID.Range(func(_, value interface{}) bool {
-		s := value.(Session)
-		s.Close()
-		return true
-	})
-	logger.Log.Debug("finished closing sessions")
+	logger.Log.Infof("closing all sessions, %d sessions", pool.SessionCount)
+	for pool.SessionCount > 0 {
+		pool.sessionsByID.Range(func(_, value interface{}) bool {
+			s := value.(Session)
+			if s.HasRequestsInFlight() {
+				reqsInFlight := s.GetRequestsInFlight()
+				reqsInFlight.mu.RLock()
+				for _, route := range reqsInFlight.m {
+					logger.Log.Debugf("Session for user %s is waiting on a response for route %s from a remote server. Delaying session close.", s.UID(), route)
+				}
+				reqsInFlight.mu.RUnlock()
+				return false
+			} else {
+				s.Close()
+				return true
+			}
+		})
+		logger.Log.Debugf("%d sessions remaining", pool.SessionCount)
+		if pool.SessionCount > 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	logger.Log.Info("finished closing sessions")
+}
+
+// AddHandshakeValidator allows adds validation functions that will run when
+// handshake packets are processed. Errors will be raised with the given name.
+func (pool *sessionPoolImpl) AddHandshakeValidator(name string, f func(data *HandshakeData) error) {
+	pool.handshakeValidators[name] = f
 }
 
 func (s *sessionImpl) updateEncodedData() error {
@@ -443,7 +484,7 @@ func (s *sessionImpl) Close() {
 	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
 		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
 		for _, sub := range s.Subscriptions {
-			err := sub.Unsubscribe()
+			err := sub.Drain()
 			if err != nil {
 				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
 			} else {
@@ -762,6 +803,21 @@ func (s *sessionImpl) GetHandshakeData() *HandshakeData {
 	return s.handshakeData
 }
 
+// GetHandshakeValidators return the handshake validators associated with the session.
+func (s *sessionImpl) GetHandshakeValidators() map[string]func(data *HandshakeData) error {
+	return s.handshakeValidators
+}
+
+func (s *sessionImpl) ValidateHandshake(data *HandshakeData) error {
+	for name, fun := range s.handshakeValidators {
+		if err := fun(data); err != nil {
+			return fmt.Errorf("failed to run '%s' validator: %w. SessionId=%d", name, err, s.ID())
+		}
+	}
+
+	return nil
+}
+
 func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
 	sessionData := &protos.Session{
 		Id:  s.frontendSessionID,
@@ -780,4 +836,24 @@ func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, incl
 	}
 	logger.Log.Debugf("%s Got response: %+v", route, res)
 	return nil
+}
+
+func (s *sessionImpl) HasRequestsInFlight() bool {
+	return len(s.requestsInFlight.m) != 0
+}
+
+func (s *sessionImpl) GetRequestsInFlight() ReqInFlight {
+	return s.requestsInFlight
+}
+
+func (s *sessionImpl) SetRequestInFlight(reqID string, reqData string, inFlight bool) {
+	s.requestsInFlight.mu.Lock()
+	if inFlight {
+		s.requestsInFlight.m[reqID] = reqData
+	} else {
+		if _, ok := s.requestsInFlight.m[reqID]; ok {
+			delete(s.requestsInFlight.m, reqID)
+		}
+	}
+	s.requestsInFlight.mu.Unlock()
 }

@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"fmt"
+	"github.com/topfreegames/pitaya/v2/constants"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/v2/config"
@@ -137,4 +138,9 @@ func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string,
 	}
 
 	return err
+}
+
+// ReportHistogram observes the histogram value and reports to statsd
+func (s *StatsdReporter) ReportHistogram(metric string, tagsMap map[string]string, value float64) error {
+	return constants.ErrNotImplemented
 }

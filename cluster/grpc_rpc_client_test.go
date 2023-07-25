@@ -62,6 +62,7 @@ func TestCall(t *testing.T) {
 	sess.EXPECT().ID().Return(int64(1)).Times(2)
 	sess.EXPECT().UID().Return(uid).Times(2)
 	sess.EXPECT().GetDataEncoded().Return(nil).Times(2)
+	sess.EXPECT().SetRequestInFlight(gomock.Any(),gomock.Any(),gomock.Any()).Times(2)
 
 	expected, err := buildRequest(ctx, rpcType, r, sess, msg, g.server)
 	assert.NoError(t, err)
@@ -112,7 +113,7 @@ func TestBroadcastSessionBind(t *testing.T) {
 					return g.server.ID, nil
 				})
 
-				mockPitayaClient.EXPECT().SessionBindRemote(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.BindMsg) {
+				mockPitayaClient.EXPECT().SessionBindRemote(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.BindMsg, opts ...grpc.CallOption) {
 					assert.Equal(t, uid, msg.Uid, g.server.ID, msg.Fid)
 				})
 			}
@@ -168,7 +169,7 @@ func TestSendKick(t *testing.T) {
 					return table.sv.ID, nil
 				})
 
-				mockPitayaClient.EXPECT().KickUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.KickMsg) {
+				mockPitayaClient.EXPECT().KickUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.KickMsg, opts ...grpc.CallOption) {
 					assert.Equal(t, table.userID, msg.UserId)
 				})
 			}
@@ -228,14 +229,14 @@ func TestSendPush(t *testing.T) {
 					return table.sv.ID, nil
 				})
 
-				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push) {
+				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push, opts ...grpc.CallOption) {
 					assert.Equal(t, uid, msg.Uid)
 					assert.Equal(t, msg.Route, "sv.svc.mth")
 					assert.Equal(t, msg.Data, []byte{0x01})
 				})
 			} else if table.bindingStorage == nil && table.sv.ID != "" {
 				g.clientMap.Store(table.sv.ID, &grpcClient{connected: true, cli: mockPitayaClient})
-				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push) {
+				mockPitayaClient.EXPECT().PushToUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, msg *protos.Push, opts ...grpc.CallOption) {
 					assert.Equal(t, uid, msg.Uid)
 					assert.Equal(t, msg.Route, "sv.svc.mth")
 					assert.Equal(t, msg.Data, []byte{0x01})

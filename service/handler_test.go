@@ -252,10 +252,12 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 		name         string
 		packet       *packet.Packet
 		socketStatus int32
+		validator    func(data *session.HandshakeData) error
 		errStr       string
 	}{
-		{"invalid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte("asiodjasd")}, constants.StatusClosed, "Invalid handshake data"},
-		{"valid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte(`{"sys":{"platform":"mac"}}`)}, constants.StatusHandshake, ""},
+		{"invalid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte("asiodjasd")}, constants.StatusClosed, nil, "invalid handshake data"},
+		{"validator_error", &packet.Packet{Type: packet.Handshake, Data: []byte(`{"sys":{"platform":"mac"}}`)}, constants.StatusClosed, func(data *session.HandshakeData) error { return errors.New("validation failed") }, "handshake validation failed"},
+		{"valid_handshake_data", &packet.Packet{Type: packet.Handshake, Data: []byte(`{"sys":{"platform":"mac"}}`)}, constants.StatusHandshake, func(data *session.HandshakeData) error { return nil }, ""},
 	}
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
@@ -267,21 +269,28 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 
 			mockAgent := agentmocks.NewMockAgent(ctrl)
 			mockAgent.EXPECT().GetSession().Return(mockSession).Times(1)
-			mockAgent.EXPECT().RemoteAddr().Return(&mockAddr{})
-			mockAgent.EXPECT().SetStatus(table.socketStatus).Times(1)
-			mockAgent.EXPECT().SendHandshakeResponse().Return(nil).Times(1)
+
+			if table.validator != nil {
+				mockAgent.EXPECT().GetSession().Return(mockSession).Times(1)
+				mockSession.EXPECT().ValidateHandshake(gomock.Any()).DoAndReturn(func(data *session.HandshakeData) error {
+					return table.validator(data)
+				}).Times(1)
+			}
 
 			if table.errStr == "" {
 				handshakeData := &session.HandshakeData{}
 				_ = encjson.Unmarshal(table.packet.Data, handshakeData)
 				mockAgent.EXPECT().GetSession().Return(mockSession).Times(2)
 				mockAgent.EXPECT().IPVersion().Return(constants.IPv4).Times(1)
+				mockAgent.EXPECT().RemoteAddr().Return(&mockAddr{})
+				mockAgent.EXPECT().SetStatus(table.socketStatus).Times(1)
+				mockAgent.EXPECT().SendHandshakeResponse().Return(nil).Times(1)
+				mockAgent.EXPECT().SetLastAt().Times(1)
+
 				mockSession.EXPECT().SetHandshakeData(handshakeData).Times(1)
 				mockSession.EXPECT().Set(constants.IPVersionKey, constants.IPv4).Times(1)
-				mockAgent.EXPECT().SetLastAt().Times(1)
 			} else {
-				mockAgent.EXPECT().GetSession().Return(mockSession).Times(1)
-				mockSession.EXPECT().ID().Return(int64(1)).Times(1)
+				mockAgent.EXPECT().SendHandshakeErrorResponse().Times(1)
 			}
 
 			handlerPool := NewHandlerPool()
@@ -409,6 +418,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 
 	mockSession := mocks.NewMockSession(ctrl)
 	mockSession.EXPECT().SetHandshakeData(gomock.Any()).Times(1)
+	mockSession.EXPECT().ValidateHandshake(gomock.Any()).Times(1)
 	mockSession.EXPECT().UID().Return("uid").Times(1)
 	mockSession.EXPECT().ID().Return(int64(1)).Times(2)
 	mockSession.EXPECT().Set(constants.IPVersionKey, constants.IPv4)
@@ -416,7 +426,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 
 	mockAgent.EXPECT().String().Return("")
 	mockAgent.EXPECT().SetStatus(constants.StatusHandshake)
-	mockAgent.EXPECT().GetSession().Return(mockSession).Times(6)
+	mockAgent.EXPECT().GetSession().Return(mockSession).Times(7)
 	mockAgent.EXPECT().IPVersion().Return(constants.IPv4)
 	mockAgent.EXPECT().RemoteAddr().Return(&mockAddr{}).AnyTimes()
 	mockAgent.EXPECT().SetLastAt().Do(func() {

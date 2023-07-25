@@ -1,8 +1,23 @@
-TESTABLE_PACKAGES = `go list ./... | grep -v examples | grep -v constants | grep -v mocks | grep -v helpers | grep -v interfaces | grep -v protos | grep -v e2e | grep -v benchmark`
+ifeq ($(OS), Windows_NT)
+	BIN := pitaya-cli.exe
+	MKFOLDER := if not exist "build" mkdir build
+	GREP_CMD := findstr /V
+else
+	BIN := pitaya-cli
+	MKFOLDER := mkdir -p build
+	GREP_CMD := grep -v
+endif
+
+TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark`
 
 setup: init-submodules
 	@go get ./...
 
+build-cli:
+	@$(MKFOLDER)
+	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/pitaya-cli
+	@echo "build pitaya-cli at ./build/$(BIN)"
+ 
 init-submodules:
 	@git submodule init
 
@@ -14,8 +29,18 @@ setup-protobuf-macos:
 	@brew install protobuf
 	@go get github.com/golang/protobuf/protoc-gen-go
 
+run-jaeger-aio:
+	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
+	@echo "Access jaeger UI @ http://localhost:16686"
+
 run-chat-example:
 	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
+
+run-cluster-example-frontend-tracing:
+	@PITAYA_METRICS_PROMETHEUS_PORT=9090 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-frontend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go
+
+run-cluster-example-backend-tracing:
+	@PITAYA_METRICS_PROMETHEUS_PORT=9091 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-backend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
@@ -73,6 +98,9 @@ ensure-e2e-deps-grpc:
 
 kill-testing-deps:
 	@cd ./examples/testing && docker-compose down; true
+
+kill-jaeger:
+	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
 e2e-test: e2e-test-nats e2e-test-grpc
 
@@ -141,7 +169,7 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
 
-mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock acceptor-mock
+mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
 
 agent-mock:
 	@mockgen github.com/topfreegames/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
@@ -154,6 +182,10 @@ networkentity-mock:
 
 pitaya-mock:
 	@mockgen github.com/topfreegames/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
+
+metrics-mock:
+	@mockgen github.com/topfreegames/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
 
 serializer-mock:
 	@mockgen github.com/topfreegames/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
