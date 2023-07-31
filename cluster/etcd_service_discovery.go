@@ -611,9 +611,9 @@ func (sd *etcdServiceDiscovery) Shutdown() error {
 // revoke prevents Pitaya from crashing when etcd is not available
 func (sd *etcdServiceDiscovery) revoke() error {
 	close(sd.stopLeaseChan)
-	c := make(chan error)
-	defer close(c)
+	c := make(chan error, 1)
 	go func() {
+		defer close(c)
 		logger.Log.Debug("waiting for etcd revoke")
 		_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
 		c <- err
