@@ -1019,7 +1019,6 @@ func TestAgentHandle(t *testing.T) {
 	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, 1, nil, messageEncoder, nil, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
 
-	go ag.Handle()
 	expectedBytes := []byte("bla")
 
 	// Sends two heartbeats and then times out
@@ -1045,6 +1044,8 @@ func TestAgentHandle(t *testing.T) {
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	ag.chSend <- pendingWrite{ctx: nil, data: expectedBytes, err: nil}
+
+	go ag.Handle()
 
 	wg.Wait()
 	helpers.ShouldEventuallyReturn(t, func() bool { return closed }, true, 50*time.Millisecond, 5*time.Second)
