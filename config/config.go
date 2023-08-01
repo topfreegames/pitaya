@@ -228,10 +228,10 @@ func NewGRPCServerConfig(config *Config) *GRPCServerConfig {
 
 // NatsRPCClientConfig provides nats client configuration
 type NatsRPCClientConfig struct {
-	Connect                string
-	MaxReconnectionRetries int
-	RequestTimeout         time.Duration
-	ConnectionTimeout      time.Duration
+	Connect                string        `mapstructure:"connect"`
+	MaxReconnectionRetries int           `mapstructure:"maxreconnectionretries"`
+	RequestTimeout         time.Duration `mapstructure:"requesttimeout"`
+	ConnectionTimeout      time.Duration `mapstructure:"connectiontimeout"`
 }
 
 // NewDefaultNatsRPCClientConfig provides default nats client configuration
