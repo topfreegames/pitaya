@@ -99,7 +99,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.sd.etcd.heartbeat.ttl":                  etcdSDConfig.Heartbeat.TTL,
 		"pitaya.cluster.sd.etcd.revoke.timeout":                 etcdSDConfig.Revoke.Timeout,
 		"pitaya.cluster.sd.etcd.syncservers.interval":           etcdSDConfig.SyncServers.Interval,
-		"pitaya.cluster.sd.etcd.syncserversparallelism":         etcdSDConfig.SyncServers.Parallelism,
+		"pitaya.cluster.sd.etcd.syncservers.parallelism":        etcdSDConfig.SyncServers.Parallelism,
 		"pitaya.cluster.sd.etcd.shutdown.delay":                 etcdSDConfig.Shutdown.Delay,
 		"pitaya.cluster.sd.etcd.servertypeblacklist":            etcdSDConfig.ServerTypesBlacklist,
 		// the sum of this config among all the frontend servers should always be less than
@@ -119,7 +119,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.prometheus.additionalLabels":       prometheusConfig.Prometheus.AdditionalLabels,
 		"pitaya.metrics.constLabels":                       prometheusConfig.ConstLabels,
 		"pitaya.metrics.custom":                            customMetricsSpec,
-		"pitaya.metrics.periodicMetrics.period":            pitayaConfig.Metrics.Period,
+		"pitaya.metrics.period":                            pitayaConfig.Metrics.Period,
 		"pitaya.metrics.prometheus.enabled":                builderConfig.Metrics.Prometheus.Enabled,
 		"pitaya.metrics.prometheus.port":                   prometheusConfig.Prometheus.Port,
 		"pitaya.metrics.statsd.enabled":                    builderConfig.Metrics.Statsd.Enabled,
