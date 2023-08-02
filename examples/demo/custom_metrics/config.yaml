@@ -1,7 +1,10 @@
+metrics:
+  prometheus:
+    enabled: true
 pitaya:
   metrics:
     prometheus:
-      enabled: true
+      port: 9100
     custom:
       counters:
       - subsystem: room
