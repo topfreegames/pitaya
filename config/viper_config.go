@@ -21,7 +21,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"strings"
@@ -211,16 +210,12 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 			if !strings.HasPrefix(k, prefix) {
 				continue
 			}
-			fmt.Printf("prefix: %v\n", prefix)
 			mk := strings.TrimPrefix(k, prefix)
-			fmt.Printf("got key1: %v\n", mk)
 			mk = strings.Split(mk, delimiter)[0]
-			fmt.Printf("got key2: %v\n", mk)
 			if _, exists := val[mk]; exists {
 				continue
 			}
 			mv := c.Get(key + delimiter + mk)
-			fmt.Printf("got key5: %v\n", mv)
 			if mv == nil {
 				continue
 			}
