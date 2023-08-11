@@ -578,7 +578,7 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 	servers := parallelGetter.waitAndGetResult()
 
 	for _, server := range servers {
-		logger.Log.Debugf("adding server %s", server)
+		logger.Log.Debugf("adding server %v", server)
 		sd.addServer(server)
 	}
 
