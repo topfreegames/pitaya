@@ -21,6 +21,8 @@
 package config
 
 import (
+	"github.com/mitchellh/mapstructure"
+	"reflect"
 	"strings"
 	"time"
 
@@ -144,9 +146,13 @@ func (c *Config) fillDefaultValues() {
 	}
 
 	for param := range defaultsMap {
-		if c.config.Get(param) == nil {
+		val := c.config.Get(param)
+		if val == nil {
 			c.config.SetDefault(param, defaultsMap[param])
+		} else {
+			c.config.SetDefault(param, val)
 		}
+
 	}
 }
 
@@ -185,12 +191,72 @@ func (c *Config) GetStringMapString(s string) map[string]string {
 	return c.config.GetStringMapString(s)
 }
 
-// UnmarshalKey unmarshals key into v
-func (c *Config) UnmarshalKey(s string, v interface{}) error {
-	return c.config.UnmarshalKey(s, v)
-}
-
 // Unmarshal unmarshals config into v
 func (c *Config) Unmarshal(v interface{}) error {
 	return c.config.Unmarshal(v)
+}
+
+// UnmarshalKey unmarshals key into v
+func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.DecoderConfigOption) error {
+	key = strings.ToLower(key)
+	delimiter := "."
+	prefix := key + delimiter
+
+	i := c.config.Get(key)
+	if isStringMapInterface(i) {
+		val := i.(map[string]interface{})
+		keys := c.config.AllKeys()
+		for _, k := range keys {
+			if !strings.HasPrefix(k, prefix) {
+				continue
+			}
+			mk := strings.TrimPrefix(k, prefix)
+			mk = strings.Split(mk, delimiter)[0]
+			if _, exists := val[mk]; exists {
+				continue
+			}
+			mv := c.Get(key + delimiter + mk)
+			if mv == nil {
+				continue
+			}
+			val[mk] = mv
+		}
+		i = val
+	}
+	return decode(i, defaultDecoderConfig(rawVal, opts...))
+}
+
+func isStringMapInterface(val interface{}) bool {
+	vt := reflect.TypeOf(val)
+	return vt.Kind() == reflect.Map &&
+		vt.Key().Kind() == reflect.String &&
+		vt.Elem().Kind() == reflect.Interface
+}
+
+// A wrapper around mapstructure.Decode that mimics the WeakDecode functionality
+func decode(input interface{}, config *mapstructure.DecoderConfig) error {
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(input)
+}
+
+// defaultDecoderConfig returns default mapstructure.DecoderConfig with support
+// of time.Duration values & string slices
+func defaultDecoderConfig(output interface{}, opts ...viper.DecoderConfigOption) *mapstructure.DecoderConfig {
+	c := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		Result:           output,
+		WeaklyTypedInput: true,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+		),
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+
 }
