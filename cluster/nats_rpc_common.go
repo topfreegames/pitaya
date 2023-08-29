@@ -52,6 +52,15 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 				appDieChan <- true
 			}
 		}),
+		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
+			if err == nats.ErrSlowConsumer {
+				dropped, _ := sub.Dropped()
+				logger.Log.Warn("Slow consumer on subject %q: dropped %d messages\n",
+					sub.Subject, dropped)
+			} else {
+				logger.Log.Errorf(err.Error())
+			}
+		}),
 	)
 
 	nc, err := nats.Connect(connectString, natsOptions...)

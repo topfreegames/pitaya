@@ -23,9 +23,11 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/nats-io/nuid"
 
@@ -181,7 +183,12 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			if err != constants.ErrConnectionClosed {
+			// Check if this is an expected error due to connection being closed
+			if errors.Is(err, net.ErrClosed) {
+				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
+			} else if err == constants.ErrConnectionClosed {
+				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
+			} else {
 				logger.Log.Errorf("Error reading next available message: %s", err.Error())
 			}
 
