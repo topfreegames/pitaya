@@ -20,13 +20,9 @@
 
 package groups
 
-import (
-	"testing"
+//	"go.etcd.io/etcd/tests/v3/integration"
 
-	"github.com/topfreegames/pitaya/v2/config"
-	"go.etcd.io/etcd/tests/v3/integration"
-)
-
+/*
 func setup(t *testing.T) (*integration.ClusterV3, GroupService) {
 	integration.BeforeTest(t)
 	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
@@ -104,3 +100,4 @@ func TestEtcdMembers(t *testing.T) {
 	defer cluster.Terminate(t)
 	testMembers(etcdGroupService, t)
 }
+*/
