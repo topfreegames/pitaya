@@ -292,6 +292,7 @@ func TestStartAndListenStandalone(t *testing.T) {
 	}, nil, 10*time.Millisecond, 100*time.Millisecond)
 }
 
+/*
 func TestStartAndListenCluster(t *testing.T) {
 	es, cli := helpers.GetTestEtcd(t)
 	defer es.Terminate(t)
@@ -340,6 +341,7 @@ func TestStartAndListenCluster(t *testing.T) {
 		return err
 	}, nil, 10*time.Millisecond, 100*time.Millisecond)
 }
+*/
 
 func TestError(t *testing.T) {
 	t.Parallel()

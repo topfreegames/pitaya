@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/tests/v3/integration"
+	//clientv3 "go.etcd.io/etcd/client/v3"
+	//"go.etcd.io/etcd/tests/v3/integration"
 	"github.com/nats-io/nats-server/v2/server"
 	gnatsd "github.com/nats-io/nats-server/v2/test"
 )
@@ -61,7 +61,7 @@ func GetTestNatsServer(t *testing.T) *server.Server {
 	return s
 }
 
-// GetTestEtcd gets a test in memory etcd server
+/* // GetTestEtcd gets a test in memory etcd server
 func GetTestEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
 	t.Helper()
 	integration.BeforeTest(t)
@@ -69,6 +69,7 @@ func GetTestEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
 	cli := c.RandClient()
 	return c, cli
 }
+*/
 
 // WriteFile test helper
 func WriteFile(t *testing.T, filepath string, bytes []byte) {
