@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/topfreegames/pitaya/v2"
 	"github.com/topfreegames/pitaya/v2/component"
 	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
@@ -90,7 +91,7 @@ func (r *Room) Entry(ctx context.Context, msg []byte) (*protos.JoinResponse, err
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx) // The default logger contains a requestId, the route being executed and the sessionId
 	s := r.app.GetSessionFromCtx(ctx)
 
-	err := s.Bind(ctx, "banana")
+	err := s.Bind(ctx, uuid.New().String())
 	if err != nil {
 		logger.Error("Failed to bind session")
 		logger.Error(err)
@@ -148,6 +149,18 @@ func (r *Room) Join(ctx context.Context) (*protos.JoinResponse, error) {
 		return nil, err
 	}
 	return &protos.JoinResponse{Result: "success"}, nil
+}
+
+// Leave room
+func (r *Room) Leave(ctx context.Context) ([]byte, error) {
+	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
+	s := r.app.GetSessionFromCtx(ctx)
+	err := r.app.GroupRemoveMember(ctx, "room", s.UID())
+	if err != nil {
+		logger.Error(err)
+		return []byte("failed"), err
+	}
+	return []byte("success"), err
 }
 
 // Message sync last message to all members
