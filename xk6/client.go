@@ -154,7 +154,10 @@ func (c *Client) listen() {
 				c.removeResponseChannelForID(m.ID)
 			case pitayamessage.Push:
 				ch := c.getPushChannelForRoute(m.Route)
-				ch <- m.Data
+				// only keep one message in the channel, discard the rest
+				if len(ch) == 0 {
+					ch <- m.Data
+				}
 			default:
 				panic("Unknown message type")
 			}
@@ -166,7 +169,7 @@ func (c *Client) getResponseChannelForID(id uint) chan []byte {
 	c.responsesMutex.Lock()
 	defer c.responsesMutex.Unlock()
 	if _, ok := c.responses[id]; !ok {
-		c.responses[id] = make(chan []byte, 100)
+		c.responses[id] = make(chan []byte, 1)
 	}
 
 	return c.responses[id]
@@ -183,7 +186,7 @@ func (c *Client) getPushChannelForRoute(route string) chan []byte {
 	c.pushesMutex.Lock()
 	defer c.pushesMutex.Unlock()
 	if _, ok := c.pushes[route]; !ok {
-		c.pushes[route] = make(chan []byte, 100)
+		c.pushes[route] = make(chan []byte, 1)
 	}
 
 	return c.pushes[route]

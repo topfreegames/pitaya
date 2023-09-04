@@ -2,8 +2,8 @@ import pitaya from 'k6/x/pitaya';
 import { check } from 'k6';
 
 export const options = {
-  vus: 10,
-  duration: '1s',
+  vus: 100,
+  duration: '10s',
 }
 
 const opts = {
@@ -56,5 +56,4 @@ export default async () => {
 }
 
 export function teardown() {
-  pitayaClient.disconnect()
 }
