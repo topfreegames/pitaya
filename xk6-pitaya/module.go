@@ -23,8 +23,8 @@ type (
 	// ModuleInstance represents an instance of the JS module.
 	ModuleInstance struct {
 		vu modules.VU
-
 		*Client
+		metrics *pitayaMetrics
 	}
 )
 
@@ -42,7 +42,11 @@ func New() *RootModule {
 // NewModuleInstance implements the modules.Module interface and returns
 // a new instance for each VU.
 func (*RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
-	return &ModuleInstance{vu: vu, Client: &Client{vu: vu}}
+	m, err := registerMetrics(vu)
+	if err != nil {
+		common.Throw(vu.Runtime(), err)
+	}
+	return &ModuleInstance{vu: vu, Client: &Client{vu: vu}, metrics: &m}
 }
 
 // Exports implements the modules.Instance interface and returns
@@ -90,6 +94,7 @@ func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 		responses: make(map[uint]chan []byte, 100),
 		pushes:    make(map[string]chan []byte, 100),
 		timeout:   time.Duration(opts.RequestTimeoutMs) * time.Millisecond,
+		metrics:   mi.metrics,
 	}
 
 	switch opts.Serializer {

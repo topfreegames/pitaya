@@ -13,6 +13,7 @@ import (
 	pitayamessage "github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/session"
 	"go.k6.io/k6/js/modules"
+	"go.k6.io/k6/metrics"
 )
 
 // Response is the type of the response returned by the server
@@ -30,6 +31,7 @@ type Client struct {
 	pushesMutex    sync.Mutex
 	pushes         map[string]chan []byte
 	timeout        time.Duration
+	metrics        *pitayaMetrics
 }
 
 // Connect connects to the server
@@ -115,8 +117,10 @@ func (c *Client) Request(route string, msg interface{}) *goja.Promise { // TODO:
 		return promise
 	}
 
+	timeNow := time.Now()
 	mid, err := c.client.SendRequest(route, data)
 	if err != nil {
+		c.pushRequestMetrics(route, time.Since(timeNow), false, false)
 		reject(err)
 		return promise
 	}
@@ -124,6 +128,7 @@ func (c *Client) Request(route string, msg interface{}) *goja.Promise { // TODO:
 	go func() {
 		select {
 		case responseData := <-responseChan:
+			c.pushRequestMetrics(route, time.Since(timeNow), true, false)
 			var ret Response
 			if err := json.Unmarshal(responseData, &ret); err != nil {
 				resolve(responseData)
@@ -132,10 +137,55 @@ func (c *Client) Request(route string, msg interface{}) *goja.Promise { // TODO:
 			resolve(ret)
 			return
 		case <-time.After(c.timeout):
+			c.pushRequestMetrics(route, time.Since(timeNow), false, true)
 			reject(fmt.Errorf("Timeout waiting for response on route %s", route))
 		}
 	}()
 	return promise
+}
+
+func (c *Client) pushRequestMetrics(route string, responseTime time.Duration, success bool, timeout bool) error {
+	state := c.vu.State()
+	if state == nil {
+		return errors.New("invalid state")
+	}
+
+	ctx := c.vu.Context()
+	if ctx == nil {
+		return errors.New("invalid context")
+	}
+
+	metrics.PushIfNotDone(ctx, state.Samples, metrics.Sample{
+		TimeSeries: metrics.TimeSeries{
+			Metric: c.metrics.RequestResponseTime,
+			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(
+				map[string]string{
+					"route":   route,
+					"success": fmt.Sprintf("%t", success),
+				}),
+		},
+		Value: float64(responseTime.Milliseconds()),
+		Time:  time.Now(),
+	})
+
+	value := 0
+	if timeout {
+		value = 1
+	}
+
+	metrics.PushIfNotDone(ctx, state.Samples, metrics.Sample{
+		TimeSeries: metrics.TimeSeries{
+			Metric: c.metrics.TimeoutRequests,
+			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(
+				map[string]string{
+					"route": route,
+				}),
+		},
+		Value: float64(value),
+		Time:  time.Now(),
+	})
+
+	return nil
 }
 
 // Disconnect disconnects from the server

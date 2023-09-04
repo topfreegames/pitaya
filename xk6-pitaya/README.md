@@ -87,3 +87,15 @@ make run-cluster-example-frontend
 
 # run k6 scenario
 ./k6 run ./examples/scenario1.js
+```
+
+# Metrics
+
+This extension will add the following metrics to the k6 output:
+
+- `pitaya_client_request_duration_ms`: Histogram of request durations in milliseconds
+    - `success`: If the request was successful or not
+    - `route`: The route of the request
+- `pitaya_client_request_timeout_count`: Counter of timedout requests
+    - `route`: The route of the request
+
