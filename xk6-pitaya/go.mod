@@ -1,4 +1,4 @@
-module github.com/topfreegames/xk6-pitaya
+module github.com/topfreegames/pitaya/xk6-pitaya
 
 go 1.20
 
