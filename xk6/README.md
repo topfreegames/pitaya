@@ -7,19 +7,18 @@
 ## Building the k6 binary
 
 ```shell
-xk6 build --with github.com/topfreegames/xk6-pitaya=.
+xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v2=../
 ```
 
 ## Example usage
 
 ```javascript
-import pitaya from 'k6/x/pitaya
-';
+import pitaya from 'k6/x/pitaya';
 import { check } from 'k6';
 
 export const options = {
-  vus: 1,
-  duration: '3s',
+  vus: 10,
+  duration: '10s',
 }
 
 const opts = {
@@ -53,23 +52,38 @@ export default async () => {
 
   check(pitayaClient.isConnected(), { 'pitaya client is connected': (r) => r === true })
 
-  var res = await pitayaClient.request("metagame.authenticationHandler.createAccount")
-  check(res.code, { 'code is 200': (c) => c === "200" })
-  check(res.id, { 'contains an id field': (i) => i !== undefined })
-  check(res.securityToken, { 'contains a securityToken field': (i) => i !== undefined })
+  var res = await pitayaClient.request("room.room.entry")
+  check(res.result, { 'contains an result field': (r) => r !== undefined })
+  check(res.result, { 'result is ok': (r) => r === "ok" })
 
-  res = await pitayaClient.request("metagame.authenticationHandler.authenticate", { id: res.id, securityToken: res.securityToken })
-  check(res.code, { 'code is 200': (c) => c === "200" })
-  check(res.additionalPayload, { 'contains an additionalPayload field': (i) => i !== undefined })
+  var res = await pitayaClient.request("room.room.setsessiondata", { data: {"testKey": "testVal"} })
+  check(res, { 'res is success': (r) => String.fromCharCode.apply(null,r) === "success"} )
+  var res = await pitayaClient.request("room.room.getsessiondata")
+  check(res.Data, { 'res contains set data': (r) => r.testKey === "testVal"} )
+  res = await pitayaClient.request("room.room.join")
+  check(res.result, { 'result from join is successful': (r) => r === "success"} )
+  res = await pitayaClient.consumePush("onMembers", 500)
+  check(res.Members, { 'res contains a member group': (m) => m !== undefined } )
+  res = await pitayaClient.request("room.room.leave")
+  check(res, { 'result from leave is successful': (r) => String.fromCharCode.apply(null,r) === "success"})
 
-  pitayaClient.notify("metagame.exampleCustomHandler.testNotifyHandler")
-
-  res = await pitayaClient.consumePush("testHandler.testPush", 500)
-  check(res.msg, { 'msg is included in the push': (m) => m === m !== undefined })
-  check(res.msg, { 'msg includes Hello': (m) => String(m).includes("Hello") })
+ pitayaClient.disconnect()
 }
 
 export function teardown() {
-  pitayaClient.disconnect()
 }
 ```
+
+## Running the scenario 1 example
+
+```shell
+
+# spin up pitaya dependencies
+make ensure-testing-deps
+
+# run pitaya server, backend and frontend
+make run-cluster-example-backend
+make run-cluster-example-frontend
+
+# run k6 scenario
+./k6 run ./examples/scenario1.js

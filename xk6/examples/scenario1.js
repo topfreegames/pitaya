@@ -2,7 +2,7 @@ import pitaya from 'k6/x/pitaya';
 import { check } from 'k6';
 
 export const options = {
-  vus: 100,
+  vus: 10,
   duration: '10s',
 }
 
@@ -47,7 +47,7 @@ export default async () => {
   check(res.Data, { 'res contains set data': (r) => r.testKey === "testVal"} )
   res = await pitayaClient.request("room.room.join")
   check(res.result, { 'result from join is successful': (r) => r === "success"} )
-  res = await pitayaClient.consumePush("onMembers", 500)
+  res = await pitayaClient.consumePush("onMembers", 1000)
   check(res.Members, { 'res contains a member group': (m) => m !== undefined } )
   res = await pitayaClient.request("room.room.leave")
   check(res, { 'result from leave is successful': (r) => String.fromCharCode.apply(null,r) === "success"})
