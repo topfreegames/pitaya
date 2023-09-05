@@ -208,6 +208,7 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 	i := c.config.Get(key)
 	if isStringMapInterface(i) {
 		val := i.(map[string]interface{})
+		PrettyPrint(val)
 		keys := c.config.AllKeys()
 		for _, k := range keys {
 			fmt.Printf("key: %s \n", k)
@@ -230,8 +231,20 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 			val[mk] = mv
 		}
 		i = val
+		PrettyPrint(val)
 	}
 	return decode(i, defaultDecoderConfig(rawVal, opts...))
+}
+
+func PrettyPrint(data interface{}) {
+    var p []byte
+    //    var err := error
+    p, err := json.MarshalIndent(data, "", "\t")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    fmt.Printf("%s \n", p)
 }
 
 func isStringMapInterface(val interface{}) bool {
