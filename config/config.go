@@ -181,6 +181,9 @@ func NewBuilderConfig(config *Config) *BuilderConfig {
 	if err := config.Unmarshal(&conf); err != nil {
 		panic(err)
 	}
+        if err := config.UnmarshalKey("pitaya", &conf); err != nil {
+                panic(err)
+        }
 	return conf
 }
 
