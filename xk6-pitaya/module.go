@@ -97,33 +97,16 @@ func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 		metrics:   mi.metrics,
 	}
 
-	switch opts.Serializer {
-	case "json":
-		client.client = pitayaclient.New(logrus.InfoLevel)
-		break
-	case "protobuf":
-		if opts.DocsRoute == "" {
-			common.Throw(rt, errors.New("docsRoute is required when using protobuf serializer"))
-		}
-		client.client = pitayaclient.NewProto(opts.DocsRoute, logrus.InfoLevel)
-		break
-	default:
-		fmt.Printf("Serializer %s not supported, using json serializer", opts.Serializer)
-		client.client = pitayaclient.New(logrus.InfoLevel)
-		break
-	}
+	client.client = pitayaclient.New(logrus.InfoLevel)
 	client.client.SetClientHandshakeData(opts.HandshakeData)
 
 	return rt.ToValue(client).ToObject(rt)
 }
 
 type options struct {
-	Addr             string                 `json:"addr"`
 	HandshakeData    *session.HandshakeData `json:"handshakeData"`
 	RequestTimeoutMs int                    `json:"requestTimeoutMs"`
 	LogLevel         string                 `json:"logLevel"`
-	Serializer       string                 `json:"serializer"`
-	DocsRoute        string                 `json:"docsRoute"`
 }
 
 // newOptionsFrom validates and instantiates an options struct from its map representation

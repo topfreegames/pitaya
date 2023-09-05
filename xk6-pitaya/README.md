@@ -106,3 +106,12 @@ This extension will add the following metrics to the k6 output:
 - `pitaya_client_request_timeout_count`: Counter of timedout requests
     - `route`: The route of the request
 
+# Protobuf client support
+
+This extension does not support pitaya running with protobuf serialization. For loadtesting your server with this, use the json serializer.
+
+```go
+builder.Serializer = json.NewSerializer()
+```
+
+Or just don't set it, since json is the default serializer.

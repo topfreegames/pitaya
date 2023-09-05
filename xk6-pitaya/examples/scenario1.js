@@ -25,7 +25,6 @@ const opts = {
   },
   requestTimeoutMs: 1000,
   logLevel: "info",
-  serializer: "json",
 }
 
 const pitayaClient = new pitaya.Client(opts)
