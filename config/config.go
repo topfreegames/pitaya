@@ -420,10 +420,10 @@ type PrometheusConfig struct {
 	Prometheus struct {
 		Port             int               `mapstructure:"port"`
 		AdditionalLabels map[string]string `mapstructure:"additionallabels"`
-		AdditionalTags map[string]interface{} `mapstructure:"additionaltags"`
 	} `mapstructure:"prometheus"`
 	Game        string            `mapstructure:"game"`
 	ConstLabels map[string]string `mapstructure:"constlabels"`
+	AdditionalTags map[string]string `mapstructure:"additionaltags"`
 }
 
 // NewDefaultPrometheusConfig provides default configuration for PrometheusReporter
@@ -432,13 +432,12 @@ func NewDefaultPrometheusConfig() *PrometheusConfig {
 		Prometheus: struct {
 			Port             int               `mapstructure:"port"`
 			AdditionalLabels map[string]string `mapstructure:"additionallabels"`
-			AdditionalTags map[string]interface{} `mapstructure:"additionaltags"`
 		}{
 			Port:             9090,
 			AdditionalLabels: map[string]string{},
-			AdditionalTags: map[string]interface{}{},
 		},
 		ConstLabels: map[string]string{},
+		AdditionalTags: map[string]string{},
 	}
 }
 
