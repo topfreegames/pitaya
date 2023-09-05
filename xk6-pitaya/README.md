@@ -10,6 +10,13 @@
 xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v2=../
 ```
 
+## Building the k6 docker image
+
+```shell
+docker build --build-arg pitaya_revision=ac6eb29bdb -t xk6-pitaya
+# change the pitaya_revision to the revision you want to use
+```
+
 ## Example usage
 
 ```javascript
