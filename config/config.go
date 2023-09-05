@@ -114,7 +114,7 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 // NewPitayaConfig returns a config instance with values extracted from default config paths
 func NewPitayaConfig(config *Config) *PitayaConfig {
 	conf := NewDefaultPitayaConfig()
-	if err := config.UnmarshalKey("pitaya", &conf); err != nil {
+	if err := config.UnmarshalKey("pitaya.metrics", &conf); err != nil {
 		panic(err)
 	}
 	return conf
