@@ -57,22 +57,12 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 	}}
 }
 
-// NewClient is the JS constructor for the redis Client.
-//
-// Under the hood, the redis.UniversalClient will be used. The universal client
-// supports failover/sentinel, cluster and single-node modes. Depending on the options,
-// the internal universal client instance will be one of those.
-//
-// The type of the underlying client depends on the following conditions:
-// 1. If the MasterName option is specified, a sentinel-backed FailoverClient is used.
-// 2. if the number of Addrs is two or more, a ClusterClient is used.
-// 3. Otherwise, a single-node Client is used.
-//
-// To support being instantiated in the init context, while not
-// producing any IO, as it is the convention in k6, the produced
-// Client is initially configured, but in a disconnected state. In
-// order to connect to the configured target instance(s), the `.Connect`
-// should be called.
+// NewClient is the JS constructor function for the Client type.
+// It returns a new Client instance for each VU.
+// The first argument is an options object with the following fields:
+// - handshakeData: the handshake data to send to the server
+// - requestTimeoutMs: the timeout for requests in milliseconds
+// - logLevel: the log level to use
 func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 	rt := mi.vu.Runtime()
 
