@@ -153,7 +153,6 @@ func (c *Config) fillDefaultValues() {
 		} 
 		if val == nil {
 			c.config.SetDefault(param, defaultsMap[param])
-			c.config.Set(param, defaultsMap[param])
 		} else {
 			c.config.SetDefault(param, val)
 			c.config.Set(param, val)
