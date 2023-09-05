@@ -33,12 +33,23 @@ type PitayaConfig struct {
 	Session struct {
 		Unique bool `mapstructure:"unique"`
 	} `mapstructure:"session"`
-	Metrics struct {
-		Period time.Duration `mapstructure:"period"`
-	} `mapstructure:"metrics"`
 	Acceptor struct {
 		ProxyProtocol bool `mapstructure:"proxyprotocol"`
 	} `mapstructure:"acceptor"`
+        Metrics struct {
+		Period time.Duration `mapstructure:"period"`
+                Prometheus struct {
+                        Enabled bool `mapstructure:"enabled"`
+                } `mapstructure:"prometheus"`
+                Statsd struct {
+                        Enabled bool `mapstructure:"enabled"`
+                } `mapstructure:"statsd"`
+        } `mapstructure:"metrics"`
+        DefaultPipelines struct {
+                StructValidation struct {
+                        Enabled bool `mapstructure:"enabled"`
+                } `mapstructure:"structvalidation"`
+        } `mapstructure:"defaultpipelines"`
 }
 
 // NewDefaultPitayaConfig provides default configuration for Pitaya App
@@ -98,11 +109,38 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		}{
 			Unique: true,
 		},
-		Metrics: struct {
+                Metrics: struct {
 			Period time.Duration `mapstructure:"period"`
-		}{
+                        Prometheus struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        } `mapstructure:"prometheus"`
+                        Statsd struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        } `mapstructure:"statsd"`
+                }{
 			Period: time.Duration(15 * time.Second),
-		},
+                        Prometheus: struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        }{
+                                Enabled: false,
+                        },
+                        Statsd: struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        }{
+                                Enabled: false,
+                        },
+                },
+                DefaultPipelines: struct {
+                        StructValidation struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        } `mapstructure:"structvalidation"`
+                }{
+                        StructValidation: struct {
+                                Enabled bool `mapstructure:"enabled"`
+                        }{
+                                Enabled: false,
+                        },
+                },
 		Acceptor: struct {
 			ProxyProtocol bool `mapstructure:"proxyprotocol"`
 		}{
