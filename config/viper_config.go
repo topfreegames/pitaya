@@ -155,6 +155,7 @@ func (c *Config) fillDefaultValues() {
 			c.config.SetDefault(param, defaultsMap[param])
 		} else {
 			c.config.SetDefault(param, val)
+			c.config.Set(param, val)
 		}
 
 	}
