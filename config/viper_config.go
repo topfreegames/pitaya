@@ -217,16 +217,17 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 			}
 			mk := strings.TrimPrefix(k, prefix)
 			mk = strings.Split(mk, delimiter)[0]
-			fmt.Printf("key1: %s", k)
+			fmt.Printfn("key1: %s", k)
 			if _, exists := val[mk]; exists {
+				fmt.Printfn("existed with value: %s",val[mk])
 				continue
 			}
-			fmt.Printf("key2: %s", k)
+			fmt.Printfn("key2: %s", k)
 			mv := c.Get(key + delimiter + mk)
 			if mv == nil {
 				continue
 			}
-			fmt.Printf("key1: %s, value: %s", k,mv)
+			fmt.Printfn("key1: %s, value: %s", k,mv)
 			val[mk] = mv
 		}
 		i = val
