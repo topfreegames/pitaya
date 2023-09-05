@@ -161,67 +161,18 @@ func NewPitayaConfig(config *Config) *PitayaConfig {
 // BuilderConfig provides configuration for Builder
 type BuilderConfig struct {
 	Pitaya  PitayaConfig
-	Metrics struct {
-		Prometheus struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"prometheus"`
-		Statsd struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"statsd"`
-	} `mapstructure:"metrics"`
-	DefaultPipelines struct {
-		StructValidation struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"structvalidation"`
-	} `mapstructure:"defaultpipelines"`
 }
 
 // NewDefaultBuilderConfig provides default builder configuration
 func NewDefaultBuilderConfig() *BuilderConfig {
 	return &BuilderConfig{
 		Pitaya: *NewDefaultPitayaConfig(),
-		Metrics: struct {
-			Prometheus struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"prometheus"`
-			Statsd struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"statsd"`
-		}{
-			Prometheus: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-			Statsd: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-		},
-		DefaultPipelines: struct {
-			StructValidation struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"structvalidation"`
-		}{
-			StructValidation: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-		},
 	}
 }
 
 // NewBuilderConfig reads from config to build builder configuration
 func NewBuilderConfig(config *Config) *BuilderConfig {
 	conf := NewDefaultBuilderConfig()
-	if err := config.Unmarshal(&conf); err != nil {
-		panic(err)
-	}
-        if err := config.UnmarshalKey("pitaya", &conf); err != nil {
-                panic(err)
-        }
 	return conf
 }
 
