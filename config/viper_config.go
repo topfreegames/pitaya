@@ -53,7 +53,6 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 
 func (c *Config) fillDefaultValues() {
 	customMetricsSpec := NewDefaultCustomMetricsSpec()
-	builderConfig := NewDefaultBuilderConfig()
 	pitayaConfig := NewDefaultPitayaConfig()
 	prometheusConfig := NewDefaultPrometheusConfig()
 	statsdConfig := NewDefaultStatsdConfig()
