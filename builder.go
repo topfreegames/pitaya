@@ -140,16 +140,16 @@ func NewBuilder(isFrontend bool,
 	dieChan := make(chan bool)
 
 	metricsReporters := []metrics.Reporter{}
-	if config.Metrics.Prometheus.Enabled {
+	if config.Pitaya.Metrics.Prometheus.Enabled {
 		metricsReporters = addDefaultPrometheus(prometheusConfig, customMetrics, metricsReporters, serverType)
 	}
 
-	if config.Metrics.Statsd.Enabled {
+	if config.Pitaya.Metrics.Statsd.Enabled {
 		metricsReporters = addDefaultStatsd(statsdConfig, metricsReporters, serverType)
 	}
 
 	handlerHooks := pipeline.NewHandlerHooks()
-	if config.DefaultPipelines.StructValidation.Enabled {
+	if config.Pitaya.DefaultPipelines.StructValidation.Enabled {
 		configureDefaultPipelines(handlerHooks)
 	}
 
