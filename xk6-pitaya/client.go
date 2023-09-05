@@ -164,7 +164,7 @@ func (c *Client) pushRequestMetrics(route string, responseTime time.Duration, su
 					"success": fmt.Sprintf("%t", success),
 				}),
 		},
-		Value: float64(responseTime.Milliseconds()),
+		Value: metrics.D(responseTime),
 		Time:  time.Now(),
 	})
 
