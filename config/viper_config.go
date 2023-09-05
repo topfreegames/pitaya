@@ -211,23 +211,23 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 		val := i.(map[string]interface{})
 		keys := c.config.AllKeys()
 		for _, k := range keys {
-			fmt.Printf("key: %s", k)
+			fmt.Printf("key: %s \n", k)
 			if !strings.HasPrefix(k, prefix) {
 				continue
 			}
 			mk := strings.TrimPrefix(k, prefix)
 			mk = strings.Split(mk, delimiter)[0]
-			fmt.Printf("key1: %s", k)
+			fmt.Printf("key1: %s \n", mk)
 			if _, exists := val[mk]; exists {
-				fmt.Printf("existed with value: %s",val[mk])
+				fmt.Printf("existed with value: %s \n",val[mk])
 				continue
 			}
-			fmt.Printf("key2: %s", k)
+			fmt.Printf("key2: %s \n", mk)
 			mv := c.Get(key + delimiter + mk)
 			if mv == nil {
 				continue
 			}
-			fmt.Printf("key1: %s, value: %s", k,mv)
+			fmt.Printf("key3: %s, value: %s \n", k,mv)
 			val[mk] = mv
 		}
 		i = val
