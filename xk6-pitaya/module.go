@@ -96,7 +96,6 @@ func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 type options struct {
 	HandshakeData    *session.HandshakeData `json:"handshakeData"`
 	RequestTimeoutMs int                    `json:"requestTimeoutMs"`
-	LogLevel         string                 `json:"logLevel"`
 }
 
 // newOptionsFrom validates and instantiates an options struct from its map representation

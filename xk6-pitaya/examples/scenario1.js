@@ -24,7 +24,6 @@ const opts = {
     }
   },
   requestTimeoutMs: 1000,
-  logLevel: "info",
 }
 
 const pitayaClient = new pitaya.Client(opts)
