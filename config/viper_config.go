@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -147,6 +148,9 @@ func (c *Config) fillDefaultValues() {
 
 	for param := range defaultsMap {
 		val := c.config.Get(param)
+		if (param == "pitaya.metrics.prometheus.enabled"){
+			fmt.Printf("enabled: %s", val)
+		} 
 		if val == nil {
 			c.config.SetDefault(param, defaultsMap[param])
 		} else {
