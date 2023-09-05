@@ -125,17 +125,17 @@ type BuilderConfig struct {
 	Pitaya  PitayaConfig
 	Metrics struct {
 		Prometheus struct {
-			Enabled bool
-		}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"prometheus"`
 		Statsd struct {
-			Enabled bool
-		}
-	}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"statsd"`
+	} `mapstructure:"metrics"`
 	DefaultPipelines struct {
 		StructValidation struct {
-			Enabled bool
-		}
-	}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"structvalidation"`
+	} `mapstructure:"defaultpipelines"`
 }
 
 // NewDefaultBuilderConfig provides default builder configuration
@@ -144,30 +144,30 @@ func NewDefaultBuilderConfig() *BuilderConfig {
 		Pitaya: *NewDefaultPitayaConfig(),
 		Metrics: struct {
 			Prometheus struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"prometheus"`
 			Statsd struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"statsd"`
 		}{
 			Prometheus: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
 			Statsd: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
 		},
 		DefaultPipelines: struct {
 			StructValidation struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"structvalidation"`
 		}{
 			StructValidation: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
