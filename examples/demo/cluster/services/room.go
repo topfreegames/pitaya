@@ -125,6 +125,12 @@ func (r *Room) SetSessionData(ctx context.Context, data *SessionData) ([]byte, e
 	return []byte("success"), nil
 }
 
+// Notify push is a notify route that triggers a push to a session
+func (r *Room) NotifyPush(ctx context.Context) {
+	s := r.app.GetSessionFromCtx(ctx)
+	r.app.SendPushToUsers("testPush", &protos.RPCMsg{Msg: "test"}, []string{s.UID()}, "connector")
+}
+
 // Join room
 func (r *Room) Join(ctx context.Context) (*protos.JoinResponse, error) {
 	logger := pitaya.GetDefaultLoggerFromCtx(ctx)
