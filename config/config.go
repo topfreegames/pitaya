@@ -173,6 +173,9 @@ func NewDefaultBuilderConfig() *BuilderConfig {
 // NewBuilderConfig reads from config to build builder configuration
 func NewBuilderConfig(config *Config) *BuilderConfig {
 	conf := NewDefaultBuilderConfig()
+	if err := config.Unmarshal(&conf); err != nil {
+		panic(err)
+	}
         if err := config.UnmarshalKey("pitaya", &conf); err != nil {
                 panic(err)
         }
