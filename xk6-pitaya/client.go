@@ -158,7 +158,7 @@ func (c *Client) pushRequestMetrics(route string, responseTime time.Duration, su
 	metrics.PushIfNotDone(ctx, state.Samples, metrics.Sample{
 		TimeSeries: metrics.TimeSeries{
 			Metric: c.metrics.RequestResponseTime,
-			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(
+			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(state.Options.RunTags).WithTagsFromMap(
 				map[string]string{
 					"route":   route,
 					"success": fmt.Sprintf("%t", success),
@@ -176,7 +176,7 @@ func (c *Client) pushRequestMetrics(route string, responseTime time.Duration, su
 	metrics.PushIfNotDone(ctx, state.Samples, metrics.Sample{
 		TimeSeries: metrics.TimeSeries{
 			Metric: c.metrics.TimeoutRequests,
-			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(
+			Tags: c.metrics.TagsAndMeta.Tags.WithTagsFromMap(state.Options.RunTags).WithTagsFromMap(
 				map[string]string{
 					"route": route,
 				}),
