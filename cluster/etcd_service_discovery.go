@@ -188,7 +188,7 @@ func (sd *etcdServiceDiscovery) renewLease() error {
 
 func (sd *etcdServiceDiscovery) grantLease() error {
 	// grab lease
-	ctx, cancel := context.WithTimeout(context.Background(), sd.heartbeatTTL)
+	ctx, cancel := context.WithTimeout(context.Background(), sd.etcdDialTimeout)
 	defer cancel()
 	l, err := sd.cli.Grant(ctx, int64(sd.heartbeatTTL.Seconds()))
 	if err != nil {
