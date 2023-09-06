@@ -34,6 +34,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	logutil "go.etcd.io/etcd/client/pkg/v3/logutil"
 	"go.etcd.io/etcd/client/v3/namespace"
+	"google.golang.org/grpc"
 )
 
 type etcdServiceDiscovery struct {
@@ -187,7 +188,9 @@ func (sd *etcdServiceDiscovery) renewLease() error {
 
 func (sd *etcdServiceDiscovery) grantLease() error {
 	// grab lease
-	l, err := sd.cli.Grant(context.TODO(), int64(sd.heartbeatTTL.Seconds()))
+	ctx, cancel := context.WithTimeout(context.Background(), sd.etcdDialTimeout)
+	defer cancel()
+	l, err := sd.cli.Grant(ctx, int64(sd.heartbeatTTL.Seconds()))
 	if err != nil {
 		return err
 	}
@@ -345,6 +348,7 @@ func (sd *etcdServiceDiscovery) InitETCDClient() error {
 		Endpoints:   sd.etcdEndpoints,
 		DialTimeout: sd.etcdDialTimeout,
 		Logger:      etcdClientLogger,
+		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	}
 	if sd.etcdUser != "" && sd.etcdPass != "" {
 		config.Username = sd.etcdUser
