@@ -125,17 +125,17 @@ type BuilderConfig struct {
 	Pitaya  PitayaConfig
 	Metrics struct {
 		Prometheus struct {
-			Enabled bool
-		}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"prometheus"`
 		Statsd struct {
-			Enabled bool
-		}
-	}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"statsd"`
+	} `mapstructure:"metrics"`
 	DefaultPipelines struct {
 		StructValidation struct {
-			Enabled bool
-		}
-	}
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"structvalidation"`
+	} `mapstructure:"defaultpipelines"`
 }
 
 // NewDefaultBuilderConfig provides default builder configuration
@@ -144,30 +144,30 @@ func NewDefaultBuilderConfig() *BuilderConfig {
 		Pitaya: *NewDefaultPitayaConfig(),
 		Metrics: struct {
 			Prometheus struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"prometheus"`
 			Statsd struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"statsd"`
 		}{
 			Prometheus: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
 			Statsd: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
 		},
 		DefaultPipelines: struct {
 			StructValidation struct {
-				Enabled bool
-			}
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"structvalidation"`
 		}{
 			StructValidation: struct {
-				Enabled bool
+				Enabled bool `mapstructure:"enabled"`
 			}{
 				Enabled: false,
 			},
@@ -181,6 +181,9 @@ func NewBuilderConfig(config *Config) *BuilderConfig {
 	if err := config.Unmarshal(&conf); err != nil {
 		panic(err)
 	}
+        if err := config.UnmarshalKey("pitaya", &conf); err != nil {
+                panic(err)
+        }
 	return conf
 }
 
@@ -421,7 +424,7 @@ func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
 type PrometheusConfig struct {
 	Prometheus struct {
 		Port             int               `mapstructure:"port"`
-		AdditionalLabels map[string]string `mapstructure:"additionaltags"`
+		AdditionalLabels map[string]string `mapstructure:"additionallabels"`
 	} `mapstructure:"prometheus"`
 	Game        string            `mapstructure:"game"`
 	ConstLabels map[string]string `mapstructure:"constlabels"`
@@ -432,7 +435,7 @@ func NewDefaultPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{
 		Prometheus: struct {
 			Port             int               `mapstructure:"port"`
-			AdditionalLabels map[string]string `mapstructure:"additionaltags"`
+			AdditionalLabels map[string]string `mapstructure:"additionallabels"`
 		}{
 			Port:             9090,
 			AdditionalLabels: map[string]string{},

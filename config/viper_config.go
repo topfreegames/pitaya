@@ -116,8 +116,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.groups.memory.tickduration":                groupServiceConfig.TickDuration,
 		"pitaya.handler.messages.compression":              pitayaConfig.Handler.Messages.Compression,
 		"pitaya.heartbeat.interval":                        pitayaConfig.Heartbeat.Interval,
-		"pitaya.metrics.prometheus.additionalTags":         prometheusConfig.Prometheus.AdditionalLabels,
-		"pitaya.metrics.constTags":                         prometheusConfig.ConstLabels,
+		"pitaya.metrics.prometheus.additionalLabels":       prometheusConfig.Prometheus.AdditionalLabels,
+		"pitaya.metrics.constLabels":                       prometheusConfig.ConstLabels,
 		"pitaya.metrics.custom":                            customMetricsSpec,
 		"pitaya.metrics.periodicMetrics.period":            pitayaConfig.Metrics.Period,
 		"pitaya.metrics.prometheus.enabled":                builderConfig.Metrics.Prometheus.Enabled,
@@ -151,6 +151,7 @@ func (c *Config) fillDefaultValues() {
 			c.config.SetDefault(param, defaultsMap[param])
 		} else {
 			c.config.SetDefault(param, val)
+			c.config.Set(param, val)
 		}
 
 	}
