@@ -148,7 +148,7 @@ func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.
 	if err == nil {
 		result := make(chan *protos.Response, 1)
 		go func() {
-			result <- processRemoteMessage(ctx, req, r)
+			result <- processRemoteMessage(c, req, r)
 		}()
 
 		reqTimeout := pcontext.GetFromPropagateCtx(ctx, constants.RequestTimeout)
