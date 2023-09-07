@@ -442,7 +442,7 @@ func GetDefaultLoggerFromCtx(ctx context.Context) logging.Logger {
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will
 // be propagated through RPC calls. Use the same tags that are at
-// 'pitaya.metrics.additionalTags' config
+// 'pitaya.metrics.additionalLabels' config
 func AddMetricTagsToPropagateCtx(
 	ctx context.Context,
 	tags map[string]string,
