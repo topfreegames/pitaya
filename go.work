@@ -3,4 +3,5 @@ go 1.20
 use (
 	.
 	./cli
+	./xk6-pitaya
 )
