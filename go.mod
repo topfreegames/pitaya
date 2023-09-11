@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/jhump/protoreflect v1.8.2
 	github.com/mailgun/proxyproto v1.0.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats-server/v2 v2.8.4
 	github.com/nats-io/nats.go v1.25.0
 	github.com/nats-io/nuid v1.0.1
@@ -21,12 +22,12 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/topfreegames/go-workers v1.1.0
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
-	go.etcd.io/etcd/api/v3 v3.6.0-alpha.0.0.20230731205724-24c6fb4b4d24
-	go.etcd.io/etcd/client/pkg/v3 v3.6.0-alpha.0.0.20230731205724-24c6fb4b4d24
-	go.etcd.io/etcd/client/v3 v3.6.0-alpha.0.0.20230731205724-24c6fb4b4d24
+	go.etcd.io/etcd/api/v3 v3.5.9
+	go.etcd.io/etcd/client/pkg/v3 v3.5.9
+	go.etcd.io/etcd/client/v3 v3.5.9
 	go.etcd.io/etcd/tests/v3 v3.5.9
 	golang.org/x/net v0.12.0
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.54.1
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -53,6 +54,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -61,7 +63,6 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nats-io/jwt/v2 v2.2.1-0.20220330180145-442af02fd36a // indirect
@@ -83,7 +84,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.etcd.io/etcd/client/v2 v2.305.9 // indirect
-	go.etcd.io/etcd/pkg/v3 v3.6.0-alpha.0.0.20230731205724-24c6fb4b4d24 // indirect
+	go.etcd.io/etcd/pkg/v3 v3.5.9 // indirect
 	go.etcd.io/etcd/raft/v3 v3.5.9 // indirect
 	go.etcd.io/etcd/server/v3 v3.5.9 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1 // indirect
@@ -92,7 +93,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.1.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.2.0 // indirect
 	go.opentelemetry.io/otel/trace v1.2.0 // indirect
-	go.opentelemetry.io/proto/otlp v0.9.0 // indirect
+	go.opentelemetry.io/proto/otlp v0.15.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
@@ -111,3 +112,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.54.1
