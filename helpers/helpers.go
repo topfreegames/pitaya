@@ -65,7 +65,7 @@ func GetTestNatsServer(t *testing.T) *server.Server {
 // GetTestEtcd gets a test in memory etcd server
 func GetTestEtcd(t *testing.T) (integration.LazyCluster, *clientv3.Client) {
 	t.Helper()
-	//integration2.BeforeTest(t)
+	integration2.BeforeTest(t)
 	c := integration.NewLazyClusterWithConfig(integration2.ClusterConfig{
 		Size:   1,
 		UseTCP: true,
