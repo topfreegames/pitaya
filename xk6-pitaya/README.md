@@ -115,3 +115,11 @@ builder.Serializer = json.NewSerializer()
 ```
 
 Or just don't set it, since json is the default serializer.
+
+# Additional Documentation
+
+All k6 documentation also applies to this extension. See https://k6.io/docs/ for more information.
+
+# Running distributed tests
+
+It is possible to run distributed tests using k6 and this extension. To do so you can refer to the [k6 documentation](https://k6.io/docs/testing-guides/running-distributed-tests/) and use the binary generated from this repo as the k6 binary. There's a prebuilt docker image available at [tfgco/xk6-pitaya](https://hub.docker.com/r/tfgco/xk6-pitaya) that you can use as well.
