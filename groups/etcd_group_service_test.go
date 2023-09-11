@@ -24,13 +24,12 @@ import (
 	"testing"
 
 	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/helpers"
 	"go.etcd.io/etcd/tests/v3/integration"
 )
 
-func setup(t *testing.T) (*integration.ClusterV3, GroupService) {
-	integration.BeforeTest(t)
-	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
-	cli := cluster.RandClient()
+func setup(t *testing.T) (integration.LazyCluster, GroupService) {
+	cluster, cli := helpers.GetTestEtcd(t)
 	etcdGroupService, err := NewEtcdGroupService(*config.NewDefaultEtcdGroupServiceConfig(), cli)
 	if err != nil {
 		panic(err)
@@ -41,66 +40,66 @@ func setup(t *testing.T) (*integration.ClusterV3, GroupService) {
 
 func TestEtcdCreateDuplicatedGroup(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testCreateDuplicatedGroup(etcdGroupService, t)
 }
 
 func TestEtcdCreateGroup(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testCreateGroup(etcdGroupService, t)
 }
 
 func TestEtcdCreateGroupWithTTL(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testCreateGroupWithTTL(etcdGroupService, t)
 }
 
 func TestEtcdGroupAddMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testGroupAddMember(etcdGroupService, t)
 }
 
 func TestEtcdGroupAddDuplicatedMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testGroupAddDuplicatedMember(etcdGroupService, t)
 }
 
 func TestEtcdGroupContainsMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testGroupContainsMember(etcdGroupService, t)
 }
 
 func TestEtcdRemove(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testRemove(etcdGroupService, t)
 }
 
 func TestEtcdDelete(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testDelete(etcdGroupService, t)
 }
 
 func TestEtcdRemoveAll(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testRemoveAll(etcdGroupService, t)
 }
 
 func TestEtcdCount(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testCount(etcdGroupService, t)
 }
 
 func TestEtcdMembers(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
-	defer cluster.Terminate(t)
+	defer cluster.Terminate()
 	testMembers(etcdGroupService, t)
 }
