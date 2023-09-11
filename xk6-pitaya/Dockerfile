@@ -9,6 +9,7 @@ RUN go install go.k6.io/xk6/cmd/xk6@latest
 RUN xk6 build \
     --with github.com/topfreegames/pitaya/xk6-pitaya@$pitaya_revision  \
     --with github.com/topfreegames/pitaya/v2@$pitaya_revision \
+    --with google.golang.org/grpc=google.golang.org/grpc@v1.54.1 \
     --output /k6
 
 # Use the operator's base image and override the k6 binary
