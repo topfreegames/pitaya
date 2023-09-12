@@ -161,7 +161,12 @@ func Decode(data []byte) (*Message, error) {
 
 	m.Err = flag&errorMask == errorMask
 
+	size := len(data)
 	if routable(m.Type) {
+		if offset > size || (offset+2) > size {
+			return nil, ErrInvalidMessage
+		}
+
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
@@ -177,9 +182,17 @@ func Decode(data []byte) (*Message, error) {
 			m.compressed = false
 			rl := data[offset]
 			offset++
+
+			if offset > size || (offset+int(rl)) > size {
+				return nil, ErrInvalidMessage
+			}
 			m.Route = string(data[offset:(offset + int(rl))])
 			offset += int(rl)
 		}
+	}
+
+	if offset > size {
+		return nil, ErrInvalidMessage
 	}
 
 	m.Data = data[offset:]
