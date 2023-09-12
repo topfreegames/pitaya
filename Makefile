@@ -1,9 +1,11 @@
 ifeq ($(OS), Windows_NT)
 	BIN := pitaya-cli.exe
+	XK6_BIN := k6.exe
 	MKFOLDER := if not exist "build" mkdir build
 	GREP_CMD := findstr /V
 else
 	BIN := pitaya-cli
+	XK6_BIN := k6
 	MKFOLDER := mkdir -p build
 	GREP_CMD := grep -v
 endif
@@ -17,7 +19,12 @@ build-cli:
 	@$(MKFOLDER)
 	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/pitaya-cli
 	@echo "build pitaya-cli at ./build/$(BIN)"
- 
+
+build-k6-extension:
+	@$(MKFOLDER)
+	@xk6 build --with github.com/topfreegames/xk6-pitaya=./xk6-pitaya/ --with github.com/topfreegames/pitaya/v2=./ --with google.golang.org/grpc=google.golang.org/grpc@v1.54.1 --output ./build/$(XK6_BIN)
+	@echo "build pitaya k6 extension at ./build/$(XK6_BIN)"
+
 init-submodules:
 	@git submodule init
 
