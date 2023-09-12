@@ -23,6 +23,7 @@ package modules
 import (
 	"bufio"
 	"os/exec"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -85,11 +86,34 @@ func (b *Binary) Init() error {
 	return err
 }
 
+// sendCtrlBreak sends a ctrl break signal to the process, this is a replacement for syscall.SIGTERM in windows
+func sendCtrlBreak(pid int) error {
+	d, e := syscall.LoadDLL("kernel32.dll")
+	if e != nil {
+		return e
+	}
+	p, e := d.FindProc("GenerateConsoleCtrlEvent")
+	if e != nil {
+		return e
+	}
+	r, _, e := p.Call(uintptr(syscall.CTRL_BREAK_EVENT), uintptr(pid))
+	if r == 0 {
+		return e // syscall.GetLastError()
+	}
+	return nil
+}
+
 // Shutdown shutdowns the binary module
 func (b *Binary) Shutdown() error {
-	err := b.cmd.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		return err
+	if runtime.GOOS == "windows" { // windows does not support SIGTERM
+		if err := sendCtrlBreak(b.cmd.Process.Pid); err != nil {
+			return err
+		}
+	} else {
+		err := b.cmd.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			return err
+		}
 	}
 	timeout := time.After(b.gracefulShutdownInterval)
 	select {
