@@ -280,7 +280,7 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 		p, err := ns.marshalResponse(ns.responses[threadID])
 		err = ns.conn.Publish(ns.requests[threadID].GetMsg().GetReply(), p)
 		if err != nil {
-			logger.Log.Error("error sending message response")
+			logger.Log.Errorf("error sending message response: %s", err.Error())
 		}
 	}
 }
