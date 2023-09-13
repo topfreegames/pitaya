@@ -366,6 +366,10 @@ func (app *App) listen() {
 			a.ListenAndServe()
 		}()
 
+		for a.IsRunning() == false {
+			logger.Log.Infof("Waiting for TCP acceptor %s to start on addr %s", reflect.TypeOf(a), a.GetConfiguredAddress())
+		}
+
 		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
 	}
 

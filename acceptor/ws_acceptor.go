@@ -41,6 +41,7 @@ type WSAcceptor struct {
 	listener net.Listener
 	certFile string
 	keyFile  string
+	running  bool
 }
 
 // NewWSAcceptor returns a new instance of WSAcceptor
@@ -59,8 +60,17 @@ func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
 		connChan: make(chan PlayerConn),
 		certFile: certFile,
 		keyFile:  keyFile,
+		running:  false,
 	}
 	return w
+}
+
+func (w *WSAcceptor) IsRunning() bool {
+        return w.running
+}
+
+func (w *WSAcceptor) GetConfiguredAddress() string {
+        return w.addr
 }
 
 // GetAddr returns the addr the acceptor will listen on
@@ -124,7 +134,7 @@ func (w *WSAcceptor) ListenAndServe() {
 		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 	w.listener = listener
-
+	w.running = true
 	w.serve(&upgrader)
 }
 
@@ -160,6 +170,7 @@ func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 
 // Stop stops the acceptor
 func (w *WSAcceptor) Stop() {
+	w.running = false
 	err := w.listener.Close()
 	if err != nil {
 		logger.Log.Errorf("Failed to stop: %s", err.Error())
