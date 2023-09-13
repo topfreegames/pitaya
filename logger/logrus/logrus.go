@@ -6,7 +6,7 @@ import (
 )
 
 type logrusImpl struct {
-	impl logrus.FieldLogger
+	logrus.FieldLogger
 }
 
 // New returns a new interfaces.Logger implementation based on logrus
@@ -18,100 +18,28 @@ func New() interfaces.Logger {
 // NewWithEntry returns a new interfaces.Logger implementation based on a provided logrus entry instance
 // Deprecated: NewWithEntry is deprecated.
 func NewWithEntry(logger *logrus.Entry) interfaces.Logger {
-	return &logrusImpl{impl: logger}
+	return &logrusImpl{FieldLogger: logger}
 }
 
 // NewWithLogger returns a new interfaces.Logger implementation based on a provided logrus instance
 // Deprecated: NewWithLogger is deprecated.
 func NewWithLogger(logger *logrus.Logger) interfaces.Logger {
-	return &logrusImpl{impl: logrus.NewEntry(logger)}
+	return &logrusImpl{FieldLogger: logrus.NewEntry(logger)}
 }
 
 // NewWithFieldLogger returns a new interfaces.Logger implementation based on a provided logrus instance
 func NewWithFieldLogger(logger logrus.FieldLogger) interfaces.Logger {
-	return &logrusImpl{impl: logger}
-}
-
-func (l *logrusImpl) Fatal(format ...interface{}) {
-	l.impl.Fatal(format...)
-}
-
-func (l *logrusImpl) Fatalf(format string, args ...interface{}) {
-	l.impl.Fatalf(format, args...)
-}
-
-func (l *logrusImpl) Fatalln(args ...interface{}) {
-	l.impl.Fatalln(args...)
-}
-
-func (l *logrusImpl) Debug(args ...interface{}) {
-	l.impl.Debug(args...)
-}
-
-func (l *logrusImpl) Debugf(format string, args ...interface{}) {
-	l.impl.Debugf(format, args...)
-}
-
-func (l *logrusImpl) Debugln(args ...interface{}) {
-	l.impl.Debugln(args...)
-}
-
-func (l *logrusImpl) Error(args ...interface{}) {
-	l.impl.Error(args...)
-}
-
-func (l *logrusImpl) Errorf(format string, args ...interface{}) {
-	l.impl.Errorf(format, args...)
-}
-
-func (l *logrusImpl) Errorln(args ...interface{}) {
-	l.impl.Errorln(args...)
-}
-
-func (l *logrusImpl) Info(args ...interface{}) {
-	l.impl.Info(args...)
-}
-
-func (l *logrusImpl) Infof(format string, args ...interface{}) {
-	l.impl.Infof(format, args...)
-}
-
-func (l *logrusImpl) Infoln(args ...interface{}) {
-	l.impl.Infoln(args...)
-}
-
-func (l *logrusImpl) Warn(args ...interface{}) {
-	l.impl.Warn(args...)
-}
-
-func (l *logrusImpl) Warnf(format string, args ...interface{}) {
-	l.impl.Warnf(format, args...)
-}
-
-func (l *logrusImpl) Warnln(args ...interface{}) {
-	l.impl.Warnln(args...)
-}
-
-func (l *logrusImpl) Panic(args ...interface{}) {
-	l.impl.Panic(args...)
-}
-
-func (l *logrusImpl) Panicf(format string, args ...interface{}) {
-	l.impl.Panicf(format, args...)
-}
-
-func (l *logrusImpl) Panicln(args ...interface{}) {
-	l.impl.Panicln(args...)
+	return &logrusImpl{FieldLogger: logger}
 }
 
 func (l *logrusImpl) WithFields(fields map[string]interface{}) interfaces.Logger {
-	return &logrusImpl{impl: l.impl.WithFields(fields)}
+	return &logrusImpl{FieldLogger: l.FieldLogger.WithFields(fields)}
 }
 
 func (l *logrusImpl) WithField(key string, value interface{}) interfaces.Logger {
-	return &logrusImpl{impl: l.impl.WithField(key, value)}
+	return &logrusImpl{FieldLogger: l.FieldLogger.WithField(key, value)}
 }
 
 func (l *logrusImpl) WithError(err error) interfaces.Logger {
-	return &logrusImpl{impl: l.impl.WithError(err)}
+	return &logrusImpl{FieldLogger: l.FieldLogger.WithError(err)}
 }
