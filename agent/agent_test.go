@@ -215,7 +215,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 	sessionPool := session.NewSessionPool()
 	ag := &agentImpl{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
-		chSend:           make(chan pendingWrite, 1),
+		chSend:           make(chan pendingWrite, 10),
 		encoder:          mockEncoder,
 		heartbeatTimeout: time.Second,
 		lastAt:           time.Now().Unix(),
@@ -982,7 +982,7 @@ func TestAgentWriteChSend(t *testing.T) {
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
 	ag := &agentImpl{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
-		chSend:           make(chan pendingWrite, 1),
+		chSend:           make(chan pendingWrite, 10),
 		encoder:          mockEncoder,
 		heartbeatTimeout: time.Second,
 		lastAt:           time.Now().Unix(),
