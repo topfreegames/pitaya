@@ -484,7 +484,6 @@ func (a *agentImpl) SendHandshakeResponse() error {
 }
 
 func (a *agentImpl) SendHandshakeErrorResponse() error {
-	a.SetStatus(constants.StatusClosed)
 	_, err := a.conn.Write(herd)
 
 	return err
