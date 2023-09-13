@@ -437,7 +437,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 
 	ret, err := r.handlerPool.ProcessHandlerMessage(ctx, rt, r.serializer, r.handlerHooks, a.Session, req.GetMsg().GetData(), req.GetMsg().GetType(), true)
 	if err != nil {
-		logger.Log.Warnf(err.Error())
+		logger.Log.WithField("route", rt.String()).Warnf(err.Error())
 		response = &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrUnknownCode,
