@@ -23,6 +23,7 @@ package groups
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/topfreegames/pitaya/v2/config"
 )
@@ -30,8 +31,11 @@ import (
 var memoryGroupService *MemoryGroupService
 
 func TestMain(m *testing.M) {
-	memoryGroupService = NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
+	mconfig := *config.NewDefaultMemoryGroupConfig()
+	mconfig.TickDuration = 10 * time.Millisecond
+	memoryGroupService = NewMemoryGroupService(mconfig)
 	exit := m.Run()
+	time.Sleep(mconfig.TickDuration)
 	os.Exit(exit)
 }
 
