@@ -202,3 +202,11 @@ func (a *TCPAcceptor) serve() {
 		}
 	}
 }
+
+func (a *TCPAcceptor) IsRunning() bool {
+        return a.running
+}
+
+func (a *TCPAcceptor) GetConfiguredAddress() string {
+        return a.addr
+}

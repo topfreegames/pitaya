@@ -998,6 +998,7 @@ func TestAgentWriteChSend(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
+		time.Sleep(10 * time.Millisecond)
 		wg.Done()
 	})
 	go ag.write()

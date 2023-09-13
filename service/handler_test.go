@@ -291,6 +291,7 @@ func TestHandlerServiceProcessPacketHandshake(t *testing.T) {
 				mockSession.EXPECT().Set(constants.IPVersionKey, constants.IPv4).Times(1)
 			} else {
 				mockAgent.EXPECT().SendHandshakeErrorResponse().Times(1)
+				mockAgent.EXPECT().Close().Times(1)
 			}
 
 			handlerPool := NewHandlerPool()
