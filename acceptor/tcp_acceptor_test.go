@@ -22,6 +22,7 @@ package acceptor
 
 import (
 	"net"
+	"runtime"
 	"testing"
 	"time"
 
@@ -49,6 +50,9 @@ func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
 			if table.panicErr != "" {
+				if table.name == "test_4" && runtime.GOOS == "windows" {
+					table.panicErr = "invalid certificates: open wqd: The system cannot find the file specified."
+				}
 				assert.PanicsWithError(t, table.panicErr, func() {
 					NewTCPAcceptor(table.addr, table.certs...)
 				})
