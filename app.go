@@ -365,12 +365,12 @@ func (app *App) listen() {
 		go func() {
 			a.ListenAndServe()
 		}()
+		logger.Log.Infof("Waiting for Acceptor %s to start on addr %s", reflect.TypeOf(a), a.GetConfiguredAddress())
 
 		for a.IsRunning() == false {
-			logger.Log.Infof("Waiting for TCP acceptor %s to start on addr %s", reflect.TypeOf(a), a.GetConfiguredAddress())
 		}
 
-		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
+		logger.Log.Infof("Acceptor %s on addr %s is now accepting connections", reflect.TypeOf(a), a.GetAddr())
 	}
 
 	if app.serverMode == Cluster && app.server.Frontend && app.config.Session.Unique {
