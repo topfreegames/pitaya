@@ -449,7 +449,6 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		}
 	}
 
-
 	// invoke after callbacks on session bound
 	for _, cb := range s.pool.afterBindCallbacks {
 		err := cb(ctx, s)
