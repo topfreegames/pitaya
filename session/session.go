@@ -431,14 +431,6 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		}
 	}
 
-	for _, cb := range s.pool.afterBindCallbacks {
-		err := cb(ctx, s)
-		if err != nil {
-			s.uid = ""
-			return err
-		}
-	}
-
 	// if code running on frontend server
 	if s.IsFrontend {
 		// If a session with the same UID already exists in this frontend server, close it
@@ -456,6 +448,17 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 			return err
 		}
 	}
+
+
+	// invoke after callbacks on session bound
+	for _, cb := range s.pool.afterBindCallbacks {
+		err := cb(ctx, s)
+		if err != nil {
+			s.uid = ""
+			return err
+		}
+	}
+
 	return nil
 }
 
