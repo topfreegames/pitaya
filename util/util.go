@@ -166,10 +166,10 @@ func CtxWithDefaultLogger(ctx context.Context, route, userID string) context.Con
 	requestID := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey)
 	if rID, ok := requestID.(string); ok {
 		if rID == "" {
-			requestID = nuid.New()
+			requestID = nuid.New().Next()
 		}
 	} else {
-		requestID = nuid.New()
+		requestID = nuid.New().Next()
 	}
 	defaultLogger := logger.Log.WithFields(
 		map[string]interface{}{

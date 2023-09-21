@@ -40,6 +40,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/logger"
+	"github.com/topfreegames/pitaya/v2/logger/interfaces"
 	"github.com/topfreegames/pitaya/v2/metrics"
 	"github.com/topfreegames/pitaya/v2/protos"
 	"github.com/topfreegames/pitaya/v2/serialize"
@@ -86,6 +87,7 @@ type (
 		metricsReporters   []metrics.Reporter
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
+		logger             interfaces.Logger
 	}
 
 	pendingMessage struct {
@@ -219,10 +221,11 @@ func newAgent(
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
 		sessionPool:        sessionPool,
+		logger:             logger.Log,
 	}
-
 	// binding session
 	s := sessionPool.NewSession(a, true)
+	a.logger = a.logger.WithField("session_id", s.ID())
 	metrics.ReportNumberOfConnectedClients(metricsReporters, sessionPool.GetSessionCount())
 	a.Session = s
 	return a
@@ -322,21 +325,14 @@ func (a *agentImpl) Push(route string, v interface{}) error {
 		return errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 	}
 
-	logger := logger.Log.WithFields(map[string]interface{}{
-		"type":       "Push",
-		"session_id": a.Session.ID(),
-		"uid":        a.Session.UID(),
-		"route":      route,
-	})
-
 	switch d := v.(type) {
 	case []byte:
-		logger = logger.WithField("bytes", len(d))
+		a.logger.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
+			a.Session.ID(), a.Session.UID(), route, len(d))
 	default:
-		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
+		a.logger.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
+			a.Session.ID(), a.Session.UID(), route, v)
 	}
-
-	logger.Debugf("pushing message to session")
 
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
@@ -356,21 +352,14 @@ func (a *agentImpl) ResponseMID(ctx context.Context, mid uint, v interface{}, is
 		return constants.ErrSessionOnNotify
 	}
 
-	logger := logger.Log.WithFields(map[string]interface{}{
-		"type":       "Push",
-		"session_id": a.Session.ID(),
-		"uid":        a.Session.UID(),
-		"mid":        mid,
-	})
-
 	switch d := v.(type) {
 	case []byte:
-		logger = logger.WithField("bytes", len(d))
+		a.logger.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
+			a.Session.ID(), a.Session.UID(), mid, len(d))
 	default:
-		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
+		a.logger.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
+			a.Session.ID(), a.Session.UID(), mid, v)
 	}
-
-	logger.Debugf("responding message to session")
 
 	return a.send(pendingMessage{ctx: ctx, typ: message.Response, mid: mid, payload: v, err: err})
 }
@@ -385,11 +374,8 @@ func (a *agentImpl) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.WithFields(map[string]interface{}{
-		"session_id":  a.Session.ID(),
-		"uid":         a.Session.UID(),
-		"remote_addr": a.conn.RemoteAddr().String(),
-	}).Debugf("Session closed")
+	a.logger.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
+		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
 	select {
@@ -475,10 +461,7 @@ func (a *agentImpl) SetStatus(state int32) {
 func (a *agentImpl) Handle() {
 	defer func() {
 		a.Close()
-		logger.Log.WithFields(map[string]interface{}{
-			"session_id": a.Session.ID(),
-			"uid":        a.Session.UID(),
-		}).Debugf("Session handle goroutine exit")
+		a.logger.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 	}()
 
 	go a.write()
@@ -516,13 +499,7 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.WithFields(map[string]interface{}{
-					"session_id":  a.Session.ID(),
-					"uid":         a.Session.UID(),
-					"remote_addr": a.conn.RemoteAddr().String(),
-					"last_at":     atomic.LoadInt64(&a.lastAt),
-					"deadline":    deadline,
-				}).Debugf("Session heartbeat timeout")
+				a.logger.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
 				return
 			}
 
@@ -545,7 +522,7 @@ func (a *agentImpl) heartbeat() {
 func (a *agentImpl) onSessionClosed(s session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Log.Errorf("pitaya/onSessionClosed: %v", err)
+			a.logger.Errorf("pitaya/onSessionClosed: %v", err)
 		}
 	}()
 
@@ -589,13 +566,13 @@ func (a *agentImpl) write() {
 			if writeErr != nil {
 				if e.Is(writeErr, os.ErrDeadlineExceeded) {
 					// Log the timeout error but continue processing
-					logger.Log.Warnf(
+					a.logger.Warnf(
 						"Context deadline exceeded for write in conn (%s) | session (%s): %s",
 						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
 					)
 				} else {
 					err = errors.NewError(writeErr, errors.ErrClosedRequest)
-					logger.Log.Errorf(
+					a.logger.Errorf(
 						"Failed to write in conn (%s) | session (%s): %s, agent will close",
 						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
 					)
@@ -670,12 +647,12 @@ func (a *agentImpl) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
-		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
+		a.logger.Errorf("error answering the user with an error: %s", e.Error())
 		return
 	}
 	e = a.Session.ResponseMID(ctx, mid, p, true)
 	if e != nil {
-		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
+		a.logger.Errorf("error answering the user with an error: %s", e.Error())
 	}
 }
 
@@ -748,14 +725,14 @@ func encodeAndCompress(data interface{}, dataCompression bool) ([]byte, error) {
 func (a *agentImpl) reportChannelSize() {
 	chSendCapacity := a.messagesBufferSize - len(a.chSend)
 	if chSendCapacity == 0 {
-		logger.Log.Warnf("chSend is at maximum capacity")
+		a.logger.Warnf("chSend is at maximum capacity")
 	}
 	for _, mr := range a.metricsReporters {
 		if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
-			logger.Log.Warnf("failed to report gauge chSend channel capacity: %s", err.Error())
+			a.logger.Warnf("failed to report gauge chSend channel capacity: %s", err.Error())
 		}
 		if err := mr.ReportHistogram(metrics.ChannelCapacityHistogram, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
-			logger.Log.Warnf("failed to report histogram chSend channel capacity: %s", err.Error())
+			a.logger.Warnf("failed to report histogram chSend channel capacity: %s", err.Error())
 		}
 	}
 }

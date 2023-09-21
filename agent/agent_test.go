@@ -47,6 +47,7 @@ import (
 	pcontext "github.com/topfreegames/pitaya/v2/context"
 	e "github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/v2/metrics/mocks"
 	"github.com/topfreegames/pitaya/v2/mocks"
@@ -385,6 +386,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 		messageEncoder:   messageEncoder,
 		metricsReporters: mockMetricsReporters,
 		Session:          sessionPool.NewSession(nil, true),
+		logger:           logger.Log,
 	}
 
 	ctx := getCtxWithRequestKeys()
