@@ -42,6 +42,7 @@ import (
 	e "github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/helpers"
 	"github.com/topfreegames/pitaya/v2/metrics"
+	"github.com/topfreegames/pitaya/v2/logger"
 	metricsmocks "github.com/topfreegames/pitaya/v2/metrics/mocks"
 	"github.com/topfreegames/pitaya/v2/mocks"
 	"github.com/topfreegames/pitaya/v2/protos"
@@ -223,6 +224,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 		messageEncoder:   messageEncoder,
 		metricsReporters: mockMetricsReporters,
 		Session:          sessionPool.NewSession(nil, true),
+		logger:           logger.Log,
 	}
 
 	ctx := getCtxWithRequestKeys()
@@ -989,6 +991,7 @@ func TestAgentWriteChSend(t *testing.T) {
 		serializer:       mockSerializer,
 		messageEncoder:   messageEncoder,
 		metricsReporters: mockMetricsReporters,
+		logger:           logger.Log,
 	}
 	ctx := getCtxWithRequestKeys()
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
@@ -1104,7 +1107,7 @@ func TestIPVersion(t *testing.T) {
 			mockAddr := &customMockAddr{str: table.addr}
 
 			mockConn.EXPECT().RemoteAddr().Return(mockAddr)
-			a := &agentImpl{conn: mockConn}
+			a := &agentImpl{conn: mockConn, logger: logger.Log}
 
 			assert.Equal(t, table.ipVersion, a.IPVersion())
 		})

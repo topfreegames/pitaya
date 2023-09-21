@@ -470,6 +470,7 @@ func TestRemoteServiceRemoteProcess(t *testing.T) {
 			} else if expectedMsg.Type != message.Notify {
 				mockSession.EXPECT().ResponseMID(ctx, expectedMsg.ID, gomock.Any()).Return(table.responseMIDErr)
 			}
+			mockSession.EXPECT().UID()
 
 			if table.responseMIDErr != nil {
 				mockAgent.EXPECT().AnswerWithError(ctx, expectedMsg.ID, table.responseMIDErr)
