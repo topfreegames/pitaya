@@ -434,6 +434,29 @@ func Start() {
 		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
+		if app.config.GetBool("pitaya.session.drain.enabled") && s == syscall.SIGTERM {
+			logger.Log.Info("Session drain is enabled, draining all sessions before shutting down")
+			timeoutTimer := time.NewTimer(app.config.GetDuration("pitaya.session.drain.timeout"))
+		loop:
+			for {
+				if session.SessionCount == 0 {
+					logger.Log.Info("All sessions drained")
+					break loop
+				}
+				select {
+				case s := <-sg:
+					logger.Log.Warn("got signal: ", s)
+					if s == syscall.SIGINT {
+						logger.Log.Warnf("Bypassing session draing due to SIGINT. %d sessions will be immediately terminated", session.SessionCount)
+					}
+					break loop
+				case <-timeoutTimer.C:
+					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", session.SessionCount)
+				case <-time.After(app.config.GetDuration("pitaya.session.drain.period")):
+					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", session.SessionCount)
+				}
+			}
+		}
 		close(app.dieChan)
 	}
 
