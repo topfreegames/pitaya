@@ -32,6 +32,11 @@ type PitayaConfig struct {
 	} `mapstructure:"concurrency"`
 	Session struct {
 		Unique bool `mapstructure:"unique"`
+		Drain  struct {
+			Enabled bool          `mapstructure:"enabled"`
+			Timeout time.Duration `mapstructure:"timeout"`
+			Period  time.Duration `mapstructure:"period"`
+		} `mapstructure:"drain"`
 	} `mapstructure:"session"`
 	Metrics struct {
 		Period time.Duration `mapstructure:"period"`
@@ -95,8 +100,22 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		},
 		Session: struct {
 			Unique bool `mapstructure:"unique"`
+			Drain  struct {
+				Enabled bool          `mapstructure:"enabled"`
+				Timeout time.Duration `mapstructure:"timeout"`
+				Period  time.Duration `mapstructure:"period"`
+			} `mapstructure:"drain"`
 		}{
 			Unique: true,
+			Drain: struct {
+				Enabled bool          `mapstructure:"enabled"`
+				Timeout time.Duration `mapstructure:"timeout"`
+				Period  time.Duration `mapstructure:"period"`
+			}{
+				Enabled: false,
+				Timeout: time.Duration(6 * time.Hour),
+				Period:  time.Duration(5 * time.Second),
+			},
 		},
 		Metrics: struct {
 			Period time.Duration `mapstructure:"period"`
@@ -181,9 +200,9 @@ func NewBuilderConfig(config *Config) *BuilderConfig {
 	if err := config.Unmarshal(&conf); err != nil {
 		panic(err)
 	}
-        if err := config.UnmarshalKey("pitaya", &conf); err != nil {
-                panic(err)
-        }
+	if err := config.UnmarshalKey("pitaya", &conf); err != nil {
+		panic(err)
+	}
 	return conf
 }
 
