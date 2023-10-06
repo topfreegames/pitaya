@@ -334,8 +334,6 @@ func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteSer
 }
 
 func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
-	response := &protos.Response{}
-
 	remote, ok := r.remotes[rt.Short()]
 	if !ok {
 		logger.Log.Warnf("pitaya/remote: %s not found", rt.Short())
@@ -350,10 +348,11 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 		return response
 	}
-	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
 
+	var ret interface{}
 	var arg interface{}
 	var err error
+
 	if remote.HasArgs {
 		arg, err = unmarshalRemoteArg(remote, req.GetMsg().GetData())
 		if err != nil {
@@ -378,11 +377,12 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		return response
 	}
 
+	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
 	if remote.HasArgs {
 		params = append(params, reflect.ValueOf(arg))
 	}
 
-	ret, err := util.Pcall(remote.Method, params)
+	ret, err = util.Pcall(remote.Method, params)
 	if err != nil {
 		response := &protos.Response{
 			Error: &protos.Error{
@@ -433,6 +433,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 	}
 
+	response := &protos.Response{}
 	response.Data = b
 	return response
 }
