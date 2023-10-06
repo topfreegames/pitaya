@@ -378,7 +378,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		return response
 	}
 
-	if arg != nil {
+	if remote.HasArgs {
 		params = append(params, reflect.ValueOf(arg))
 	}
 
