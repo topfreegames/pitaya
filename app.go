@@ -329,6 +329,29 @@ func (app *App) Start() {
 		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
+		if app.config.Session.Drain.Enabled && s == syscall.SIGTERM {
+			logger.Log.Info("Session drain is enabled, draining all sessions before shutting down")
+			timeoutTimer := time.NewTimer(app.config.Session.Drain.Timeout)
+		loop:
+			for {
+				if app.sessionPool.GetSessionCount() == 0 {
+					logger.Log.Info("All sessions drained")
+					break loop
+				}
+				select {
+				case s := <-sg:
+					logger.Log.Warn("got signal: ", s)
+					if s == syscall.SIGINT {
+						logger.Log.Warnf("Bypassing session draing due to SIGINT. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
+					}
+					break loop
+				case <-timeoutTimer.C:
+					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
+				case <-time.After(app.config.Session.Drain.Timeout):
+					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", app.sessionPool.GetSessionCount())
+				}
+			}
+		}
 		close(app.dieChan)
 	}
 
