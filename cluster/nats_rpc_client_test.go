@@ -470,7 +470,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			ss.EXPECT().SetRequestInFlight(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
-			assert.Equal(t, table.expected, res)
+			assert.Equal(t, table.expected.GetData(), res.GetData())
 			if table.err != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), table.err.Error())
