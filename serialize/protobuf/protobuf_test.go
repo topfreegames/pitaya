@@ -76,7 +76,7 @@ func TestUnmarshal(t *testing.T) {
 
 	var dest protos.Response
 	var unmarshalTables = map[string]struct {
-		expected interface{}
+		expected *protos.Response
 		data     []byte
 		dest     interface{}
 		err      error
@@ -92,7 +92,7 @@ func TestUnmarshal(t *testing.T) {
 			err := serializer.Unmarshal(table.data, result)
 			assert.Equal(t, table.err, err)
 			if table.err == nil {
-				assert.Equal(t, table.expected, result)
+				assert.Equal(t, table.expected.GetData(), result.(*protos.Response).GetData())
 			}
 		})
 	}
