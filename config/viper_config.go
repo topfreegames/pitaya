@@ -117,6 +117,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.handler.messages.compression":              pitayaConfig.Handler.Messages.Compression,
 		"pitaya.heartbeat.interval":                        pitayaConfig.Heartbeat.Interval,
 		"pitaya.metrics.prometheus.additionalLabels":       prometheusConfig.Prometheus.AdditionalLabels,
+		"pitaya.metrics.prometheus.summaryObjectives":      prometheusConfig.Prometheus.SummaryObjectives,
 		"pitaya.metrics.constLabels":                       prometheusConfig.ConstLabels,
 		"pitaya.metrics.custom":                            customMetricsSpec,
 		"pitaya.metrics.period":                            pitayaConfig.Metrics.Period,

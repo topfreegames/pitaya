@@ -444,6 +444,7 @@ type PrometheusConfig struct {
 	Prometheus struct {
 		Port             int               `mapstructure:"port"`
 		AdditionalLabels map[string]string `mapstructure:"additionallabels"`
+		SummaryObjectives map[float64]float64 `mapstructure:"summaryobjectives"`
 	} `mapstructure:"prometheus"`
 	Game        string            `mapstructure:"game"`
 	ConstLabels map[string]string `mapstructure:"constlabels"`
@@ -455,9 +456,11 @@ func NewDefaultPrometheusConfig() *PrometheusConfig {
 		Prometheus: struct {
 			Port             int               `mapstructure:"port"`
 			AdditionalLabels map[string]string `mapstructure:"additionallabels"`
+			SummaryObjectives map[float64]float64 `mapstructure:"summaryobjectives"`
 		}{
 			Port:             9090,
 			AdditionalLabels: map[string]string{},
+			SummaryObjectives: map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
 		},
 		ConstLabels: map[string]string{},
 	}

@@ -48,6 +48,7 @@ type PrometheusReporter struct {
 	histogramReportersMap map[string]*prometheus.HistogramVec
 	gaugeReportersMap     map[string]*prometheus.GaugeVec
 	additionalLabels      map[string]string
+	summaryObjectives     map[float64]float64
 }
 
 func (p *PrometheusReporter) registerCustomMetrics(
@@ -133,7 +134,7 @@ func (p *PrometheusReporter) registerMetrics(
 			Subsystem:   "handler",
 			Name:        ResponseTime,
 			Help:        "the time to process a msg in nanoseconds",
-			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
+			Objectives:  p.summaryObjectives,
 			ConstLabels: constLabels,
 		},
 		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
@@ -158,7 +159,7 @@ func (p *PrometheusReporter) registerMetrics(
 			Subsystem:   "handler",
 			Name:        ProcessDelay,
 			Help:        "the delay to start processing a msg in nanoseconds",
-			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
+			Objectives:  p.summaryObjectives,
 			ConstLabels: constLabels,
 		},
 		append([]string{"route", "type"}, additionalLabelsKeys...),
@@ -325,6 +326,7 @@ func getPrometheusReporter(
 			summaryReportersMap:   make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:     make(map[string]*prometheus.GaugeVec),
 		}
+		prometheusReporter.summaryObjectives = config.Prometheus.SummaryObjectives
 		prometheusReporter.registerMetrics(config.ConstLabels, config.Prometheus.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
