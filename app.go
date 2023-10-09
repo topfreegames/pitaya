@@ -342,17 +342,18 @@ func (app *App) Start() {
 				case s := <-sg:
 					logger.Log.Warn("got signal: ", s)
 					if s == syscall.SIGINT {
-						logger.Log.Warnf("Bypassing session draing due to SIGINT. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
+						logger.Log.Warnf("Bypassing session draining due to SIGINT. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
 					}
 					break loop
 				case <-timeoutTimer.C:
 					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
-				case <-time.After(app.config.Session.Drain.Timeout):
+					break loop
+				case <-time.After(app.config.Session.Drain.Period):
 					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", app.sessionPool.GetSessionCount())
 				}
 			}
 		}
-		close(app.dieChan)
+		app.Shutdown()
 	}
 
 	logger.Log.Warn("server is stopping...")
