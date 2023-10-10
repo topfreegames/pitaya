@@ -64,7 +64,8 @@ func GetTestNatsServer(t *testing.T) *server.Server {
 // GetTestEtcd gets a test in memory etcd server
 func GetTestEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
 	t.Helper()
-	integration.BeforeTest(t)
+	// skip etcd go leak detection
+	integration.BeforeTest(t, integration.WithoutGoLeakDetection())
 	c := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
 	cli := c.RandClient()
 	return c, cli
