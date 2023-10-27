@@ -21,10 +21,11 @@
 package config
 
 import (
-	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/spf13/viper"
 )
@@ -91,6 +92,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.buffer.push":            natsRPCServerConfig.Buffer.Push,
 		"pitaya.cluster.sd.etcd.dialtimeout":                    etcdSDConfig.DialTimeout,
 		"pitaya.cluster.sd.etcd.endpoints":                      etcdSDConfig.Endpoints,
+		"pitaya.cluster.sd.etcd.user":                           etcdSDConfig.User,
+		"pitaya.cluster.sd.etcd.pass":                           etcdSDConfig.Pass,
 		"pitaya.cluster.sd.etcd.prefix":                         etcdSDConfig.Prefix,
 		"pitaya.cluster.sd.etcd.grantlease.maxretries":          etcdSDConfig.GrantLease.MaxRetries,
 		"pitaya.cluster.sd.etcd.grantlease.retryinterval":       etcdSDConfig.GrantLease.RetryInterval,
@@ -111,6 +114,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.defaultpipelines.structvalidation.enabled": builderConfig.DefaultPipelines.StructValidation.Enabled,
 		"pitaya.groups.etcd.dialtimeout":                   etcdGroupServiceConfig.DialTimeout,
 		"pitaya.groups.etcd.endpoints":                     etcdGroupServiceConfig.Endpoints,
+		"pitaya.groups.etcd.user":                          etcdGroupServiceConfig.User,
+		"pitaya.groups.etcd.pass":                          etcdGroupServiceConfig.Pass,
 		"pitaya.groups.etcd.prefix":                        etcdGroupServiceConfig.Prefix,
 		"pitaya.groups.etcd.transactiontimeout":            etcdGroupServiceConfig.TransactionTimeout,
 		"pitaya.groups.memory.tickduration":                groupServiceConfig.TickDuration,
@@ -128,6 +133,8 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.rate":                       statsdConfig.Statsd.Rate,
 		"pitaya.modules.bindingstorage.etcd.dialtimeout":   etcdBindingConfig.DialTimeout,
 		"pitaya.modules.bindingstorage.etcd.endpoints":     etcdBindingConfig.Endpoints,
+		"pitaya.modules.bindingstorage.etcd.user":          etcdBindingConfig.User,
+		"pitaya.modules.bindingstorage.etcd.pass":          etcdBindingConfig.Pass,
 		"pitaya.modules.bindingstorage.etcd.leasettl":      etcdBindingConfig.LeaseTTL,
 		"pitaya.modules.bindingstorage.etcd.prefix":        etcdBindingConfig.Prefix,
 		"pitaya.conn.ratelimiting.limit":                   rateLimitingConfig.Limit,
