@@ -384,8 +384,12 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = a.conn.Write(p)
-	return err
+	pWrite := pendingWrite{
+		ctx:  ctx,
+		data: p,
+	}
+	a.chSend <- pWrite
+	return nil
 }
 
 // SetLastAt sets the last at to now
