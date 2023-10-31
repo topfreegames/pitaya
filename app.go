@@ -347,7 +347,8 @@ func (app *App) Start() {
 					break loop
 				case <-timeoutTimer.C:
 					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
-				case <-time.After(app.config.Session.Drain.Timeout):
+					break loop
+				case <-time.After(app.config.Session.Drain.Period):
 					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", app.sessionPool.GetSessionCount())
 				}
 			}
