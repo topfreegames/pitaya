@@ -452,6 +452,7 @@ func Start() {
 					break loop
 				case <-timeoutTimer.C:
 					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", session.SessionCount)
+					break loop
 				case <-time.After(app.config.GetDuration("pitaya.session.drain.period")):
 					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", session.SessionCount)
 				}
