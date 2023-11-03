@@ -429,7 +429,7 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 		{"remote_not_found", &protos.Request{Msg: &protos.Msg{}}, route.NewRoute("bla", "bla", "bla"), nil, "route not found", false, false, nil, nil, nil, nil, nil},
 		{"failed_unmarshal", &protos.Request{Msg: &protos.Msg{Data: []byte("dd")}}, rt, nil, "reflect: Call using zero Value argument", true, true, nil, nil, nil, nil, nil},
 		{"failed_pcall", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err", true, true, nil, nil, nil, nil, nil},
-		{"failed_before_hook", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err modified input", true, false, nil, nil, fmt.Errorf("remote err modified input"), nil, nil},
+		{"failed_before_hook", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "before hook err", true, false, nil, nil, fmt.Errorf("before hook err"), nil, nil},
 		{"failed_pcall_modified_err", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err modified output", true, true, nil, nil, nil, nil, fmt.Errorf("remote err modified output")},
 		{"success_nil_response", &protos.Request{Msg: &protos.Msg{}}, rtStr, nil, "", true, true, nil, nil, nil, nil, nil},
 		{"success_response", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, b, "", true, true, nil, nil, nil, nil, nil},
@@ -437,6 +437,7 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 		{"success_response_modified_input", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, modifiedInput, nil, nil, nil, nil},
 		{"success_response_modified_input_ctx", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, modifiedInput, modifiedCtx, nil, nil, nil},
 		{"success_response_modified_output", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, nil, nil, nil, modifiedInput, nil},
+		{"failed_after_hook", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, nil, "after hook err", true, true, nil, nil, nil, nil, fmt.Errorf("after hook err")},
 	}
 
 	for _, table := range tables {
