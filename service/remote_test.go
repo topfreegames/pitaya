@@ -23,6 +23,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -412,23 +413,30 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 
 	modifiedCtx := context.WithValue(context.Background(), ctxModifiedResponse, modifiedInput)
 	tables := []struct {
-		name           string
-		req            *protos.Request
-		rt             *route.Route
-		expectedOutput []byte
-		errSubstring   string
-		shouldRunHooks bool
-		modifiedInput  interface{}
-		modifiedCtx    context.Context
+		name                string
+		req                 *protos.Request
+		rt                  *route.Route
+		expectedOutput      []byte
+		errSubstring        string
+		shouldRunBeforeHook bool
+		shouldRunAfterHook  bool
+		modifiedInput       interface{}
+		modifiedCtx         context.Context
+		modifiedInputError  error
+		modifiedOutput      interface{}
+		modifiedOutputError error
 	}{
-		{"remote_not_found", &protos.Request{Msg: &protos.Msg{}}, route.NewRoute("bla", "bla", "bla"), nil, "route not found", false, nil, nil},
-		{"failed_unmarshal", &protos.Request{Msg: &protos.Msg{Data: []byte("dd")}}, rt, nil, "reflect: Call using zero Value argument", true, nil, nil},
-		{"failed_pcall", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err", true, nil, nil},
-		{"success_nil_response", &protos.Request{Msg: &protos.Msg{}}, rtStr, nil, "", true, nil, nil},
-		{"success_response", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, b, "", true, nil, nil},
-		{"success_response_modified_ctx", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, nil, modifiedCtx},
-		{"success_response_modified_input", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, modifiedInput, nil},
-		{"success_response_modified_input_ctx", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, modifiedInput, modifiedCtx},
+		{"remote_not_found", &protos.Request{Msg: &protos.Msg{}}, route.NewRoute("bla", "bla", "bla"), nil, "route not found", false, false, nil, nil, nil, nil, nil},
+		{"failed_unmarshal", &protos.Request{Msg: &protos.Msg{Data: []byte("dd")}}, rt, nil, "reflect: Call using zero Value argument", true, true, nil, nil, nil, nil, nil},
+		{"failed_pcall", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err", true, true, nil, nil, nil, nil, nil},
+		{"failed_before_hook", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err modified input", true, false, nil, nil, fmt.Errorf("remote err modified input"), nil, nil},
+		{"failed_pcall_modified_err", &protos.Request{Msg: &protos.Msg{}}, rtErr, nil, "remote err modified output", true, true, nil, nil, nil, nil, fmt.Errorf("remote err modified output")},
+		{"success_nil_response", &protos.Request{Msg: &protos.Msg{}}, rtStr, nil, "", true, true, nil, nil, nil, nil, nil},
+		{"success_response", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, b, "", true, true, nil, nil, nil, nil, nil},
+		{"success_response_modified_ctx", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, nil, modifiedCtx, nil, nil, nil},
+		{"success_response_modified_input", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, modifiedInput, nil, nil, nil, nil},
+		{"success_response_modified_input_ctx", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, modifiedInput, modifiedCtx, nil, nil, nil},
+		{"success_response_modified_output", &protos.Request{Msg: &protos.Msg{Data: b}}, rtRes, modifiedResponse, "", true, true, nil, nil, nil, modifiedInput, nil},
 	}
 
 	for _, table := range tables {
@@ -455,15 +463,20 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 				if afterHookInvoked {
 					assert.FailNow(t, "BeforeHandler and AfterHandler hooks running out of order")
 				}
+
+				var err error
 				if table.modifiedInput != nil {
 					in = table.modifiedInput
 				}
 				if table.modifiedCtx != nil {
 					ctx = table.modifiedCtx
 				}
+				if table.modifiedInputError != nil {
+					err = table.modifiedInputError
+				}
 
 				beforeHookInvoked = true
-				return ctx, in, nil
+				return ctx, in, err
 			})
 			handlerHooks.AfterHandler.PushFront(func(ctx context.Context, out interface{}, err error) (interface{}, error) {
 				if afterHookInvoked {
@@ -471,6 +484,13 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 				}
 				if !beforeHookInvoked {
 					assert.FailNow(t, "BeforeHandler and AfterHandler hooks running out of order")
+				}
+
+				if table.modifiedOutput != nil {
+					out = table.modifiedOutput
+				}
+				if table.modifiedOutputError != nil {
+					err = table.modifiedOutputError
 				}
 
 				afterHookInvoked = true
@@ -491,11 +511,14 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 
 			res := svc.handleRPCUser(context.Background(), table.req, table.rt)
 
-			if table.shouldRunHooks {
-				assert.True(t, beforeHookInvoked, "Before hook was never invoked")
+			if table.shouldRunBeforeHook {
+				assert.True(t, beforeHookInvoked, "After hook was never invoked")
+			} else {
+				assert.False(t, beforeHookInvoked, "After hook should not have run")
+			}
+			if table.shouldRunAfterHook {
 				assert.True(t, afterHookInvoked, "After hook was never invoked")
 			} else {
-				assert.False(t, beforeHookInvoked, "Before hook should not have run")
 				assert.False(t, afterHookInvoked, "After hook should not have run")
 			}
 
