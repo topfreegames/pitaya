@@ -383,6 +383,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 	}
 
 	ret, err = util.Pcall(remote.Method, params)
+	ret, err = r.handlerHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
 	if err != nil {
 		response := &protos.Response{
 			Error: &protos.Error{
@@ -395,17 +396,6 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 			if val.Metadata != nil {
 				response.Error.Metadata = val.Metadata
 			}
-		}
-		return response
-	}
-
-	ret, err = r.handlerHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
-	if err != nil {
-		response := &protos.Response{
-			Error: &protos.Error{
-				Code: e.ErrInternalCode,
-				Msg:  err.Error(),
-			},
 		}
 		return response
 	}
