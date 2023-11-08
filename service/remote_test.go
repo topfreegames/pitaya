@@ -358,7 +358,7 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
 			sessionPool := session.NewSessionPool()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, nil, pipeline.NewHandlerHooks(), handlerPool)
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), pipeline.NewHandlerHooks(), handlerPool)
 
 			svc.remotes[rt.Short()] = comp
 			svc.remotes[rtErr.Short()] = compErr
@@ -500,7 +500,7 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 				return out, err
 			})
 
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, remoteHooks, nil, handlerPool)
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, remoteHooks, pipeline.NewHandlerHooks(), handlerPool)
 
 			svc.remotes[rt.Short()] = comp
 			svc.remotes[rtErr.Short()] = compErr
