@@ -62,6 +62,7 @@ type RemoteService struct {
 	messageEncoder         message.Encoder
 	server                 *cluster.Server // server obj
 	remoteBindingListeners []cluster.RemoteBindingListener
+	remoteHooks            *pipeline.HandlerHooks
 	sessionPool            session.SessionPool
 	handlerPool            *HandlerPool
 	remotes                map[string]*component.Remote // all remote method
@@ -78,6 +79,7 @@ func NewRemoteService(
 	messageEncoder message.Encoder,
 	server *cluster.Server,
 	sessionPool session.SessionPool,
+	remoteHooks *pipeline.HandlerHooks,
 	handlerHooks *pipeline.HandlerHooks,
 	handlerPool *HandlerPool,
 ) *RemoteService {
@@ -97,6 +99,7 @@ func NewRemoteService(
 		remotes:                make(map[string]*component.Remote),
 	}
 
+	remote.remoteHooks = remoteHooks
 	remote.handlerHooks = handlerHooks
 
 	return remote
@@ -366,7 +369,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 	}
 
-	ctx, arg, err = r.handlerHooks.BeforeHandler.ExecuteBeforePipeline(ctx, arg)
+	ctx, arg, err = r.remoteHooks.BeforeHandler.ExecuteBeforePipeline(ctx, arg)
 	if err != nil {
 		response := &protos.Response{
 			Error: &protos.Error{
@@ -381,9 +384,9 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 	if remote.HasArgs {
 		params = append(params, reflect.ValueOf(arg))
 	}
-
 	ret, err = util.Pcall(remote.Method, params)
-	ret, err = r.handlerHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
+
+	ret, err = r.remoteHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
 	if err != nil {
 		response := &protos.Response{
 			Error: &protos.Error{
