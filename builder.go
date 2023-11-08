@@ -42,6 +42,7 @@ type Builder struct {
 	Groups           groups.GroupService
 	SessionPool      session.SessionPool
 	Worker           *worker.Worker
+	RemoteHooks      *pipeline.HandlerHooks
 	HandlerHooks     *pipeline.HandlerHooks
 }
 
@@ -202,6 +203,7 @@ func NewBuilder(isFrontend bool,
 		Server:           server,
 		ServerMode:       serverMode,
 		Groups:           gsi,
+		RemoteHooks:      pipeline.NewHandlerHooks(),
 		HandlerHooks:     handlerHooks,
 		ServiceDiscovery: serviceDiscovery,
 		SessionPool:      sessionPool,
@@ -248,6 +250,7 @@ func (builder *Builder) Build() Pitaya {
 			builder.MessageEncoder,
 			builder.Server,
 			builder.SessionPool,
+			builder.RemoteHooks,
 			builder.HandlerHooks,
 			handlerPool,
 		)
