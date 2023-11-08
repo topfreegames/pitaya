@@ -5,7 +5,9 @@ services:
     ports:
       - 4222:4222
   etcd:
-    image: appcelerator/etcd
+    image: bitnami/etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
     ports:
       - 2379:2379
   redis:
