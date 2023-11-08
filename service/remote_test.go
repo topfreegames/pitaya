@@ -108,7 +108,7 @@ func TestNewRemoteService(t *testing.T) {
 }
 
 func TestRemoteServiceRegister(t *testing.T) {
-	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRemoteService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	err := svc.Register(&MyComp{}, []component.Option{})
 	assert.NoError(t, err)
 	defer func() { svc.remotes = make(map[string]*component.Remote, 0) }()
