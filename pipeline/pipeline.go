@@ -45,18 +45,38 @@ type (
 		Handlers []AfterHandlerTempl
 	}
 
-	// HandlerHooks contains before and after channels
-	HandlerHooks struct {
+	// Hooks contains before and after channels
+	Hooks struct {
 		BeforeHandler *Channel
 		AfterHandler  *AfterChannel
+	}
+
+	HandlerHooks struct {
+		Hooks
+	}
+
+	RemoteHooks struct {
+		Hooks
 	}
 )
 
 // NewHandlerHooks ctor
 func NewHandlerHooks() *HandlerHooks {
 	return &HandlerHooks{
-		BeforeHandler: NewChannel(),
-		AfterHandler:  NewAfterChannel(),
+		Hooks: Hooks{
+			BeforeHandler: NewChannel(),
+			AfterHandler:  NewAfterChannel(),
+		},
+	}
+}
+
+// NewRemoteHooks ctor
+func NewRemoteHooks() *RemoteHooks {
+	return &RemoteHooks{
+		Hooks: Hooks{
+			BeforeHandler: NewChannel(),
+			AfterHandler:  NewAfterChannel(),
+		},
 	}
 }
 

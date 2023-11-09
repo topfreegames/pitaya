@@ -42,7 +42,7 @@ type Builder struct {
 	Groups           groups.GroupService
 	SessionPool      session.SessionPool
 	Worker           *worker.Worker
-	RemoteHooks      *pipeline.HandlerHooks
+	RemoteHooks      *pipeline.RemoteHooks
 	HandlerHooks     *pipeline.HandlerHooks
 }
 
@@ -203,7 +203,7 @@ func NewBuilder(isFrontend bool,
 		Server:           server,
 		ServerMode:       serverMode,
 		Groups:           gsi,
-		RemoteHooks:      pipeline.NewHandlerHooks(),
+		RemoteHooks:      pipeline.NewRemoteHooks(),
 		HandlerHooks:     handlerHooks,
 		ServiceDiscovery: serviceDiscovery,
 		SessionPool:      sessionPool,
