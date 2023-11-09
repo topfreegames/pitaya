@@ -62,7 +62,7 @@ type RemoteService struct {
 	messageEncoder         message.Encoder
 	server                 *cluster.Server // server obj
 	remoteBindingListeners []cluster.RemoteBindingListener
-	remoteHooks            *pipeline.HandlerHooks
+	remoteHooks            *pipeline.RemoteHooks
 	sessionPool            session.SessionPool
 	handlerPool            *HandlerPool
 	remotes                map[string]*component.Remote // all remote method
@@ -79,7 +79,7 @@ func NewRemoteService(
 	messageEncoder message.Encoder,
 	server *cluster.Server,
 	sessionPool session.SessionPool,
-	remoteHooks *pipeline.HandlerHooks,
+	remoteHooks *pipeline.RemoteHooks,
 	handlerHooks *pipeline.HandlerHooks,
 	handlerPool *HandlerPool,
 ) *RemoteService {

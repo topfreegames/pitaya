@@ -25,9 +25,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
-	"net"
 
 	"github.com/nats-io/nuid"
 
