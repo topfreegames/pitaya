@@ -87,7 +87,7 @@ func TestNewRemoteService(t *testing.T) {
 	router := router.New()
 	sv := &cluster.Server{}
 	sessionPool := session.NewSessionPool()
-	remoteHooks := pipeline.NewHandlerHooks()
+	remoteHooks := pipeline.NewRemoteHooks()
 	handlerHooks := pipeline.NewHandlerHooks()
 	handlerPool := NewHandlerPool()
 	svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, mockMessageEncoder, sv, sessionPool, remoteHooks, handlerHooks, handlerPool)
@@ -358,7 +358,7 @@ func TestRemoteServiceHandleRPCUser(t *testing.T) {
 			messageEncoder := message.NewMessagesEncoder(false)
 			router := router.New()
 			sessionPool := session.NewSessionPool()
-			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewHandlerHooks(), pipeline.NewHandlerHooks(), handlerPool)
+			svc := NewRemoteService(mockRPCClient, mockRPCServer, mockSD, packetEncoder, mockSerializer, router, messageEncoder, &cluster.Server{}, sessionPool, pipeline.NewRemoteHooks(), pipeline.NewHandlerHooks(), handlerPool)
 
 			svc.remotes[rt.Short()] = comp
 			svc.remotes[rtErr.Short()] = compErr
@@ -458,7 +458,7 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 			beforeHookInvoked := false
 			afterHookInvoked := false
 
-			remoteHooks := pipeline.NewHandlerHooks()
+			remoteHooks := pipeline.NewRemoteHooks()
 			remoteHooks.BeforeHandler.PushFront(func(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
 				if beforeHookInvoked {
 					assert.FailNow(t, "BeforeHandler hook invoked twice")
