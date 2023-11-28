@@ -6,7 +6,7 @@ A REPL cli client made in go for pitaya.
 ## Installing
 
 ```
-go install github.com/topfreegames/pitaya/v2/pitaya-cli
+go install github.com/topfreegames/pitaya-cli/v2@latest
 ```
 
 ## Usage
@@ -80,7 +80,7 @@ func (c *MyHandler) Descriptors(ctx context.Context, names *protos.ProtoNames) (
 }
 ```
 
-When initilizing the CLI, you have to provide the docs route as the following:
+When initializing the CLI, you have to provide the docs route as the following:
 ```
 pitaya-cli -docs connector.docsHandler.docs
 ```
