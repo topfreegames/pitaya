@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/dop251/goja v0.0.0-20230621100801-7749907a8a20
 	github.com/sirupsen/logrus v1.9.3
-	github.com/topfreegames/pitaya/v2 v2.6.3-0.20230901141417-b7ec5822e19e
+	github.com/topfreegames/pitaya/v2 v2.8.1-0.20231207120201-acb62e4fb582
 	go.k6.io/k6 v0.46.0
 )
 
@@ -85,5 +85,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/topfreegames/pitaya/v2 => ../

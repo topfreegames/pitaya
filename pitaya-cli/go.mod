@@ -1,4 +1,4 @@
-module github.com/topfreegames/pitaya/v2/pitaya-cli
+module github.com/topfreegames/pitaya/pitaya-cli/v2
 
 go 1.18
 
@@ -6,7 +6,7 @@ require (
 	github.com/abiosoft/ishell/v2 v2.0.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/topfreegames/pitaya/v2 v2.7.1
+	github.com/topfreegames/pitaya/v2 v2.8.1-0.20231207120201-acb62e4fb582
 )
 
 require (
@@ -81,5 +81,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/topfreegames/pitaya/v2 => ../

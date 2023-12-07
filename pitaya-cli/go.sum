@@ -310,6 +310,8 @@ github.com/thrawn01/args v0.3.0/go.mod h1:TnRiOFjyh7Wa6oC8ACFPc7KIvbzCiluphA3mJU
 github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 h1:uruHq4dN7GR16kFc5fp3d1RIYzJW5onx8Ybykw2YQFA=
 github.com/topfreegames/go-workers v1.1.0 h1:gLJHsTeNxx2K3lNyDD4lC4XpPF+0u0TYuWcp76Eqccg=
 github.com/topfreegames/go-workers v1.1.0/go.mod h1:8D8gh2G+q1i9rq92d6QRGyQcWlzPKV+O86WG8UxAPIg=
+github.com/topfreegames/pitaya/v2 v2.8.1-0.20231207120201-acb62e4fb582 h1:O+aPGS5p5R5Oucr7be4K8Yr0U1E63TJsLsb/M+XIeEI=
+github.com/topfreegames/pitaya/v2 v2.8.1-0.20231207120201-acb62e4fb582/go.mod h1:vvVG2nTqazeTyOexa4pD1AOLT2kbHJGVOa6N/Q3YUg0=
 github.com/uber/jaeger-client-go v2.25.0+incompatible h1:IxcNZ7WRY1Y3G4poYlx24szfsn/3LvK9QHCq9oQw8+U=
 github.com/uber/jaeger-lib v2.4.0+incompatible h1:fY7QsGQWiCt8pajv4r7JEvmATdCVaWxXbjwyYwsNaLQ=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
