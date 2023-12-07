@@ -7,7 +7,7 @@
 ## Building the k6 binary
 
 ```shell
-xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v2=../ --with google.golang.org/grpc=google.golang.org/grpc@v1.54.1
+xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v2=../
 ```
 
 ## Building the k6 docker image
