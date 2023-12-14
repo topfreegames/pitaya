@@ -43,3 +43,7 @@ func (l *logrusImpl) WithField(key string, value interface{}) interfaces.Logger 
 func (l *logrusImpl) WithError(err error) interfaces.Logger {
 	return &logrusImpl{FieldLogger: l.FieldLogger.WithError(err)}
 }
+
+func (l *logrusImpl) LogrusLogger() logrus.FieldLogger {
+	return l.FieldLogger
+}

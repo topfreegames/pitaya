@@ -1,5 +1,7 @@
 package interfaces
 
+import "github.com/sirupsen/logrus"
+
 // Logger interface for pitaya loggers
 type Logger interface {
 	Fatal(format ...interface{})
@@ -29,4 +31,6 @@ type Logger interface {
 	WithFields(fields map[string]interface{}) Logger
 	WithField(key string, value interface{}) Logger
 	WithError(err error) Logger
+
+	LogrusLogger() logrus.FieldLogger
 }
