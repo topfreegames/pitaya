@@ -2,7 +2,6 @@ package session
 
 import (
 	"context"
-	"github.com/topfreegames/pitaya/v2/networkentity"
 )
 
 var DefaultSessionPool SessionPool
@@ -36,17 +35,4 @@ func OnSessionClose(f func(s Session)) {
 // CloseAll calls Close on all sessions
 func CloseAll() {
 	DefaultSessionPool.CloseAll()
-}
-
-// New returns a new session instance
-// a NetworkEntity is a low-level network instance
-func New(entity networkentity.NetworkEntity, frontend bool, UID ...string) Session {
-	DefaultSessionPool = NewSessionPool()
-	userID := ""
-	if len(UID) > 0 {
-		userID = UID[0]
-	}
-
-	session := DefaultSessionPool.NewSession(entity, frontend, userID)
-	return session
 }
