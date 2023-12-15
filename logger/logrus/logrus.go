@@ -44,6 +44,6 @@ func (l *logrusImpl) WithError(err error) interfaces.Logger {
 	return &logrusImpl{FieldLogger: l.FieldLogger.WithError(err)}
 }
 
-func (l *logrusImpl) GetInternalLogger() logrus.FieldLogger {
+func (l *logrusImpl) GetInternalLogger() any {
 	return l.FieldLogger
 }
