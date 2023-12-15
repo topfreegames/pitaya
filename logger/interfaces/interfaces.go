@@ -32,5 +32,5 @@ type Logger interface {
 	WithField(key string, value interface{}) Logger
 	WithError(err error) Logger
 
-	LogrusLogger() logrus.FieldLogger
+	GetInternalLogger() logrus.FieldLogger
 }
