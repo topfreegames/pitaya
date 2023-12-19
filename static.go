@@ -29,6 +29,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
 	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/interfaces"
 	"github.com/topfreegames/pitaya/v2/metrics"
 	"github.com/topfreegames/pitaya/v2/router"
@@ -94,7 +95,11 @@ func GetServers() []*cluster.Server {
 }
 
 func GetSessionFromCtx(ctx context.Context) session.Session {
-	return DefaultApp.GetSessionFromCtx(ctx)
+	sessionVal := ctx.Value(constants.SessionCtxKey)
+	if sessionVal == nil {
+		return nil
+	}
+	return sessionVal.(session.Session)
 }
 
 func Start() {

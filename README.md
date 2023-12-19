@@ -1,7 +1,7 @@
 # pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
 *WARNING*: The [version v1.x](https://github.com/topfreegames/pitaya/tree/v1) of pitaya is deprecated, complete guide of the new version v2.x can be found [here](https://github.com/topfreegames/pitaya/issues/240).
-The current README is for version 2, make sure you look at branch v1 if you'd like to see the documentation for the older version.
+The current README is for version v2.x, make sure you look at branch v1 if you'd like to see the documentation for the older version.
 
 ---
 
@@ -44,7 +44,7 @@ make setup
 
 Here's one example of running Pitaya:
 
-Start etcd (This command requires docker-compose and will run an etcd container locally. An etcd may be run without docker if prefered.)
+Start etcd (This command requires docker-compose and will run an etcd container locally. An etcd may be run without docker if preferred.)
 ```
 cd ./examples/testing && docker-compose up -d etcd
 ```
@@ -57,7 +57,7 @@ run the room backend server from the cluster_grpc example
 make run-cluster-grpc-example-room
 ```
 
-Now there should be 2 pitaya servers running, a frontend connector and a backend room. To send requests, use a REPL client for pitaya [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/cli). 
+Now there should be 2 pitaya servers running, a frontend connector and a backend room. To send requests, use a REPL client for pitaya [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/pitaya-cli).
 
 ```
 $ pitaya-cli
@@ -96,7 +96,7 @@ If you have found a security vulnerability, please email security@tfgco.com
   + [libpitaya](https://github.com/topfreegames/libpitaya)
   + [pitaya-admin](https://github.com/topfreegames/pitaya-admin)
   + [pitaya-bot](https://github.com/topfreegames/pitaya-bot)
-  + [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/cli)
+  + [pitaya-cli](https://github.com/topfreegames/pitaya/tree/main/pitaya-cli)
   + [pitaya-protos](https://github.com/topfreegames/pitaya-protos)
 
 - Documents

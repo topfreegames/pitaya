@@ -23,6 +23,7 @@ package pitaya
 import (
 	"context"
 	"errors"
+	"github.com/topfreegames/pitaya/v2/constants"
 	"testing"
 	"time"
 
@@ -189,15 +190,11 @@ func TestStaticGetServers(t *testing.T) {
 
 func TestStaticGetSessionFromCtx(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	ss := sessionmocks.NewMockSession(ctrl)
 
-	expected := sessionmocks.NewMockSession(ctrl)
-	ctx := context.Background()
-
-	app := mocks.NewMockPitaya(ctrl)
-	app.EXPECT().GetSessionFromCtx(ctx).Return(expected)
-
-	DefaultApp = app
-	require.Equal(t, expected, GetSessionFromCtx(ctx))
+	ctx := context.WithValue(context.Background(), constants.SessionCtxKey, ss)
+	s := GetSessionFromCtx(ctx)
+	require.Equal(t, ss, s)
 }
 
 func TestStaticStart(t *testing.T) {

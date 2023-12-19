@@ -29,4 +29,6 @@ type Logger interface {
 	WithFields(fields map[string]interface{}) Logger
 	WithField(key string, value interface{}) Logger
 	WithError(err error) Logger
+
+	GetInternalLogger() any
 }
