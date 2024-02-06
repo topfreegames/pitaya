@@ -63,28 +63,24 @@ func NewBuilderWithConfigs(
 	conf *config.Config,
 ) *Builder {
 	pitayaConfig := config.NewPitayaConfig(conf)
-	customMetrics := config.NewCustomMetricsSpec(conf)
 	return NewBuilder(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
 		*pitayaConfig,
-		*customMetrics,
 	)
 }
 
 // NewDefaultBuilder return a builder instance with default dependency instances for a pitaya App,
 // with default configs
 func NewDefaultBuilder(isFrontend bool, serverType string, serverMode ServerMode, serverMetadata map[string]string, pitayaConfig config.PitayaConfig) *Builder {
-	customMetrics := config.NewDefaultCustomMetricsSpec()
 	return NewBuilder(
 		isFrontend,
 		serverType,
 		serverMode,
 		serverMetadata,
 		pitayaConfig,
-		*customMetrics,
 	)
 }
 
@@ -95,14 +91,13 @@ func NewBuilder(isFrontend bool,
 	serverMode ServerMode,
 	serverMetadata map[string]string,
 	config config.PitayaConfig,
-	customMetrics models.CustomMetricsSpec,
 ) *Builder {
 	server := cluster.NewServer(uuid.New().String(), serverType, isFrontend, serverMetadata)
 	dieChan := make(chan bool)
 
 	metricsReporters := []metrics.Reporter{}
 	if config.Metrics.Prometheus.Enabled {
-		metricsReporters = addDefaultPrometheus(config.Metrics, customMetrics, metricsReporters, serverType)
+		metricsReporters = addDefaultPrometheus(config.Metrics, config.Metrics.Custom, metricsReporters, serverType)
 	}
 
 	if config.Metrics.Statsd.Enabled {
