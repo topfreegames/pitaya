@@ -52,9 +52,7 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 }
 
 func (c *Config) fillDefaultValues() {
-	customMetricsSpec := NewDefaultCustomMetricsSpec()
 	pitayaConfig := NewDefaultPitayaConfig()
-	etcdBindingConfig := NewDefaultETCDBindingConfig()
 
 	defaultsMap := map[string]interface{}{
 		"pitaya.buffer.agent.messages": pitayaConfig.Buffer.Agent.Messages,
@@ -105,7 +103,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.heartbeat.interval":                        pitayaConfig.Heartbeat.Interval,
 		"pitaya.metrics.additionalLabels":                  pitayaConfig.Metrics.AdditionalLabels,
 		"pitaya.metrics.constLabels":                       pitayaConfig.Metrics.ConstLabels,
-		"pitaya.metrics.custom":                            customMetricsSpec,
+		"pitaya.metrics.custom":                            pitayaConfig.Metrics.Custom,
 		"pitaya.metrics.period":                            pitayaConfig.Metrics.Period,
 		"pitaya.metrics.prometheus.enabled":                pitayaConfig.Metrics.Prometheus.Enabled,
 		"pitaya.metrics.prometheus.port":                   pitayaConfig.Metrics.Prometheus.Port,
@@ -113,10 +111,10 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.host":                       pitayaConfig.Metrics.Statsd.Host,
 		"pitaya.metrics.statsd.prefix":                     pitayaConfig.Metrics.Statsd.Prefix,
 		"pitaya.metrics.statsd.rate":                       pitayaConfig.Metrics.Statsd.Rate,
-		"pitaya.modules.bindingstorage.etcd.dialtimeout":   etcdBindingConfig.DialTimeout,
-		"pitaya.modules.bindingstorage.etcd.endpoints":     etcdBindingConfig.Endpoints,
-		"pitaya.modules.bindingstorage.etcd.leasettl":      etcdBindingConfig.LeaseTTL,
-		"pitaya.modules.bindingstorage.etcd.prefix":        etcdBindingConfig.Prefix,
+		"pitaya.modules.bindingstorage.etcd.dialtimeout":   pitayaConfig.Modules.BindingStorage.Etcd.DialTimeout,
+		"pitaya.modules.bindingstorage.etcd.endpoints":     pitayaConfig.Modules.BindingStorage.Etcd.Endpoints,
+		"pitaya.modules.bindingstorage.etcd.leasettl":      pitayaConfig.Modules.BindingStorage.Etcd.LeaseTTL,
+		"pitaya.modules.bindingstorage.etcd.prefix":        pitayaConfig.Modules.BindingStorage.Etcd.Prefix,
 		"pitaya.conn.ratelimiting.limit":                   pitayaConfig.Conn.RateLimiting.Limit,
 		"pitaya.conn.ratelimiting.interval":                pitayaConfig.Conn.RateLimiting.Interval,
 		"pitaya.conn.ratelimiting.forcedisable":            pitayaConfig.Conn.RateLimiting.ForceDisable,

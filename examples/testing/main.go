@@ -326,7 +326,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewETCDBindingConfig(conf))
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, pitayaConfig.Modules.BindingStorage.Etcd)
 
 		gc, err := cluster.NewGRPCClient(
 			pitayaConfig.Cluster.RPC.Client.Grpc,

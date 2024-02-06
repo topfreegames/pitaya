@@ -114,7 +114,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCServer = gs
 	builder.Groups = groups.NewMemoryGroupService(builder.Config.Groups.Memory)
 
-	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewDefaultETCDBindingConfig())
+	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, builder.Config.Modules.BindingStorage.Etcd)
 
 	gc, err := cluster.NewGRPCClient(
 		builder.Config.Cluster.RPC.Client.Grpc,

@@ -13,6 +13,7 @@ type PitayaConfig struct {
 			Enabled bool `mapstructure:"enabled"`
 		} `mapstructure:"structvalidation"`
 	} `mapstructure:"defaultpipelines"`
+	Modules   ModulesConfig
 	Heartbeat struct {
 		Interval time.Duration `mapstructure:"interval"`
 	} `mapstructure:"heartbeat"`
@@ -142,6 +143,7 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		Cluster: *newDefaultClusterConfig(),
 		Groups:  *newDefaultGroupsConfig(),
 		Worker:  *newDefaultWorkerConfig(),
+		Modules: *newDefaultModulesConfig(),
 		Acceptor: struct {
 			ProxyProtocol bool `mapstructure:"proxyprotocol"`
 		}{
@@ -347,12 +349,13 @@ func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
 
 // Metrics provides configuration for all metrics related configurations
 type MetricsConfig struct {
-	Period           time.Duration     `mapstructure:"period"`
-	Game             string            `mapstructure:"game"`
-	AdditionalLabels map[string]string `mapstructure:"additionallabels"`
-	ConstLabels      map[string]string `mapstructure:"constlabels"`
-	Prometheus       *PrometheusConfig `mapstructure:"prometheus"`
-	Statsd           *StatsdConfig     `mapstructure:"statsd"`
+	Period           time.Duration            `mapstructure:"period"`
+	Game             string                   `mapstructure:"game"`
+	AdditionalLabels map[string]string        `mapstructure:"additionallabels"`
+	ConstLabels      map[string]string        `mapstructure:"constlabels"`
+	Custom           models.CustomMetricsSpec `mapstructure:"custom"`
+	Prometheus       *PrometheusConfig        `mapstructure:"prometheus"`
+	Statsd           *StatsdConfig            `mapstructure:"statsd"`
 }
 
 // newDefaultPrometheusConfig provides default configuration for PrometheusReporter
@@ -361,6 +364,7 @@ func newDefaultMetricsConfig() *MetricsConfig {
 		Period:           time.Duration(15 * time.Second),
 		ConstLabels:      map[string]string{},
 		AdditionalLabels: map[string]string{},
+		Custom:           *NewDefaultCustomMetricsSpec(),
 		Prometheus:       newDefaultPrometheusConfig(),
 		Statsd:           newDefaultStatsdConfig(),
 	}
@@ -561,7 +565,7 @@ type ETCDBindingConfig struct {
 }
 
 // NewDefaultETCDBindingConfig provides default configuration for ETCDBindingStorage
-func NewDefaultETCDBindingConfig() *ETCDBindingConfig {
+func newDefaultETCDBindingConfig() *ETCDBindingConfig {
 	return &ETCDBindingConfig{
 		DialTimeout: time.Duration(5 * time.Second),
 		Endpoints:   []string{"localhost:2379"},
@@ -570,13 +574,22 @@ func NewDefaultETCDBindingConfig() *ETCDBindingConfig {
 	}
 }
 
-// newETCDBindingConfig reads from config to build ETCDBindingStorage configuration
-func NewETCDBindingConfig(config *Config) *ETCDBindingConfig {
-	conf := NewDefaultETCDBindingConfig()
-	if err := config.UnmarshalKey("pitaya.modules.bindingstorage.etcd", &conf); err != nil {
-		panic(err)
+// ModulesConfig provides configuration for Pitaya Modules
+type ModulesConfig struct {
+	BindingStorage struct {
+		Etcd ETCDBindingConfig `mapstructure:"etcd"`
+	} `mapstructure:"bindingstorage"`
+}
+
+// NewDefaultModulesConfig provides default configuration for Pitaya Modules
+func newDefaultModulesConfig() *ModulesConfig {
+	return &ModulesConfig{
+		BindingStorage: struct {
+			Etcd ETCDBindingConfig `mapstructure:"etcd"`
+		}{
+			Etcd: *newDefaultETCDBindingConfig(),
+		},
 	}
-	return conf
 }
 
 // RateLimitingConfig rate limits config
