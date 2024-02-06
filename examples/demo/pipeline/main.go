@@ -97,7 +97,7 @@ func main() {
 	port := 3251
 	metagameServer := NewMetagameMock()
 
-	config := config.NewDefaultBuilderConfig()
+	config := config.NewDefaultPitayaConfig()
 	config.DefaultPipelines.StructValidation.Enabled = true
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config)

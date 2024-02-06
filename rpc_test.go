@@ -44,14 +44,14 @@ import (
 )
 
 func TestDoSendRPCNotInitialized(t *testing.T) {
-	config := config.NewDefaultBuilderConfig()
+	config := config.NewDefaultPitayaConfig()
 	app := NewDefaultApp(true, "testtype", Standalone, map[string]string{}, *config).(*App)
 	err := app.doSendRPC(nil, "", "", nil, nil)
 	assert.Equal(t, constants.ErrRPCServerNotInitialized, err)
 }
 
 func TestDoSendRPC(t *testing.T) {
-	config := config.NewDefaultBuilderConfig()
+	config := config.NewDefaultPitayaConfig()
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 	app.server.ID = "myserver"
 	app.rpcServer = &cluster.NatsRPCServer{}

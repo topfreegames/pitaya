@@ -17,21 +17,21 @@ import (
 func TestNewGRPCServer(t *testing.T) {
 	t.Parallel()
 	sv := getServer()
-	gs, err := NewGRPCServer(*config.NewDefaultGRPCServerConfig(), sv, []metrics.Reporter{})
+	gs, err := NewGRPCServer(config.NewDefaultPitayaConfig().Cluster.RPC.Server.Grpc, sv, []metrics.Reporter{})
 	assert.NoError(t, err)
 	assert.NotNil(t, gs)
 }
 
 func TestGRPCServerInit(t *testing.T) {
 	t.Parallel()
-	c := config.NewDefaultGRPCServerConfig()
+	c := config.NewDefaultPitayaConfig().Cluster.RPC.Server.Grpc
 	c.Port = helpers.GetFreePort(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockPitayaServer := protosmocks.NewMockPitayaServer(ctrl)
 
 	sv := getServer()
-	gs, err := NewGRPCServer(*c, sv, []metrics.Reporter{})
+	gs, err := NewGRPCServer(c, sv, []metrics.Reporter{})
 	gs.SetPitayaServer(mockPitayaServer)
 	err = gs.Init()
 	assert.NoError(t, err)

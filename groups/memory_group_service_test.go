@@ -31,7 +31,7 @@ import (
 var memoryGroupService *MemoryGroupService
 
 func TestMain(m *testing.M) {
-	mconfig := *config.NewDefaultMemoryGroupConfig()
+	mconfig := *&config.NewDefaultPitayaConfig().Groups.Memory
 	mconfig.TickDuration = 10 * time.Millisecond
 	memoryGroupService = NewMemoryGroupService(mconfig)
 	exit := m.Run()

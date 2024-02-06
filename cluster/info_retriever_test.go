@@ -15,7 +15,7 @@ func TestInfoRetrieverRegion(t *testing.T) {
 	c.Set("pitaya.cluster.info.region", "us")
 	conf := config.NewConfig(c)
 
-	infoRetriever := NewInfoRetriever(*config.NewInfoRetrieverConfig(conf))
+	infoRetriever := NewInfoRetriever(*&config.NewPitayaConfig(conf).Cluster.Info)
 
 	assert.Equal(t, "us", infoRetriever.Region())
 }
