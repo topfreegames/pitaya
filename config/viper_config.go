@@ -186,7 +186,7 @@ func (c *Config) Unmarshal(v interface{}) error {
 }
 
 // UnmarshalKey unmarshals key into v
-func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.DecoderConfigOption) error {
+func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
 	key = strings.ToLower(key)
 	delimiter := "."
 	prefix := key + delimiter
