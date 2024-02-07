@@ -32,7 +32,7 @@ import (
 
 // Config is a wrapper around a viper config
 type Config struct {
-	*viper.Viper
+	viper.Viper
 }
 
 // NewConfig creates a new config with a given viper config if given
@@ -46,7 +46,7 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 
 	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	cfg.AutomaticEnv()
-	c := &Config{cfg}
+	c := &Config{Viper: *cfg}
 	c.fillDefaultValues()
 	return c
 }
@@ -147,42 +147,42 @@ func (c *Config) fillDefaultValues() {
 
 // GetDuration returns a duration from the inner config
 func (c *Config) GetDuration(s string) time.Duration {
-	return c.GetDuration(s)
+	return c.Viper.GetDuration(s)
 }
 
 // GetString returns a string from the inner config
 func (c *Config) GetString(s string) string {
-	return c.GetString(s)
+	return c.Viper.GetString(s)
 }
 
 // GetInt returns an int from the inner config
 func (c *Config) GetInt(s string) int {
-	return c.GetInt(s)
+	return c.Viper.GetInt(s)
 }
 
 // GetBool returns an boolean from the inner config
 func (c *Config) GetBool(s string) bool {
-	return c.GetBool(s)
+	return c.Viper.GetBool(s)
 }
 
 // GetStringSlice returns a string slice from the inner config
 func (c *Config) GetStringSlice(s string) []string {
-	return c.GetStringSlice(s)
+	return c.Viper.GetStringSlice(s)
 }
 
 // Get returns an interface from the inner config
 func (c *Config) Get(s string) interface{} {
-	return c.Get(s)
+	return c.Viper.Get(s)
 }
 
 // GetStringMapString returns a string map string from the inner config
 func (c *Config) GetStringMapString(s string) map[string]string {
-	return c.GetStringMapString(s)
+	return c.Viper.GetStringMapString(s)
 }
 
 // Unmarshal unmarshals config into v
 func (c *Config) Unmarshal(v interface{}) error {
-	return c.Unmarshal(v)
+	return c.Viper.Unmarshal(v)
 }
 
 // UnmarshalKey unmarshals key into v
@@ -192,6 +192,9 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
 	prefix := key + delimiter
 
 	i := c.Get(key)
+	if i == nil {
+		return nil
+	}
 	if isStringMapInterface(i) {
 		val := i.(map[string]interface{})
 		keys := c.AllKeys()
@@ -212,7 +215,7 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
 		}
 		i = val
 	}
-	return decode(i, defaultDecoderConfig(rawVal, opts...))
+	return decode(i, defaultDecoderConfig(rawVal))
 }
 
 func isStringMapInterface(val interface{}) bool {
