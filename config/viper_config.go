@@ -23,7 +23,6 @@ package config
 import (
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 
@@ -143,46 +142,6 @@ func (c *Config) fillDefaultValues() {
 		}
 
 	}
-}
-
-// GetDuration returns a duration from the inner config
-func (c *Config) GetDuration(s string) time.Duration {
-	return c.Viper.GetDuration(s)
-}
-
-// GetString returns a string from the inner config
-func (c *Config) GetString(s string) string {
-	return c.Viper.GetString(s)
-}
-
-// GetInt returns an int from the inner config
-func (c *Config) GetInt(s string) int {
-	return c.Viper.GetInt(s)
-}
-
-// GetBool returns an boolean from the inner config
-func (c *Config) GetBool(s string) bool {
-	return c.Viper.GetBool(s)
-}
-
-// GetStringSlice returns a string slice from the inner config
-func (c *Config) GetStringSlice(s string) []string {
-	return c.Viper.GetStringSlice(s)
-}
-
-// Get returns an interface from the inner config
-func (c *Config) Get(s string) interface{} {
-	return c.Viper.Get(s)
-}
-
-// GetStringMapString returns a string map string from the inner config
-func (c *Config) GetStringMapString(s string) map[string]string {
-	return c.Viper.GetStringMapString(s)
-}
-
-// Unmarshal unmarshals config into v
-func (c *Config) Unmarshal(v interface{}) error {
-	return c.Viper.Unmarshal(v)
 }
 
 // UnmarshalKey unmarshals key into v
