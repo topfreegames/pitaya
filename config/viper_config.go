@@ -32,7 +32,7 @@ import (
 
 // Config is a wrapper around a viper config
 type Config struct {
-	config *viper.Viper
+	*viper.Viper
 }
 
 // NewConfig creates a new config with a given viper config if given
@@ -46,7 +46,7 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 
 	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	cfg.AutomaticEnv()
-	c := &Config{config: cfg}
+	c := &Config{cfg}
 	c.fillDefaultValues()
 	return c
 }
@@ -134,12 +134,12 @@ func (c *Config) fillDefaultValues() {
 	}
 
 	for param := range defaultsMap {
-		val := c.config.Get(param)
+		val := c.Get(param)
 		if val == nil {
-			c.config.SetDefault(param, defaultsMap[param])
+			c.SetDefault(param, defaultsMap[param])
 		} else {
-			c.config.SetDefault(param, val)
-			c.config.Set(param, val)
+			c.SetDefault(param, val)
+			c.Set(param, val)
 		}
 
 	}
@@ -147,42 +147,42 @@ func (c *Config) fillDefaultValues() {
 
 // GetDuration returns a duration from the inner config
 func (c *Config) GetDuration(s string) time.Duration {
-	return c.config.GetDuration(s)
+	return c.GetDuration(s)
 }
 
 // GetString returns a string from the inner config
 func (c *Config) GetString(s string) string {
-	return c.config.GetString(s)
+	return c.GetString(s)
 }
 
 // GetInt returns an int from the inner config
 func (c *Config) GetInt(s string) int {
-	return c.config.GetInt(s)
+	return c.GetInt(s)
 }
 
 // GetBool returns an boolean from the inner config
 func (c *Config) GetBool(s string) bool {
-	return c.config.GetBool(s)
+	return c.GetBool(s)
 }
 
 // GetStringSlice returns a string slice from the inner config
 func (c *Config) GetStringSlice(s string) []string {
-	return c.config.GetStringSlice(s)
+	return c.GetStringSlice(s)
 }
 
 // Get returns an interface from the inner config
 func (c *Config) Get(s string) interface{} {
-	return c.config.Get(s)
+	return c.Get(s)
 }
 
 // GetStringMapString returns a string map string from the inner config
 func (c *Config) GetStringMapString(s string) map[string]string {
-	return c.config.GetStringMapString(s)
+	return c.GetStringMapString(s)
 }
 
 // Unmarshal unmarshals config into v
 func (c *Config) Unmarshal(v interface{}) error {
-	return c.config.Unmarshal(v)
+	return c.Unmarshal(v)
 }
 
 // UnmarshalKey unmarshals key into v
@@ -191,10 +191,10 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}, opts ...viper.Deco
 	delimiter := "."
 	prefix := key + delimiter
 
-	i := c.config.Get(key)
+	i := c.Get(key)
 	if isStringMapInterface(i) {
 		val := i.(map[string]interface{})
-		keys := c.config.AllKeys()
+		keys := c.AllKeys()
 		for _, k := range keys {
 			if !strings.HasPrefix(k, prefix) {
 				continue
