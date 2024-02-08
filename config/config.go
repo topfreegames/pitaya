@@ -8,7 +8,7 @@ import (
 
 // PitayaConfig provides all the configuration for a pitaya app
 type PitayaConfig struct {
-	SerializerType   int `mapstructure:"serializertype"`
+	SerializerType   uint16 `mapstructure:"serializertype"`
 	DefaultPipelines struct {
 		StructValidation struct {
 			Enabled bool `mapstructure:"enabled"`
