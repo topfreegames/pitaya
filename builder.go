@@ -16,7 +16,6 @@ import (
 	"github.com/topfreegames/pitaya/v2/pipeline"
 	"github.com/topfreegames/pitaya/v2/router"
 	"github.com/topfreegames/pitaya/v2/serialize"
-	"github.com/topfreegames/pitaya/v2/serialize/json"
 	"github.com/topfreegames/pitaya/v2/service"
 	"github.com/topfreegames/pitaya/v2/session"
 	"github.com/topfreegames/pitaya/v2/worker"
@@ -142,6 +141,11 @@ func NewBuilder(isFrontend bool,
 		panic(err)
 	}
 
+	serializer, err := serialize.NewSerializer(serialize.Type(config.SerializerType))
+	if err != nil {
+		logger.Log.Fatalf("error creating serializer: %s", err.Error())
+	}
+
 	return &Builder{
 		acceptors:        []acceptor.Acceptor{},
 		postBuildHooks:   make([]func(app Pitaya), 0),
@@ -150,7 +154,7 @@ func NewBuilder(isFrontend bool,
 		PacketDecoder:    codec.NewPomeloPacketDecoder(),
 		PacketEncoder:    codec.NewPomeloPacketEncoder(),
 		MessageEncoder:   message.NewMessagesEncoder(config.Handler.Messages.Compression),
-		Serializer:       json.NewSerializer(),
+		Serializer:       serializer,
 		Router:           router.New(),
 		RPCClient:        rpcClient,
 		RPCServer:        rpcServer,

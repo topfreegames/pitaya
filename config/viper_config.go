@@ -45,7 +45,7 @@ func NewConfig(cfgs ...*viper.Viper) *Config {
 
 	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	cfg.AutomaticEnv()
-	c := &Config{Viper: *cfg}
+	c := &Config{*cfg}
 	c.fillDefaultValues()
 	return c
 }
@@ -54,6 +54,7 @@ func (c *Config) fillDefaultValues() {
 	pitayaConfig := NewDefaultPitayaConfig()
 
 	defaultsMap := map[string]interface{}{
+		"pitaya.serializertype":        pitayaConfig.SerializerType,
 		"pitaya.buffer.agent.messages": pitayaConfig.Buffer.Agent.Messages,
 		// the max buffer size that nats will accept, if this buffer overflows, messages will begin to be dropped
 		"pitaya.buffer.handler.localprocess":                    pitayaConfig.Buffer.Handler.LocalProcess,
