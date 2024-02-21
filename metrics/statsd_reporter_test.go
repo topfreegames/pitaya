@@ -38,8 +38,8 @@ func TestNewStatsdReporter(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	cfg := config.NewDefaultPitayaConfig().Metrics
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClient, sr.client)
 	assert.Equal(t, float64(cfg.Statsd.Rate), sr.rate)
@@ -51,11 +51,11 @@ func TestReportLatency(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
+	cfg := config.NewDefaultPitayaConfig().Metrics
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedDuration, err := time.ParseDuration("200ms")
@@ -86,8 +86,8 @@ func TestReportLatencyError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	cfg := config.NewDefaultPitayaConfig().Metrics
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
@@ -102,11 +102,11 @@ func TestReportCount(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
+	cfg := config.NewDefaultPitayaConfig().Metrics
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedCount := 123
@@ -132,8 +132,8 @@ func TestReportCountError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	cfg := config.NewDefaultPitayaConfig().Metrics
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")
@@ -148,11 +148,11 @@ func TestReportGauge(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
+	cfg := config.NewDefaultPitayaConfig().Metrics
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedValue := 123.1
@@ -178,11 +178,11 @@ func TestReportGaugeError(t *testing.T) {
 	defer ctrl.Finish()
 	mockClient := metricsmocks.NewMockClient(ctrl)
 
-	cfg := config.NewDefaultStatsdConfig()
+	cfg := config.NewDefaultPitayaConfig().Metrics
 	cfg.ConstLabels = map[string]string{
 		"defaultTag": "value",
 	}
-	sr, err := NewStatsdReporter(*cfg, "svType", mockClient)
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some error")

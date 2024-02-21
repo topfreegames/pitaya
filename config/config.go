@@ -6,8 +6,15 @@ import (
 	"github.com/topfreegames/pitaya/v2/metrics/models"
 )
 
-// PitayaConfig provides configuration for a pitaya app
+// PitayaConfig provides all the configuration for a pitaya app
 type PitayaConfig struct {
+	SerializerType   uint16 `mapstructure:"serializertype"`
+	DefaultPipelines struct {
+		StructValidation struct {
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"structvalidation"`
+	} `mapstructure:"defaultpipelines"`
+	Modules   ModulesConfig
 	Heartbeat struct {
 		Interval time.Duration `mapstructure:"interval"`
 	} `mapstructure:"heartbeat"`
@@ -38,17 +45,34 @@ type PitayaConfig struct {
 			Period  time.Duration `mapstructure:"period"`
 		} `mapstructure:"drain"`
 	} `mapstructure:"session"`
-	Metrics struct {
-		Period time.Duration `mapstructure:"period"`
-	} `mapstructure:"metrics"`
+
 	Acceptor struct {
 		ProxyProtocol bool `mapstructure:"proxyprotocol"`
 	} `mapstructure:"acceptor"`
+	Conn struct {
+		RateLimiting RateLimitingConfig `mapstructure:"rateLimiting"`
+	} `mapstructure:"conn"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
+	Cluster ClusterConfig `mapstructure:"cluster"`
+	Groups  GroupsConfig  `mapstructure:"groups"`
+	Worker  WorkerConfig  `mapstructure:"worker"`
 }
 
 // NewDefaultPitayaConfig provides default configuration for Pitaya App
 func NewDefaultPitayaConfig() *PitayaConfig {
 	return &PitayaConfig{
+		SerializerType: 1,
+		DefaultPipelines: struct {
+			StructValidation struct {
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"structvalidation"`
+		}{
+			StructValidation: struct {
+				Enabled bool `mapstructure:"enabled"`
+			}{
+				Enabled: false,
+			},
+		},
 		Heartbeat: struct {
 			Interval time.Duration `mapstructure:"interval"`
 		}{
@@ -117,15 +141,20 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 				Period:  time.Duration(5 * time.Second),
 			},
 		},
-		Metrics: struct {
-			Period time.Duration `mapstructure:"period"`
-		}{
-			Period: time.Duration(15 * time.Second),
-		},
+		Metrics: *newDefaultMetricsConfig(),
+		Cluster: *newDefaultClusterConfig(),
+		Groups:  *newDefaultGroupsConfig(),
+		Worker:  *newDefaultWorkerConfig(),
+		Modules: *newDefaultModulesConfig(),
 		Acceptor: struct {
 			ProxyProtocol bool `mapstructure:"proxyprotocol"`
 		}{
 			ProxyProtocol: false,
+		},
+		Conn: struct {
+			RateLimiting RateLimitingConfig `mapstructure:"rateLimiting"`
+		}{
+			RateLimiting: *newDefaultRateLimitingConfig(),
 		},
 	}
 }
@@ -139,73 +168,6 @@ func NewPitayaConfig(config *Config) *PitayaConfig {
 	return conf
 }
 
-// BuilderConfig provides configuration for Builder
-type BuilderConfig struct {
-	Pitaya  PitayaConfig
-	Metrics struct {
-		Prometheus struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"prometheus"`
-		Statsd struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"statsd"`
-	} `mapstructure:"metrics"`
-	DefaultPipelines struct {
-		StructValidation struct {
-			Enabled bool `mapstructure:"enabled"`
-		} `mapstructure:"structvalidation"`
-	} `mapstructure:"defaultpipelines"`
-}
-
-// NewDefaultBuilderConfig provides default builder configuration
-func NewDefaultBuilderConfig() *BuilderConfig {
-	return &BuilderConfig{
-		Pitaya: *NewDefaultPitayaConfig(),
-		Metrics: struct {
-			Prometheus struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"prometheus"`
-			Statsd struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"statsd"`
-		}{
-			Prometheus: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-			Statsd: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-		},
-		DefaultPipelines: struct {
-			StructValidation struct {
-				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"structvalidation"`
-		}{
-			StructValidation: struct {
-				Enabled bool `mapstructure:"enabled"`
-			}{
-				Enabled: false,
-			},
-		},
-	}
-}
-
-// NewBuilderConfig reads from config to build builder configuration
-func NewBuilderConfig(config *Config) *BuilderConfig {
-	conf := NewDefaultBuilderConfig()
-	if err := config.Unmarshal(&conf); err != nil {
-		panic(err)
-	}
-	if err := config.UnmarshalKey("pitaya", &conf); err != nil {
-		panic(err)
-	}
-	return conf
-}
-
 // GRPCClientConfig rpc client config struct
 type GRPCClientConfig struct {
 	DialTimeout    time.Duration `mapstructure:"dialtimeout"`
@@ -213,8 +175,8 @@ type GRPCClientConfig struct {
 	RequestTimeout time.Duration `mapstructure:"requesttimeout"`
 }
 
-// NewDefaultGRPCClientConfig rpc client default config struct
-func NewDefaultGRPCClientConfig() *GRPCClientConfig {
+// newDefaultGRPCClientConfig rpc client default config struct
+func newDefaultGRPCClientConfig() *GRPCClientConfig {
 	return &GRPCClientConfig{
 		DialTimeout:    time.Duration(5 * time.Second),
 		LazyConnection: false,
@@ -222,31 +184,15 @@ func NewDefaultGRPCClientConfig() *GRPCClientConfig {
 	}
 }
 
-// NewGRPCClientConfig reads from config to build GRPCCLientConfig
-func NewGRPCClientConfig(config *Config) *GRPCClientConfig {
-	conf := NewDefaultGRPCClientConfig()
-	if err := config.UnmarshalKey("pitaya.cluster.rpc.client.grpc", &conf); err != nil {
-		panic(err)
-	}
-	return conf
-}
-
 // GRPCServerConfig provides configuration for GRPCServer
 type GRPCServerConfig struct {
 	Port int `mapstructure:"port"`
 }
 
-// NewDefaultGRPCServerConfig returns a default GRPCServerConfig
-func NewDefaultGRPCServerConfig() *GRPCServerConfig {
+// newDefaultGRPCServerConfig returns a default GRPCServerConfig
+func newDefaultGRPCServerConfig() *GRPCServerConfig {
 	return &GRPCServerConfig{
 		Port: 3434,
-	}
-}
-
-// NewGRPCServerConfig reads from config to build GRPCServerConfig
-func NewGRPCServerConfig(config *Config) *GRPCServerConfig {
-	return &GRPCServerConfig{
-		Port: config.GetInt("pitaya.cluster.rpc.server.grpc.port"),
 	}
 }
 
@@ -258,23 +204,14 @@ type NatsRPCClientConfig struct {
 	ConnectionTimeout      time.Duration `mapstructure:"connectiontimeout"`
 }
 
-// NewDefaultNatsRPCClientConfig provides default nats client configuration
-func NewDefaultNatsRPCClientConfig() *NatsRPCClientConfig {
+// newDefaultNatsRPCClientConfig provides default nats client configuration
+func newDefaultNatsRPCClientConfig() *NatsRPCClientConfig {
 	return &NatsRPCClientConfig{
 		Connect:                "nats://localhost:4222",
 		MaxReconnectionRetries: 15,
 		RequestTimeout:         time.Duration(5 * time.Second),
 		ConnectionTimeout:      time.Duration(2 * time.Second),
 	}
-}
-
-// NewNatsRPCClientConfig reads from config to build nats client configuration
-func NewNatsRPCClientConfig(config *Config) *NatsRPCClientConfig {
-	conf := NewDefaultNatsRPCClientConfig()
-	if err := config.UnmarshalKey("pitaya.cluster.rpc.client.nats", &conf); err != nil {
-		panic(err)
-	}
-	return conf
 }
 
 // NatsRPCServerConfig provides nats server configuration
@@ -289,8 +226,8 @@ type NatsRPCServerConfig struct {
 	ConnectionTimeout time.Duration `mapstructure:"connectiontimeout"`
 }
 
-// NewDefaultNatsRPCServerConfig provides default nats server configuration
-func NewDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
+// newDefaultNatsRPCServerConfig provides default nats server configuration
+func newDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
 	return &NatsRPCServerConfig{
 		Connect:                "nats://localhost:4222",
 		MaxReconnectionRetries: 15,
@@ -306,34 +243,16 @@ func NewDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
 	}
 }
 
-// NewNatsRPCServerConfig reads from config to build nats server configuration
-func NewNatsRPCServerConfig(config *Config) *NatsRPCServerConfig {
-	conf := NewDefaultNatsRPCServerConfig()
-	if err := config.UnmarshalKey("pitaya.cluster.rpc.server.nats", &conf); err != nil {
-		panic(err)
-	}
-	return conf
-}
-
 // InfoRetrieverConfig provides InfoRetriever configuration
 type InfoRetrieverConfig struct {
 	Region string `mapstructure:"region"`
 }
 
-// NewDefaultInfoRetrieverConfig provides default configuration for InfoRetriever
-func NewDefaultInfoRetrieverConfig() *InfoRetrieverConfig {
+// newDefaultInfoRetrieverConfig provides default configuration for InfoRetriever
+func newDefaultInfoRetrieverConfig() *InfoRetrieverConfig {
 	return &InfoRetrieverConfig{
 		Region: "",
 	}
-}
-
-// NewInfoRetrieverConfig reads from config to build configuration for InfoRetriever
-func NewInfoRetrieverConfig(c *Config) *InfoRetrieverConfig {
-	conf := NewDefaultInfoRetrieverConfig()
-	if err := c.UnmarshalKey("pitaya.cluster.info", &conf); err != nil {
-		panic(err)
-	}
-	return conf
 }
 
 // EtcdServiceDiscoveryConfig Etcd service discovery config
@@ -365,8 +284,8 @@ type EtcdServiceDiscoveryConfig struct {
 	ServerTypesBlacklist []string `mapstructure:"servertypesblacklist"`
 }
 
-// NewDefaultEtcdServiceDiscoveryConfig Etcd service discovery default config
-func NewDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
+// newDefaultEtcdServiceDiscoveryConfig Etcd service discovery default config
+func newDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
 	return &EtcdServiceDiscoveryConfig{
 		Endpoints:   []string{"localhost:2379"},
 		User:        "",
@@ -410,15 +329,6 @@ func NewDefaultEtcdServiceDiscoveryConfig() *EtcdServiceDiscoveryConfig {
 	}
 }
 
-// NewEtcdServiceDiscoveryConfig Etcd service discovery config with default config paths
-func NewEtcdServiceDiscoveryConfig(config *Config) *EtcdServiceDiscoveryConfig {
-	conf := NewDefaultEtcdServiceDiscoveryConfig()
-	if err := config.UnmarshalKey("pitaya.cluster.sd.etcd", &conf); err != nil {
-		panic(err)
-	}
-	return conf
-}
-
 // NewDefaultCustomMetricsSpec returns an empty *CustomMetricsSpec
 func NewDefaultCustomMetricsSpec() *models.CustomMetricsSpec {
 	return &models.CustomMetricsSpec{
@@ -439,72 +349,113 @@ func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
 	return spec
 }
 
+// Metrics provides configuration for all metrics related configurations
+type MetricsConfig struct {
+	Period           time.Duration            `mapstructure:"period"`
+	Game             string                   `mapstructure:"game"`
+	AdditionalLabels map[string]string        `mapstructure:"additionallabels"`
+	ConstLabels      map[string]string        `mapstructure:"constlabels"`
+	Custom           models.CustomMetricsSpec `mapstructure:"custom"`
+	Prometheus       *PrometheusConfig        `mapstructure:"prometheus"`
+	Statsd           *StatsdConfig            `mapstructure:"statsd"`
+}
+
+// newDefaultPrometheusConfig provides default configuration for PrometheusReporter
+func newDefaultMetricsConfig() *MetricsConfig {
+	return &MetricsConfig{
+		Period:           time.Duration(15 * time.Second),
+		ConstLabels:      map[string]string{},
+		AdditionalLabels: map[string]string{},
+		Custom:           *NewDefaultCustomMetricsSpec(),
+		Prometheus:       newDefaultPrometheusConfig(),
+		Statsd:           newDefaultStatsdConfig(),
+	}
+}
+
 // PrometheusConfig provides configuration for PrometheusReporter
 type PrometheusConfig struct {
-	Prometheus struct {
-		Port             int               `mapstructure:"port"`
-		AdditionalLabels map[string]string `mapstructure:"additionallabels"`
-	} `mapstructure:"prometheus"`
-	Game        string            `mapstructure:"game"`
-	ConstLabels map[string]string `mapstructure:"constlabels"`
+	Port    int  `mapstructure:"port"`
+	Enabled bool `mapstructure:"enabled"`
 }
 
-// NewDefaultPrometheusConfig provides default configuration for PrometheusReporter
-func NewDefaultPrometheusConfig() *PrometheusConfig {
+// newDefaultPrometheusConfig provides default configuration for PrometheusReporter
+func newDefaultPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{
-		Prometheus: struct {
-			Port             int               `mapstructure:"port"`
-			AdditionalLabels map[string]string `mapstructure:"additionallabels"`
-		}{
-			Port:             9090,
-			AdditionalLabels: map[string]string{},
-		},
-		ConstLabels: map[string]string{},
+		Port:    9090,
+		Enabled: false,
 	}
-}
-
-// NewPrometheusConfig reads from config to build configuration for PrometheusReporter
-func NewPrometheusConfig(config *Config) *PrometheusConfig {
-	conf := NewDefaultPrometheusConfig()
-	if err := config.UnmarshalKey("pitaya.metrics", &conf); err != nil {
-		panic(err)
-	}
-	return conf
 }
 
 // StatsdConfig provides configuration for statsd
 type StatsdConfig struct {
-	Statsd struct {
-		Host   string  `mapstructure:"host"`
-		Prefix string  `mapstructure:"prefix"`
-		Rate   float64 `mapstructure:"rate"`
-	} `mapstructure:"statsd"`
-	ConstLabels map[string]string `mapstructure:"consttags"`
+	Enabled bool    `mapstructure:"enabled"`
+	Host    string  `mapstructure:"host"`
+	Prefix  string  `mapstructure:"prefix"`
+	Rate    float64 `mapstructure:"rate"`
 }
 
-// NewDefaultStatsdConfig provides default configuration for statsd
-func NewDefaultStatsdConfig() *StatsdConfig {
+// newDefaultStatsdConfig provides default configuration for statsd
+func newDefaultStatsdConfig() *StatsdConfig {
 	return &StatsdConfig{
-		Statsd: struct {
-			Host   string  `mapstructure:"host"`
-			Prefix string  `mapstructure:"prefix"`
-			Rate   float64 `mapstructure:"rate"`
-		}{
-			Host:   "localhost:9125",
-			Prefix: "pitaya.",
-			Rate:   1,
-		},
-		ConstLabels: map[string]string{},
+		Enabled: false,
+		Host:    "localhost:9125",
+		Prefix:  "pitaya.",
+		Rate:    1,
 	}
 }
 
-// NewStatsdConfig reads from config to build configuration for statsd
-func NewStatsdConfig(config *Config) *StatsdConfig {
-	conf := NewDefaultStatsdConfig()
-	if err := config.UnmarshalKey("pitaya.metrics", &conf); err != nil {
-		panic(err)
+// newDefaultStatsdConfig provides default configuration for statsd
+func newDefaultClusterConfig() *ClusterConfig {
+	return &ClusterConfig{
+		Info: *newDefaultInfoRetrieverConfig(),
+		RPC:  *newDefaultClusterRPCConfig(),
+		SD:   *newDefaultClusterSDConfig(),
 	}
-	return conf
+}
+
+type ClusterConfig struct {
+	Info InfoRetrieverConfig `mapstructure:"info"`
+	RPC  ClusterRPCConfig    `mapstructure:"rpc"`
+	SD   ClusterSDConfig     `mapstructure:"sd"`
+}
+
+type ClusterRPCConfig struct {
+	Client struct {
+		Grpc GRPCClientConfig    `mapstructure:"grpc"`
+		Nats NatsRPCClientConfig `mapstructure:"nats"`
+	} `mapstructure:"client"`
+	Server struct {
+		Grpc GRPCServerConfig    `mapstructure:"grpc"`
+		Nats NatsRPCServerConfig `mapstructure:"nats"`
+	} `mapstructure:"server"`
+}
+
+func newDefaultClusterRPCConfig() *ClusterRPCConfig {
+	return &ClusterRPCConfig{
+		Client: struct {
+			Grpc GRPCClientConfig    `mapstructure:"grpc"`
+			Nats NatsRPCClientConfig `mapstructure:"nats"`
+		}{
+			Grpc: *newDefaultGRPCClientConfig(),
+			Nats: *newDefaultNatsRPCClientConfig(),
+		},
+		Server: struct {
+			Grpc GRPCServerConfig    `mapstructure:"grpc"`
+			Nats NatsRPCServerConfig `mapstructure:"nats"`
+		}{
+			Grpc: *newDefaultGRPCServerConfig(),
+			Nats: *newDefaultNatsRPCServerConfig(),
+		},
+	}
+
+}
+
+type ClusterSDConfig struct {
+	Etcd EtcdServiceDiscoveryConfig `mapstructure:"etcd"`
+}
+
+func newDefaultClusterSDConfig() *ClusterSDConfig {
+	return &ClusterSDConfig{Etcd: *newDefaultEtcdServiceDiscoveryConfig()}
 }
 
 // WorkerConfig provides worker configuration
@@ -514,12 +465,13 @@ type WorkerConfig struct {
 		Pool      string `mapstructure:"pool"`
 		Password  string `mapstructure:"password"`
 	} `mapstructure:"redis"`
-	Namespace   string `mapstructure:"namespace"`
-	Concurrency int    `mapstructure:"concurrency"`
+	Namespace   string      `mapstructure:"namespace"`
+	Concurrency int         `mapstructure:"concurrency"`
+	Retry       EnqueueOpts `mapstructure:"retry"`
 }
 
-// NewDefaultWorkerConfig provides worker default configuration
-func NewDefaultWorkerConfig() *WorkerConfig {
+// newDefaultWorkerConfig provides worker default configuration
+func newDefaultWorkerConfig() *WorkerConfig {
 	return &WorkerConfig{
 		Redis: struct {
 			ServerURL string `mapstructure:"serverurl"`
@@ -530,16 +482,8 @@ func NewDefaultWorkerConfig() *WorkerConfig {
 			Pool:      "10",
 		},
 		Concurrency: 1,
+		Retry:       *newDefaultEnqueueOpts(),
 	}
-}
-
-// NewWorkerConfig provides worker configuration based on default string paths
-func NewWorkerConfig(config *Config) *WorkerConfig {
-	conf := NewDefaultWorkerConfig()
-	if err := config.UnmarshalKey("pitaya.worker", &conf); err != nil {
-		panic(err)
-	}
-	return conf
 }
 
 // EnqueueOpts has retry options for worker
@@ -552,8 +496,8 @@ type EnqueueOpts struct {
 	MaxRandom   int  `mapstructure:"maxrandom"`
 }
 
-// NewDefaultEnqueueOpts provides default EnqueueOpts
-func NewDefaultEnqueueOpts() *EnqueueOpts {
+// newDefaultEnqueueOpts provides default EnqueueOpts
+func newDefaultEnqueueOpts() *EnqueueOpts {
 	return &EnqueueOpts{
 		Enabled:     true,
 		Max:         2,
@@ -564,32 +508,14 @@ func NewDefaultEnqueueOpts() *EnqueueOpts {
 	}
 }
 
-// NewEnqueueOpts reads from config to build *EnqueueOpts
-func NewEnqueueOpts(config *Config) *EnqueueOpts {
-	conf := NewDefaultEnqueueOpts()
-	if err := config.UnmarshalKey("pitaya.worker.retry", &conf); err != nil {
-		panic(err)
-	}
-	return conf
-}
-
 // MemoryGroupConfig provides configuration for MemoryGroup
 type MemoryGroupConfig struct {
 	TickDuration time.Duration `mapstructure:"tickduration"`
 }
 
-// NewDefaultMemoryGroupConfig returns a new, default group instance
-func NewDefaultMemoryGroupConfig() *MemoryGroupConfig {
+// newDefaultMemoryGroupConfig returns a new, default group instance
+func newDefaultMemoryGroupConfig() *MemoryGroupConfig {
 	return &MemoryGroupConfig{TickDuration: time.Duration(30 * time.Second)}
-}
-
-// NewMemoryGroupConfig returns a new, default group instance
-func NewMemoryGroupConfig(conf *Config) *MemoryGroupConfig {
-	c := NewDefaultMemoryGroupConfig()
-	if err := conf.UnmarshalKey("pitaya.groups.memory", &c); err != nil {
-		panic(err)
-	}
-	return c
 }
 
 // EtcdGroupServiceConfig provides ETCD configuration
@@ -600,8 +526,8 @@ type EtcdGroupServiceConfig struct {
 	TransactionTimeout time.Duration `mapstructure:"transactiontimeout"`
 }
 
-// NewDefaultEtcdGroupServiceConfig provides default ETCD configuration
-func NewDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
+// newDefaultEtcdGroupServiceConfig provides default ETCD configuration
+func newDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
 	return &EtcdGroupServiceConfig{
 		DialTimeout:        time.Duration(5 * time.Second),
 		Endpoints:          []string{"localhost:2379"},
@@ -611,12 +537,25 @@ func NewDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
 }
 
 // NewEtcdGroupServiceConfig reads from config to build ETCD configuration
-func NewEtcdGroupServiceConfig(config *Config) *EtcdGroupServiceConfig {
-	conf := NewDefaultEtcdGroupServiceConfig()
+func newEtcdGroupServiceConfig(config *Config) *EtcdGroupServiceConfig {
+	conf := newDefaultEtcdGroupServiceConfig()
 	if err := config.UnmarshalKey("pitaya.groups.etcd", &conf); err != nil {
 		panic(err)
 	}
 	return conf
+}
+
+type GroupsConfig struct {
+	Etcd   EtcdGroupServiceConfig `mapstructure:"etcd"`
+	Memory MemoryGroupConfig      `mapstructure:"memory"`
+}
+
+// NewDefaultGroupConfig provides default ETCD configuration
+func newDefaultGroupsConfig() *GroupsConfig {
+	return &GroupsConfig{
+		Etcd:   *newDefaultEtcdGroupServiceConfig(),
+		Memory: *newDefaultMemoryGroupConfig(),
+	}
 }
 
 // ETCDBindingConfig provides configuration for ETCDBindingStorage
@@ -628,7 +567,7 @@ type ETCDBindingConfig struct {
 }
 
 // NewDefaultETCDBindingConfig provides default configuration for ETCDBindingStorage
-func NewDefaultETCDBindingConfig() *ETCDBindingConfig {
+func newDefaultETCDBindingConfig() *ETCDBindingConfig {
 	return &ETCDBindingConfig{
 		DialTimeout: time.Duration(5 * time.Second),
 		Endpoints:   []string{"localhost:2379"},
@@ -637,13 +576,22 @@ func NewDefaultETCDBindingConfig() *ETCDBindingConfig {
 	}
 }
 
-// NewETCDBindingConfig reads from config to build ETCDBindingStorage configuration
-func NewETCDBindingConfig(config *Config) *ETCDBindingConfig {
-	conf := NewDefaultETCDBindingConfig()
-	if err := config.UnmarshalKey("pitaya.modules.bindingstorage.etcd", &conf); err != nil {
-		panic(err)
+// ModulesConfig provides configuration for Pitaya Modules
+type ModulesConfig struct {
+	BindingStorage struct {
+		Etcd ETCDBindingConfig `mapstructure:"etcd"`
+	} `mapstructure:"bindingstorage"`
+}
+
+// NewDefaultModulesConfig provides default configuration for Pitaya Modules
+func newDefaultModulesConfig() *ModulesConfig {
+	return &ModulesConfig{
+		BindingStorage: struct {
+			Etcd ETCDBindingConfig `mapstructure:"etcd"`
+		}{
+			Etcd: *newDefaultETCDBindingConfig(),
+		},
 	}
-	return conf
 }
 
 // RateLimitingConfig rate limits config
@@ -653,20 +601,11 @@ type RateLimitingConfig struct {
 	ForceDisable bool          `mapstructure:"forcedisable"`
 }
 
-// NewDefaultRateLimitingConfig rate limits default config
-func NewDefaultRateLimitingConfig() *RateLimitingConfig {
+// newDefaultRateLimitingConfig rate limits default config
+func newDefaultRateLimitingConfig() *RateLimitingConfig {
 	return &RateLimitingConfig{
 		Limit:        20,
 		Interval:     time.Duration(time.Second),
 		ForceDisable: false,
 	}
-}
-
-// NewRateLimitingConfig reads from config to build rate limiting configuration
-func NewRateLimitingConfig(config *Config) *RateLimitingConfig {
-	conf := NewDefaultRateLimitingConfig()
-	if err := config.UnmarshalKey("pitaya.conn.ratelimiting", &conf); err != nil {
-		panic(err)
-	}
-	return conf
 }

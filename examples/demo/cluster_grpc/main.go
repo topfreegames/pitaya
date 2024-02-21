@@ -103,25 +103,25 @@ func main() {
 }
 
 func createApp(port int, isFrontend bool, svType string, meta map[string]string, rpcServerPort int) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
-	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, *config.NewDefaultBuilderConfig())
+	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, *config.NewDefaultPitayaConfig())
 
-	grpcServerConfig := config.NewDefaultGRPCServerConfig()
+	grpcServerConfig := builder.Config.Cluster.RPC.Server.Grpc
 	grpcServerConfig.Port = rpcServerPort
-	gs, err := cluster.NewGRPCServer(*grpcServerConfig, builder.Server, builder.MetricsReporters)
+	gs, err := cluster.NewGRPCServer(grpcServerConfig, builder.Server, builder.MetricsReporters)
 	if err != nil {
 		panic(err)
 	}
 	builder.RPCServer = gs
-	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(builder.Config.Groups.Memory)
 
-	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewDefaultETCDBindingConfig())
+	bs := modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, builder.Config.Modules.BindingStorage.Etcd)
 
 	gc, err := cluster.NewGRPCClient(
-		*config.NewDefaultGRPCClientConfig(),
+		builder.Config.Cluster.RPC.Client.Grpc,
 		builder.Server,
 		builder.MetricsReporters,
 		bs,
-		cluster.NewInfoRetriever(*config.NewDefaultInfoRetrieverConfig()),
+		cluster.NewInfoRetriever(builder.Config.Cluster.Info),
 	)
 	if err != nil {
 		panic(err)

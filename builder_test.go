@@ -21,16 +21,17 @@
 package pitaya
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/config"
-	"testing"
 )
 
 func TestPostBuildHooks(t *testing.T) {
 	acc := acceptor.NewTCPAcceptor("0.0.0.0:0")
 	for _, table := range tables {
-		builderConfig := config.NewDefaultBuilderConfig()
+		builderConfig := config.NewDefaultPitayaConfig()
 
 		t.Run("with_post_build_hooks", func(t *testing.T) {
 			called := false

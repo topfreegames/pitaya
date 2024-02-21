@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"fmt"
+
 	"github.com/topfreegames/pitaya/v2/logger"
 
 	"net/http"
@@ -305,7 +306,7 @@ func (p *PrometheusReporter) registerMetrics(
 // GetPrometheusReporter gets the prometheus reporter singleton
 func GetPrometheusReporter(
 	serverType string,
-	config config.PrometheusConfig,
+	config config.MetricsConfig,
 	metricsSpecs models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
 	return getPrometheusReporter(serverType, config, &metricsSpecs)
@@ -313,7 +314,7 @@ func GetPrometheusReporter(
 
 func getPrometheusReporter(
 	serverType string,
-	config config.PrometheusConfig,
+	config config.MetricsConfig,
 	metricsSpecs *models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
 	once.Do(func() {
@@ -325,7 +326,7 @@ func getPrometheusReporter(
 			summaryReportersMap:   make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:     make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(config.ConstLabels, config.Prometheus.AdditionalLabels, metricsSpecs)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
 			err := http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil)
