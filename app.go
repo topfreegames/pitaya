@@ -381,7 +381,7 @@ func (app *App) listen() {
 			}
 		}()
 		if app.config.Acceptor.ProxyProtocol {
-			logger.Log.Info("Enabling PROXY protocol for inbond connections")
+			logger.Log.Info("Enabling PROXY protocol for inbound connections")
 			a.EnableProxyProtocol()
 		} else {
 			logger.Log.Debug("PROXY protocol is disabled for inbound connections")
@@ -391,7 +391,7 @@ func (app *App) listen() {
 		}()
 		logger.Log.Infof("Waiting for Acceptor %s to start on addr %s", reflect.TypeOf(a), a.GetConfiguredAddress())
 
-		for a.IsRunning() == false {
+		for !a.IsRunning() {
 		}
 
 		logger.Log.Infof("Acceptor %s on addr %s is now accepting connections", reflect.TypeOf(a), a.GetAddr())
