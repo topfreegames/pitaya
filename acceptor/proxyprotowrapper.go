@@ -68,7 +68,6 @@ func (p *Conn) RemoteAddr() net.Addr {
 
 func (p *Conn) checkPrefix() error {
 
-	logger.Log.Error("checking prefix")
 	h, err := proxyproto.ReadHeader(p)
 	if err != nil {
 		logger.Log.Errorf("Failed to read Proxy Protocol TCP header: %s", err.Error())
