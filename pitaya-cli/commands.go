@@ -167,3 +167,27 @@ func disconnect() {
 		pClient.Disconnect()
 	}
 }
+
+func routes(logger Log) error {
+	if pClient == nil {
+		return errors.New("client is not initialized")
+	}
+
+	if !pClient.ConnectedStatus() {
+		return errors.New("not connected")
+	}
+
+	if protoClient, ok := pClient.(*client.ProtoClient); ok {
+		info := protoClient.ExportInformation()
+		if info != nil {
+			for k, _ := range info.Commands {
+				logger.Println(k)
+			}
+		}
+
+	} else {
+		return errors.New("only ProtoClient implements the command `routes`")
+	}
+
+	return nil
+}

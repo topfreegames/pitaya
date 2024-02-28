@@ -85,7 +85,8 @@ func executeCommand(logger Log, command string) error {
 
 	case "push":
 		return push(logger, parts[1:])
-
+	case "routes":
+		return routes(logger)
 	case "disconnect":
 		disconnect()
 		return nil
