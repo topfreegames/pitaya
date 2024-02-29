@@ -37,6 +37,7 @@ import (
 // WSAcceptor struct
 type WSAcceptor struct {
 	addr     string
+	path     string
 	connChan chan PlayerConn
 	listener net.Listener
 	certFile string
@@ -45,7 +46,7 @@ type WSAcceptor struct {
 }
 
 // NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
+func NewWSAcceptor(addr string, path string, certs ...string) *WSAcceptor {
 	keyFile := ""
 	certFile := ""
 	if len(certs) != 2 && len(certs) != 0 {
@@ -61,16 +62,17 @@ func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
 		certFile: certFile,
 		keyFile:  keyFile,
 		running:  false,
+		path:     path,
 	}
 	return w
 }
 
 func (w *WSAcceptor) IsRunning() bool {
-        return w.running
+	return w.running
 }
 
 func (w *WSAcceptor) GetConfiguredAddress() string {
-        return w.addr
+	return w.addr
 }
 
 // GetAddr returns the addr the acceptor will listen on
@@ -93,21 +95,26 @@ func (w *WSAcceptor) EnableProxyProtocol() {
 type connHandler struct {
 	upgrader *websocket.Upgrader
 	connChan chan PlayerConn
+	path     string
 }
 
 func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	conn, err := h.upgrader.Upgrade(rw, r, nil)
-	if err != nil {
-		logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
-		return
-	}
+	if r.URL.Path == h.path && r.Method == http.MethodGet {
+		conn, err := h.upgrader.Upgrade(rw, r, nil)
+		if err != nil {
+			logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
+			return
+		}
 
-	c, err := NewWSConn(conn)
-	if err != nil {
-		logger.Log.Errorf("Failed to create new ws connection: %s", err.Error())
-		return
+		c, err := NewWSConn(conn)
+		if err != nil {
+			logger.Log.Errorf("Failed to create new ws connection: %s", err.Error())
+			return
+		}
+		h.connChan <- c
+	} else {
+		http.Error(rw, "Not found", http.StatusNotFound)
 	}
-	h.connChan <- c
 }
 
 func (w *WSAcceptor) hasTLSCertificates() bool {
@@ -165,6 +172,7 @@ func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 	http.Serve(w.listener, &connHandler{
 		upgrader: upgrader,
 		connChan: w.connChan,
+		path:     w.path,
 	})
 }
 
