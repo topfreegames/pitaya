@@ -22,12 +22,11 @@ package acceptor
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
-	"fmt"
 
-	"github.com/mailgun/proxyproto"
 	"github.com/topfreegames/pitaya/v2/conn/codec"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -81,10 +80,10 @@ func NewTCPAcceptor(addr string, certs ...string) *TCPAcceptor {
 	certificates := []tls.Certificate{}
 	if len(certs) != 2 && len(certs) != 0 {
 		panic(constants.ErrIncorrectNumberOfCertificates)
-	} else if ( len(certs) == 2 && certs[0] != "" && certs[1] != "") {
+	} else if len(certs) == 2 && certs[0] != "" && certs[1] != "" {
 		cert, err := tls.LoadX509KeyPair(certs[0], certs[1])
 		if err != nil {
-			panic(fmt.Errorf("%w: %v",constants.ErrInvalidCertificates,err))
+			panic(fmt.Errorf("%w: %v", constants.ErrInvalidCertificates, err))
 		}
 		certificates = append(certificates, cert)
 	}
@@ -127,15 +126,13 @@ func (a *TCPAcceptor) hasTLSCertificates() bool {
 
 // ListenAndServe using tcp acceptor
 func (a *TCPAcceptor) ListenAndServe() {
+
+	listener := a.createBaseListener()
+
 	if a.hasTLSCertificates() {
-		a.listenAndServeTLS()
-		return
+		listener = a.listenAndServeTLS(listener)
 	}
 
-	listener, err := net.Listen("tcp", a.addr)
-	if err != nil {
-		logger.Log.Fatalf("Failed to listen: %s", err.Error())
-	}
 	a.listener = listener
 	a.running = true
 	a.serve()
@@ -143,6 +140,8 @@ func (a *TCPAcceptor) ListenAndServe() {
 
 // ListenAndServeTLS listens using tls
 func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
+	listener := a.createBaseListener()
+
 	crt, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
 		logger.Log.Fatalf("Failed to listen: %s", err.Error())
@@ -150,20 +149,32 @@ func (a *TCPAcceptor) ListenAndServeTLS(cert, key string) {
 
 	a.certs = append(a.certs, crt)
 
-	a.listenAndServeTLS()
+	a.listener = a.listenAndServeTLS(listener)
+	a.running = true
+	a.serve()
 }
 
-// ListenAndServeTLS listens using tls
-func (a *TCPAcceptor) listenAndServeTLS() {
-	tlsCfg := &tls.Config{Certificates: a.certs}
-
-	listener, err := tls.Listen("tcp", a.addr, tlsCfg)
+// Create base listener
+func (a *TCPAcceptor) createBaseListener() net.Listener {
+	// Create raw listener
+	baseListener, err := net.Listen("tcp", a.addr)
 	if err != nil {
 		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
-	a.listener = listener
-	a.running = true
-	a.serve()
+
+	// Wrap listener in ProxyProto
+	baseListener = &ProxyProtocolListener{Listener: baseListener, proxyProtocolEnabled: &a.proxyProtocol}
+
+	return baseListener
+}
+
+// ListenAndServeTLS listens using tls
+func (a *TCPAcceptor) listenAndServeTLS(listener net.Listener) net.Listener {
+
+	tlsCfg := &tls.Config{Certificates: a.certs}
+	tlsListener := tls.NewListener(listener, tlsCfg)
+
+	return tlsListener
 }
 
 func (a *TCPAcceptor) EnableProxyProtocol() {
@@ -178,35 +189,18 @@ func (a *TCPAcceptor) serve() {
 			logger.Log.Errorf("Failed to accept TCP connection: %s", err.Error())
 			continue
 		}
-		var remoteAddr net.Addr
-		if a.proxyProtocol == true {
-			h, err := proxyproto.ReadHeader(conn)
-			if err != nil {
-				logger.Log.Errorf("Failed to read Proxy Protocol TCP header: %s", err.Error())
-				conn.Close()
-				continue
-			} else if h.Source == nil {
-				conn.Close()
-				continue
-			} else {
-				remoteAddr = h.Source
-			}
-		} else {
 
-			remoteAddr = conn.RemoteAddr()
-
-		}
 		a.connChan <- &tcpPlayerConn{
 			Conn:       conn,
-			remoteAddr: remoteAddr,
+			remoteAddr: conn.RemoteAddr(),
 		}
 	}
 }
 
 func (a *TCPAcceptor) IsRunning() bool {
-        return a.running
+	return a.running
 }
 
 func (a *TCPAcceptor) GetConfiguredAddress() string {
-        return a.addr
+	return a.addr
 }
