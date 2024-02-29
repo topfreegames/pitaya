@@ -51,8 +51,6 @@ func NewCountTimer(interval time.Duration, count int, fn timer.Func) *timer.Time
 	}
 
 	t := timer.NewTimer(fn, interval, count)
-	// add to manager
-	timer.Manager.ChCreatedTimer <- t
 	return t
 }
 
