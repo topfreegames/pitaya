@@ -34,12 +34,12 @@ func TestNewWSAcceptor(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			if table.panicErr != nil {
 				assert.PanicsWithValue(t, table.panicErr, func() {
-					NewWSAcceptor(table.addr, table.certs...)
+					NewWSAcceptor(table.addr, "", table.certs...)
 				})
 			} else {
 				var w *WSAcceptor
 				assert.NotPanics(t, func() {
-					w = NewWSAcceptor(table.addr, table.certs...)
+					w = NewWSAcceptor(table.addr, "", table.certs...)
 				})
 
 				if len(table.certs) == 2 {
@@ -59,7 +59,7 @@ func TestWSAcceptorGetAddr(t *testing.T) {
 	t.Parallel()
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			// will return empty string because acceptor is not listening
 			assert.Equal(t, "", w.GetAddr())
 		})
@@ -70,7 +70,7 @@ func TestWSAcceptorGetConn(t *testing.T) {
 	t.Parallel()
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			assert.NotNil(t, w.GetConnChan())
 		})
 	}
@@ -91,7 +91,7 @@ func mustConnectToWS(t *testing.T, write []byte, w *WSAcceptor, protocol string)
 func TestWSAcceptorListenAndServe(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -105,7 +105,7 @@ func TestWSAcceptorListenAndServe(t *testing.T) {
 func TestWSAcceptorListenAndServeTLS(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServeTLS("./fixtures/server.crt", "./fixtures/server.key")
@@ -119,7 +119,7 @@ func TestWSAcceptorListenAndServeTLS(t *testing.T) {
 func TestWSAcceptorStop(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			go w.ListenAndServe()
 			mustConnectToWS(t, table.write, w, "ws")
 			addr := fmt.Sprintf("ws://%s", w.GetAddr())
@@ -133,7 +133,7 @@ func TestWSAcceptorStop(t *testing.T) {
 func TestWSConnRead(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -151,7 +151,7 @@ func TestWSConnRead(t *testing.T) {
 func TestWSConnWrite(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -168,7 +168,7 @@ func TestWSConnWrite(t *testing.T) {
 func TestWSConnLocalAddr(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -183,7 +183,7 @@ func TestWSConnLocalAddr(t *testing.T) {
 func TestWSConnRemoteAddr(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -198,7 +198,7 @@ func TestWSConnRemoteAddr(t *testing.T) {
 func TestWSConnSetDeadline(t *testing.T) {
 	for _, table := range wsAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor(table.addr)
+			w := NewWSAcceptor(table.addr, "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -226,7 +226,7 @@ func TestWSGetNextMessage(t *testing.T) {
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
-			w := NewWSAcceptor("0.0.0.0:0")
+			w := NewWSAcceptor("0.0.0.0:0", "")
 			c := w.GetConnChan()
 			defer w.Stop()
 			go w.ListenAndServe()
@@ -256,7 +256,7 @@ func TestWSGetNextMessage(t *testing.T) {
 }
 
 func TestWSGetNextMessageSequentially(t *testing.T) {
-	w := NewWSAcceptor("0.0.0.0:0")
+	w := NewWSAcceptor("0.0.0.0:0", "")
 	c := w.GetConnChan()
 	defer w.Stop()
 	go w.ListenAndServe()
