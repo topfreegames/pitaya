@@ -353,7 +353,7 @@ func (app *App) Start() {
 				}
 			}
 		}
-		app.Shutdown()
+		close(app.dieChan)
 	}
 
 	logger.Log.Warn("server is stopping...")

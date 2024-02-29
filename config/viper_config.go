@@ -75,6 +75,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.server.nats.buffer.messages":        pitayaConfig.Cluster.RPC.Server.Nats.Buffer.Messages,
 		"pitaya.cluster.rpc.server.nats.buffer.push":            pitayaConfig.Cluster.RPC.Server.Nats.Buffer.Push,
 		"pitaya.cluster.sd.etcd.dialtimeout":                    pitayaConfig.Cluster.SD.Etcd.DialTimeout,
+		"pitaya.cluster.sd.etcd.endpoints":                      pitayaConfig.Cluster.SD.Etcd.Endpoints,
 		"pitaya.cluster.sd.etcd.user":                           pitayaConfig.Cluster.SD.Etcd.User,
 		"pitaya.cluster.sd.etcd.pass":                           pitayaConfig.Cluster.SD.Etcd.Pass,
 		"pitaya.cluster.sd.etcd.prefix":                         pitayaConfig.Cluster.SD.Etcd.Prefix,
