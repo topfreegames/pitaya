@@ -45,25 +45,34 @@ type WSAcceptor struct {
 	running  bool
 }
 
-// NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string, path string, certs ...string) *WSAcceptor {
-	keyFile := ""
-	certFile := ""
-	if len(certs) != 2 && len(certs) != 0 {
-		panic(constants.ErrInvalidCertificates)
-	} else if len(certs) == 2 {
-		certFile = certs[0]
-		keyFile = certs[1]
-	}
+// WSAcceptorOption is a function that returns a WSAcceptorOption
+type WSAcceptorOption func(*WSAcceptor)
 
+func WithWSAcceptorPath(path string) WSAcceptorOption {
+	return func(ac *WSAcceptor) {
+		ac.path = path
+	}
+}
+
+func WithWSAcceptorCerts(certFile, keyFile string) WSAcceptorOption {
+	return func(ac *WSAcceptor) {
+		ac.certFile = certFile
+		ac.keyFile = keyFile
+	}
+}
+
+// NewWSAcceptor returns a new instance of WSAcceptor
+func NewWSAcceptor(addr string, opts ...WSAcceptorOption) *WSAcceptor {
 	w := &WSAcceptor{
 		addr:     addr,
 		connChan: make(chan PlayerConn),
-		certFile: certFile,
-		keyFile:  keyFile,
 		running:  false,
-		path:     path,
 	}
+
+	for _, opt := range opts {
+		opt(w)
+	}
+
 	return w
 }
 
