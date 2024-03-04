@@ -388,7 +388,12 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 		ctx:  ctx,
 		data: p,
 	}
-	a.chSend <- pWrite
+
+	select {
+	case a.chSend <- pWrite:
+	case <-a.chDie:
+	}
+
 	return nil
 }
 

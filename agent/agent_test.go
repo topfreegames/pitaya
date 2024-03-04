@@ -130,21 +130,29 @@ func TestKick(t *testing.T) {
 	dieChan := make(chan bool)
 	hbTime := time.Second
 
+	expectedBytes := []byte("kick")
+
 	mockConn := mocks.NewMockPlayerConn(ctrl)
-	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
-		func(typ packet.Type, d []byte) {
-			assert.EqualValues(t, packet.Kick, typ)
-		})
-	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
+	mockEncoder.EXPECT().Encode(packet.Type(packet.Kick), gomock.Nil()).Return(expectedBytes, nil)
 	messageEncoder := message.NewMessagesEncoder(false)
 
 	mockSerializer.EXPECT().GetName()
 
+	ctx := context.Background()
+
+	exceptedWrite := pendingWrite{
+		ctx:  ctx,
+		data: expectedBytes,
+	}
+
 	sessionPool := session.NewSessionPool()
-	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil, sessionPool)
-	c := context.Background()
-	err := ag.Kick(c)
+	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, 10, dieChan, messageEncoder, nil, sessionPool).(*agentImpl)
+
+	err := ag.Kick(ctx)
 	assert.NoError(t, err)
+
+	recvData := helpers.ShouldEventuallyReceive(t, ag.chSend).(pendingWrite)
+	assert.Equal(t, exceptedWrite, recvData)
 }
 
 func TestAgentSend(t *testing.T) {
