@@ -67,6 +67,7 @@ func NewWSAcceptor(addr string, opts ...WSAcceptorOption) *WSAcceptor {
 		addr:     addr,
 		connChan: make(chan PlayerConn),
 		running:  false,
+		path:     "/",
 	}
 
 	for _, opt := range opts {

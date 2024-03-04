@@ -51,8 +51,6 @@ import (
 
 // RemoteService struct
 type RemoteService struct {
-	protos.UnimplementedPitayaServer
-
 	baseService
 	rpcServer              cluster.RPCServer
 	serviceDiscovery       cluster.ServiceDiscovery
