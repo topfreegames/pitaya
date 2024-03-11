@@ -392,6 +392,14 @@ These configurations are only used if the modules are created. It is recommended
     - localhost:2379
     - string
     - Comma separated list of etcd endpoints to be used by the binding storage module, should be the same as the service discovery etcd
+  * - pitaya.cluster.sd.etcd.user
+    -
+    - string
+    - Username to connect to etcd
+  * - pitaya.cluster.sd.etcd.pass
+    -
+    - string
+    - Password to connect to etcd
   * - pitaya.modules.bindingstorage.etcd.prefix
     - pitaya/
     - string
@@ -441,7 +449,15 @@ These configurations are used for group services implementations.
   * - pitaya.groups.etcd.endpoints
     - localhost:2379
     - string
-    - Comma separated list of etcd endpoints to be used by the groups etcd service 
+    - Comma separated list of etcd endpoints to be used by the groups etcd service
+  * - pitaya.cluster.sd.etcd.user
+    -
+    - string
+    - Username to connect to etcd
+  * - pitaya.cluster.sd.etcd.pass
+    -
+    - string
+    - Password to connect to etcd
   * - pitaya.groups.etcd.prefix
     - pitaya/
     - string 
