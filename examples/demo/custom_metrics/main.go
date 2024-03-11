@@ -32,7 +32,7 @@ func main() {
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 
-	conf := config.NewConfig(cfg)
+	conf := config.NewConfig(*cfg)
 	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, pitaya.Cluster, map[string]string{}, conf)
 	builder.AddAcceptor(tcp)
 	app = builder.Build()

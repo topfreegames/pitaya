@@ -32,7 +32,7 @@ func main() {
 	conf.SetDefault("pitaya.worker.redis.url", "localhost:6379")
 	conf.SetDefault("pitaya.worker.redis.pool", "3")
 
-	config := config.NewConfig(conf)
+	config := config.NewConfig(*conf)
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 

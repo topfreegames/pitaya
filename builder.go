@@ -59,7 +59,7 @@ func NewBuilderWithConfigs(
 	serverType string,
 	serverMode ServerMode,
 	serverMetadata map[string]string,
-	conf *config.Config,
+	conf config.Config,
 ) *Builder {
 	pitayaConfig := config.NewPitayaConfig(conf)
 	return NewBuilder(
