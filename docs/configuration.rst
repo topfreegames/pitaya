@@ -437,11 +437,11 @@ Session
     - bool
     - Whether to enable session drain feature
   * - pitaya.session.drain.timeout
-    - 0s
+    - 6h
     - time.Duration
     - Session drain timeout
   * - pitaya.session.drain.period
-    - 0s
+    - 5s
     - time.Duration
     - Session drain period
 
