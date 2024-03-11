@@ -4,6 +4,44 @@ Configuration
 
 Pitaya uses Viper to control its configuration. Below we describe the configuration variables split by topic. We judge the default values are good for most cases, but might need to be changed for some use cases.
 
+Serializer
+=================
+
+These configuration values configure message serializer mode.
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.serializertype
+    - 1
+    - int
+    - Serializer type, 1 for json, 2 for protobuf.
+
+Acceptor
+=================
+
+These configuration values configure acceptor.
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.acceptor.proxyprotocol
+    - false
+    - bool
+    - Enable or disable proxy protocol support.
+
 Service Discovery
 =================
 
@@ -94,6 +132,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - Default value
     - Type
     - Description
+  * - pitaya.cluster.info.region
+    -
+    - string
+    - Set the rpc region retrieval information, only valid when the rpc client is grpc.
   * - pitaya.cluster.rpc.server.nats.buffer.messages
     - 75
     - int
@@ -240,6 +282,14 @@ Metrics Reporting
     - Default value
     - Type
     - Description
+  * - pitaya.metrics.additionalLabels
+    - map[string]string{}
+    - map[string]string
+    - Additional labels to add to all metrics
+  * - pitaya.metrics.constLabels
+    - map[string]string{}
+    - map[string]string
+    - Const labels to add to all metrics
   * - pitaya.metrics.statsd.enabled
     - false
     - bool
@@ -370,6 +420,31 @@ Concurrency
     - int
     - Number of goroutines processing messages at the handler service
 
+Session
+========
+
+.. list-table::
+  :widths: 15 10 10 50
+  :header-rows: 1
+  :stub-columns: 1
+
+  * - Configuration
+    - Default value
+    - Type
+    - Description
+  * - pitaya.session.drain.enabled
+    - false
+    - bool
+    - Whether to enable session drain feature
+  * - pitaya.session.drain.timeout
+    - 0s
+    - time.Duration
+    - Session drain timeout
+  * - pitaya.session.drain.period
+    - 0s
+    - time.Duration
+    - Session drain period
+
 Modules
 =======
 
@@ -392,11 +467,11 @@ These configurations are only used if the modules are created. It is recommended
     - localhost:2379
     - string
     - Comma separated list of etcd endpoints to be used by the binding storage module, should be the same as the service discovery etcd
-  * - pitaya.cluster.sd.etcd.user
+  * - pitaya.modules.bindingstorage.etcd.user
     -
     - string
     - Username to connect to etcd
-  * - pitaya.cluster.sd.etcd.pass
+  * - pitaya.modules.bindingstorage.etcd.pass
     -
     - string
     - Password to connect to etcd
@@ -450,11 +525,11 @@ These configurations are used for group services implementations.
     - localhost:2379
     - string
     - Comma separated list of etcd endpoints to be used by the groups etcd service
-  * - pitaya.cluster.sd.etcd.user
+  * - pitaya.groups.etcd.user
     -
     - string
     - Username to connect to etcd
-  * - pitaya.cluster.sd.etcd.pass
+  * - pitaya.groups.etcd.pass
     -
     - string
     - Password to connect to etcd
