@@ -23,9 +23,10 @@ package pitaya
 import (
 	"context"
 	"errors"
-	"github.com/topfreegames/pitaya/v2/constants"
 	"testing"
 	"time"
+
+	"github.com/topfreegames/pitaya/v2/constants"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -46,7 +47,7 @@ import (
 )
 
 func TestStaticConfigure(t *testing.T) {
-	Configure(true, "frontendType", Cluster, map[string]string{}, []*viper.Viper{}...)
+	Configure(true, "frontendType", Cluster, map[string]string{}, []viper.Viper{}...)
 
 	require.NotNil(t, DefaultApp)
 	require.NotNil(t, session.DefaultSessionPool)

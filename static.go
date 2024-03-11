@@ -45,7 +45,7 @@ func Configure(
 	serverType string,
 	serverMode ServerMode,
 	serverMetadata map[string]string,
-	cfgs ...*viper.Viper,
+	cfgs ...viper.Viper,
 ) {
 	builder := NewBuilderWithConfigs(
 		isFrontend,

@@ -23,7 +23,7 @@ func createAcceptor(port int, reporters []metrics.Reporter) acceptor.Acceptor {
 	vConfig := viper.New()
 	vConfig.Set("pitaya.conn.ratelimiting.limit", 5)
 	vConfig.Set("pitaya.conn.ratelimiting.interval", time.Minute)
-	pConfig := config.NewConfig(vConfig)
+	pConfig := config.NewConfig(*vConfig)
 
 	rateLimitConfig := config.NewPitayaConfig(pConfig).Conn.RateLimiting
 

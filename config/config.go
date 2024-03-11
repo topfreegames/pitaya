@@ -160,7 +160,7 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 }
 
 // NewPitayaConfig returns a config instance with values extracted from default config paths
-func NewPitayaConfig(config *Config) *PitayaConfig {
+func NewPitayaConfig(config Config) *PitayaConfig {
 	conf := NewDefaultPitayaConfig()
 	if err := config.UnmarshalKey("pitaya", &conf); err != nil {
 		panic(err)
@@ -339,7 +339,7 @@ func NewDefaultCustomMetricsSpec() *models.CustomMetricsSpec {
 }
 
 // NewCustomMetricsSpec returns a *CustomMetricsSpec by reading config key (DEPRECATED)
-func NewCustomMetricsSpec(config *Config) *models.CustomMetricsSpec {
+func NewCustomMetricsSpec(config Config) *models.CustomMetricsSpec {
 	spec := &models.CustomMetricsSpec{}
 
 	if err := config.UnmarshalKey("pitaya.metrics.custom", &spec); err != nil {
@@ -537,7 +537,7 @@ func newDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
 }
 
 // NewEtcdGroupServiceConfig reads from config to build ETCD configuration
-func newEtcdGroupServiceConfig(config *Config) *EtcdGroupServiceConfig {
+func newEtcdGroupServiceConfig(config Config) *EtcdGroupServiceConfig {
 	conf := newDefaultEtcdGroupServiceConfig()
 	if err := config.UnmarshalKey("pitaya.groups.etcd", &conf); err != nil {
 		panic(err)
