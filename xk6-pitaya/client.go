@@ -1,6 +1,8 @@
 package pitaya
 
 import (
+	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,14 +38,19 @@ type Client struct {
 
 // Connect connects to the server
 // addr is the address of the server to connect to
-func (c *Client) Connect(addr string) error { //TODO: tls Options
+func (c *Client) Connect(addr string, tlsConf ...*tls.Config) error {
 	vuState := c.vu.State()
-
 	if vuState == nil {
 		return errors.New("connecting to a pitaya server in the init context is not supported")
 	}
 
-	err := c.client.ConnectTo(addr)
+	var err error
+	if len(tlsConf) > 0 {
+		err = c.client.ConnectTo(addr, tlsConf[0])
+	} else {
+		err = c.client.ConnectTo(addr)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -98,6 +105,47 @@ func (c *Client) Notify(route string, msg interface{}) error {
 	}
 
 	return c.client.SendNotify(route, data)
+}
+
+// RequestB64 sends a request to the server using a base64 string
+// route is the route to send the request to
+// str is the string passed in request
+// returns a promise that will be resolved when the response is received
+// the promise will be rejected if the timeout is reached before a response is received
+func (c *Client) RequestB64(route string, b64msg string) *goja.Promise { // TODO: add custom timeout
+	promise, resolve, reject := c.makeHandledPromise()
+	data, err := base64.StdEncoding.DecodeString(b64msg)
+	if err != nil {
+		reject(err)
+		return promise
+	}
+
+	timeNow := time.Now()
+	mid, err := c.client.SendRequest(route, data)
+	if err != nil {
+		c.pushRequestMetrics(route, time.Since(timeNow), false, false)
+		reject(err)
+		return promise
+	}
+	responseChan := c.getResponseChannelForID(mid)
+	go func() {
+		select {
+		case responseData := <-responseChan:
+			c.pushRequestMetrics(route, time.Since(timeNow), true, false)
+			var ret Response
+			if err := json.Unmarshal(responseData, &ret); err != nil {
+				resolve(responseData)
+				return
+			}
+
+			resolve(ret)
+			return
+		case <-time.After(c.timeout):
+			c.pushRequestMetrics(route, time.Since(timeNow), false, true)
+			reject(fmt.Errorf("Timeout waiting for response on route %s", route))
+		}
+	}()
+	return promise
 }
 
 // Request sends a request to the server
