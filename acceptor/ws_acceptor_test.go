@@ -23,9 +23,6 @@ var wsAcceptorTables = []struct {
 	// TODO change to allocatable ports
 	{"test_1", "0.0.0.0:0", []byte{0x01, 0x02}, []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
 	{"test_2", "127.0.0.1:0", []byte{0x00}, []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
-	{"test_3", "0.0.0.0:0", []byte{0x00}, []string{"wqodij"}, constants.ErrInvalidCertificates},
-	{"test_4", "0.0.0.0:0", []byte{0x00}, []string{"wqodij", "qwdo", "wod"}, constants.ErrInvalidCertificates},
-	{"test_4", "0.0.0.0:0", []byte{0x00}, []string{}, nil},
 }
 
 func TestNewWSAcceptor(t *testing.T) {
@@ -34,12 +31,12 @@ func TestNewWSAcceptor(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			if table.panicErr != nil {
 				assert.PanicsWithValue(t, table.panicErr, func() {
-					NewWSAcceptor(table.addr, table.certs...)
+					NewWSAcceptor(table.addr, WithWSAcceptorCerts(table.certs[0], table.certs[1]))
 				})
 			} else {
 				var w *WSAcceptor
 				assert.NotPanics(t, func() {
-					w = NewWSAcceptor(table.addr, table.certs...)
+					w = NewWSAcceptor(table.addr, WithWSAcceptorCerts(table.certs[0], table.certs[1]))
 				})
 
 				if len(table.certs) == 2 {

@@ -342,7 +342,7 @@ func (app *App) Start() {
 				case s := <-sg:
 					logger.Log.Warn("got signal: ", s)
 					if s == syscall.SIGINT {
-						logger.Log.Warnf("Bypassing session draing due to SIGINT. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
+						logger.Log.Warnf("Bypassing session draining due to SIGINT. %d sessions will be immediately terminated", app.sessionPool.GetSessionCount())
 					}
 					break loop
 				case <-timeoutTimer.C:
@@ -424,9 +424,6 @@ func (app *App) AddRoute(
 	routingFunction router.RoutingFunc,
 ) error {
 	if app.router != nil {
-		if app.running {
-			return constants.ErrChangeRouteWhileRunning
-		}
 		app.router.AddRoute(serverType, routingFunction)
 	} else {
 		return constants.ErrRouterNotInitialized

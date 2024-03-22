@@ -54,6 +54,8 @@ func createBaseClient(config config.EtcdGroupServiceConfig) (*clientv3.Client, e
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   config.Endpoints,
 		DialTimeout: config.DialTimeout,
+		Password:    config.Pass,
+		Username:    config.User,
 	})
 	if err != nil {
 		return nil, err

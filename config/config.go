@@ -522,6 +522,8 @@ func newDefaultMemoryGroupConfig() *MemoryGroupConfig {
 type EtcdGroupServiceConfig struct {
 	DialTimeout        time.Duration `mapstructure:"dialtimeout"`
 	Endpoints          []string      `mapstructure:"endpoints"`
+	User               string        `mapstructure:"user"`
+	Pass               string        `mapstructure:"pass"`
 	Prefix             string        `mapstructure:"prefix"`
 	TransactionTimeout time.Duration `mapstructure:"transactiontimeout"`
 }
@@ -531,6 +533,8 @@ func newDefaultEtcdGroupServiceConfig() *EtcdGroupServiceConfig {
 	return &EtcdGroupServiceConfig{
 		DialTimeout:        time.Duration(5 * time.Second),
 		Endpoints:          []string{"localhost:2379"},
+		User:               "",
+		Pass:               "",
 		Prefix:             "pitaya/",
 		TransactionTimeout: time.Duration(5 * time.Second),
 	}
@@ -562,6 +566,8 @@ func newDefaultGroupsConfig() *GroupsConfig {
 type ETCDBindingConfig struct {
 	DialTimeout time.Duration `mapstructure:"dialtimeout"`
 	Endpoints   []string      `mapstructure:"endpoints"`
+	User        string        `mapstructure:"user"`
+	Pass        string        `mapstructure:"pass"`
 	Prefix      string        `mapstructure:"prefix"`
 	LeaseTTL    time.Duration `mapstructure:"leasettl"`
 }
@@ -571,6 +577,8 @@ func newDefaultETCDBindingConfig() *ETCDBindingConfig {
 	return &ETCDBindingConfig{
 		DialTimeout: time.Duration(5 * time.Second),
 		Endpoints:   []string{"localhost:2379"},
+		User:        "",
+		Pass:        "",
 		Prefix:      "pitaya/",
 		LeaseTTL:    time.Duration(5 * time.Hour),
 	}

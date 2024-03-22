@@ -23,6 +23,7 @@ package router
 import (
 	"context"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/topfreegames/pitaya/v2/cluster"
@@ -37,6 +38,7 @@ import (
 type Router struct {
 	serviceDiscovery cluster.ServiceDiscovery
 	routesMap        map[string]RoutingFunc
+	mu               sync.RWMutex
 }
 
 // RoutingFunc defines a routing function
@@ -91,6 +93,8 @@ func (r *Router) Route(
 		server := r.defaultRoute(serversOfType)
 		return server, nil
 	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	routeFunc, ok := r.routesMap[svType]
 	if !ok {
 		logger.Log.Debugf("no specific route for svType: %s, using default route", svType)
@@ -105,6 +109,8 @@ func (r *Router) AddRoute(
 	serverType string,
 	routingFunction RoutingFunc,
 ) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if _, ok := r.routesMap[serverType]; ok {
 		logger.Log.Warnf("overriding the route to svType %s", serverType)
 	}
