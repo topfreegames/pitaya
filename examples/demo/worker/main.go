@@ -44,8 +44,6 @@ func main() {
 
 	defer app.Shutdown()
 
-	defer app.Shutdown()
-
 	switch *svType {
 	case "metagame":
 		app.RegisterRemote(&services.Metagame{},
