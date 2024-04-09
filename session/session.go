@@ -853,8 +853,8 @@ func (s *sessionImpl) HasRequestsInFlight() bool {
 	return len(s.requestsInFlight.m) != 0
 }
 
-func (s *sessionImpl) GetRequestsInFlight() ReqInFlight {
-	return s.requestsInFlight
+func (s *sessionImpl) GetRequestsInFlight() *ReqInFlight {
+	return &s.requestsInFlight
 }
 
 func (s *sessionImpl) SetRequestInFlight(reqID string, reqData string, inFlight bool) {
