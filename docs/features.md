@@ -130,6 +130,18 @@ These are done when the application calls a remote using workers, that is, Pitay
 
 **Important**: the remote that is being called must be idempotent; also the ReliableRPC will not return the remote's reply since it is asynchronous, it only returns the job id (jid) if success.
 
+### Customize Timeout Per-Request
+
+The only thing you need to do to customize the timeout value of a RPC Request,is that like below:
+
+```
+ctx := pcontext.AddToPropagateCtx(context.Background(), constants.RequestTimeout, (60 * time.Second).String())
+```
+
+then transfer the ctx to RPC() or RPCTo() function as the context parameter
+
+**Note**: this feature is only supportted while using nats currently.
+
 ## Server operation mode
 
 Pitaya has two types of operation: standalone and cluster mode.
