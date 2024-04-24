@@ -32,6 +32,11 @@ type moduleWrapper struct {
 	name   string
 }
 
+type sessionModuleWrapper struct {
+	module interfaces.SessionModule
+	name   string
+}
+
 // RegisterModule registers a module, by default it register after registered modules
 func (app *App) RegisterModule(module interfaces.Module, name string) error {
 	return app.RegisterModuleAfter(module, name)
@@ -49,6 +54,13 @@ func (app *App) RegisterModuleAfter(module interfaces.Module, name string) error
 		name:   name,
 	})
 
+	if sm, ok := module.(interfaces.SessionModule); ok {
+		app.sessionModulesArr = append(app.sessionModulesArr, sessionModuleWrapper{
+			module: sm,
+			name:   name,
+		})
+	}
+
 	return nil
 }
 
@@ -65,6 +77,15 @@ func (app *App) RegisterModuleBefore(module interfaces.Module, name string) erro
 			name:   name,
 		},
 	}, app.modulesArr...)
+
+	if sm, ok := module.(interfaces.SessionModule); ok {
+		app.sessionModulesArr = append([]sessionModuleWrapper{
+			{
+				module: sm,
+				name:   name,
+			},
+		}, app.sessionModulesArr...)
+	}
 
 	return nil
 }
@@ -99,6 +120,27 @@ func (app *App) startModules() {
 		modWrapper.module.AfterInit()
 		logger.Log.Infof("module: %s successfully loaded", modWrapper.name)
 	}
+}
+
+func (app *App) startModuleSessionDraining() {
+	for i := len(app.sessionModulesArr) - 1; i >= 0; i-- {
+		name := app.sessionModulesArr[i].name
+		mod := app.sessionModulesArr[i].module
+
+		logger.Log.Debugf("start session draining on module: %s", name)
+		mod.StartSessionDraining()
+	}
+}
+
+func (app *App) maxModuleSessionCount() int64 {
+	count := int64(0)
+	for _, mod := range app.sessionModulesArr {
+		c := mod.module.SessionCount()
+		if c > count {
+			count = c
+		}
+	}
+	return count
 }
 
 // shutdownModules starts all modules in reverse order
