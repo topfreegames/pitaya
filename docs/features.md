@@ -53,17 +53,27 @@ Messages can be pushed to users without previous information about either sessio
 
 Modules are entities that can be registered to the Pitaya application and must implement the defined [interface](https://github.com/topfreegames/pitaya/tree/master/interfaces/interfaces.go#L24). Pitaya is responsible for calling the appropriate lifecycle methods as needed, the registered modules can be retrieved by name.
 
+### SessionModules
+
+SessionModules are an extension of the Module interface. If a module implements the `interfaces.SessionModule` interface, and session draining is enabled in Pitaya, Pitaya will not shut down before all SessionModules report their session count as zero.
+
+When Pitaya receives a SIGTERM signal, it will invoke the `StartSessionDraining` method on all registered SessionModules. After this Pitaya will periodically call the `SessionCount` method on all registered SessionModules to check if they have reached zero.
+
+**Note:** Pitaya will shut down after the session drain timeout has passed, or it receives another signal, even if the session count is not zero.
+
+### Built in modules
+
 Pitaya comes with a few already implemented modules, and more modules can be implemented as needed. The modules Pitaya has currently are:
 
-### Binary
+#### Binary
 
 This module starts a binary as a child process and pipes its stdout and stderr to info and error log messages, respectively.
 
-### Unique session
+#### Unique session
 
 This module adds a callback for `OnSessionBind` that checks if the id being bound has already been bound in one of the other frontend servers.
 
-### Binding storage
+#### Binding storage
 
 This module implements functionality needed by the gRPC RPC implementation to enable the functionality of broadcasting session binds and pushes to users without knowledge of the servers the users are connected to.
 
