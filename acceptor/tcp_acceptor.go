@@ -24,7 +24,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 
 	"github.com/topfreegames/pitaya/v2/conn/codec"
@@ -53,7 +52,7 @@ func (t *tcpPlayerConn) RemoteAddr() net.Addr {
 
 // GetNextMessage reads the next message available in the stream
 func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
-	header, err := ioutil.ReadAll(io.LimitReader(t.Conn, codec.HeadLength))
+	header, err := io.ReadAll(io.LimitReader(t.Conn, codec.HeadLength))
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (t *tcpPlayerConn) GetNextMessage() (b []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	msgData, err := ioutil.ReadAll(io.LimitReader(t.Conn, int64(msgSize)))
+	msgData, err := io.ReadAll(io.LimitReader(t.Conn, int64(msgSize)))
 	if err != nil {
 		return nil, err
 	}
