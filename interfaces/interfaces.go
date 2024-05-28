@@ -28,6 +28,12 @@ type Module interface {
 	Shutdown() error
 }
 
+type SessionModule interface {
+	Module
+	StartSessionDraining()
+	SessionCount() int64
+}
+
 // BindingStorage interface
 type BindingStorage interface {
 	GetUserFrontendID(uid, frontendType string) (string, error)

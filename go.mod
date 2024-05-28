@@ -20,7 +20,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.4
-	github.com/topfreegames/go-workers v1.1.0
+	github.com/topfreegames/go-workers v1.2.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	go.etcd.io/etcd/api/v3 v3.5.11
 	go.etcd.io/etcd/client/pkg/v3 v3.5.11
@@ -36,7 +36,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitly/go-simplejson v0.5.0 // indirect
+	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/bufbuild/protocompile v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -53,6 +53,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect

@@ -168,9 +168,13 @@ func (ns *NatsRPCClient) Call(
 		defer session.SetRequestInFlight(requestID, "", false)
 	}
 
-	logger.Log.Debugf("[rpc_client] sending remote nats request for route %s with timeout of %s", route, ns.reqTimeout)
+	reqTimeout := pcontext.GetFromPropagateCtx(ctx, constants.RequestTimeout)
+	if reqTimeout == nil {
+		reqTimeout = ns.reqTimeout.String()
+		ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, reqTimeout)
+	}
+	logger.Log.Debugf("[rpc_client] sending remote nats request for route %s with timeout of %s", route, reqTimeout)
 
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestTimeout, ns.reqTimeout.String())
 	req, err := buildRequest(ctx, rpcType, route, session, msg, ns.server)
 	if err != nil {
 		return nil, err
@@ -191,11 +195,14 @@ func (ns *NatsRPCClient) Call(
 			metrics.ReportTimingFromCtx(ctx, ns.metricsReporters, typ, err)
 		}()
 	}
-	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, ns.reqTimeout)
+
+	var timeout time.Duration
+	timeout, _ = time.ParseDuration(reqTimeout.(string))
+	m, err = ns.conn.Request(getChannel(server.Type, server.ID), marshalledData, timeout)
 	if err != nil {
 		if err == nats.ErrTimeout {
 			err = errors.NewError(constants.ErrRPCRequestTimeout, "PIT-408", map[string]string{
-				"timeout": ns.reqTimeout.String(),
+				"timeout": timeout.String(),
 				"route":   route.String(),
 				"server":  ns.server.ID,
 				"peer.id": server.ID,
