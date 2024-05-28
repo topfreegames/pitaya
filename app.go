@@ -436,9 +436,6 @@ func (app *App) AddRoute(
 	routingFunction router.RoutingFunc,
 ) error {
 	if app.router != nil {
-		if app.running {
-			return constants.ErrChangeRouteWhileRunning
-		}
 		app.router.AddRoute(serverType, routingFunction)
 	} else {
 		return constants.ErrRouterNotInitialized
