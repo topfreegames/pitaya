@@ -245,6 +245,8 @@ func (ns *NatsRPCServer) getUserKickChannel() chan *protos.KickMsg {
 func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 	p, err := proto.Marshal(res)
 	if err != nil {
+		logger.Log.Errorf("error marshaling response: %s", err.Error())
+
 		res := &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrUnknownCode,
@@ -271,6 +273,8 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 					Msg:  err.Error(),
 				},
 			}
+			
+			logger.Log.Errorf("error getting context from request: %s", err)
 		} else {
 			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
 			if err != nil {
