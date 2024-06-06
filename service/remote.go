@@ -494,6 +494,7 @@ func (r *RemoteService) remoteCall(
 	if target == nil {
 		target, err = r.router.Route(ctx, rpcType, svType, route, msg)
 		if err != nil {
+			logger.Log.Errorf("error making call for route %s: %w", route.String(), err)
 			return nil, e.NewError(err, e.ErrInternalCode)
 		}
 	}
