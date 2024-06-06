@@ -506,10 +506,11 @@ func (a *agentImpl) write() {
 				return
 			}
 			var e error
+			// TODO check why don't we send pwrite.err to span and we send to report timing
 			tracing.FinishSpan(pWrite.ctx, e)
 			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
 			if pWrite.err != nil {
-				logger.Log.Errorf("Failed to write in conn: %s", pWrite.err.Error())
+				logger.Log.Errorf("Pending write error: %s", pWrite.err.Error())
 			}
 		case <-a.chStopWrite:
 			return
