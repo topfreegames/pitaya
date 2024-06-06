@@ -540,12 +540,12 @@ func (a *agentImpl) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
-		logger.Log.Errorf("error answering route %s with an error: %s", route, e.Error())
+		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
 		return
 	}
 	e = a.Session.ResponseMID(ctx, mid, p, true)
 	if e != nil {
-		logger.Log.Errorf("error answering route %s with an error: %s", route, e.Error())
+		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
 	}
 }
 
