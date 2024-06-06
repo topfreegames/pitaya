@@ -350,7 +350,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 			}
 		}
 	} else {
-		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, nil)
+		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 		tracing.FinishSpan(ctx, err)
 	}
 }
