@@ -352,6 +352,9 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 	} else {
 		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 		tracing.FinishSpan(ctx, err)
+		if err != nil {
+			logger.Log.Errorf("Failed to process notify message: %s", err.Error())
+		}
 	}
 }
 
