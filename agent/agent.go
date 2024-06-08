@@ -502,7 +502,7 @@ func (a *agentImpl) write() {
 			if _, err := a.conn.Write(pWrite.data); err != nil {
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
-				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), pWrite.ctx)
 				return
 			}
 			var e error
