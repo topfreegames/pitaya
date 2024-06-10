@@ -500,14 +500,14 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
+				err = errors.NewError(err, errors.ErrClientClosedRequest)
+				
 				tracing.FinishSpan(pWrite.ctx, err)
 				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
 				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), pWrite.ctx)
 				return
 			}
-			var e error
-			// TODO check why don't we send pwrite.err to span and we send to report timing
-			tracing.FinishSpan(pWrite.ctx, e)
+			tracing.FinishSpan(pWrite.ctx, pWrite.err)
 			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
 			if pWrite.err != nil {
 				logger.Log.Errorf("Pending write error: %s", pWrite.err.Error())
