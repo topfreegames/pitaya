@@ -131,6 +131,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.worker.concurrency":                        pitayaConfig.Worker.Concurrency,
 		"pitaya.worker.redis.pool":                         pitayaConfig.Worker.Redis.Pool,
 		"pitaya.worker.redis.url":                          pitayaConfig.Worker.Redis.ServerURL,
+		"pitaya.worker.redis.password":                     pitayaConfig.Worker.Redis.Password,
 		"pitaya.worker.retry.enabled":                      pitayaConfig.Worker.Retry.Enabled,
 		"pitaya.worker.retry.exponential":                  pitayaConfig.Worker.Retry.Exponential,
 		"pitaya.worker.retry.max":                          pitayaConfig.Worker.Retry.Max,
