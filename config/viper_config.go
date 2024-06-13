@@ -130,7 +130,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.session.drain.period":                      pitayaConfig.Session.Drain.Period,
 		"pitaya.worker.concurrency":                        pitayaConfig.Worker.Concurrency,
 		"pitaya.worker.redis.pool":                         pitayaConfig.Worker.Redis.Pool,
-		"pitaya.worker.redis.url":                          pitayaConfig.Worker.Redis.ServerURL,
+		"pitaya.worker.redis.address":                      pitayaConfig.Worker.Redis.Address,
 		"pitaya.worker.redis.password":                     pitayaConfig.Worker.Redis.Password,
 		"pitaya.worker.retry.enabled":                      pitayaConfig.Worker.Retry.Enabled,
 		"pitaya.worker.retry.exponential":                  pitayaConfig.Worker.Retry.Exponential,

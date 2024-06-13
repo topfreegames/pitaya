@@ -461,9 +461,9 @@ func newDefaultClusterSDConfig() *ClusterSDConfig {
 // WorkerConfig provides worker configuration
 type WorkerConfig struct {
 	Redis struct {
-		ServerURL string `mapstructure:"serverurl"`
-		Pool      string `mapstructure:"pool"`
-		Password  string `mapstructure:"password"`
+		Address  string `mapstructure:"address"`
+		Pool     string `mapstructure:"pool"`
+		Password string `mapstructure:"password"`
 	} `mapstructure:"redis"`
 	Namespace   string      `mapstructure:"namespace"`
 	Concurrency int         `mapstructure:"concurrency"`
@@ -474,12 +474,12 @@ type WorkerConfig struct {
 func newDefaultWorkerConfig() *WorkerConfig {
 	return &WorkerConfig{
 		Redis: struct {
-			ServerURL string `mapstructure:"serverurl"`
-			Pool      string `mapstructure:"pool"`
-			Password  string `mapstructure:"password"`
+			Address  string `mapstructure:"address"`
+			Pool     string `mapstructure:"pool"`
+			Password string `mapstructure:"password"`
 		}{
-			ServerURL: "localhost:6379",
-			Pool:      "10",
+			Address: "localhost:6379",
+			Pool:    "10",
 		},
 		Concurrency: 1,
 		Retry:       *newDefaultEnqueueOpts(),

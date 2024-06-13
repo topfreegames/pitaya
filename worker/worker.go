@@ -55,7 +55,7 @@ func NewWorker(config config.WorkerConfig, opts config.EnqueueOpts) (*Worker, er
 	}
 
 	workers.Configure(workers.Options{
-		Address:   config.Redis.ServerURL,
+		Address:   config.Redis.Address,
 		Password:  config.Redis.Password,
 		Namespace: config.Namespace,
 		ProcessID: hostname,
