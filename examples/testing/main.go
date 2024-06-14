@@ -274,7 +274,7 @@ func main() {
 	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
 		constants.GRPCHostKey: "127.0.0.1",
 		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
-	}, cfg)
+	}, *cfg)
 
 	if *grpc {
 		app.RegisterModule(bs, "bindingsStorage")
@@ -298,7 +298,7 @@ func main() {
 	app.Start()
 }
 
-func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
+func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
 	conf := config.NewConfig(cfg...)
 	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, serverMode, metadata, conf)
 
