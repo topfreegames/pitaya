@@ -498,18 +498,44 @@ func (a *agentImpl) write() {
 	for {
 		select {
 		case pWrite := <-a.chSend:
+			ctx := pWrite.ctx
+
+			var parent opentracing.SpanContext
+			if span := opentracing.SpanFromContext(ctx); span != nil {
+				parent = span.Context()
+			}
+
+			reference := opentracing.ChildOf(parent)
+
+			remoteAddress := ""
+			if a.conn.RemoteAddr() != nil {
+				remoteAddress = a.conn.RemoteAddr().String()
+			}
+
+			tags := opentracing.Tags{
+				"span.kind": "connection",
+				"conn": remoteAddress,
+			}
+
+			span := opentracing.StartSpan("conn write", reference, tags)
+			defer span.Finish()
+
 			// close agent if low-level Conn broken
 			if _, err := a.conn.Write(pWrite.data); err != nil {
 				err = errors.NewError(err, errors.ErrClientClosedRequest)
-				
-				tracing.FinishSpan(pWrite.ctx, err)
-				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
-				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), pWrite.ctx)
+
+				metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+
+				tracing.LogError(span, err.Error())
+
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), ctx)
 				return
 			}
-			tracing.FinishSpan(pWrite.ctx, pWrite.err)
-			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
+
+			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, pWrite.err)
 			if pWrite.err != nil {
+				tracing.LogError(span, pWrite.err.Error())
+
 				logger.Log.Errorf("Pending write error: %s", pWrite.err.Error())
 			}
 		case <-a.chStopWrite:
