@@ -511,7 +511,7 @@ func (a *agentImpl) write() {
 					"conn": remoteAddress,
 				}
 
-				tracing.StartSpan(ctx, "conn write", tags)
+				ctx = tracing.StartSpan(ctx, "conn write", tags)
 			}
 
 			// close agent if low-level Conn broken
