@@ -511,7 +511,11 @@ func (a *agentImpl) write() {
 					"conn": remoteAddress,
 				}
 
-				ctx = tracing.StartSpan(ctx, "conn write", tags)
+				parent, err := tracing.ExtractSpan(ctx)
+				if err != nil {
+					logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+				}
+				ctx = tracing.StartSpan(ctx, "conn write", tags, parent)
 			}
 
 			// close agent if low-level Conn broken
