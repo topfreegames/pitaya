@@ -56,6 +56,8 @@ var (
 	// herd contains the handshake error response data
 	herd []byte
 	once sync.Once
+
+	noOpTracer = opentracing.NoopTracer{}
 )
 
 const handlerType = "handler"
@@ -500,30 +502,36 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
-			ctx = wrapSpan(ctx, a.conn)
+			span := wrapSpan(ctx, a.conn)
 
-			// close agent if low-level Conn broken
-			if _, writeErr := a.conn.Write(data); writeErr != nil {
+			_, writeErr := a.conn.Write(data)
+
+			span.Finish()
+
+			if writeErr != nil {
 				err = errors.NewError(writeErr, errors.ErrClosedRequest)
 
-				tracing.FinishSpan(ctx, err)
-				metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+				tracing.LogError(span, writeErr.Error())
 
-				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), closing agent", err.Error(), ctx)
-				return
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), closing agent", writeErr.Error(), ctx)
 			}
 
 			tracing.FinishSpan(ctx, err)
 			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+
+			// close agent if low-level conn broke during write
+			if writeErr != nil {
+				return
+			}
 		case <-a.chStopWrite:
 			return
 		}
 	}
 }
 
-func wrapSpan(ctx context.Context, conn net.Conn) context.Context {
+func wrapSpan(ctx context.Context, conn net.Conn) opentracing.Span {
 	if ctx == nil {
-		return nil
+		return noOpTracer.StartSpan("conn write")
 	}
 
 	remoteAddress := ""
@@ -541,7 +549,7 @@ func wrapSpan(ctx context.Context, conn net.Conn) context.Context {
 		parent = span.Context()
 	}
 
-	return tracing.StartSpan(ctx, "conn write", tags, parent)
+	return opentracing.StartSpan("conn write", opentracing.ChildOf(parent), tags)
 }
 
 // SendRequest sends a request to a server
