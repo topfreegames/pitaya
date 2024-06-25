@@ -500,32 +500,15 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
-			if ctx != nil {
-				remoteAddress := ""
-				if a.conn.RemoteAddr() != nil {
-					remoteAddress = a.conn.RemoteAddr().String()
-				}
-
-				tags := opentracing.Tags{
-					"span.kind": "connection",
-					"conn": remoteAddress,
-				}
-
-				var parent opentracing.SpanContext
-				if span := opentracing.SpanFromContext(ctx); span != nil {
-					parent = span.Context()
-				}
-
-				ctx = tracing.StartSpan(ctx, "conn write", tags, parent)
-			}
+			ctx = wrapSpan(ctx, a.conn)
 
 			// close agent if low-level Conn broken
 			if _, writeErr := a.conn.Write(data); writeErr != nil {
-				err = errors.NewError(writeErr, errors.ErrClientClosedRequest)
+				err = errors.NewError(writeErr, errors.ErrClosedRequest)
 
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
-				
+
 				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), ctx)
 				return
 			}
@@ -539,6 +522,29 @@ func (a *agentImpl) write() {
 			return
 		}
 	}
+}
+
+func wrapSpan(ctx context.Context, conn net.Conn) context.Context {
+	if ctx == nil {
+		return nil
+	}
+
+	remoteAddress := ""
+	if conn.RemoteAddr() != nil {
+		remoteAddress = conn.RemoteAddr().String()
+	}
+
+	tags := opentracing.Tags{
+		"span.kind": "connection",
+		"addr": remoteAddress,
+	}
+
+	var parent opentracing.SpanContext
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		parent = span.Context()
+	}
+
+	return tracing.StartSpan(ctx, "conn write", tags, parent)
 }
 
 // SendRequest sends a request to a server
