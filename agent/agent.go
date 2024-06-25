@@ -502,18 +502,11 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
-			span := createConnectionSpan(ctx, a.conn, "conn write")
-
-			_, writeErr := a.conn.Write(data)
-
-			span.Finish()
-
+			writeErr := a.writeToConnection(ctx, data)
 			if writeErr != nil {
 				err = errors.NewError(writeErr, errors.ErrClosedRequest)
 
-				tracing.LogError(span, writeErr.Error())
-
-				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), closing agent", writeErr.Error(), ctx)
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), agent will close", writeErr.Error(), ctx)
 			}
 
 			tracing.FinishSpan(ctx, nil)
@@ -527,6 +520,21 @@ func (a *agentImpl) write() {
 			return
 		}
 	}
+}
+
+func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
+	span := createConnectionSpan(ctx, a.conn, "conn write")
+
+	_, writeErr := a.conn.Write(data)
+
+	defer span.Finish()
+
+	if writeErr != nil {
+		tracing.LogError(span, writeErr.Error())
+		return writeErr
+	}
+
+	return nil
 }
 
 func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentracing.Span {
