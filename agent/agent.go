@@ -498,7 +498,7 @@ func (a *agentImpl) write() {
 	for {
 		select {
 		case pWrite := <-a.chSend:
-			ctx := pWrite.ctx
+			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
 			if ctx != nil {
 				remoteAddress := ""
@@ -511,28 +511,29 @@ func (a *agentImpl) write() {
 					"conn": remoteAddress,
 				}
 
-				parent, err := tracing.ExtractSpan(ctx)
-				if err != nil {
-					logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
+				var parent opentracing.SpanContext
+				if span := opentracing.SpanFromContext(ctx); span != nil {
+					parent = span.Context()
 				}
+
 				ctx = tracing.StartSpan(ctx, "conn write", tags, parent)
 			}
 
 			// close agent if low-level Conn broken
-			if _, err := a.conn.Write(pWrite.data); err != nil {
-				err = errors.NewError(err, errors.ErrClientClosedRequest)
+			if _, writeErr := a.conn.Write(data); writeErr != nil {
+				err = errors.NewError(writeErr, errors.ErrClientClosedRequest)
 
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
-
+				
 				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), ctx)
 				return
 			}
 
-			tracing.FinishSpan(ctx, pWrite.err)
-			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, pWrite.err)
-			if pWrite.err != nil {
-				logger.Log.Errorf("Pending write error: %s", pWrite.err.Error())
+			tracing.FinishSpan(ctx, err)
+			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+			if err != nil {
+				logger.Log.Errorf("Pending write error: %s", err.Error())
 			}
 		case <-a.chStopWrite:
 			return
