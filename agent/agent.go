@@ -516,7 +516,7 @@ func (a *agentImpl) write() {
 				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), closing agent", writeErr.Error(), ctx)
 			}
 
-			tracing.FinishSpan(ctx, err)
+			tracing.FinishSpan(ctx, nil)
 			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 
 			// close agent if low-level conn broke during write
