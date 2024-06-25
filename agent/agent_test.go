@@ -1140,8 +1140,14 @@ func TestAgentWriteChSendWriteError(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
+	errorTags := map[string]string{}
+	errorTags["route"] = "route"
+	errorTags["status"] = "failed"
+	errorTags["type"] = "handler"
+	errorTags["code"] = e.ErrClosedRequest
+
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
-	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
+	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, errorTags, gomock.Any())
 
 	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(3)
 	mockConn.EXPECT().Close().Do(func() {
@@ -1151,7 +1157,6 @@ func TestAgentWriteChSendWriteError(t *testing.T) {
 		wg.Done()
 	}).Return(0, writeError)
 
-	//assert.Equal(t, e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest), err)
 	go ag.write()
 	ag.chSend <- pendingWrite{ctx: ctx, data: expectedPacket, err: nil}
 	wg.Wait()
