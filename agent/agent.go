@@ -502,7 +502,7 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
-			span := wrapSpan(ctx, a.conn)
+			span := createConnectionSpan(ctx, a.conn, "conn write")
 
 			_, writeErr := a.conn.Write(data)
 
@@ -529,9 +529,9 @@ func (a *agentImpl) write() {
 	}
 }
 
-func wrapSpan(ctx context.Context, conn net.Conn) opentracing.Span {
+func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentracing.Span {
 	if ctx == nil {
-		return noOpTracer.StartSpan("conn write")
+		return noOpTracer.StartSpan(op)
 	}
 
 	remoteAddress := ""
@@ -549,7 +549,7 @@ func wrapSpan(ctx context.Context, conn net.Conn) opentracing.Span {
 		parent = span.Context()
 	}
 
-	return opentracing.StartSpan("conn write", opentracing.ChildOf(parent), tags)
+	return opentracing.StartSpan(op, opentracing.ChildOf(parent), tags)
 }
 
 // SendRequest sends a request to a server
