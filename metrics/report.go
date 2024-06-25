@@ -27,7 +27,6 @@ import (
 
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/errors"
-	"github.com/topfreegames/pitaya/v2/logger"
 
 	pcontext "github.com/topfreegames/pitaya/v2/context"
 )
@@ -45,9 +44,6 @@ func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, 
 	if len(reporters) > 0 {
 		startTime := pcontext.GetFromPropagateCtx(ctx, constants.StartTimeKey)
 		route := pcontext.GetFromPropagateCtx(ctx, constants.RouteKey)
-		if code == errors.ErrUnknownCode {
-			logger.Log.Errorf("unknown error reported on route %s: %v", route, err)
-		}
 		elapsed := time.Since(time.Unix(0, startTime.(int64)))
 		tags := getTags(ctx, map[string]string{
 			"route":  route.(string),

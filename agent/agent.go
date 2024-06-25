@@ -509,15 +509,12 @@ func (a *agentImpl) write() {
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 
-				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v)", err.Error(), ctx)
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), closing agent", err.Error(), ctx)
 				return
 			}
 
 			tracing.FinishSpan(ctx, err)
 			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
-			if err != nil {
-				logger.Log.Errorf("Pending write error: %s", err.Error())
-			}
 		case <-a.chStopWrite:
 			return
 		}
