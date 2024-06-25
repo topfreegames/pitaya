@@ -258,6 +258,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		wg.Done()
 	})
@@ -997,6 +998,7 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		time.Sleep(10 * time.Millisecond)
 		wg.Done()
