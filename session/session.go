@@ -99,6 +99,7 @@ type sessionImpl struct {
 	Subscriptions       []*nats.Subscription                  // subscription created on bind when using nats rpc server
 	requestsInFlight    ReqInFlight                           // whether the session is waiting from a response from a remote
 	pool                *sessionPoolImpl
+	closed              sync.Once
 }
 
 type ReqInFlight struct {
@@ -437,6 +438,14 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		if val, ok := s.pool.sessionsByUID.Load(uid); ok {
 			val.(Session).Close()
 		}
+		// although here are checking old session and invoking Close method,
+		// there is a possibility that the method is invoked from HandlerService.Handle's defer logic at the same time from different goroutine
+		// so we need to make sure two things:
+		// 1. ensure the Close method's logic is done only once, for the reason to prevent deleting the new one
+		// 2. double check that there isn't a session in the store data before Storing
+		for s.pool.GetSessionByUID(uid) != nil {
+			time.Sleep(10 * time.Millisecond)
+		}
 		s.pool.sessionsByUID.Store(uid, s)
 	} else {
 		// If frontentID is set this means it is a remote call and the current server
@@ -483,27 +492,29 @@ func (s *sessionImpl) OnClose(c func()) error {
 // Close terminates current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *sessionImpl) Close() {
-	atomic.AddInt64(&s.pool.SessionCount, -1)
-	s.pool.sessionsByID.Delete(s.ID())
-	// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
-	if val, ok := s.pool.sessionsByUID.Load(s.UID()); ok {
-		if (val.(Session)).ID() == s.ID() {
-			s.pool.sessionsByUID.Delete(s.UID())
-		}
-	}
-	// TODO: this logic should be moved to nats rpc server
-	if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
-		// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
-		for _, sub := range s.Subscriptions {
-			err := sub.Drain()
-			if err != nil {
-				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
-			} else {
-				logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+	s.closed.Do(func() {
+		atomic.AddInt64(&s.pool.SessionCount, -1)
+		s.pool.sessionsByID.Delete(s.ID())
+		// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
+		if val, ok := s.pool.sessionsByUID.Load(s.UID()); ok {
+			if (val.(Session)).ID() == s.ID() {
+				s.pool.sessionsByUID.Delete(s.UID())
 			}
 		}
-	}
-	s.entity.Close()
+		// TODO: this logic should be moved to nats rpc server
+		if s.IsFrontend && s.Subscriptions != nil && len(s.Subscriptions) > 0 {
+			// if the user is bound to an userid and nats rpc server is being used we need to unsubscribe
+			for _, sub := range s.Subscriptions {
+				err := sub.Drain()
+				if err != nil {
+					logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
+				} else {
+					logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+				}
+			}
+		}
+		s.entity.Close()
+	})
 }
 
 // RemoteAddr returns the remote network address.
