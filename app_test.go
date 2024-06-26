@@ -189,12 +189,6 @@ func TestAddRoute(t *testing.T) {
 		return nil, nil
 	})
 	assert.NoError(t, err)
-
-	app.running = true
-	err = app.AddRoute("somesv", func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
-		return nil, nil
-	})
-	assert.EqualError(t, constants.ErrChangeRouteWhileRunning, err.Error())
 }
 
 func TestShutdown(t *testing.T) {

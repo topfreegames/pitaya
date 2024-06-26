@@ -37,6 +37,7 @@ import (
 // WSAcceptor struct
 type WSAcceptor struct {
 	addr     string
+	path     string
 	connChan chan PlayerConn
 	listener net.Listener
 	certFile string
@@ -44,33 +45,44 @@ type WSAcceptor struct {
 	running  bool
 }
 
-// NewWSAcceptor returns a new instance of WSAcceptor
-func NewWSAcceptor(addr string, certs ...string) *WSAcceptor {
-	keyFile := ""
-	certFile := ""
-	if len(certs) != 2 && len(certs) != 0 {
-		panic(constants.ErrInvalidCertificates)
-	} else if len(certs) == 2 {
-		certFile = certs[0]
-		keyFile = certs[1]
-	}
+// WSAcceptorOption is a function that returns a WSAcceptorOption
+type WSAcceptorOption func(*WSAcceptor)
 
+func WithWSAcceptorPath(path string) WSAcceptorOption {
+	return func(ac *WSAcceptor) {
+		ac.path = path
+	}
+}
+
+func WithWSAcceptorCerts(certFile, keyFile string) WSAcceptorOption {
+	return func(ac *WSAcceptor) {
+		ac.certFile = certFile
+		ac.keyFile = keyFile
+	}
+}
+
+// NewWSAcceptor returns a new instance of WSAcceptor
+func NewWSAcceptor(addr string, opts ...WSAcceptorOption) *WSAcceptor {
 	w := &WSAcceptor{
 		addr:     addr,
 		connChan: make(chan PlayerConn),
-		certFile: certFile,
-		keyFile:  keyFile,
 		running:  false,
+		path:     "/",
 	}
+
+	for _, opt := range opts {
+		opt(w)
+	}
+
 	return w
 }
 
 func (w *WSAcceptor) IsRunning() bool {
-        return w.running
+	return w.running
 }
 
 func (w *WSAcceptor) GetConfiguredAddress() string {
-        return w.addr
+	return w.addr
 }
 
 // GetAddr returns the addr the acceptor will listen on
@@ -93,21 +105,26 @@ func (w *WSAcceptor) EnableProxyProtocol() {
 type connHandler struct {
 	upgrader *websocket.Upgrader
 	connChan chan PlayerConn
+	path     string
 }
 
 func (h *connHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	conn, err := h.upgrader.Upgrade(rw, r, nil)
-	if err != nil {
-		logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
-		return
-	}
+	if r.URL.Path == h.path && r.Method == http.MethodGet {
+		conn, err := h.upgrader.Upgrade(rw, r, nil)
+		if err != nil {
+			logger.Log.Errorf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
+			return
+		}
 
-	c, err := NewWSConn(conn)
-	if err != nil {
-		logger.Log.Errorf("Failed to create new ws connection: %s", err.Error())
-		return
+		c, err := NewWSConn(conn)
+		if err != nil {
+			logger.Log.Errorf("Failed to create new ws connection: %s", err.Error())
+			return
+		}
+		h.connChan <- c
+	} else {
+		http.Error(rw, "Not found", http.StatusNotFound)
 	}
-	h.connChan <- c
 }
 
 func (w *WSAcceptor) hasTLSCertificates() bool {
@@ -165,6 +182,7 @@ func (w *WSAcceptor) serve(upgrader *websocket.Upgrader) {
 	http.Serve(w.listener, &connHandler{
 		upgrader: upgrader,
 		connChan: w.connChan,
+		path:     w.path,
 	})
 }
 
