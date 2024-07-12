@@ -24,8 +24,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -427,7 +429,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		err := cb(ctx, s)
 		if err != nil {
 			s.uid = ""
-			return err
+			return errors.Wrapf(err, "session bind before callback %+v for %s failed", runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name(), uid)
 		}
 	}
 
@@ -454,7 +456,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		err := cb(ctx, s)
 		if err != nil {
 			s.uid = ""
-			return err
+			return errors.Wrapf(err, "session bind after callback %+v for %s failed", runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name(), uid)
 		}
 	}
 
