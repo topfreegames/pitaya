@@ -56,6 +56,8 @@ var (
 	// herd contains the handshake error response data
 	herd []byte
 	once sync.Once
+
+	noOpTracer = opentracing.NoopTracer{}
 )
 
 const handlerType = "handler"
@@ -507,20 +509,64 @@ func (a *agentImpl) write() {
 	for {
 		select {
 		case pWrite := <-a.chSend:
-			// close agent if low-level Conn broken
-			if _, err := a.conn.Write(pWrite.data); err != nil {
-				tracing.FinishSpan(pWrite.ctx, err)
-				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
-				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
+			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
+
+			writeErr := a.writeToConnection(ctx, data)
+			if writeErr != nil {
+				err = errors.NewError(writeErr, errors.ErrClosedRequest)
+
+				logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), agent will close", writeErr.Error(), ctx)
+			}
+
+			tracing.FinishSpan(ctx, nil)
+			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+
+			// close agent if low-level conn broke during write
+			if writeErr != nil {
 				return
 			}
-			var e error
-			tracing.FinishSpan(pWrite.ctx, e)
-			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
 		case <-a.chStopWrite:
 			return
 		}
 	}
+}
+
+func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
+	span := createConnectionSpan(ctx, a.conn, "conn write")
+
+	_, writeErr := a.conn.Write(data)
+
+	defer span.Finish()
+
+	if writeErr != nil {
+		tracing.LogError(span, writeErr.Error())
+		return writeErr
+	}
+
+	return nil
+}
+
+func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentracing.Span {
+	if ctx == nil {
+		return noOpTracer.StartSpan(op)
+	}
+
+	remoteAddress := ""
+	if conn.RemoteAddr() != nil {
+		remoteAddress = conn.RemoteAddr().String()
+	}
+
+	tags := opentracing.Tags{
+		"span.kind": "connection",
+		"addr": remoteAddress,
+	}
+
+	var parent opentracing.SpanContext
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		parent = span.Context()
+	}
+
+	return opentracing.StartSpan(op, opentracing.ChildOf(parent), tags)
 }
 
 // SendRequest sends a request to a server

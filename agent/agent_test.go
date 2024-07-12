@@ -266,6 +266,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		wg.Done()
 	})
@@ -1005,6 +1006,7 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		time.Sleep(10 * time.Millisecond)
 		wg.Done()
@@ -1117,4 +1119,53 @@ func TestIPVersion(t *testing.T) {
 			assert.Equal(t, table.ipVersion, a.IPVersion())
 		})
 	}
+}
+
+func TestAgentWriteChSendWriteError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockSerializer.EXPECT().GetName()
+
+	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
+	messageEncoder := message.NewMessagesEncoder(false)
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	sessionPool := session.NewSessionPool()
+
+	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, 0, nil, messageEncoder, mockMetricsReporters, sessionPool).(*agentImpl)
+
+	ctx := getCtxWithRequestKeys()
+
+	expectedPacket := []byte("final")
+
+	writeError := errors.New("write error")
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	errorTags := map[string]string{}
+	errorTags["route"] = "route"
+	errorTags["status"] = "failed"
+	errorTags["type"] = "handler"
+	errorTags["code"] = e.ErrClosedRequest
+
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
+	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, errorTags, gomock.Any())
+
+	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(3)
+	mockConn.EXPECT().Close().Do(func() {
+		wg.Done()
+	})
+	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
+		wg.Done()
+	}).Return(0, writeError)
+
+	go ag.write()
+	ag.chSend <- pendingWrite{ctx: ctx, data: expectedPacket, err: nil}
+	wg.Wait()
 }

@@ -36,6 +36,9 @@ const ErrBadRequestCode = "PIT-400"
 // ErrClientClosedRequest is a string code representing the client closed request error
 const ErrClientClosedRequest = "PIT-499"
 
+// ErrClosedRequest is a string code representing the closed request error
+const ErrClosedRequest = "PIT-498"
+
 // Error is an error with a code, message and metadata
 type Error struct {
 	Code     string

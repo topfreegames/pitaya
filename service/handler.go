@@ -344,13 +344,17 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 		} else {
 			err := a.GetSession().ResponseMID(ctx, mid, ret)
 			if err != nil {
+				logger.Log.Errorf("Failed to process handler message: %s", err.Error())
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 			}
 		}
 	} else {
-		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, nil)
+		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 		tracing.FinishSpan(ctx, err)
+		if err != nil {
+			logger.Log.Errorf("Failed to process notify message: %s", err.Error())
+		}
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -73,7 +73,7 @@ func GetTestEtcd(t *testing.T) (*integration.ClusterV3, *clientv3.Client) {
 // WriteFile test helper
 func WriteFile(t *testing.T, filepath string, bytes []byte) {
 	t.Helper()
-	if err := ioutil.WriteFile(filepath, bytes, 0644); err != nil {
+	if err := os.WriteFile(filepath, bytes, 0644); err != nil {
 		t.Fatalf("failed writing file: %s", err)
 	}
 }
@@ -81,7 +81,7 @@ func WriteFile(t *testing.T, filepath string, bytes []byte) {
 // ReadFile test helper
 func ReadFile(t *testing.T, filepath string) []byte {
 	t.Helper()
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err != nil {
 		t.Fatalf("failed reading file: %s", err)
 	}
