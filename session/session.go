@@ -24,8 +24,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -427,7 +429,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		err := cb(ctx, s)
 		if err != nil {
 			s.uid = ""
-			return err
+			return errors.Wrapf(err, "session bind before callback %+v for %s failed", runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name(), uid)
 		}
 	}
 
@@ -454,7 +456,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		err := cb(ctx, s)
 		if err != nil {
 			s.uid = ""
-			return err
+			return errors.Wrapf(err, "session bind after callback %+v for %s failed", runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name(), uid)
 		}
 	}
 
@@ -552,189 +554,57 @@ func (s *sessionImpl) Get(key string) interface{} {
 
 // Int returns the value associated with the key as a int.
 func (s *sessionImpl) Int(key string) int {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(int)
-	if !ok {
-		return 0
-	}
-	return value
+	return int(s.Float64(key))
 }
 
 // Int8 returns the value associated with the key as a int8.
 func (s *sessionImpl) Int8(key string) int8 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(int8)
-	if !ok {
-		return 0
-	}
-	return value
+	return int8(s.Float64(key))
 }
 
 // Int16 returns the value associated with the key as a int16.
 func (s *sessionImpl) Int16(key string) int16 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(int16)
-	if !ok {
-		return 0
-	}
-	return value
+	return int16(s.Float64(key))
 }
 
 // Int32 returns the value associated with the key as a int32.
 func (s *sessionImpl) Int32(key string) int32 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(int32)
-	if !ok {
-		return 0
-	}
-	return value
+	return int32(s.Float64(key))
 }
 
 // Int64 returns the value associated with the key as a int64.
 func (s *sessionImpl) Int64(key string) int64 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(int64)
-	if !ok {
-		return 0
-	}
-	return value
+	return int64(s.Float64(key))
 }
 
 // Uint returns the value associated with the key as a uint.
 func (s *sessionImpl) Uint(key string) uint {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(uint)
-	if !ok {
-		return 0
-	}
-	return value
+	return uint(s.Float64(key))
 }
 
 // Uint8 returns the value associated with the key as a uint8.
 func (s *sessionImpl) Uint8(key string) uint8 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(uint8)
-	if !ok {
-		return 0
-	}
-	return value
+	return uint8(s.Float64(key))
 }
 
 // Uint16 returns the value associated with the key as a uint16.
 func (s *sessionImpl) Uint16(key string) uint16 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(uint16)
-	if !ok {
-		return 0
-	}
-	return value
+	return uint16(s.Float64(key))
 }
 
 // Uint32 returns the value associated with the key as a uint32.
 func (s *sessionImpl) Uint32(key string) uint32 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(uint32)
-	if !ok {
-		return 0
-	}
-	return value
+	return uint32(s.Float64(key))
 }
 
 // Uint64 returns the value associated with the key as a uint64.
 func (s *sessionImpl) Uint64(key string) uint64 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(uint64)
-	if !ok {
-		return 0
-	}
-	return value
+	return uint64(s.Float64(key))
 }
 
 // Float32 returns the value associated with the key as a float32.
 func (s *sessionImpl) Float32(key string) float32 {
-	s.RLock()
-	defer s.RUnlock()
-
-	v, ok := s.data[key]
-	if !ok {
-		return 0
-	}
-
-	value, ok := v.(float32)
-	if !ok {
-		return 0
-	}
-	return value
+	return float32(s.Float64(key))
 }
 
 // Float64 returns the value associated with the key as a float64.
