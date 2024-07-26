@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/v2/acceptor"
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/component"
@@ -55,6 +54,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/timer"
 	"github.com/topfreegames/pitaya/v2/tracing"
 	"github.com/topfreegames/pitaya/v2/worker"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ServerMode represents a server mode
@@ -500,9 +500,9 @@ func GetFromPropagateCtx(ctx context.Context, key string) interface{} {
 	return pcontext.GetFromPropagateCtx(ctx, key)
 }
 
-// ExtractSpan retrieves an opentracing span context from the given context
+// ExtractSpan retrieves an OpenTelemetry span context from the given context
 // The span context can be received directly or via an RPC call
-func ExtractSpan(ctx context.Context) (opentracing.SpanContext, error) {
+func ExtractSpan(ctx context.Context) (trace.SpanContext, error) {
 	return tracing.ExtractSpan(ctx)
 }
 

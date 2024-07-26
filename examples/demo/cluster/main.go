@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
 
 	"strings"
 
@@ -18,8 +17,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/examples/demo/cluster/services"
 	"github.com/topfreegames/pitaya/v2/groups"
 	"github.com/topfreegames/pitaya/v2/route"
-	"github.com/topfreegames/pitaya/v2/tracing/jaeger"
-	jaegercfg "github.com/uber/jaeger-client-go/config"
+	"github.com/topfreegames/pitaya/v2/tracing"
 )
 
 var app pitaya.Pitaya
@@ -78,22 +76,18 @@ func configureFrontend(port int) {
 	}
 }
 
-func configureJaeger(config *viper.Viper, logger logrus.FieldLogger) {
-	cfg, err := jaegercfg.FromEnv()
-	if cfg.ServiceName == "" {
-		logger.Error("Could not init jaeger tracer without ServiceName, either set environment JAEGER_SERVICE_NAME or cfg.ServiceName = \"my-api\"")
-		return
+func configureOpenTelemetry(config *viper.Viper, logger logrus.FieldLogger) {
+	options := tracing.Options{
+		Disabled:    config.GetBool("otel.disabled"),
+		Probability: config.GetFloat64("otel.probability"),
+		ServiceName: config.GetString("otel.serviceName"),
+		Endpoint:    config.GetString("otel.endpoint"),
 	}
+
+	err := tracing.InitializeOtel(options)
 	if err != nil {
-		logger.Error("Could not parse Jaeger env vars: %s", err.Error())
-		return
+		logger.Errorf("Failed to initialize OpenTelemetry: %v", err)
 	}
-	options := jaeger.Options{
-		Disabled:    cfg.Disabled,
-		Probability: cfg.Sampler.Param,
-		ServiceName: cfg.ServiceName,
-	}
-	jaeger.Configure(options)
 }
 
 func main() {
@@ -103,9 +97,13 @@ func main() {
 
 	flag.Parse()
 
-	if os.Getenv("JAEGER_SERVICE_NAME") != "" {
-		configureJaeger(viper.GetViper(), logrus.New())
-	}
+	cfg := viper.New()
+	cfg.SetDefault("otel.disabled", false)
+	cfg.SetDefault("otel.probability", 1.0)
+	cfg.SetDefault("otel.serviceName", "pitaya-"+*svType)
+	cfg.SetDefault("otel.endpoint", "localhost:4317")
+
+	configureOpenTelemetry(cfg, logrus.New())
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config.NewDefaultPitayaConfig())
 	if *isFrontend {
