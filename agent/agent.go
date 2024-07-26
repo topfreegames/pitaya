@@ -45,7 +45,9 @@ import (
 	"github.com/topfreegames/pitaya/v2/util"
 	"github.com/topfreegames/pitaya/v2/util/compression"
 
-	opentracing "github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -56,8 +58,6 @@ var (
 	// herd contains the handshake error response data
 	herd []byte
 	once sync.Once
-
-	noOpTracer = opentracing.NoopTracer{}
 )
 
 const handlerType = "handler"
@@ -527,37 +527,31 @@ func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 
 	_, writeErr := a.conn.Write(data)
 
-	defer span.Finish()
+	if span != nil {
+		defer span.End()
 
-	if writeErr != nil {
-		tracing.LogError(span, writeErr.Error())
-		return writeErr
+		if writeErr != nil {
+			span.RecordError(writeErr)
+			span.SetStatus(codes.Error, writeErr.Error())
+		}
 	}
 
-	return nil
+	return writeErr
 }
 
-func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentracing.Span {
-	if ctx == nil {
-		return noOpTracer.StartSpan(op)
-	}
-
+func createConnectionSpan(ctx context.Context, conn net.Conn, op string) trace.Span {
 	remoteAddress := ""
 	if conn.RemoteAddr() != nil {
 		remoteAddress = conn.RemoteAddr().String()
 	}
 
-	tags := opentracing.Tags{
-		"span.kind": "connection",
-		"addr": remoteAddress,
+	attrs := []attribute.KeyValue{
+		attribute.String("span.kind", "connection"),
+		attribute.String("addr", remoteAddress),
 	}
 
-	var parent opentracing.SpanContext
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		parent = span.Context()
-	}
-
-	return opentracing.StartSpan(op, opentracing.ChildOf(parent), tags)
+	_, span := tracing.StartSpan(ctx, op, attrs...)
+	return span
 }
 
 // SendRequest sends a request to a server
@@ -575,9 +569,10 @@ func (a *agentImpl) AnswerWithError(ctx context.Context, mid uint, err error) {
 		}
 	}()
 	if ctx != nil && err != nil {
-		s := opentracing.SpanFromContext(ctx)
-		if s != nil {
-			tracing.LogError(s, err.Error())
+		span := trace.SpanFromContext(ctx)
+		if span.IsRecording() {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
 		}
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)

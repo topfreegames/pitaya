@@ -28,7 +28,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/constants"
@@ -40,6 +39,8 @@ import (
 	"github.com/topfreegames/pitaya/v2/route"
 	"github.com/topfreegames/pitaya/v2/session"
 	"github.com/topfreegames/pitaya/v2/tracing"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NatsRPCClient struct
@@ -143,13 +144,14 @@ func (ns *NatsRPCClient) Call(
 	if err != nil {
 		logger.Log.Warnf("failed to retrieve parent span: %s", err.Error())
 	}
-	tags := opentracing.Tags{
-		"span.kind":       "client",
-		"local.id":        ns.server.ID,
-		"peer.serverType": server.Type,
-		"peer.id":         server.ID,
+	ctx = trace.ContextWithRemoteSpanContext(ctx, parent)
+	attributes := []attribute.KeyValue{
+		attribute.String("span.kind", "client"),
+		attribute.String("local.id", ns.server.ID),
+		attribute.String("peer.serverType", server.Type),
+		attribute.String("peer.id", server.ID),
 	}
-	ctx = tracing.StartSpan(ctx, "NATS RPC Call", tags, parent)
+	ctx, _ = tracing.StartSpan(ctx, "NATS RPC Call", attributes...)
 	defer tracing.FinishSpan(ctx, err)
 
 	if !ns.running {
