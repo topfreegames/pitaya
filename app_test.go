@@ -32,7 +32,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v2/acceptor"
@@ -48,6 +47,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/router"
 	"github.com/topfreegames/pitaya/v2/session/mocks"
 	"github.com/topfreegames/pitaya/v2/timer"
+	"github.com/topfreegames/pitaya/v2/tracing"
 )
 
 var (
@@ -406,11 +406,10 @@ func TestGetFromPropagateCtx(t *testing.T) {
 }
 
 func TestExtractSpan(t *testing.T) {
-	span := opentracing.StartSpan("op", opentracing.ChildOf(nil))
-	ctx := opentracing.ContextWithSpan(context.Background(), span)
+	ctx, span := tracing.StartSpan(context.TODO(), "op")
 	spanCtx, err := ExtractSpan(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, span.Context(), spanCtx)
+	assert.Equal(t, span.SpanContext(), spanCtx)
 }
 
 func TestDescriptor(t *testing.T) {
