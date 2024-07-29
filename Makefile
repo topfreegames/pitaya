@@ -29,12 +29,12 @@ init-submodules:
 	@git submodule init
 
 setup-ci:
-	@go get github.com/mattn/goveralls
-	@go get -u github.com/wadey/gocovmerge
+	@go install github.com/mattn/goveralls@latest
+	@go install github.com/wadey/gocovmerge@latest
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go get github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/golang/protobuf/protoc-gen-go@latest
 
 run-jaeger-aio:
 	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
