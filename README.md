@@ -1,8 +1,5 @@
 # pitaya [![Build Status][7]][8] [![Coverage Status][9]][10] [![GoDoc][1]][2] [![Docs][11]][12] [![Go Report Card][3]][4] [![MIT licensed][5]][6]
 
-*WARNING*: The [version v1.x](https://github.com/topfreegames/pitaya/tree/v1) of pitaya is deprecated, complete guide of the new version v2.x can be found [here](https://github.com/topfreegames/pitaya/issues/240).
-The current README is for version v2.x, make sure you look at branch v1 if you'd like to see the documentation for the older version.
-
 ---
 
 [1]: https://godoc.org/github.com/topfreegames/pitaya?status.svg
