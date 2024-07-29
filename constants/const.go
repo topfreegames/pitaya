@@ -55,7 +55,7 @@ type propagateKey struct{}
 // propagated through rpc calls is set
 var PropagateCtxKey = propagateKey{}
 
-// SpanPropagateCtxKey is the key holding the opentracing spans inside
+// SpanPropagateCtxKey is the key holding the otel spans inside
 // the propagate key
 var SpanPropagateCtxKey = "otel-span"
 
