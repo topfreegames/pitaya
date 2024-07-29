@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	pitayaclient "github.com/topfreegames/pitaya/v2/client"
-	pitayamessage "github.com/topfreegames/pitaya/v2/conn/message"
-	"github.com/topfreegames/pitaya/v2/session"
+	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
+	pitayamessage "github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/metrics"
 )

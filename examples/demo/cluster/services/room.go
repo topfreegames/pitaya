@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/examples/demo/protos"
-	"github.com/topfreegames/pitaya/v2/timer"
+	"github.com/topfreegames/pitaya/v3/examples/demo/protos"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/timer"
 )
 
 type (

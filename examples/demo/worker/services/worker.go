@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/examples/demo/worker/protos"
+	"github.com/topfreegames/pitaya/v3/examples/demo/worker/protos"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
 )
 
 // Worker server
