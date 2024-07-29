@@ -48,6 +48,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 var (
@@ -540,6 +541,10 @@ func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 }
 
 func createConnectionSpan(ctx context.Context, conn net.Conn, op string) trace.Span {
+	if ctx == nil {
+		_, span := noop.NewTracerProvider().Tracer("noop").Start(context.TODO(), op)
+		return span
+	}
 	remoteAddress := ""
 	if conn.RemoteAddr() != nil {
 		remoteAddress = conn.RemoteAddr().String()

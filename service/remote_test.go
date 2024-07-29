@@ -701,12 +701,16 @@ func TestRemoteServiceRPC(t *testing.T) {
 
 				expected = &test.SomeStruct{}
 				b, err := proto.Marshal(expected)
+
 				assert.NoError(t, err)
 				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_User, rt, gomock.Any(), expectedMsg, gomock.Any()).Return(&protos.Response{Data: b}, table.err)
 			}
+
 			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 			if table.reply != nil {
+				// We should consider dropping XXX_NoUnkeyedLiteral, XXX_unrecognized and XXX_sizecache from generated protobufs as this is unuseful overhead
+				expected.XXX_sizecache = 0
 				assert.Equal(t, table.reply, expected)
 			}
 		})

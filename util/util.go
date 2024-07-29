@@ -212,10 +212,20 @@ func StartSpanFromRequest(
 	attributes := []attribute.KeyValue{
 		attribute.String("local.id", serverID),
 		attribute.String("span.kind", "server"),
-		attribute.String("peer.id", pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey).(string)),
-		attribute.String("peer.service", pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey).(string)),
-		attribute.String("request.id", pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey).(string)),
 	}
+	peerId, ok := pcontext.GetFromPropagateCtx(ctx, constants.PeerIDKey).(string)
+	if ok {
+		attributes = append(attributes, attribute.String("peer.id", peerId))
+	}
+	peerService, ok := pcontext.GetFromPropagateCtx(ctx, constants.PeerServiceKey).(string)
+	if ok {
+		attributes = append(attributes, attribute.String("peer.service", peerService))
+	}
+	requestId, ok := pcontext.GetFromPropagateCtx(ctx, constants.RequestIDKey).(string)
+	if ok {
+		attributes = append(attributes, attribute.String("request.id", requestId))
+	}
+
 	ctx, _ = tracing.StartSpan(ctx, route, attributes...)
 
 	return ctx
