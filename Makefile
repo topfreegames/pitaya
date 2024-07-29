@@ -188,7 +188,7 @@ networkentity-mock:
 	@mockgen github.com/topfreegames/pitaya/v3/pkg/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
 
 pitaya-mock:
-	@mockgen github.com/topfreegames/pitaya/v3/pkg Pitaya | sed 's/mock_v2/mocks/' > pkg/mocks/app.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg Pitaya | sed 's/mock_pkg/mocks/' > pkg/mocks/app.go
 
 metrics-mock:
 	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
@@ -199,3 +199,6 @@ serializer-mock:
 
 acceptor-mock:
 	@mockgen github.com/topfreegames/pitaya/v3/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
+
+worker-mock:
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/worker RPCJob | sed 's/mock_worker/mocks/' > pkg/worker/mocks/rpc_job.go

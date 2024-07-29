@@ -6,7 +6,7 @@ A REPL cli client made in go for pitaya.
 ## Installing
 
 ```
-go install github.com/topfreegames/pitaya/v3/pitaya-cli
+go install github.com/topfreegames/pitaya/v3
 ```
 
 ## Usage
@@ -14,7 +14,24 @@ go install github.com/topfreegames/pitaya/v3/pitaya-cli
 For cli flags, run `pitaya-cli --help`
 
 ```
-$ pitaya-cli
+$ pitaya
+
+Pitaya command line utilities
+
+Usage:
+  pitaya [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  repl        starts pitaya repl tool
+
+Flags:
+  -h, --help   help for pitaya
+
+Use "pitaya [command] --help" for more information about a command.
+
+$ pitaya repl
 
 Pitaya REPL Client
 >>> help
