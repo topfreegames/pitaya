@@ -44,10 +44,10 @@ run-chat-example:
 	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
 
 run-cluster-example-frontend-tracing:
-	@PITAYA_METRICS_PROMETHEUS_PORT=9090 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-frontend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go
+	@PITAYA_METRICS_PROMETHEUS_PORT=9090 OTEL_SDK_DISABLED=false OTEL_SERVICE_NAME=example-frontend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1" go run examples/demo/cluster/main.go
 
 run-cluster-example-backend-tracing:
-	@PITAYA_METRICS_PROMETHEUS_PORT=9091 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-backend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
+	@PITAYA_METRICS_PROMETHEUS_PORT=9091 OTEL_SDK_DISABLED=false OTEL_SERVICE_NAME=example-backend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1" go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go

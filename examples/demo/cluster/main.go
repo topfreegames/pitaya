@@ -77,14 +77,7 @@ func configureFrontend(port int) {
 }
 
 func configureOpenTelemetry(config *viper.Viper, logger logrus.FieldLogger) {
-	options := tracing.Options{
-		Disabled:    config.GetBool("otel.disabled"),
-		Probability: config.GetFloat64("otel.probability"),
-		ServiceName: config.GetString("otel.serviceName"),
-		Endpoint:    config.GetString("otel.endpoint"),
-	}
-
-	err := tracing.InitializeOtel(options)
+	err := tracing.InitializeOtel()
 	if err != nil {
 		logger.Errorf("Failed to initialize OpenTelemetry: %v", err)
 	}
