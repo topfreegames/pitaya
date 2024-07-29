@@ -1,57 +1,54 @@
 Tracing
 =======
 
-Pitaya supports tracing using [OpenTracing](http://opentracing.io/).
+Pitaya supports tracing using [OpenTelemetry](https://opentelemetry.io/).
 
-### Using Jaeger tracing
+### Using OpenTelemetry tracing
 
-First set the required environment variables:
+Pitaya supports tracing using [OpenTelemetry](https://opentelemetry.io/). To enable and configure OpenTelemetry tracing, you can use standard OpenTelemetry environment variables.
 
-```bash
-export JAEGER_DISABLED=false
-export JAEGER_SERVICE_NAME=my-pitaya-server
-export JAEGER_SAMPLER_PARAM=1 #Ajust accordingly
-```
-
-With these environment variables set, you can use the following code to configure Jaeger:
-
-```go
-func configureJaeger(config *viper.Viper, logger logrus.FieldLogger) {
-	cfg, err := jaegercfg.FromEnv()
-	if cfg.ServiceName == "" {
-		logger.Error("Could not init jaeger tracer without ServiceName, either set environment JAEGER_SERVICE_NAME or cfg.ServiceName = \"my-api\"")
-		return
-	}
-	if err != nil {
-		logger.Error("Could not parse Jaeger env vars: %s", err.Error())
-		return
-	}
-	options := jaeger.Options{ // import "github.com/topfreegames/pitaya/v2/tracing/jaeger"
-		Disabled:    cfg.Disabled,
-		Probability: cfg.Sampler.Param,
-		ServiceName: cfg.ServiceName,
-	}
-	jaeger.Configure(options)
-}
-```
-
-Then in your main function:
+First, make sure to call the `InitializeOtel` function in your main application:
 
 ```go
 func main() {
     // ...
-    configureJaeger(config, logger)
+    err := tracing.InitializeOtel()
+    if err != nil {
+        logger.Log.Errorf("Failed to initialize OpenTelemetry: %v", err)
+    }
     // ...
 }
 ```
 
-Ensure to run this Jaeger initialization code in all your server types. Only changing the "JAEGER_SERVICE_NAME" env var between different types.
+### Configuration Options
+
+OpenTelemetry can be configured using standard environment variables. Here are some key variables you might want to set:
+
+- `OTEL_SERVICE_NAME`: The name of your service.
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: The endpoint of your OpenTelemetry collector.
+- `OTEL_EXPORTER_OTLP_PROTOCOL`: The protocol to use (e.g., `grpc` or `http/protobuf`).
+- `OTEL_TRACES_SAMPLER`: The sampling strategy to use.
+- `OTEL_TRACES_SAMPLER_ARG`: The argument for the sampling strategy.
+- `OTEL_SDK_DISABLED`: Set to `true` to disable tracing.
+
+For a complete list of OpenTelemetry environment variables, refer to the [OpenTelemetry specification](https://opentelemetry.io/docs/concepts/sdk-configuration/general-sdk-configuration/).
 
 ### Testing Locally
+
+To test OpenTelemetry tracing locally, you can use Jaeger as your tracing backend. First, start Jaeger using Docker:
+
 ```bash
 make run-jaeger-aio
 make run-cluster-example-frontend-tracing
 make run-cluster-example-backend-tracing
 ```
 
-Then access Jaeger UI at http://localhost:16686
+The last two commands will run your Pitaya servers with OpenTelemetry configured with the following envs:
+
+```bash
+OTEL_SERVICE_NAME=example-frontend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1"
+
+OTEL_SERVICE_NAME=example-backend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1"
+```
+
+Access the Jaeger UI at http://localhost:16686 to view and analyze your traces.

@@ -2,6 +2,9 @@ package tracing
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/topfreegames/pitaya/v2/logger"
 	"go.opentelemetry.io/otel"
@@ -10,40 +13,24 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
-// Options holds configuration options for OpenTelemetry
-type Options struct {
-	Disabled    bool
-	Probability float64
-	ServiceName string
-	Endpoint    string
-}
-
-// InitializeOtel configures a global OpenTelemetry tracer
-func InitializeOtel(options Options) error {
-	logger.Log.Infof("Configuring OpenTelemetry with options: %+v", options)
-
-	if options.Disabled {
-		return nil
-	}
+func InitializeOtel() error {
+	// Print OpenTelemetry configuration
+	printOtelConfig()
 
 	ctx := context.Background()
 
 	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String(options.ServiceName),
-		),
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+		resource.WithOS(),
 	)
 	if err != nil {
 		return err
 	}
 
-	client := otlptracegrpc.NewClient(
-		otlptracegrpc.WithEndpoint(options.Endpoint),
-		otlptracegrpc.WithInsecure(),
-	)
+	client := otlptracegrpc.NewClient()
 
 	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
@@ -51,7 +38,6 @@ func InitializeOtel(options Options) error {
 	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(options.Probability)),
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 	)
@@ -59,5 +45,29 @@ func InitializeOtel(options Options) error {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
+	logger.Log.Info("OpenTelemetry initialized using environment variables")
 	return nil
+}
+
+func printOtelConfig() {
+	vars := []string{
+		"OTEL_SERVICE_NAME",
+		"OTEL_EXPORTER_OTLP_ENDPOINT",
+		"OTEL_EXPORTER_OTLP_PROTOCOL",
+		"OTEL_TRACES_SAMPLER",
+		"OTEL_TRACES_SAMPLER_ARG",
+		"OTEL_RESOURCE_ATTRIBUTES",
+		"OTEL_SDK_DISABLED",
+	}
+
+	config := make([]string, 0, len(vars))
+	for _, v := range vars {
+		value := os.Getenv(v)
+		if value == "" {
+			value = "<not set>"
+		}
+		config = append(config, fmt.Sprintf("%s=%s", v, value))
+	}
+
+	logger.Log.Info(fmt.Sprintf("OpenTelemetry Configuration: %s", strings.Join(config, ", ")))
 }
