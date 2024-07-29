@@ -14,7 +14,7 @@ The goal of pitaya is to provide a basic, robust development framework for distr
 * **Message forwarding** - When a server receives a handler message it forwards the message to the server of the correct type
 * **Client library SDK** - [libpitaya](https://github.com/topfreegames/libpitaya) is the official client library SDK for Pitaya
 * **Monitoring** - Pitaya has support for Prometheus and statsd by default and accepts other custom reporters that implement the Reporter interface
-* **Open tracing compatible** - Pitaya is compatible with [open tracing](http://opentracing.io/), so using [Jaeger](https://github.com/jaegertracing/jaeger) or any other compatible tracing framework is simple
+* **Open tracing compatible** - Pitaya is compatible with [OpenTelemetry](https://opentelemetry.io/), so using [Jaeger](https://github.com/jaegertracing/jaeger) or any other compatible tracing framework is simple
 * **Custom modules** - Pitaya already has some default modules and supports custom modules as well
 * **Custom serializers** - Pitaya natively supports JSON and Protobuf messages and it is possible to add other custom serializers as needed
 * **Write compatible servers in other languages** - Using [libpitaya-cluster](https://github.com/topfreegames/libpitaya-cluster) its possible to write pitaya-compatible servers in other languages that are able to register in the cluster and handle RPCs, there's already a csharp library that's compatible with unity and a WIP of a python library in the repo.
