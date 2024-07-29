@@ -22,7 +22,7 @@ build:
 
 build-k6-extension:
 	@$(MKFOLDER)
-	@xk6 build --with github.com/topfreegames/xk6-pitaya=./xk6-pitaya/ --with github.com/topfreegames/pitaya/v3=./ --with google.golang.org/grpc=google.golang.org/grpc@v1.54.1 --output ./build/$(XK6_BIN)
+	@xk6 build --with github.com/topfreegames/xk6-pitaya=./xk6-pitaya/ --with github.com/topfreegames/pitaya/v3/pkg=./pkg/ --output ./build/$(XK6_BIN)
 	@echo "build pitaya k6 extension at ./build/$(XK6_BIN)"
 
 init-submodules:
