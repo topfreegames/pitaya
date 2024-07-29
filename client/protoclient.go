@@ -27,7 +27,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -81,7 +81,7 @@ func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProt
 	}
 	defer r.Close()
 
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

@@ -25,12 +25,12 @@ func createAcceptor(port int, reporters []metrics.Reporter) acceptor.Acceptor {
 	vConfig.Set("pitaya.conn.ratelimiting.interval", time.Minute)
 	pConfig := config.NewConfig(vConfig)
 
-	rateLimitConfig := config.NewRateLimitingConfig(pConfig)
+	rateLimitConfig := config.NewPitayaConfig(pConfig).Conn.RateLimiting
 
 	tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
 	return acceptorwrapper.WithWrappers(
 		tcp,
-		acceptorwrapper.NewRateLimitingWrapper(reporters, *rateLimitConfig))
+		acceptorwrapper.NewRateLimitingWrapper(reporters, rateLimitConfig))
 }
 
 var app pitaya.Pitaya
@@ -41,7 +41,7 @@ func main() {
 
 	flag.Parse()
 
-	config := config.NewDefaultBuilderConfig()
+	config := config.NewDefaultPitayaConfig()
 	builder := pitaya.NewDefaultBuilder(true, svType, pitaya.Cluster, map[string]string{}, *config)
 	builder.AddAcceptor(createAcceptor(*port, builder.MetricsReporters))
 

@@ -34,7 +34,7 @@ func TestNewRateLimitingWrapper(t *testing.T) {
 
 	reporters := []metrics.Reporter{}
 
-	rateLimitingWrapper := NewRateLimitingWrapper(reporters, *config.NewDefaultRateLimitingConfig())
+	rateLimitingWrapper := NewRateLimitingWrapper(reporters, config.NewDefaultPitayaConfig().Conn.RateLimiting)
 	expected := NewRateLimiter(reporters, nil, 20, time.Second, false)
 	assert.Equal(t, expected, rateLimitingWrapper.wrapConn(nil))
 }

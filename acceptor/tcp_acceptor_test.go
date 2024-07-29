@@ -22,6 +22,7 @@ package acceptor
 
 import (
 	"net"
+	"runtime"
 	"testing"
 	"time"
 
@@ -35,21 +36,24 @@ var tcpAcceptorTables = []struct {
 	name     string
 	addr     string
 	certs    []string
-	panicErr error
+	panicErr string
 }{
-	{"test_1", "0.0.0.0:0", []string{"./fixtures/server.crt", "./fixtures/server.key"}, nil},
-	{"test_2", "0.0.0.0:0", []string{}, nil},
-	{"test_3", "127.0.0.1:0", []string{"wqd"}, constants.ErrInvalidCertificates},
-	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd"}, constants.ErrInvalidCertificates},
-	{"test_5", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, constants.ErrInvalidCertificates},
+	{"test_1", "0.0.0.0:0", []string{"./fixtures/server.crt", "./fixtures/server.key"}, ""},
+	{"test_2", "0.0.0.0:0", []string{}, ""},
+	{"test_3", "127.0.0.1:0", []string{"wqd"}, "certificates must be exactly two"},
+	{"test_4", "127.0.0.1:0", []string{"wqd", "wqdqwd"}, "invalid certificates: open wqd: no such file or directory"},
+	{"test_5", "127.0.0.1:0", []string{"wqd", "wqdqwd", "wqdqdqwd"}, "certificates must be exactly two"},
 }
 
 func TestNewTCPAcceptorGetConnChanAndGetAddr(t *testing.T) {
 	t.Parallel()
 	for _, table := range tcpAcceptorTables {
 		t.Run(table.name, func(t *testing.T) {
-			if table.panicErr != nil {
-				assert.PanicsWithValue(t, table.panicErr, func() {
+			if table.panicErr != "" {
+				if table.name == "test_4" && runtime.GOOS == "windows" {
+					table.panicErr = "invalid certificates: open wqd: The system cannot find the file specified."
+				}
+				assert.PanicsWithError(t, table.panicErr, func() {
 					NewTCPAcceptor(table.addr, table.certs...)
 				})
 			} else {
@@ -99,8 +103,7 @@ func TestListenAndServe(t *testing.T) {
 			go a.ListenAndServe()
 			// should be able to connect within 100 milliseconds
 			helpers.ShouldEventuallyReturn(t, func() error {
-				n, err := net.Dial("tcp", a.GetAddr())
-				defer n.Close()
+				_, err := net.Dial("tcp", a.GetAddr())
 				return err
 			}, nil, 10*time.Millisecond, 100*time.Millisecond)
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond)
@@ -119,8 +122,7 @@ func TestListenAndServeTLS(t *testing.T) {
 			go a.ListenAndServeTLS("./fixtures/server.crt", "./fixtures/server.key")
 			// should be able to connect within 100 milliseconds
 			helpers.ShouldEventuallyReturn(t, func() error {
-				n, err := net.Dial("tcp", a.GetAddr())
-				defer n.Close()
+				_, err := net.Dial("tcp", a.GetAddr())
 				return err
 			}, nil, 10*time.Millisecond, 100*time.Millisecond)
 			conn := helpers.ShouldEventuallyReceive(t, c, 100*time.Millisecond)

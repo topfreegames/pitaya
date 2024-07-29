@@ -212,7 +212,7 @@ func (ns *NatsRPCServer) handleMessages() {
 			}
 			subsChanLen := float64(len(ns.subChan))
 			maxPending = math.Max(float64(maxPending), subsChanLen)
-			logger.Log.Debugf("subs channel size: %d, max: %d, dropped: %d", subsChanLen, maxPending, dropped)
+			logger.Log.Debugf("subs channel size: %v, max: %v, dropped: %v", subsChanLen, maxPending, dropped)
 			req := &protos.Request{}
 			// TODO: Add tracing here to report delay to start processing message in spans
 			err = proto.Unmarshal(msg.Data, req)
@@ -245,6 +245,8 @@ func (ns *NatsRPCServer) getUserKickChannel() chan *protos.KickMsg {
 func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 	p, err := proto.Marshal(res)
 	if err != nil {
+		logger.Log.Errorf("error marshaling response: %s", err.Error())
+
 		res := &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrUnknownCode,
@@ -271,6 +273,8 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 					Msg:  err.Error(),
 				},
 			}
+			
+			logger.Log.Errorf("error getting context from request: %s", err)
 		} else {
 			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
 			if err != nil {
@@ -280,7 +284,7 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 		p, err := ns.marshalResponse(ns.responses[threadID])
 		err = ns.conn.Publish(ns.requests[threadID].GetMsg().GetReply(), p)
 		if err != nil {
-			logger.Log.Error("error sending message response")
+			logger.Log.Errorf("error sending message response: %s", err.Error())
 		}
 	}
 }

@@ -36,4 +36,6 @@ type Acceptor interface {
 	GetAddr() string
 	GetConnChan() chan PlayerConn
 	EnableProxyProtocol()
+	IsRunning() bool
+	GetConfiguredAddress() string
 }

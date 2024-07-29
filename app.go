@@ -129,31 +129,32 @@ type Pitaya interface {
 
 // App is the base app struct
 type App struct {
-	acceptors        []acceptor.Acceptor
-	config           config.PitayaConfig
-	debug            bool
-	dieChan          chan bool
-	heartbeat        time.Duration
-	onSessionBind    func(session.Session)
-	router           *router.Router
-	rpcClient        cluster.RPCClient
-	rpcServer        cluster.RPCServer
-	metricsReporters []metrics.Reporter
-	running          bool
-	serializer       serialize.Serializer
-	server           *cluster.Server
-	serverMode       ServerMode
-	serviceDiscovery cluster.ServiceDiscovery
-	startAt          time.Time
-	worker           *worker.Worker
-	remoteService    *service.RemoteService
-	handlerService   *service.HandlerService
-	handlerComp      []regComp
-	remoteComp       []regComp
-	modulesMap       map[string]interfaces.Module
-	modulesArr       []moduleWrapper
-	groups           groups.GroupService
-	sessionPool      session.SessionPool
+	acceptors         []acceptor.Acceptor
+	config            config.PitayaConfig
+	debug             bool
+	dieChan           chan bool
+	heartbeat         time.Duration
+	onSessionBind     func(session.Session)
+	router            *router.Router
+	rpcClient         cluster.RPCClient
+	rpcServer         cluster.RPCServer
+	metricsReporters  []metrics.Reporter
+	running           bool
+	serializer        serialize.Serializer
+	server            *cluster.Server
+	serverMode        ServerMode
+	serviceDiscovery  cluster.ServiceDiscovery
+	startAt           time.Time
+	worker            *worker.Worker
+	remoteService     *service.RemoteService
+	handlerService    *service.HandlerService
+	handlerComp       []regComp
+	remoteComp        []regComp
+	modulesMap        map[string]interfaces.Module
+	modulesArr        []moduleWrapper
+	sessionModulesArr []sessionModuleWrapper
+	groups            groups.GroupService
+	sessionPool       session.SessionPool
 }
 
 // NewApp is the base constructor for a pitaya app instance
@@ -176,29 +177,30 @@ func NewApp(
 	config config.PitayaConfig,
 ) *App {
 	app := &App{
-		server:           server,
-		config:           config,
-		rpcClient:        rpcClient,
-		rpcServer:        rpcServer,
-		worker:           worker,
-		serviceDiscovery: serviceDiscovery,
-		remoteService:    remoteService,
-		handlerService:   handlerService,
-		groups:           groups,
-		debug:            false,
-		startAt:          time.Now(),
-		dieChan:          dieChan,
-		acceptors:        acceptors,
-		metricsReporters: metricsReporters,
-		serverMode:       serverMode,
-		running:          false,
-		serializer:       serializer,
-		router:           router,
-		handlerComp:      make([]regComp, 0),
-		remoteComp:       make([]regComp, 0),
-		modulesMap:       make(map[string]interfaces.Module),
-		modulesArr:       []moduleWrapper{},
-		sessionPool:      sessionPool,
+		server:            server,
+		config:            config,
+		rpcClient:         rpcClient,
+		rpcServer:         rpcServer,
+		worker:            worker,
+		serviceDiscovery:  serviceDiscovery,
+		remoteService:     remoteService,
+		handlerService:    handlerService,
+		groups:            groups,
+		debug:             false,
+		startAt:           time.Now(),
+		dieChan:           dieChan,
+		acceptors:         acceptors,
+		metricsReporters:  metricsReporters,
+		serverMode:        serverMode,
+		running:           false,
+		serializer:        serializer,
+		router:            router,
+		handlerComp:       make([]regComp, 0),
+		remoteComp:        make([]regComp, 0),
+		modulesMap:        make(map[string]interfaces.Module),
+		modulesArr:        []moduleWrapper{},
+		sessionModulesArr: []sessionModuleWrapper{},
+		sessionPool:       sessionPool,
 	}
 	if app.heartbeat == time.Duration(0) {
 		app.heartbeat = config.Heartbeat.Interval
@@ -323,12 +325,46 @@ func (app *App) Start() {
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 
+	maxSessionCount := func() int64 {
+		count := app.sessionPool.GetSessionCount()
+		mc := app.maxModuleSessionCount()
+		if mc > count {
+			count = mc
+		}
+		return count
+	}
+
 	// stop server
 	select {
 	case <-app.dieChan:
 		logger.Log.Warn("the app will shutdown in a few seconds")
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
+		if app.config.Session.Drain.Enabled && s == syscall.SIGTERM {
+			logger.Log.Info("Session drain is enabled, draining all sessions before shutting down")
+			timeoutTimer := time.NewTimer(app.config.Session.Drain.Timeout)
+			app.startModuleSessionDraining()
+		loop:
+			for {
+				if maxSessionCount() == 0 {
+					logger.Log.Info("All sessions drained")
+					break loop
+				}
+				select {
+				case s := <-sg:
+					logger.Log.Warn("got signal: ", s)
+					if s == syscall.SIGINT {
+						logger.Log.Warnf("Bypassing session draing due to SIGINT. %d sessions will be immediately terminated", maxSessionCount())
+					}
+					break loop
+				case <-timeoutTimer.C:
+					logger.Log.Warnf("Session drain has reached maximum timeout. %d sessions will be immediately terminated", maxSessionCount())
+					break loop
+				case <-time.After(app.config.Session.Drain.Period):
+					logger.Log.Infof("Waiting for all sessions to finish: %d sessions remaining...", maxSessionCount())
+				}
+			}
+		}
 		close(app.dieChan)
 	}
 
@@ -357,7 +393,7 @@ func (app *App) listen() {
 			}
 		}()
 		if app.config.Acceptor.ProxyProtocol {
-			logger.Log.Info("Enabling PROXY protocol for inbond connections")
+			logger.Log.Info("Enabling PROXY protocol for inbound connections")
 			a.EnableProxyProtocol()
 		} else {
 			logger.Log.Debug("PROXY protocol is disabled for inbound connections")
@@ -365,8 +401,12 @@ func (app *App) listen() {
 		go func() {
 			a.ListenAndServe()
 		}()
+		logger.Log.Infof("Waiting for Acceptor %s to start on addr %s", reflect.TypeOf(a), a.GetConfiguredAddress())
 
-		logger.Log.Infof("listening with acceptor %s on addr %s", reflect.TypeOf(a), a.GetAddr())
+		for !a.IsRunning() {
+		}
+
+		logger.Log.Infof("Acceptor %s on addr %s is now accepting connections", reflect.TypeOf(a), a.GetAddr())
 	}
 
 	if app.serverMode == Cluster && app.server.Frontend && app.config.Session.Unique {
@@ -442,7 +482,7 @@ func GetDefaultLoggerFromCtx(ctx context.Context) logging.Logger {
 
 // AddMetricTagsToPropagateCtx adds a key and metric tags that will
 // be propagated through RPC calls. Use the same tags that are at
-// 'pitaya.metrics.additionalTags' config
+// 'pitaya.metrics.additionalLabels' config
 func AddMetricTagsToPropagateCtx(
 	ctx context.Context,
 	tags map[string]string,

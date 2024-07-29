@@ -62,6 +62,7 @@ type RemoteService struct {
 	messageEncoder         message.Encoder
 	server                 *cluster.Server // server obj
 	remoteBindingListeners []cluster.RemoteBindingListener
+	remoteHooks            *pipeline.RemoteHooks
 	sessionPool            session.SessionPool
 	handlerPool            *HandlerPool
 	remotes                map[string]*component.Remote // all remote method
@@ -78,6 +79,7 @@ func NewRemoteService(
 	messageEncoder message.Encoder,
 	server *cluster.Server,
 	sessionPool session.SessionPool,
+	remoteHooks *pipeline.RemoteHooks,
 	handlerHooks *pipeline.HandlerHooks,
 	handlerPool *HandlerPool,
 ) *RemoteService {
@@ -97,6 +99,7 @@ func NewRemoteService(
 		remotes:                make(map[string]*component.Remote),
 	}
 
+	remote.remoteHooks = remoteHooks
 	remote.handlerHooks = handlerHooks
 
 	return remote
@@ -148,7 +151,7 @@ func (r *RemoteService) Call(ctx context.Context, req *protos.Request) (*protos.
 	if err == nil {
 		result := make(chan *protos.Response, 1)
 		go func() {
-			result <- processRemoteMessage(ctx, req, r)
+			result <- processRemoteMessage(c, req, r)
 		}()
 
 		reqTimeout := pcontext.GetFromPropagateCtx(ctx, constants.RequestTimeout)
@@ -334,8 +337,6 @@ func processRemoteMessage(ctx context.Context, req *protos.Request, r *RemoteSer
 }
 
 func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, rt *route.Route) *protos.Response {
-	response := &protos.Response{}
-
 	remote, ok := r.remotes[rt.Short()]
 	if !ok {
 		logger.Log.Warnf("pitaya/remote: %s not found", rt.Short())
@@ -350,9 +351,13 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 		return response
 	}
-	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
+
+	var ret interface{}
+	var arg interface{}
+	var err error
+
 	if remote.HasArgs {
-		arg, err := unmarshalRemoteArg(remote, req.GetMsg().GetData())
+		arg, err = unmarshalRemoteArg(remote, req.GetMsg().GetData())
 		if err != nil {
 			response := &protos.Response{
 				Error: &protos.Error{
@@ -362,10 +367,26 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 			}
 			return response
 		}
-		params = append(params, reflect.ValueOf(arg))
 	}
 
-	ret, err := util.Pcall(remote.Method, params)
+	ctx, arg, err = r.remoteHooks.BeforeHandler.ExecuteBeforePipeline(ctx, arg)
+	if err != nil {
+		response := &protos.Response{
+			Error: &protos.Error{
+				Code: e.ErrInternalCode,
+				Msg:  err.Error(),
+			},
+		}
+		return response
+	}
+
+	params := []reflect.Value{remote.Receiver, reflect.ValueOf(ctx)}
+	if remote.HasArgs {
+		params = append(params, reflect.ValueOf(arg))
+	}
+	ret, err = util.Pcall(remote.Method, params)
+
+	ret, err = r.remoteHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
 	if err != nil {
 		response := &protos.Response{
 			Error: &protos.Error{
@@ -405,6 +426,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 		}
 	}
 
+	response := &protos.Response{}
 	response.Data = b
 	return response
 }
@@ -472,6 +494,7 @@ func (r *RemoteService) remoteCall(
 	if target == nil {
 		target, err = r.router.Route(ctx, rpcType, svType, route, msg)
 		if err != nil {
+			logger.Log.Errorf("error making call for route %s: %w", route.String(), err)
 			return nil, e.NewError(err, e.ErrInternalCode)
 		}
 	}

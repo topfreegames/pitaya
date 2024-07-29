@@ -24,14 +24,13 @@ import (
 	"testing"
 
 	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v2/helpers"
 	"go.etcd.io/etcd/tests/v3/integration"
 )
 
 func setup(t *testing.T) (*integration.ClusterV3, GroupService) {
-	integration.BeforeTest(t)
-	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
-	cli := cluster.RandClient()
-	etcdGroupService, err := NewEtcdGroupService(*config.NewDefaultEtcdGroupServiceConfig(), cli)
+	cluster, cli := helpers.GetTestEtcd(t)
+	etcdGroupService, err := NewEtcdGroupService(*&config.NewDefaultPitayaConfig().Groups.Etcd, cli)
 	if err != nil {
 		panic(err)
 	}

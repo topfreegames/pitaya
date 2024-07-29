@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	workers "github.com/topfreegames/go-workers"
@@ -48,12 +49,17 @@ func NewWorker(config config.WorkerConfig, opts config.EnqueueOpts) (*Worker, er
 		return nil, err
 	}
 
-	workers.Configure(map[string]string{
-		"server":    config.Redis.ServerURL,
-		"pool":      config.Redis.Pool,
-		"password":  config.Redis.Password,
-		"namespace": config.Namespace,
-		"process":   hostname,
+	poolSize, err := strconv.Atoi(config.Redis.Pool)
+	if err != nil {
+		return nil, err
+	}
+
+	workers.Configure(workers.Options{
+		Address:   config.Redis.ServerURL,
+		Password:  config.Redis.Password,
+		Namespace: config.Namespace,
+		ProcessID: hostname,
+		PoolSize:  poolSize,
 	})
 
 	return &Worker{

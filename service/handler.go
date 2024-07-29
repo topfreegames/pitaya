@@ -23,7 +23,9 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -184,7 +186,12 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 		msg, err := conn.GetNextMessage()
 
 		if err != nil {
-			if err != constants.ErrConnectionClosed {
+			// Check if this is an expected error due to connection being closed
+			if errors.Is(err, net.ErrClosed) {
+				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
+			} else if err == constants.ErrConnectionClosed {
+				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
+			} else {
 				logger.Log.Errorf("Error reading next available message: %s", err.Error())
 			}
 
@@ -220,6 +227,7 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 		// Parse the json sent with the handshake by the client
 		handshakeData := &session.HandshakeData{}
 		if err := json.Unmarshal(p.Data, handshakeData); err != nil {
+			defer a.Close()
 			logger.Log.Errorf("Failed to unmarshal handshake data: %s", err.Error())
 			if serr := a.SendHandshakeErrorResponse(); serr != nil {
 				logger.Log.Errorf("Error sending handshake error response: %s", err.Error())
@@ -230,6 +238,7 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 		}
 
 		if err := a.GetSession().ValidateHandshake(handshakeData); err != nil {
+			defer a.Close()
 			logger.Log.Errorf("Handshake validation failed: %s", err.Error())
 			if serr := a.SendHandshakeErrorResponse(); serr != nil {
 				logger.Log.Errorf("Error sending handshake error response: %s", err.Error())
@@ -339,13 +348,17 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 		} else {
 			err := a.GetSession().ResponseMID(ctx, mid, ret)
 			if err != nil {
+				logger.Log.Errorf("Failed to process handler message: %s", err.Error())
 				tracing.FinishSpan(ctx, err)
 				metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 			}
 		}
 	} else {
-		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, nil)
+		metrics.ReportTimingFromCtx(ctx, h.metricsReporters, handlerType, err)
 		tracing.FinishSpan(ctx, err)
+		if err != nil {
+			logger.Log.Errorf("Failed to process notify message: %s", err.Error())
+		}
 	}
 }
 
