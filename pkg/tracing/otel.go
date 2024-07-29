@@ -23,8 +23,8 @@ func InitializeOtel() error {
 
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
-		resource.WithProcess(),
 		resource.WithOS(),
+		resource.WithHost(),
 	)
 	if err != nil {
 		return err

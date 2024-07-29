@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/v3/examples/demo/cluster/services"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
@@ -76,7 +75,7 @@ func configureFrontend(port int) {
 	}
 }
 
-func configureOpenTelemetry(config *viper.Viper, logger logrus.FieldLogger) {
+func configureOpenTelemetry(logger logrus.FieldLogger) {
 	err := tracing.InitializeOtel()
 	if err != nil {
 		logger.Errorf("Failed to initialize OpenTelemetry: %v", err)
@@ -90,13 +89,7 @@ func main() {
 
 	flag.Parse()
 
-	cfg := viper.New()
-	cfg.SetDefault("otel.disabled", false)
-	cfg.SetDefault("otel.probability", 1.0)
-	cfg.SetDefault("otel.serviceName", "pitaya-"+*svType)
-	cfg.SetDefault("otel.endpoint", "localhost:4317")
-
-	configureOpenTelemetry(cfg, logrus.New())
+	configureOpenTelemetry(logrus.New())
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config.NewDefaultPitayaConfig())
 	if *isFrontend {
