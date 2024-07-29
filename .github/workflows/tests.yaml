@@ -34,7 +34,7 @@ jobs:
         go-version: '1.22'
     - name: Setup dependencies
       env:
-        GO111MODULE: off
+        GO111MODULE: auto
       run: make setup-ci
     - name: Run tests
       run: make test-coverage
