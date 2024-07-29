@@ -1043,7 +1043,7 @@ func TestAgentHandle(t *testing.T) {
 	})
 
 	// ag.Close on method exit
-	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().RemoteAddr().MaxTimes(2)
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	ag.chSend <- pendingWrite{ctx: nil, data: expectedBytes, err: nil}

@@ -146,13 +146,14 @@ func TestFinishSpan(t *testing.T) {
 
 		FinishSpan(ctx, testErr)
 
-		spanStatus := span.(interface{ Status() codes.Code }).Status()
+		spanStatus := span.(sdktrace.ReadOnlySpan).Status().Code
 		assert.Equal(t, codes.Error, spanStatus)
 
 		spanEvents := span.(interface{ Events() []sdktrace.Event }).Events()
 		assert.Len(t, spanEvents, 1)
 		assert.Equal(t, "exception", spanEvents[0].Name)
-		assert.Equal(t, testErr.Error(), spanEvents[0].Attributes[0].Value.AsString())
+		spanError := span.(sdktrace.ReadOnlySpan).Status().Description
+		assert.Equal(t, testErr.Error(), spanError)
 	})
 
 	t.Run("without error", func(t *testing.T) {
@@ -160,7 +161,7 @@ func TestFinishSpan(t *testing.T) {
 
 		FinishSpan(ctx, nil)
 
-		spanStatus := span.(interface{ Status() codes.Code }).Status()
+		spanStatus := span.(sdktrace.ReadOnlySpan).Status().Code
 		assert.Equal(t, codes.Unset, spanStatus)
 
 		spanEvents := span.(interface{ Events() []sdktrace.Event }).Events()
@@ -185,20 +186,21 @@ func TestFinishSpanWithErr(t *testing.T) {
 	ctx, span := StartSpan(context.Background(), "my-op", attribute.String("hi", "hello"))
 	assert.NotPanics(t, func() { FinishSpan(ctx, errors.New("hello")) })
 
-	spanStatus := span.(interface{ Status() codes.Code }).Status()
+	spanStatus := span.(sdktrace.ReadOnlySpan).Status().Code
 	assert.Equal(t, codes.Error, spanStatus)
 
 	spanEvents := span.(interface{ Events() []sdktrace.Event }).Events()
 	assert.Len(t, spanEvents, 1)
 	assert.Equal(t, "exception", spanEvents[0].Name)
-	assert.Equal(t, "hello", spanEvents[0].Attributes[0].Value.AsString())
+	spanError := span.(sdktrace.ReadOnlySpan).Status().Description
+	assert.Equal(t, "hello", spanError)
 }
 
 func TestFinishSpanWithoutErr(t *testing.T) {
 	ctx, span := StartSpan(context.Background(), "my-op", attribute.String("hi", "hello"))
 	assert.NotPanics(t, func() { FinishSpan(ctx, nil) })
 
-	spanStatus := span.(interface{ Status() codes.Code }).Status()
+	spanStatus := span.(sdktrace.ReadOnlySpan).Status().Code
 	assert.Equal(t, codes.Unset, spanStatus)
 
 	spanEvents := span.(interface{ Events() []sdktrace.Event }).Events()

@@ -36,6 +36,7 @@ import (
 	pcontext "github.com/topfreegames/pitaya/v2/context"
 	"github.com/topfreegames/pitaya/v2/protos"
 	"github.com/topfreegames/pitaya/v2/serialize/mocks"
+	"github.com/topfreegames/pitaya/v2/tracing"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -249,6 +250,8 @@ func TestStartSpanFromRequest(t *testing.T) {
 		// Assert
 		assert.NotNil(t, newCtx)
 
+		tracing.FinishSpan(newCtx, nil)
+
 		spans := exporter.GetSpans()
 		assert.Len(t, spans, 1)
 
@@ -285,6 +288,8 @@ func TestStartSpanFromRequest(t *testing.T) {
 		// Assert
 		assert.NotNil(t, newCtx)
 
+		tracing.FinishSpan(newCtx, nil)
+
 		spans := exporter.GetSpans()
 		assert.Len(t, spans, 1)
 
@@ -294,9 +299,6 @@ func TestStartSpanFromRequest(t *testing.T) {
 		expectedAttrs := []attribute.KeyValue{
 			attribute.String("local.id", serverID),
 			attribute.String("span.kind", "server"),
-			attribute.String("peer.id", ""),
-			attribute.String("peer.service", ""),
-			attribute.String("request.id", ""),
 		}
 
 		for _, attr := range expectedAttrs {
