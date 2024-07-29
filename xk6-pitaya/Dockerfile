@@ -8,7 +8,7 @@ RUN go install go.k6.io/xk6/cmd/xk6@latest
 # Feel free to add other extensions using the '--with ...'.
 RUN xk6 build \
     --with github.com/topfreegames/pitaya/xk6-pitaya@$pitaya_revision  \
-    --with github.com/topfreegames/pitaya/v2@$pitaya_revision \
+    --with github.com/topfreegames/pitaya/v3@$pitaya_revision \
     --output /k6
 
 # Use the operator's base image and override the k6 binary

@@ -9,8 +9,8 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/sirupsen/logrus"
-	pitayaclient "github.com/topfreegames/pitaya/v2/client"
-	"github.com/topfreegames/pitaya/v2/session"
+	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 )
