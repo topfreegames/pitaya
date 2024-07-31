@@ -9,9 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	workers "github.com/topfreegames/go-workers"
 	"github.com/topfreegames/pitaya/v3/pkg/worker/mocks"
+	"google.golang.org/protobuf/proto"
 )
 
 type fakeProtoMessage struct {
+	proto.Message
 	Field string
 }
 

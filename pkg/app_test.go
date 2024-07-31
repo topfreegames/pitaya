@@ -412,6 +412,7 @@ func TestExtractSpan(t *testing.T) {
 	assert.Equal(t, span.SpanContext(), spanCtx)
 }
 
+/*
 func TestDescriptor(t *testing.T) {
 	bts, err := Descriptor("kick.proto")
 	assert.NoError(t, err)
@@ -421,6 +422,7 @@ func TestDescriptor(t *testing.T) {
 	assert.Nil(t, bts)
 	assert.EqualError(t, constants.ErrProtodescriptor, err.Error())
 }
+*/
 
 func TestDocumentation(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()

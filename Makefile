@@ -34,7 +34,7 @@ setup-ci:
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go install github.com/golang/protobuf/protoc-gen-go@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 run-jaeger-aio:
 	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
@@ -84,11 +84,13 @@ run-rate-limiting-example:
 
 protos-compile-demo:
 	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+	@protoc -I examples/demo/worker/protos examples/demo/worker/protos/*.proto --go_out=.
+	@protoc -I examples/testing/protos examples/testing/protos/*.proto --go_out=.
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./pkg/protos --go_out=paths=source_relative:./pkg/protos
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=paths=source_relative:./pkg/protos/test
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

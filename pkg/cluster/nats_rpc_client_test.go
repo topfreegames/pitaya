@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	nats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -42,6 +42,8 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/route"
 	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestNewNatsRPCClient(t *testing.T) {
@@ -470,7 +472,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 			ss.EXPECT().SetRequestInFlight(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 
 			res, err := rpcClient.Call(context.Background(), protos.RPCType_Sys, rt, ss, msg, sv2)
-			assert.Equal(t, table.expected, res)
+			assert.True(t, cmp.Equal(table.expected, res, protocmp.Transform()))
 			if table.err != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), table.err.Error())

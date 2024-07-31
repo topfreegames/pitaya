@@ -23,12 +23,12 @@ package pitaya
 import (
 	"context"
 	"errors"
-	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"testing"
 	"time"
 
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -42,7 +42,7 @@ import (
 	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/worker"
 	workermocks "github.com/topfreegames/pitaya/v3/pkg/worker/mocks"
-	"google.golang.org/protobuf/runtime/protoiface"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestStaticConfigure(t *testing.T) {
@@ -343,8 +343,8 @@ func TestStaticIsRunning(t *testing.T) {
 func TestStaticRPC(t *testing.T) {
 	ctx := context.Background()
 	routeStr := "route"
-	var reply protoiface.MessageV1
-	var arg protoiface.MessageV1
+	var reply proto.Message
+	var arg proto.Message
 
 	tables := []struct {
 		name     string
@@ -371,8 +371,8 @@ func TestStaticRPCTo(t *testing.T) {
 	ctx := context.Background()
 	routeStr := "route"
 	serverId := uuid.New().String()
-	var reply protoiface.MessageV1
-	var arg protoiface.MessageV1
+	var reply proto.Message
+	var arg proto.Message
 
 	tables := []struct {
 		name     string

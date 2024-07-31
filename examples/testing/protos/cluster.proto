@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package protos;
+option go_package = "examples/testing/protos";
 
 // TestRequest message to be sent using rpc
 message TestRequest {

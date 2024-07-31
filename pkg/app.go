@@ -30,7 +30,6 @@ import (
 
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
@@ -38,6 +37,8 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/topfreegames/pitaya/v3/pkg/docgenerator"
 	"github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/groups"

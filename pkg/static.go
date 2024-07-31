@@ -24,7 +24,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	"github.com/topfreegames/pitaya/v3/pkg/component"

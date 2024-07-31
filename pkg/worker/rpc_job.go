@@ -23,7 +23,7 @@ package worker
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // RPCJob has infos to execute a rpc on worker
