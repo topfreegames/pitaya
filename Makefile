@@ -61,12 +61,6 @@ run-cluster-protobuf-backend-example:
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
-run-cluster-grpc-example-connector:
-	@cd examples/demo/cluster_grpc && go run main.go
-
-run-cluster-grpc-example-room:
-	@cd examples/demo/cluster_grpc && go run main.go --port 3251 --rpcsvport 3435 --type room --frontend=false
-
 run-cluster-worker-example-room:
 	@cd examples/demo/worker && go run main.go --type room --frontend=true
 
@@ -111,15 +105,11 @@ kill-testing-deps:
 kill-jaeger:
 	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
-e2e-test: e2e-test-nats e2e-test-grpc
+e2e-test: e2e-test-nats
 
 e2e-test-nats: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING E2E NATS TESTS==============="
 	@go test ./e2e/e2e_test.go -update
-
-e2e-test-grpc: ensure-testing-deps ensure-testing-bin
-	@echo "===============RUNNING E2E GRPC TESTS==============="
-	@go test ./e2e/e2e_test.go -update -grpc
 
 bench-nats-sv:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9098 ./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID

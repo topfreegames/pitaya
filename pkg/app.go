@@ -296,10 +296,6 @@ func (app *App) Start() {
 	}
 
 	if app.serverMode == Cluster {
-		if reflect.TypeOf(app.rpcClient) == reflect.TypeOf(&cluster.GRPCClient{}) {
-			app.serviceDiscovery.AddListener(app.rpcClient.(*cluster.GRPCClient))
-		}
-
 		if err := app.RegisterModuleBefore(app.rpcServer, "rpcServer"); err != nil {
 			logger.Log.Fatal("failed to register rpc server module: %s", err.Error())
 		}
@@ -521,22 +517,6 @@ func (app *App) Documentation(getPtrNames bool) (map[string]interface{}, error) 
 		"handlers": handlerDocs,
 		"remotes":  remoteDocs,
 	}, nil
-}
-
-// AddGRPCInfoToMetadata adds host, external host and
-// port into metadata
-func AddGRPCInfoToMetadata(
-	metadata map[string]string,
-	region string,
-	host, port string,
-	externalHost, externalPort string,
-) map[string]string {
-	metadata[constants.GRPCHostKey] = host
-	metadata[constants.GRPCPortKey] = port
-	metadata[constants.GRPCExternalHostKey] = externalHost
-	metadata[constants.GRPCExternalPortKey] = externalPort
-	metadata[constants.RegionKey] = region
-	return metadata
 }
 
 // Descriptor returns the protobuf message descriptor for a given message name

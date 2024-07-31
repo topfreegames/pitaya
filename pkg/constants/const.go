@@ -78,18 +78,6 @@ var RouteKey = "req-route"
 // to be reported
 var MetricTagsKey = "metric-tags"
 
-// GRPCHostKey is the key for grpc host on server metadata
-var GRPCHostKey = "grpcHost"
-
-// GRPCExternalHostKey is the key for grpc external host on server metadata
-var GRPCExternalHostKey = "grpc-external-host"
-
-// GRPCPortKey is the key for grpc port on server metadata
-var GRPCPortKey = "grpcPort"
-
-// GRPCExternalPortKey is the key for grpc external port on server metadata
-var GRPCExternalPortKey = "grpc-external-port"
-
 // RegionKey is the key to save the region server is on
 var RegionKey = "region"
 

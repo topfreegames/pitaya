@@ -33,13 +33,11 @@ import (
 	"github.com/topfreegames/pitaya/v3/examples/testing/protos"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
-	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	logruswrapper "github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
-	"github.com/topfreegames/pitaya/v3/pkg/modules"
 	"github.com/topfreegames/pitaya/v3/pkg/protos/test"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
@@ -253,14 +251,11 @@ func main() {
 	serializer := flag.String("serializer", "json", "json or protobuf")
 	sdPrefix := flag.String("sdprefix", "pitaya/", "prefix to discover other servers")
 	debug := flag.Bool("debug", false, "turn on debug logging")
-	grpc := flag.Bool("grpc", false, "turn on grpc")
-	grpcPort := flag.Int("grpcport", 3434, "the grpc server port")
 
 	flag.Parse()
 
 	cfg := viper.New()
 	cfg.Set("pitaya.cluster.sd.etcd.prefix", *sdPrefix)
-	cfg.Set("pitaya.cluster.rpc.server.grpc.port", *grpcPort)
 
 	l := logrus.New()
 	l.Formatter = &logrus.TextFormatter{}
@@ -271,14 +266,7 @@ func main() {
 
 	pitaya.SetLogger(logruswrapper.NewWithFieldLogger(l))
 
-	app, bs, sessionPool := createApp(*serializer, *port, *grpc, *isFrontend, *svType, pitaya.Cluster, map[string]string{
-		constants.GRPCHostKey: "127.0.0.1",
-		constants.GRPCPortKey: fmt.Sprintf("%d", *grpcPort),
-	}, cfg)
-
-	if *grpc {
-		app.RegisterModule(bs, "bindingsStorage")
-	}
+	app, sessionPool := createApp(*serializer, *port, *isFrontend, *svType, pitaya.Cluster, map[string]string{}, cfg)
 
 	app.Register(
 		&TestSvc{
@@ -298,7 +286,7 @@ func main() {
 	app.Start()
 }
 
-func createApp(serializer string, port int, grpc bool, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, *modules.ETCDBindingStorage, session.SessionPool) {
+func createApp(serializer string, port int, isFrontend bool, svType string, serverMode pitaya.ServerMode, metadata map[string]string, cfg ...*viper.Viper) (pitaya.Pitaya, session.SessionPool) {
 	conf := config.NewConfig(cfg...)
 	builder := pitaya.NewBuilderWithConfigs(isFrontend, svType, serverMode, metadata, conf)
 
@@ -317,30 +305,5 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		panic("serializer should be either json or protobuf")
 	}
 
-	pitayaConfig := config.NewPitayaConfig(conf)
-
-	var bs *modules.ETCDBindingStorage
-	if grpc {
-		gs, err := cluster.NewGRPCServer(pitayaConfig.Cluster.RPC.Server.Grpc, builder.Server, builder.MetricsReporters)
-		if err != nil {
-			panic(err)
-		}
-
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, pitayaConfig.Modules.BindingStorage.Etcd)
-
-		gc, err := cluster.NewGRPCClient(
-			pitayaConfig.Cluster.RPC.Client.Grpc,
-			builder.Server,
-			builder.MetricsReporters,
-			bs,
-			cluster.NewInfoRetriever(pitayaConfig.Cluster.Info),
-		)
-		if err != nil {
-			panic(err)
-		}
-		builder.RPCServer = gs
-		builder.RPCClient = gc
-	}
-
-	return builder.Build(), bs, builder.SessionPool
+	return builder.Build(), builder.SessionPool
 }

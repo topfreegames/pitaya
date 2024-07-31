@@ -168,34 +168,6 @@ func NewPitayaConfig(config *Config) *PitayaConfig {
 	return conf
 }
 
-// GRPCClientConfig rpc client config struct
-type GRPCClientConfig struct {
-	DialTimeout    time.Duration `mapstructure:"dialtimeout"`
-	LazyConnection bool          `mapstructure:"lazyconnection"`
-	RequestTimeout time.Duration `mapstructure:"requesttimeout"`
-}
-
-// newDefaultGRPCClientConfig rpc client default config struct
-func newDefaultGRPCClientConfig() *GRPCClientConfig {
-	return &GRPCClientConfig{
-		DialTimeout:    time.Duration(5 * time.Second),
-		LazyConnection: false,
-		RequestTimeout: time.Duration(5 * time.Second),
-	}
-}
-
-// GRPCServerConfig provides configuration for GRPCServer
-type GRPCServerConfig struct {
-	Port int `mapstructure:"port"`
-}
-
-// newDefaultGRPCServerConfig returns a default GRPCServerConfig
-func newDefaultGRPCServerConfig() *GRPCServerConfig {
-	return &GRPCServerConfig{
-		Port: 3434,
-	}
-}
-
 // NatsRPCClientConfig provides nats client configuration
 type NatsRPCClientConfig struct {
 	Connect                string        `mapstructure:"connect"`
@@ -421,11 +393,9 @@ type ClusterConfig struct {
 
 type ClusterRPCConfig struct {
 	Client struct {
-		Grpc GRPCClientConfig    `mapstructure:"grpc"`
 		Nats NatsRPCClientConfig `mapstructure:"nats"`
 	} `mapstructure:"client"`
 	Server struct {
-		Grpc GRPCServerConfig    `mapstructure:"grpc"`
 		Nats NatsRPCServerConfig `mapstructure:"nats"`
 	} `mapstructure:"server"`
 }
@@ -433,17 +403,13 @@ type ClusterRPCConfig struct {
 func newDefaultClusterRPCConfig() *ClusterRPCConfig {
 	return &ClusterRPCConfig{
 		Client: struct {
-			Grpc GRPCClientConfig    `mapstructure:"grpc"`
 			Nats NatsRPCClientConfig `mapstructure:"nats"`
 		}{
-			Grpc: *newDefaultGRPCClientConfig(),
 			Nats: *newDefaultNatsRPCClientConfig(),
 		},
 		Server: struct {
-			Grpc GRPCServerConfig    `mapstructure:"grpc"`
 			Nats NatsRPCServerConfig `mapstructure:"nats"`
 		}{
-			Grpc: *newDefaultGRPCServerConfig(),
 			Nats: *newDefaultNatsRPCServerConfig(),
 		},
 	}
