@@ -102,18 +102,6 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 100
     - int
     - Size of the buffer that the nats RPC server creates for push messages
-  * - pitaya.cluster.rpc.client.grpc.dialtimeout
-    - 5s
-    - time.Time
-    - Timeout for the gRPC client to establish the connection
-  * - pitaya.cluster.rpc.client.grpc.lazyconnection
-    - false
-    - bool
-    - Whether the gRPC client should use a lazy connection, that is, connect only when a request is made to that server
-  * - pitaya.cluster.rpc.client.grpc.requesttimeout
-    - 5s
-    - time.Time
-    - Request timeout for RPC calls with the gRPC client
   * - pitaya.cluster.rpc.client.nats.connect
     - nats://localhost:4222
     - string
@@ -142,14 +130,6 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 15
     - int
     - Maximum number of retries to reconnect to nats for the server
-  * - pitaya.cluster.rpc.server.grpc.port
-    - 3434
-    - int
-    - The port that the gRPC server listens to
-  * - pitaya.cluster.rpc.server.nats.services
-    - 30
-    - int
-    - Number of goroutines processing messages at the remote service for the nats RPC service
   * - pitaya.worker.redis.url
     - localhost:6379
     - string

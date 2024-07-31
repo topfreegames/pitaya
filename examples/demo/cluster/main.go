@@ -16,6 +16,8 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"github.com/topfreegames/pitaya/v3/pkg/route"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
 	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 )
 
@@ -86,6 +88,7 @@ func main() {
 	port := flag.Int("port", 3250, "the port to listen")
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
+	serializer := flag.String("serializer", "json", "the serializer to use")
 
 	flag.Parse()
 
@@ -96,6 +99,15 @@ func main() {
 		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", *port))
 		builder.AddAcceptor(tcp)
 	}
+
+	if *serializer == "json" {
+		builder.Serializer = json.NewSerializer()
+	} else if *serializer == "protobuf" {
+		builder.Serializer = protobuf.NewSerializer()
+	} else {
+		panic("unknown serializer " + *serializer)
+	}
+
 	builder.Groups = groups.NewMemoryGroupService(builder.Config.Groups.Memory)
 	app = builder.Build()
 

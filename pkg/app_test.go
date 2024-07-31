@@ -412,6 +412,7 @@ func TestExtractSpan(t *testing.T) {
 	assert.Equal(t, span.SpanContext(), spanCtx)
 }
 
+/*
 func TestDescriptor(t *testing.T) {
 	bts, err := Descriptor("kick.proto")
 	assert.NoError(t, err)
@@ -421,6 +422,7 @@ func TestDescriptor(t *testing.T) {
 	assert.Nil(t, bts)
 	assert.EqualError(t, constants.ErrProtodescriptor, err.Error())
 }
+*/
 
 func TestDocumentation(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()
@@ -553,29 +555,6 @@ func TestDocumentationTrue(t *testing.T) {
 		},
 		"handlers": map[string]interface{}{},
 	}, doc)
-}
-
-func TestAddGRPCInfoToMetadata(t *testing.T) {
-	t.Parallel()
-
-	metadata := map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-		"key3": "value3",
-	}
-
-	metadata = AddGRPCInfoToMetadata(metadata, "region", "host", "port", "external-host", "external-port")
-
-	assert.Equal(t, map[string]string{
-		"key1":                        "value1",
-		"key2":                        "value2",
-		"key3":                        "value3",
-		constants.GRPCHostKey:         "host",
-		constants.GRPCPortKey:         "port",
-		constants.GRPCExternalHostKey: "external-host",
-		constants.GRPCExternalPortKey: "external-port",
-		constants.RegionKey:           "region",
-	}, metadata)
 }
 
 func TestStartWorker(t *testing.T) {

@@ -29,7 +29,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	agentmocks "github.com/topfreegames/pitaya/v3/pkg/agent/mocks"
@@ -49,6 +49,8 @@ import (
 	serializemocks "github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
 	sessionmocks "github.com/topfreegames/pitaya/v3/pkg/session/mocks"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 const ctxModifiedResponse = "response"
@@ -532,7 +534,7 @@ func TestRemoteServiceHandleRPCUserWithHooks(t *testing.T) {
 				assert.NotNil(t, res.Data)
 			}
 
-			assert.Equal(t, res.Data, table.expectedOutput)
+			assert.True(t, cmp.Equal(res.Data, table.expectedOutput, protocmp.Transform()))
 		})
 	}
 }
@@ -583,7 +585,7 @@ func TestRemoteServiceHandleRPCSys(t *testing.T) {
 			if table.errSubstring != "" {
 				assert.Contains(t, res.Error.Msg, table.errSubstring)
 			} else {
-				assert.Equal(t, table.req.Msg.Data, res.Data)
+				assert.True(t, cmp.Equal(table.req.Msg.Data, res.Data, protocmp.Transform()))
 			}
 
 		})
@@ -709,9 +711,7 @@ func TestRemoteServiceRPC(t *testing.T) {
 			err := svc.RPC(ctx, table.serverID, rt, table.reply, table.arg)
 			assert.Equal(t, table.err, err)
 			if table.reply != nil {
-				// We should consider dropping XXX_NoUnkeyedLiteral, XXX_unrecognized and XXX_sizecache from generated protobufs as this is unuseful overhead
-				expected.XXX_sizecache = 0
-				assert.Equal(t, table.reply, expected)
+				assert.True(t, cmp.Equal(table.reply, expected, protocmp.Transform()))
 			}
 		})
 	}

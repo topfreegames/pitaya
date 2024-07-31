@@ -27,7 +27,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/topfreegames/pitaya/v3/pkg/agent"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"

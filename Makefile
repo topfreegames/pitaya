@@ -1,22 +1,22 @@
 ifeq ($(OS), Windows_NT)
 	BIN := pitaya-cli.exe
 	XK6_BIN := k6.exe
-	MKFOLDER := if not exist "build" mkdir build
 	GREP_CMD := findstr /V
 else
 	BIN := pitaya-cli
 	XK6_BIN := k6
-	MKFOLDER := mkdir -p build
 	GREP_CMD := grep -v
 endif
 
 TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark`
 
+.PHONY: all build
+
 setup: init-submodules
 	@go get ./...
 
 build:
-	@$(MKFOLDER)
+	@mkdir -p build
 	@go build -o build/$(BIN) .
 	@echo "build pitaya-cli at ./build/$(BIN)"
 
@@ -34,7 +34,7 @@ setup-ci:
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go install github.com/golang/protobuf/protoc-gen-go@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 run-jaeger-aio:
 	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
@@ -53,19 +53,13 @@ run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
 
 run-cluster-protobuf-frontend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf
 
 run-cluster-protobuf-backend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go --port 3251 --type room --frontend=false
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf --port 3251 --type room --frontend=false
 
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
-
-run-cluster-grpc-example-connector:
-	@cd examples/demo/cluster_grpc && go run main.go
-
-run-cluster-grpc-example-room:
-	@cd examples/demo/cluster_grpc && go run main.go --port 3251 --rpcsvport 3435 --type room --frontend=false
 
 run-cluster-worker-example-room:
 	@cd examples/demo/worker && go run main.go --type room --frontend=true
@@ -84,11 +78,13 @@ run-rate-limiting-example:
 
 protos-compile-demo:
 	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+	@protoc -I examples/demo/worker/protos examples/demo/worker/protos/*.proto --go_out=.
+	@protoc -I examples/testing/protos examples/testing/protos/*.proto --go_out=.
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./pkg/protos --go_out=paths=source_relative:./pkg/protos
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=paths=source_relative:./pkg/protos/test
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*
@@ -109,15 +105,11 @@ kill-testing-deps:
 kill-jaeger:
 	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
-e2e-test: e2e-test-nats e2e-test-grpc
+e2e-test: e2e-test-nats
 
 e2e-test-nats: ensure-testing-deps ensure-testing-bin
 	@echo "===============RUNNING E2E NATS TESTS==============="
 	@go test ./e2e/e2e_test.go -update
-
-e2e-test-grpc: ensure-testing-deps ensure-testing-bin
-	@echo "===============RUNNING E2E GRPC TESTS==============="
-	@go test ./e2e/e2e_test.go -update -grpc
 
 bench-nats-sv:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9098 ./examples/testing/server -type game -frontend=false > /dev/null 2>&1 & echo $$! > back.PID

@@ -25,7 +25,7 @@ import (
 	"net"
 	"reflect"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
