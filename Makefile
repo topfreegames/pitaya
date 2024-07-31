@@ -1,22 +1,22 @@
 ifeq ($(OS), Windows_NT)
 	BIN := pitaya-cli.exe
 	XK6_BIN := k6.exe
-	MKFOLDER := if not exist "build" mkdir build
 	GREP_CMD := findstr /V
 else
 	BIN := pitaya-cli
 	XK6_BIN := k6
-	MKFOLDER := mkdir -p build
 	GREP_CMD := grep -v
 endif
 
 TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark`
 
+.PHONY: all build
+
 setup: init-submodules
 	@go get ./...
 
 build:
-	@$(MKFOLDER)
+	@mkdir -p build
 	@go build -o build/$(BIN) .
 	@echo "build pitaya-cli at ./build/$(BIN)"
 
@@ -53,10 +53,10 @@ run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
 
 run-cluster-protobuf-frontend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf
 
 run-cluster-protobuf-backend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go --port 3251 --type room --frontend=false
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf --port 3251 --type room --frontend=false
 
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false

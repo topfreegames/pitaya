@@ -89,7 +89,7 @@ func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*
 }
 
 // Docs returns documentation
-func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pitayaprotos.Doc, error) {
+func (c *Connector) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pitayaprotos.Doc, error) {
 	d, err := c.app.Documentation(true)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pit
 	return &pitayaprotos.Doc{Doc: string(doc)}, nil
 }
 
-func (c *ConnectorRemote) Descriptor(ctx context.Context, names *pitayaprotos.ProtoNames) (*pitayaprotos.ProtoDescriptors, error) {
+func (c *Connector) Descriptor(ctx context.Context, names *pitayaprotos.ProtoNames) (*pitayaprotos.ProtoDescriptors, error) {
 	descriptors := make([][]byte, len(names.Name))
 
 	for i, protoName := range names.Name {
