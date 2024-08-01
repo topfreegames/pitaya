@@ -24,6 +24,7 @@ const opts = {
     }
   },
   requestTimeoutMs: 1000,
+  useTLS: false,
 }
 
 const pitayaClient = new pitaya.Client(opts)

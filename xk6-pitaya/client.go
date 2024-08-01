@@ -34,38 +34,26 @@ type Client struct {
 	pushes         map[string]chan []byte
 	timeout        time.Duration
 	metrics        *pitayaMetrics
-}
-
-// ConnectTls connects to the server with a basic tls config
-// addr is the address of the server to connect to
-func (c *Client) ConnectTls(addr string) error {
-	vuState := c.vu.State()
-
-	if vuState == nil {
-		return errors.New("connecting to a pitaya server in the init context is not supported")
-	}
-
-	config := &tls.Config{GetConfigForClient: func(*tls.ClientHelloInfo) (*tls.Config, error) { return nil, nil }, InsecureSkipVerify: true}
-
-	err := c.client.ConnectTo(addr, config)
-	if err != nil {
-		return err
-	}
-	go c.listen()
-
-	return err
+	useTLS         bool
 }
 
 // Connect connects to the server
 // addr is the address of the server to connect to
-func (c *Client) Connect(addr string) error { //TODO: tls Options
+func (c *Client) Connect(addr string) error {
 	vuState := c.vu.State()
 
 	if vuState == nil {
 		return errors.New("connecting to a pitaya server in the init context is not supported")
 	}
 
-	err := c.client.ConnectTo(addr)
+	var err error
+	if c.useTLS {
+		tlsConfig := &tls.Config{GetConfigForClient: func(*tls.ClientHelloInfo) (*tls.Config, error) { return nil, nil }, InsecureSkipVerify: true}
+		err = c.client.ConnectTo(addr, tlsConfig)
+	} else {
+		err = c.client.ConnectTo(addr)
+	}
+
 	if err != nil {
 		return err
 	}
