@@ -1,5 +1,5 @@
 # Build the k6 binary with the extension
-FROM golang:1.20 as builder
+FROM golang:1.22 as builder
 
 ARG pitaya_revision
 
@@ -8,7 +8,7 @@ RUN go install go.k6.io/xk6/cmd/xk6@latest
 # Feel free to add other extensions using the '--with ...'.
 RUN xk6 build \
     --with github.com/topfreegames/pitaya/xk6-pitaya@$pitaya_revision  \
-    --with github.com/topfreegames/pitaya/v3@$pitaya_revision \
+    --replace github.com/topfreegames/pitaya/v3=github.com/topfreegames/pitaya/v3@$pitaya_revision \
     --output /k6
 
 # Use the operator's base image and override the k6 binary
