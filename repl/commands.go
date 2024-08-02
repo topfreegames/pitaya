@@ -128,8 +128,7 @@ func request(logger Log, args []string) error {
 		data = []byte(strings.Join(args[1:], ""))
 	}
 
-	response, err := pClient.SendRequest(route, data)
-	fmt.Println("mid:" + string(response))
+	_, err := pClient.SendRequest(route, data)
 	if err != nil {
 		return err
 	}
