@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/topfreegames/pitaya/v3/examples/demo/protos"
+	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_protos"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 )
@@ -85,9 +85,9 @@ func (c *Connector) SendPushToUser(ctx context.Context, msg *UserMessage) (*Resp
 }
 
 // RemoteFunc is a function that will be called remotely
-func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
+func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *cluster_protos.RPCMsg) (*cluster_protos.RPCRes, error) {
 	fmt.Printf("received a remote call with this message: %s\n", msg)
-	return &protos.RPCRes{
+	return &cluster_protos.RPCRes{
 		Msg: fmt.Sprintf("received msg: %s", msg.GetMsg()),
 	}, nil
 }

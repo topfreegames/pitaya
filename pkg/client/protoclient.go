@@ -31,17 +31,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 // Command struct. Save the input and output type and proto descriptor for each
@@ -49,8 +46,8 @@ import (
 type Command struct {
 	input               string // input command name
 	output              string // output command name
-	inputMsgDescriptor  protoreflect.MessageDescriptor
-	outputMsgDescriptor protoreflect.MessageDescriptor
+	inputMsgDescriptor  *desc.MessageDescriptor
+	outputMsgDescriptor *desc.MessageDescriptor
 }
 
 // ProtoBufferInfo save all commands from a server.
@@ -66,7 +63,7 @@ type ProtoClient struct {
 	docsRoute               string
 	descriptorsRoute        string
 	IncomingMsgChan         chan *message.Message
-	expectedInputDescriptor protoreflect.MessageDescriptor
+	expectedInputDescriptor *desc.MessageDescriptor
 	ready                   bool
 	closeChan               chan bool
 }
@@ -77,7 +74,7 @@ func (pc *ProtoClient) MsgChannel() chan *message.Message {
 }
 
 // Receive a compressed byte slice and unpack it to a FileDescriptorProto
-func unpackDescriptor(compressedDescriptor []byte) (*descriptorpb.FileDescriptorProto, error) {
+func unpackDescriptor(compressedDescriptor []byte) (*protobuf.FileDescriptorProto, error) {
 	r, err := gzip.NewReader(bytes.NewReader(compressedDescriptor))
 	if err != nil {
 		return nil, err
@@ -89,7 +86,7 @@ func unpackDescriptor(compressedDescriptor []byte) (*descriptorpb.FileDescriptor
 		return nil, err
 	}
 
-	var fileDescriptorProto descriptorpb.FileDescriptorProto
+	var fileDescriptorProto protobuf.FileDescriptorProto
 
 	if err = proto.Unmarshal(b, &fileDescriptorProto); err != nil {
 		return nil, err
@@ -100,42 +97,30 @@ func unpackDescriptor(compressedDescriptor []byte) (*descriptorpb.FileDescriptor
 
 // Receive an array of descriptors in binary format. The function creates the
 // protobuffer from this data and associates it to the message.
-func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*descriptorpb.FileDescriptorProto) error {
+func (pc *ProtoClient) buildProtosFromDescriptor(descriptorArray []*protobuf.FileDescriptorProto) error {
 
-	descriptorsMap := make(map[string]*protoreflect.MessageDescriptor)
+	descriptorsMap := make(map[string]*desc.MessageDescriptor)
 
-	for _, fdp := range descriptorArray {
-		fd, err := protodesc.NewFile(fdp, protoregistry.GlobalFiles)
-		if err != nil {
-			return fmt.Errorf("error converting to FileDescriptor: %w", err)
-		}
-		if err := protoregistry.GlobalFiles.RegisterFile(fd); err != nil {
-			return fmt.Errorf("error registering file: %w", err)
-		}
-
+	descriptors, err := desc.CreateFileDescriptors(descriptorArray)
+	if err != nil {
+		return err
 	}
 
-	/*
-		descriptors, err := protoreflect.FileDescriptor(descriptorArray)
-		if err != nil {
-			return err
-		}
-
-		for name := range pc.descriptorsNames {
-			for _, v := range descriptors {
-				message := v.FindMessage(name)
-				if message != nil {
-					descriptorsMap[name] = message
-				}
+	for name := range pc.descriptorsNames {
+		for _, v := range descriptors {
+			message := v.FindMessage(name)
+			if message != nil {
+				descriptorsMap[name] = message
 			}
 		}
-	*/
+	}
+
 	for name, cmd := range pc.info.Commands {
 		if msg, ok := descriptorsMap[cmd.input]; ok {
-			pc.info.Commands[name].inputMsgDescriptor = *msg
+			pc.info.Commands[name].inputMsgDescriptor = msg
 		}
 		if msg, ok := descriptorsMap[cmd.output]; ok {
-			pc.info.Commands[name].outputMsgDescriptor = *msg
+			pc.info.Commands[name].outputMsgDescriptor = msg
 		}
 	}
 
@@ -285,7 +270,7 @@ func (pc *ProtoClient) getDescriptors(data string) error {
 	}
 
 	// get all proto types
-	descriptorArray := make([]*descriptorpb.FileDescriptorProto, 0)
+	descriptorArray := make([]*protobuf.FileDescriptorProto, 0)
 	for i := range descriptors.Desc {
 		fileDescriptorProto, err := unpackDescriptor(descriptors.Desc[i])
 		if err != nil {
@@ -390,11 +375,11 @@ func (pc *ProtoClient) waitForData() {
 	for {
 		select {
 		case response := <-pc.Client.IncomingMsgChan:
-			inputMsg := dynamicpb.NewMessage(pc.expectedInputDescriptor)
+			inputMsg := dynamic.NewMessage(pc.expectedInputDescriptor)
 
 			msg, ok := pc.info.Commands[response.Route]
 			if ok {
-				inputMsg = dynamicpb.NewMessage(msg.outputMsgDescriptor)
+				inputMsg = dynamic.NewMessage(msg.outputMsgDescriptor)
 			} else {
 				pc.expectedInputDescriptor = nil
 			}
@@ -420,13 +405,13 @@ func (pc *ProtoClient) waitForData() {
 				continue
 			}
 
-			err := proto.Unmarshal(response.Data, inputMsg)
+			err := inputMsg.Unmarshal(response.Data)
 			if err != nil {
 				logger.Log.Errorf("error decode data: %s", string(response.Data))
 				continue
 			}
 
-			data, err2 := protojson.Marshal(inputMsg)
+			data, err2 := inputMsg.MarshalJSON()
 			if err2 != nil {
 				logger.Log.Errorf("error encode data to json: %s", string(response.Data))
 				continue
@@ -498,19 +483,22 @@ func (pc *ProtoClient) SendRequest(route string, data []byte) (uint, error) {
 	}
 
 	if cmd, ok := pc.info.Commands[route]; ok {
-		if len(data) < 0 || string(data) == "{}" || cmd.inputMsgDescriptor == nil {
+		if string(data) == "{}" || cmd.inputMsgDescriptor == nil {
 			pc.expectedInputDescriptor = cmd.outputMsgDescriptor
 			data = data[:0]
 			return pc.Client.SendRequest(route, data)
 		}
-		inputMsg := dynamicpb.NewMessage(cmd.inputMsgDescriptor)
-		if err := proto.Unmarshal(data, inputMsg); err != nil {
-			return 0, err
+		inputMsg := dynamic.NewMessage(cmd.inputMsgDescriptor)
+		if len(data) > 0 {
+			if err := inputMsg.UnmarshalJSON(data); err != nil {
+				return 0, err
+			}
 		}
-		realdata, err := protojson.Marshal(inputMsg)
+		realdata, err := inputMsg.Marshal()
 		if err != nil {
 			return 0, err
 		}
+
 		pc.expectedInputDescriptor = cmd.outputMsgDescriptor
 		return pc.Client.SendRequest(route, realdata)
 	}
@@ -522,12 +510,12 @@ func (pc *ProtoClient) SendRequest(route string, data []byte) (uint, error) {
 func (pc *ProtoClient) SendNotify(route string, data []byte) error {
 
 	if cmd, ok := pc.info.Commands[route]; ok {
-		inputMsg := dynamicpb.NewMessage(cmd.inputMsgDescriptor)
-		err := proto.Unmarshal(data, inputMsg)
+		inputMsg := dynamic.NewMessage(cmd.inputMsgDescriptor)
+		err := inputMsg.UnmarshalJSON(data)
 		if err != nil {
 			return err
 		}
-		realdata, err := protojson.Marshal(inputMsg)
+		realdata, err := inputMsg.Marshal()
 		if err != nil {
 			return err
 		}

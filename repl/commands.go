@@ -23,6 +23,7 @@ package repl
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -127,7 +128,8 @@ func request(logger Log, args []string) error {
 		data = []byte(strings.Join(args[1:], ""))
 	}
 
-	_, err := pClient.SendRequest(route, data)
+	response, err := pClient.SendRequest(route, data)
+	fmt.Println("mid:" + string(response))
 	if err != nil {
 		return err
 	}

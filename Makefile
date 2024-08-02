@@ -83,7 +83,7 @@ run-rate-limiting-example:
 	@go run examples/demo/rate_limiting/main.go
 
 protos-compile-demo:
-	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+	@protoc -I examples/demo/cluster_protos examples/demo/cluster_protos/*.proto --go_out=.
 	@protoc -I examples/demo/worker/protos examples/demo/worker/protos/*.proto --go_out=.
 	@protoc -I examples/testing/protos examples/testing/protos/*.proto --go_out=.
 

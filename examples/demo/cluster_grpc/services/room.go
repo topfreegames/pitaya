@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/topfreegames/pitaya/v3/examples/demo/protos"
+	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_protos"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 	"github.com/topfreegames/pitaya/v3/pkg/timer"
@@ -160,8 +160,8 @@ func (r *Room) Message(ctx context.Context, msg *UserMessage) {
 }
 
 // SendRPC sends rpc
-func (r *Room) SendRPC(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
-	ret := &protos.RPCRes{}
+func (r *Room) SendRPC(ctx context.Context, msg *cluster_protos.RPCMsg) (*cluster_protos.RPCRes, error) {
+	ret := &cluster_protos.RPCRes{}
 	err := r.app.RPC(ctx, "connector.connectorremote.remotefunc", ret, msg)
 	if err != nil {
 		return nil, pitaya.Error(err, "RPC-000")
