@@ -23,7 +23,6 @@ package repl
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
