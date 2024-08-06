@@ -28,26 +28,7 @@ import (
 
 	"github.com/abiosoft/ishell/v2"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/v3/pkg/client"
 )
-
-func protoClient(log Log, addr string) error {
-	log.Println("Using protobuf client")
-	protoclient := client.NewProto(docsString, logrus.InfoLevel)
-	pClient = protoclient
-
-	for k, v := range pushInfo {
-		protoclient.AddPushResponse(k, v)
-	}
-
-	if err := protoclient.LoadServerInfo(addr); err != nil {
-		log.Println("Failed to load server info")
-		return err
-	}
-
-	return nil
-}
 
 func tryConnect(addr string) error {
 	if err := pClient.ConnectToWS(addr, "", &tls.Config{

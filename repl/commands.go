@@ -34,13 +34,9 @@ func connect(logger Log, addr string, onMessageCallback func([]byte)) (err error
 		return errors.New("already connected")
 	}
 
-	switch {
-	case docsString != "":
-		err = protoClient(logger, addr)
-	default:
-		logger.Println("Using json client")
-		pClient = client.New(logrus.InfoLevel)
-	}
+	logger.Println("Using json client")
+	pClient = client.New(logrus.InfoLevel)
+
 	pClient.SetClientHandshakeData(handshake)
 
 	if err != nil {
@@ -177,17 +173,6 @@ func routes(logger Log) error {
 		return errors.New("not connected")
 	}
 
-	if protoClient, ok := pClient.(*client.ProtoClient); ok {
-		info := protoClient.ExportInformation()
-		if info != nil {
-			for k, _ := range info.Commands {
-				logger.Println(k)
-			}
-		}
+	return errors.New("client doesn't currently implement the command `routes`")
 
-	} else {
-		return errors.New("only ProtoClient implements the command `routes`")
-	}
-
-	return nil
 }
