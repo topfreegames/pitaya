@@ -190,7 +190,7 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
 			} else {
 				// Differentiate errors for valid sessions, to avoid noise from load balancer healthchecks and other internet noise
-				if a.GetStatus() == constants.StatusStart {
+				if a.GetStatus() != constants.StatusStart {
 					logger.Log.Errorf("Error reading next available message for UID: %s, Build: %s, error: %s", a.GetSession().UID(), a.GetSession().GetHandshakeData().Sys.BuildNumber, err.Error())
 				} else {
 					logger.Log.Debugf("Error reading next available message on initial connection: %s", err.Error())
