@@ -37,11 +37,11 @@ setup-protobuf-macos:
 	@go install github.com/golang/protobuf/protoc-gen-go@latest
 
 run-jaeger-aio:
-	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
+	@docker compose -f ./examples/testing/docker-compose-jaeger.yml up -d
 	@echo "Access jaeger UI @ http://localhost:16686"
 
 run-chat-example:
-	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
+	@cd examples/testing && docker compose up -d etcd nats && cd ../demo/chat/ && go run main.go
 
 run-cluster-example-frontend-tracing:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 OTEL_SDK_DISABLED=false OTEL_SERVICE_NAME=example-frontend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1" go run examples/demo/cluster/main.go
@@ -98,16 +98,16 @@ ensure-testing-bin:
 	@[ -f ./examples/testing/server ] || go build -o ./examples/testing/server ./examples/testing/main.go
 
 ensure-testing-deps:
-	@cd ./examples/testing && docker-compose up -d
+	@cd ./examples/testing && docker compose up -d
 
 ensure-e2e-deps-grpc:
-	@cd ./examples/testing && docker-compose up -d etcd
+	@cd ./examples/testing && docker compose up -d etcd
 
 kill-testing-deps:
-	@cd ./examples/testing && docker-compose down; true
+	@cd ./examples/testing && docker compose down; true
 
 kill-jaeger:
-	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
+	@docker compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
 e2e-test: e2e-test-nats e2e-test-grpc
 
