@@ -12,6 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	agent "github.com/topfreegames/pitaya/v3/pkg/agent"
 	protos "github.com/topfreegames/pitaya/v3/pkg/protos"
+	serialize "github.com/topfreegames/pitaya/v3/pkg/serialize"
 	session "github.com/topfreegames/pitaya/v3/pkg/session"
 )
 
@@ -62,6 +63,20 @@ func (m *MockAgent) Close() error {
 func (mr *MockAgentMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockAgent)(nil).Close))
+}
+
+// GetSerializer mocks base method.
+func (m *MockAgent) GetSerializer() serialize.Serializer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSerializer")
+	ret0, _ := ret[0].(serialize.Serializer)
+	return ret0
+}
+
+// GetSerializer indicates an expected call of GetSerializer.
+func (mr *MockAgentMockRecorder) GetSerializer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSerializer", reflect.TypeOf((*MockAgent)(nil).GetSerializer))
 }
 
 // GetSession mocks base method.
@@ -232,6 +247,18 @@ func (m *MockAgent) SetLastAt() {
 func (mr *MockAgentMockRecorder) SetLastAt() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastAt", reflect.TypeOf((*MockAgent)(nil).SetLastAt))
+}
+
+// SetSerializer mocks base method.
+func (m *MockAgent) SetSerializer(arg0 serialize.Serializer) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSerializer", arg0)
+}
+
+// SetSerializer indicates an expected call of SetSerializer.
+func (mr *MockAgentMockRecorder) SetSerializer(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSerializer", reflect.TypeOf((*MockAgent)(nil).SetSerializer), arg0)
 }
 
 // SetStatus mocks base method.

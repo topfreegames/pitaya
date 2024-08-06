@@ -52,6 +52,7 @@ import (
 )
 
 var (
+	// These global variables only apply to the default serializer configured on the server. If clients negotiate a different serializer, these will be encoded again on the first connection.
 	// hbd contains the heartbeat packet data
 	hbd []byte
 	// hrd contains the handshake response data
@@ -83,6 +84,9 @@ type (
 		metricsReporters   []metrics.Reporter
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
+		hbd                []byte               // heartbeat packet data
+		hrd                []byte               // heartbeat response data
+		herd               []byte               // handshake error response data
 	}
 
 	pendingMessage struct {
@@ -118,6 +122,8 @@ type (
 		SendHandshakeErrorResponse() error
 		SendRequest(ctx context.Context, serverID, route string, v interface{}) (*protos.Response, error)
 		AnswerWithError(ctx context.Context, mid uint, err error)
+		GetSerializer() serialize.Serializer
+		SetSerializer(serializer serialize.Serializer)
 	}
 
 	// AgentFactory factory for creating Agent instances
@@ -184,11 +190,6 @@ func newAgent(
 	// initialize heartbeat and handshake data on first user connection
 	serializerName := serializer.GetName()
 
-	once.Do(func() {
-		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
-		herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
-	})
-
 	a := &agentImpl{
 		appDieChan:         dieChan,
 		chDie:              make(chan struct{}),
@@ -207,6 +208,14 @@ func newAgent(
 		metricsReporters:   metricsReporters,
 		sessionPool:        sessionPool,
 	}
+
+	once.Do(func() {
+		a.hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName, true)
+		a.herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName, true)
+	})
+	a.hbd = hbd
+	a.hrd = hrd
+	a.herd = herd
 
 	// binding session
 	s := sessionPool.NewSession(a, true)
@@ -449,7 +458,7 @@ func (a *agentImpl) heartbeat() {
 
 			// chSend is never closed so we need this to don't block if agent is already closed
 			select {
-			case a.chSend <- pendingWrite{data: hbd}:
+			case a.chSend <- pendingWrite{data: a.hbd}:
 			case <-a.chDie:
 				return
 			case <-a.chStopHeartbeat:
@@ -481,13 +490,13 @@ func (a *agentImpl) onSessionClosed(s session.Session) {
 
 // SendHandshakeResponse sends a handshake response
 func (a *agentImpl) SendHandshakeResponse() error {
-	_, err := a.conn.Write(hrd)
+	_, err := a.conn.Write(a.hrd)
 
 	return err
 }
 
 func (a *agentImpl) SendHandshakeErrorResponse() error {
-	_, err := a.conn.Write(herd)
+	_, err := a.conn.Write(a.herd)
 
 	return err
 }
@@ -591,7 +600,7 @@ func (a *agentImpl) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 }
 
-func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool, serializerName string) {
+func (a *agentImpl) hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool, serializerName string, defaultSerializer bool) {
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
@@ -606,18 +615,25 @@ func hbdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder
 		panic(err)
 	}
 
-	hrd, err = packetEncoder.Encode(packet.Handshake, data)
+	hrdData, err := packetEncoder.Encode(packet.Handshake, data)
 	if err != nil {
 		panic(err)
 	}
 
-	hbd, err = packetEncoder.Encode(packet.Heartbeat, nil)
+	hbdData, err := packetEncoder.Encode(packet.Heartbeat, nil)
 	if err != nil {
 		panic(err)
+	}
+	if defaultSerializer {
+		hrd = hrdData
+		hbd = hbdData
+	} else {
+		a.hrd = hrdData
+		a.hbd = hbdData
 	}
 }
 
-func herdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool, serializerName string) {
+func (a *agentImpl) herdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncoder, dataCompression bool, serializerName string, defaultSerializer bool) {
 	hErrData := map[string]interface{}{
 		"code": 400,
 		"sys": map[string]interface{}{
@@ -632,9 +648,14 @@ func herdEncode(heartbeatTimeout time.Duration, packetEncoder codec.PacketEncode
 		panic(err)
 	}
 
-	herd, err = packetEncoder.Encode(packet.Handshake, errData)
+	herdData, err := packetEncoder.Encode(packet.Handshake, errData)
 	if err != nil {
 		panic(err)
+	}
+	if defaultSerializer {
+		herd = herdData
+	} else {
+		a.herd = herdData
 	}
 }
 
@@ -667,4 +688,16 @@ func (a *agentImpl) reportChannelSize() {
 			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}
+}
+
+// GetSerializer configured for this agent
+func (a *agentImpl) GetSerializer() serialize.Serializer {
+	return a.serializer
+}
+
+// SetSerializer to use for this agent
+func (a *agentImpl) SetSerializer(serializer serialize.Serializer) {
+	a.serializer = serializer
+	a.hbdEncode(a.heartbeatTimeout, a.encoder, a.messageEncoder.IsCompressionEnabled(), serializer.GetName(), false)
+	a.herdEncode(a.heartbeatTimeout, a.encoder, a.messageEncoder.IsCompressionEnabled(), serializer.GetName(), false)
 }

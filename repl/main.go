@@ -38,16 +38,17 @@ var (
 	handshake      *session.HandshakeData
 )
 
-func Start(docs, filename string, prettyJSON bool) {
+func Start(docs, filename string, prettyPrint bool) {
 	docsString = docs
 	fileName = filename
-	prettyJSON = prettyJSON
+	prettyJSON = prettyPrint
 	handshake = &session.HandshakeData{
 		Sys: session.HandshakeClientData{
 			Platform:    "repl",
 			LibVersion:  "0.3.5-release",
 			BuildNumber: "20",
 			Version:     "1.0.0",
+			Serializer:  "json",
 		},
 		User: map[string]interface{}{
 			"client": "repl",

@@ -30,12 +30,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"github.com/topfreegames/pitaya/v3/pkg/networkentity"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"google.golang.org/protobuf/proto"
 )
 
 type sessionPoolImpl struct {
@@ -72,6 +72,7 @@ type HandshakeClientData struct {
 	LibVersion  string `json:"libVersion"`
 	BuildNumber string `json:"clientBuildNumber"`
 	Version     string `json:"clientVersion"`
+	Serializer  string `json:"serializer"`
 }
 
 // HandshakeData represents information about the handshake sent by the client.

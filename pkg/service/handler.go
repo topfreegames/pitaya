@@ -263,6 +263,25 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 			logger.Log.Warnf("failed to save ip version on session: %q\n", err)
 		}
 
+		if len(handshakeData.Sys.Serializer) > 0 {
+			var requestedSerializer serialize.Serializer
+			err = nil
+			switch handshakeData.Sys.Serializer {
+			case "json":
+				requestedSerializer, err = serialize.NewSerializer(serialize.JSON)
+			case "protobuf":
+				requestedSerializer, err = serialize.NewSerializer(serialize.PROTOBUF)
+			default:
+				requestedSerializer = h.serializer
+			}
+			if err != nil {
+				logger.Log.Errorf("Error setting serializer %s for agent", handshakeData.Sys.Serializer)
+			} else {
+				logger.Log.Debugf("Overriding serializer for agent %s", a.RemoteAddr())
+				a.SetSerializer(requestedSerializer)
+			}
+		}
+
 		logger.Log.Debug("Successfully saved handshake data")
 
 	case packet.HandshakeAck:
@@ -342,7 +361,7 @@ func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route 
 		mid = 0
 	}
 
-	ret, err := h.handlerPool.ProcessHandlerMessage(ctx, route, h.serializer, h.handlerHooks, a.GetSession(), msg.Data, msg.Type, false)
+	ret, err := h.handlerPool.ProcessHandlerMessage(ctx, route, a.GetSerializer(), h.handlerHooks, a.GetSession(), msg.Data, msg.Type, false)
 	if msg.Type != message.Notify {
 		if err != nil {
 			logger.Log.Errorf("Failed to process handler message: %s", err.Error())
