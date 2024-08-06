@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	clustermocks "github.com/topfreegames/pitaya/v3/pkg/cluster/mocks"

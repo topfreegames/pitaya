@@ -24,7 +24,9 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/helpers"
@@ -62,7 +64,7 @@ func TestMarshal(t *testing.T) {
 				}
 
 				expected := helpers.ReadFile(t, gp)
-				assert.Equal(t, expected, result)
+				assert.True(t, cmp.Equal(expected, result, protocmp.Transform()))
 			} else {
 				assert.Equal(t, table.err, err)
 			}
@@ -92,7 +94,7 @@ func TestUnmarshal(t *testing.T) {
 			err := serializer.Unmarshal(table.data, result)
 			assert.Equal(t, table.err, err)
 			if table.err == nil {
-				assert.Equal(t, table.expected, result)
+				assert.True(t, cmp.Equal(table.expected, result, protocmp.Transform()))
 			}
 		})
 	}

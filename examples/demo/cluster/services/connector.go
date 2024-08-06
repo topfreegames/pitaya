@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/topfreegames/pitaya/v3/examples/demo/protos"
+	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_protos"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 	pitayaprotos "github.com/topfreegames/pitaya/v3/pkg/protos"
@@ -44,8 +44,8 @@ func NewConnectorRemote(app pitaya.Pitaya) *ConnectorRemote {
 	return &ConnectorRemote{app: app}
 }
 
-func reply(code int32, msg string) (*protos.Response, error) {
-	res := &protos.Response{
+func reply(code int32, msg string) (*cluster_protos.Response, error) {
+	res := &cluster_protos.Response{
 		Code: code,
 		Msg:  msg,
 	}
@@ -62,7 +62,7 @@ func (c *Connector) GetSessionData(ctx context.Context) (*SessionData, error) {
 }
 
 // SetSessionData sets the session data
-func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*protos.Response, error) {
+func (c *Connector) SetSessionData(ctx context.Context, data *SessionData) (*cluster_protos.Response, error) {
 	s := c.app.GetSessionFromCtx(ctx)
 	err := s.SetData(data.Data)
 	if err != nil {
@@ -81,15 +81,15 @@ func (c *Connector) NotifySessionData(ctx context.Context, data *SessionData) {
 }
 
 // RemoteFunc is a function that will be called remotely
-func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes, error) {
+func (c *ConnectorRemote) RemoteFunc(ctx context.Context, msg *cluster_protos.RPCMsg) (*cluster_protos.RPCRes, error) {
 	fmt.Printf("received a remote call with this message: %s\n", msg.GetMsg())
-	return &protos.RPCRes{
+	return &cluster_protos.RPCRes{
 		Msg: msg.GetMsg(),
 	}, nil
 }
 
 // Docs returns documentation
-func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pitayaprotos.Doc, error) {
+func (c *Connector) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pitayaprotos.Doc, error) {
 	d, err := c.app.Documentation(true)
 	if err != nil {
 		return nil, err
@@ -103,16 +103,17 @@ func (c *ConnectorRemote) Docs(ctx context.Context, ddd *pitayaprotos.Doc) (*pit
 	return &pitayaprotos.Doc{Doc: string(doc)}, nil
 }
 
-func (c *ConnectorRemote) Descriptor(ctx context.Context, names *pitayaprotos.ProtoNames) (*pitayaprotos.ProtoDescriptors, error) {
-	descriptors := make([][]byte, len(names.Name))
+func (c *Connector) Descriptor(ctx context.Context, names *pitayaprotos.ProtoNames) (*pitayaprotos.ProtoDescriptors, error) {
+	descriptors := make([][]byte, 0)
 
-	for i, protoName := range names.Name {
+	for _, protoName := range names.Name {
 		desc, err := pitaya.Descriptor(protoName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get descriptor for '%s': %w", protoName, err)
+			fmt.Println(fmt.Errorf("failed to get descriptor for '%s': %w", protoName, err))
+			continue
 		}
 
-		descriptors[i] = desc
+		descriptors = append(descriptors, desc)
 	}
 
 	return &pitayaprotos.ProtoDescriptors{Desc: descriptors}, nil

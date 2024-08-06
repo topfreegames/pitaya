@@ -1,22 +1,22 @@
 ifeq ($(OS), Windows_NT)
 	BIN := pitaya-cli.exe
 	XK6_BIN := k6.exe
-	MKFOLDER := if not exist "build" mkdir build
 	GREP_CMD := findstr /V
 else
 	BIN := pitaya-cli
 	XK6_BIN := k6
-	MKFOLDER := mkdir -p build
 	GREP_CMD := grep -v
 endif
 
 TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constants | $(GREP_CMD) mocks | $(GREP_CMD) helpers | $(GREP_CMD) interfaces | $(GREP_CMD) protos | $(GREP_CMD) e2e | $(GREP_CMD) benchmark`
 
+.PHONY: all build
+
 setup: init-submodules
 	@go get ./...
 
 build:
-	@$(MKFOLDER)
+	@mkdir -p build
 	@go build -o build/$(BIN) .
 	@echo "build pitaya-cli at ./build/$(BIN)"
 
@@ -34,7 +34,7 @@ setup-ci:
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go install github.com/golang/protobuf/protoc-gen-go@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 run-jaeger-aio:
 	@docker compose -f ./examples/testing/docker-compose-jaeger.yml up -d
@@ -53,10 +53,10 @@ run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
 
 run-cluster-protobuf-frontend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf
 
 run-cluster-protobuf-backend-example:
-	@cd examples/demo/cluster_protobuf && go run main.go --port 3251 --type room --frontend=false
+	@cd examples/demo/cluster && go run main.go -serializer=protobuf --port 3251 --type room --frontend=false
 
 run-cluster-example-backend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9091 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
@@ -83,12 +83,14 @@ run-rate-limiting-example:
 	@go run examples/demo/rate_limiting/main.go
 
 protos-compile-demo:
-	@protoc -I examples/demo/protos examples/demo/protos/*.proto --go_out=.
+	@protoc -I examples/demo/cluster_protos examples/demo/cluster_protos/*.proto --go_out=.
+	@protoc -I examples/demo/worker/protos examples/demo/worker/protos/*.proto --go_out=.
+	@protoc -I examples/testing/protos examples/testing/protos/*.proto --go_out=.
 
 protos-compile:
 	@cd benchmark/testdata && ./gen_proto.sh
-	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go_out=plugins=grpc:protos
-	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=protos/test
+	@protoc -I pitaya-protos/ pitaya-protos/*.proto --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./pkg/protos --go_out=paths=source_relative:./pkg/protos
+	@protoc -I pitaya-protos/test pitaya-protos/test/*.proto --go_out=paths=source_relative:./pkg/protos/test
 
 rm-test-temp-files:
 	@rm -f cluster/127.0.0.1* 127.0.0.1*

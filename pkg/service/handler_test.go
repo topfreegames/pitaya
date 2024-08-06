@@ -224,12 +224,14 @@ func TestHandlerServiceLocalProcess(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
 
 			mockSession := mocks.NewMockSession(ctrl)
 			mockSession.EXPECT().UID().Return("uid").Times(1)
 
 			mockAgent := agentmocks.NewMockAgent(ctrl)
 			mockAgent.EXPECT().GetSession().Return(mockSession).AnyTimes()
+			mockAgent.EXPECT().GetSerializer().Return(mockSerializer).AnyTimes()
 
 			svc := NewHandlerService(nil, nil, 1, 1, nil, nil, nil, nil, pipeline.NewHandlerHooks(), handlerPool)
 

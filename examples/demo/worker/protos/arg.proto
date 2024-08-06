@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package protos;
+option go_package = "examples/demo/worker/protos";
 
 message Arg {
   string msg = 1;

@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	protoiface "google.golang.org/protobuf/runtime/protoiface"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // MockRPCJob is a mock of RPCJob interface.
@@ -36,11 +36,11 @@ func (m *MockRPCJob) EXPECT() *MockRPCJobMockRecorder {
 }
 
 // GetArgReply mocks base method.
-func (m *MockRPCJob) GetArgReply(arg0 string) (protoiface.MessageV1, protoiface.MessageV1, error) {
+func (m *MockRPCJob) GetArgReply(arg0 string) (protoreflect.ProtoMessage, protoreflect.ProtoMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetArgReply", arg0)
-	ret0, _ := ret[0].(protoiface.MessageV1)
-	ret1, _ := ret[1].(protoiface.MessageV1)
+	ret0, _ := ret[0].(protoreflect.ProtoMessage)
+	ret1, _ := ret[1].(protoreflect.ProtoMessage)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -52,7 +52,7 @@ func (mr *MockRPCJobMockRecorder) GetArgReply(arg0 interface{}) *gomock.Call {
 }
 
 // RPC mocks base method.
-func (m *MockRPCJob) RPC(arg0 context.Context, arg1, arg2 string, arg3, arg4 protoiface.MessageV1) error {
+func (m *MockRPCJob) RPC(arg0 context.Context, arg1, arg2 string, arg3, arg4 protoreflect.ProtoMessage) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RPC", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)

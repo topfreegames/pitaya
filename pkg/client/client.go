@@ -36,7 +36,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/v3/pkg"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
@@ -304,7 +304,6 @@ func (c *Client) handleServerMessages() {
 			logger.Log.Error(err)
 			break
 		}
-
 		for _, p := range packets {
 			c.packetChan <- p
 		}
@@ -454,7 +453,6 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 		}
 		c.pendingReqMutex.Unlock()
 	}
-
 	if err != nil {
 		return m.ID, err
 	}
