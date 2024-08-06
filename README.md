@@ -43,7 +43,7 @@ Here's one example of running Pitaya:
 
 Start etcd (This command requires docker-compose and will run an etcd container locally. An etcd may be run without docker if preferred.)
 ```
-cd ./examples/testing && docker-compose up -d etcd
+cd ./examples/testing && docker compose up -d etcd
 ```
 run the connector frontend server from cluster_grpc example
 ```
