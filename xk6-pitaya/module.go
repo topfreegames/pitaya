@@ -9,8 +9,8 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/sirupsen/logrus"
-	pitayaclient "github.com/topfreegames/pitaya/v2/client"
-	"github.com/topfreegames/pitaya/v2/session"
+	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 )
@@ -85,6 +85,7 @@ func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 		pushes:    make(map[string]chan []byte, 100),
 		timeout:   time.Duration(opts.RequestTimeoutMs) * time.Millisecond,
 		metrics:   mi.metrics,
+		useTLS:    opts.UseTLS,
 	}
 
 	client.client = pitayaclient.New(logrus.InfoLevel)
@@ -96,6 +97,7 @@ func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
 type options struct {
 	HandshakeData    *session.HandshakeData `json:"handshakeData"`
 	RequestTimeoutMs int                    `json:"requestTimeoutMs"`
+	UseTLS           bool                   `json:"useTLS"`
 }
 
 // newOptionsFrom validates and instantiates an options struct from its map representation

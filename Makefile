@@ -15,39 +15,39 @@ TESTABLE_PACKAGES = `go list ./... | $(GREP_CMD) examples | $(GREP_CMD) constant
 setup: init-submodules
 	@go get ./...
 
-build-cli:
+build:
 	@$(MKFOLDER)
-	@go build -o build/$(BIN) github.com/topfreegames/pitaya/v2/pitaya-cli
+	@go build -o build/$(BIN) .
 	@echo "build pitaya-cli at ./build/$(BIN)"
 
 build-k6-extension:
 	@$(MKFOLDER)
-	@xk6 build --with github.com/topfreegames/xk6-pitaya=./xk6-pitaya/ --with github.com/topfreegames/pitaya/v2=./ --with google.golang.org/grpc=google.golang.org/grpc@v1.54.1 --output ./build/$(XK6_BIN)
+	@xk6 build --with github.com/topfreegames/xk6-pitaya=./xk6-pitaya/ --with github.com/topfreegames/pitaya/v3/pkg=./pkg/ --output ./build/$(XK6_BIN)
 	@echo "build pitaya k6 extension at ./build/$(XK6_BIN)"
 
 init-submodules:
 	@git submodule init
 
 setup-ci:
-	@go get github.com/mattn/goveralls
-	@go get -u github.com/wadey/gocovmerge
+	@go install github.com/mattn/goveralls@latest
+	@go install github.com/wadey/gocovmerge@latest
 
 setup-protobuf-macos:
 	@brew install protobuf
-	@go get github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/golang/protobuf/protoc-gen-go@latest
 
 run-jaeger-aio:
-	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml up -d
+	@docker compose -f ./examples/testing/docker-compose-jaeger.yml up -d
 	@echo "Access jaeger UI @ http://localhost:16686"
 
 run-chat-example:
-	@cd examples/testing && docker-compose up -d etcd nats && cd ../demo/chat/ && go run main.go
+	@cd examples/testing && docker compose up -d etcd nats && cd ../demo/chat/ && go run main.go
 
 run-cluster-example-frontend-tracing:
-	@PITAYA_METRICS_PROMETHEUS_PORT=9090 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-frontend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go
+	@PITAYA_METRICS_PROMETHEUS_PORT=9090 OTEL_SDK_DISABLED=false OTEL_SERVICE_NAME=example-frontend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1" go run examples/demo/cluster/main.go
 
 run-cluster-example-backend-tracing:
-	@PITAYA_METRICS_PROMETHEUS_PORT=9091 JAEGER_SAMPLER_PARAM=1 JAEGER_DISABLED=false JAEGER_SERVICE_NAME=example-backend JAEGER_AGENT_PORT=6832 go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
+	@PITAYA_METRICS_PROMETHEUS_PORT=9091 OTEL_SDK_DISABLED=false OTEL_SERVICE_NAME=example-backend OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_PROTOCOL=grpc OTEL_TRACES_SAMPLER=parentbased_traceidratio OTEL_TRACES_SAMPLER_ARG="1" go run examples/demo/cluster/main.go --port 3251 --type room --frontend=false
 
 run-cluster-example-frontend:
 	@PITAYA_METRICS_PROMETHEUS_PORT=9090 go run examples/demo/cluster/main.go
@@ -98,16 +98,16 @@ ensure-testing-bin:
 	@[ -f ./examples/testing/server ] || go build -o ./examples/testing/server ./examples/testing/main.go
 
 ensure-testing-deps:
-	@cd ./examples/testing && docker-compose up -d
+	@cd ./examples/testing && docker compose up -d
 
 ensure-e2e-deps-grpc:
-	@cd ./examples/testing && docker-compose up -d etcd
+	@cd ./examples/testing && docker compose up -d etcd
 
 kill-testing-deps:
-	@cd ./examples/testing && docker-compose down; true
+	@cd ./examples/testing && docker compose down; true
 
 kill-jaeger:
-	@docker-compose -f ./examples/testing/docker-compose-jaeger.yml down; true
+	@docker compose -f ./examples/testing/docker-compose-jaeger.yml down; true
 
 e2e-test: e2e-test-nats e2e-test-grpc
 
@@ -179,23 +179,26 @@ test-coverage-func coverage-func: test-coverage merge-profiles
 mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
 
 agent-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > agent/mocks/agent.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/agent Agent,AgentFactory | sed 's/mock_agent/mocks/' > pkg/agent/mocks/agent.go
 
 session-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/session Session,SessionPool | sed 's/mock_session/mocks/' > session/mocks/session.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/session Session,SessionPool | sed 's/mock_session/mocks/' > pkg/session/mocks/session.go
 
 networkentity-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > networkentity/mocks/networkentity.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/networkentity NetworkEntity | sed 's/mock_networkentity/mocks/' > pkg/networkentity/mocks/networkentity.go
 
 pitaya-mock:
-	@mockgen github.com/topfreegames/pitaya/v2 Pitaya | sed 's/mock_v2/mocks/' > mocks/app.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg Pitaya | sed 's/mock_pkg/mocks/' > pkg/mocks/app.go
 
 metrics-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Reporter | sed 's/mock_metrics/mocks/' > metrics/mocks/reporter.go
-	@mockgen github.com/topfreegames/pitaya/v2/metrics Client | sed 's/mock_metrics/mocks/' > metrics/mocks/statsd_reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Reporter | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/reporter.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/metrics Client | sed 's/mock_metrics/mocks/' > pkg/metrics/mocks/statsd_reporter.go
 
 serializer-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/serialize Serializer | sed 's/mock_serialize/mocks/' > serialize/mocks/serializer.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/serialize Serializer | sed 's/mock_serialize/mocks/' > pkg/serialize/mocks/serializer.go
 
 acceptor-mock:
-	@mockgen github.com/topfreegames/pitaya/v2/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > mocks/acceptor.go
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/acceptor PlayerConn,Acceptor | sed 's/mock_acceptor/mocks/' > pkg/mocks/acceptor.go
+
+worker-mock:
+	@mockgen github.com/topfreegames/pitaya/v3/pkg/worker RPCJob | sed 's/mock_worker/mocks/' > pkg/worker/mocks/rpc_job.go
