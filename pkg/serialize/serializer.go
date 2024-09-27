@@ -22,9 +22,11 @@ package serialize
 
 import (
 	"errors"
-
+	e "github.com/topfreegames/pitaya/v3/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
 )
 
 const (
@@ -52,6 +54,13 @@ type (
 		Unmarshaler
 		GetName() string
 	}
+
+	ErrorWrapper interface {
+		// Marshal changes the given error into a custom error bytes.
+		Marshal(err error, serializer Serializer) ([]byte, error)
+		// Unmarshal decode custom error bytes into errors.Error.
+		Unmarshal(payload []byte, serializer Serializer) *e.Error
+	}
 )
 
 // All recognized and expected serializer type values.
@@ -69,4 +78,42 @@ func NewSerializer(serializerType Type) (Serializer, error) { //nolint:ireturn
 	default:
 		return nil, errors.New("serializer type unknown")
 	}
+}
+
+var (
+	DefaultErrWrapper ErrorWrapper = &pitayaErrWrapper{}
+)
+
+type pitayaErrWrapper struct {
+}
+
+func (p pitayaErrWrapper) Marshal(err error, serializer Serializer) ([]byte, error) {
+	code := e.ErrUnknownCode
+	msg := err.Error()
+	metadata := map[string]string{}
+	if val, ok := err.(*e.Error); ok {
+		code = val.Code
+		metadata = val.Metadata
+	}
+	errPayload := &protos.Error{
+		Code: code,
+		Msg:  msg,
+	}
+	if len(metadata) > 0 {
+		errPayload.Metadata = metadata
+	}
+	return util.SerializeOrRaw(serializer, errPayload)
+}
+
+func (p pitayaErrWrapper) Unmarshal(payload []byte, serializer Serializer) *e.Error {
+	err := &e.Error{Code: e.ErrUnknownCode}
+	switch serializer.(type) {
+	case *json.Serializer:
+		_ = serializer.Unmarshal(payload, err)
+	case *protobuf.Serializer:
+		pErr := &protos.Error{Code: e.ErrUnknownCode}
+		_ = serializer.Unmarshal(payload, pErr)
+		err = &e.Error{Code: pErr.Code, Message: pErr.Msg, Metadata: pErr.Metadata}
+	}
+	return err
 }
