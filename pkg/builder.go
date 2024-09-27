@@ -43,6 +43,7 @@ type Builder struct {
 	Worker           *worker.Worker
 	RemoteHooks      *pipeline.RemoteHooks
 	HandlerHooks     *pipeline.HandlerHooks
+	ErrWrapper       serialize.ErrorWrapper
 }
 
 // PitayaBuilder Builder interface
@@ -259,6 +260,10 @@ func (builder *Builder) Build() Pitaya {
 		builder.MetricsReporters,
 		builder.Config,
 	)
+
+	if builder.ErrWrapper != nil {
+		serialize.DefaultErrWrapper = builder.ErrWrapper
+	}
 
 	for _, postBuildHook := range builder.postBuildHooks {
 		postBuildHook(app)
