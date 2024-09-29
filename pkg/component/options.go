@@ -20,10 +20,15 @@
 
 package component
 
+import (
+	"reflect"
+)
+
 type (
 	options struct {
-		name     string              // component name
-		nameFunc func(string) string // rename handler name
+		name       string              // component name
+		nameFunc   func(string) string // rename handler name
+		proxyChain *MethodProxyFuncOption
 	}
 
 	// Option used to customize handler
@@ -42,5 +47,28 @@ func WithName(name string) Option {
 func WithNameFunc(fn func(string) string) Option {
 	return func(opt *options) {
 		opt.nameFunc = fn
+	}
+}
+
+// WithProxyFunc used to customize proxy function. To calling original method,
+// use `component.DefaultHandlerMethodInvoke` for shortcut
+func WithProxyFunc(methodOrName any, fn ...MethodProxyFunc) Option {
+	return func(opt *options) {
+		name := ""
+		typ := reflect.TypeOf(methodOrName)
+		switch typ.Kind() {
+		case reflect.String:
+			name = methodOrName.(string)
+		case reflect.Func:
+			name = reflect.TypeOf(methodOrName).Name()
+		default:
+			return
+		}
+		if opt.proxyChain == nil {
+			opt.proxyChain = &MethodProxyFuncOption{
+				Chains: make(map[string][]MethodProxyFunc),
+			}
+		}
+		opt.proxyChain.Chains[name] = append(opt.proxyChain.Chains[name], fn...)
 	}
 }

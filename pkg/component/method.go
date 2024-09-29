@@ -114,7 +114,7 @@ func isHandlerMethod(method reflect.Method) bool {
 	return true
 }
 
-func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[string]*Remote {
+func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string, proxyFunc ...*MethodProxyFuncOption) map[string]*Remote {
 	methods := make(map[string]*Remote)
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
@@ -125,9 +125,13 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 			if nameFunc != nil {
 				mn = nameFunc(mn)
 			}
+
+			// setup proxy
+			proxy := setUpProxy(proxyFunc, mn)
 			methods[mn] = &Remote{
-				Method:  method,
-				HasArgs: method.Type.NumIn() == 3,
+				Method:      method,
+				HasArgs:     method.Type.NumIn() == 3,
+				MethodProxy: proxy,
 			}
 			if mt.NumIn() == 3 {
 				methods[mn].Type = mt.In(2)
@@ -137,7 +141,7 @@ func suitableRemoteMethods(typ reflect.Type, nameFunc func(string) string) map[s
 	return methods
 }
 
-func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[string]*Handler {
+func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string, proxyFunc ...*MethodProxyFuncOption) map[string]*Handler {
 	methods := make(map[string]*Handler)
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
@@ -158,10 +162,14 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[
 			} else {
 				msgType = message.Request
 			}
+
+			// setup proxy
+			proxy := setUpProxy(proxyFunc, mn)
 			handler := &Handler{
 				Method:      method,
 				IsRawArg:    raw,
 				MessageType: msgType,
+				MethodProxy: proxy,
 			}
 			if mt.NumIn() == 3 {
 				handler.Type = mt.In(2)
@@ -170,4 +178,21 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string) map[
 		}
 	}
 	return methods
+}
+
+func setUpProxy(proxyFunc []*MethodProxyFuncOption, mn string) (proxy MethodProxy) {
+	if len(proxyFunc) > 0 && proxyFunc[0].Chains[mn] != nil {
+		chain := proxyFunc[0].Chains[mn]
+		proxy = func(origin reflect.Method, args []reflect.Value) (rets any, err error) {
+			ctx := &MethodProxyContext{State: true}
+			for _, c := range chain {
+				rets, err = c(ctx)(origin, args)
+				if ctx.IsDone() {
+					return rets, err
+				}
+			}
+			return
+		}
+	}
+	return
 }
