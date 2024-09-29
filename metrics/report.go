@@ -44,6 +44,9 @@ func ReportTimingFromCtx(ctx context.Context, reporters []Reporter, typ string, 
 	if len(reporters) > 0 {
 		startTime := pcontext.GetFromPropagateCtx(ctx, constants.StartTimeKey)
 		route := pcontext.GetFromPropagateCtx(ctx, constants.RouteKey)
+		if route == nil || startTime == nil {
+			return
+		}
 		elapsed := time.Since(time.Unix(0, startTime.(int64)))
 		tags := getTags(ctx, map[string]string{
 			"route":  route.(string),
