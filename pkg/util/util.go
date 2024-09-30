@@ -123,12 +123,12 @@ func FileExists(filename string) bool {
 
 // GetErrorFromPayload gets the error from payload
 func GetErrorFromPayload(serializer serialize.Serializer, payload []byte) error {
-	return serialize.DefaultErrWrapper.Unmarshal(payload, serializer)
+	return DefaultErrWrapper.Unmarshal(payload, serializer)
 }
 
 // GetErrorPayload creates and serializes an error payload
 func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
-	return serialize.DefaultErrWrapper.Marshal(err, serializer)
+	return DefaultErrWrapper.Marshal(err, serializer)
 }
 
 // ConvertProtoToMessageType converts a protos.MsgType to a message.Type
