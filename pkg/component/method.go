@@ -181,18 +181,22 @@ func suitableHandlerMethods(typ reflect.Type, nameFunc func(string) string, prox
 }
 
 func setUpProxy(proxyFunc []*MethodProxyFuncOption, mn string) (proxy MethodProxy) {
-	if len(proxyFunc) > 0 && proxyFunc[0].Chains[mn] != nil {
-		chain := proxyFunc[0].Chains[mn]
-		proxy = func(origin reflect.Method, args []reflect.Value) (rets any, err error) {
-			ctx := &MethodProxyContext{State: true}
-			for _, c := range chain {
-				rets, err = c(ctx)(origin, args)
-				if ctx.IsDone() {
-					return rets, err
-				}
+	if len(proxyFunc) == 0 || proxyFunc[0] == nil || len(proxyFunc[0].Chains) == 0 {
+		return
+	}
+	chain := proxyFunc[0].Chains[mn]
+	if len(chain) == 0 {
+		return
+	}
+	proxy = func(origin reflect.Method, args []reflect.Value) (rets any, err error) {
+		ctx := &MethodProxyContext{State: true}
+		for _, c := range chain {
+			rets, err = c(ctx)(origin, args)
+			if ctx.IsDone() {
+				return rets, err
 			}
-			return
 		}
+		return
 	}
 	return
 }
