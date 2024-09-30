@@ -34,13 +34,10 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
-	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize"
-	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
-	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
 	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -126,35 +123,12 @@ func FileExists(filename string) bool {
 
 // GetErrorFromPayload gets the error from payload
 func GetErrorFromPayload(serializer serialize.Serializer, payload []byte) error {
-	err := &e.Error{Code: e.ErrUnknownCode}
-	switch serializer.(type) {
-	case *json.Serializer:
-		_ = serializer.Unmarshal(payload, err)
-	case *protobuf.Serializer:
-		pErr := &protos.Error{Code: e.ErrUnknownCode}
-		_ = serializer.Unmarshal(payload, pErr)
-		err = &e.Error{Code: pErr.Code, Message: pErr.Msg, Metadata: pErr.Metadata}
-	}
-	return err
+	return DefaultErrWrapper.Unmarshal(payload, serializer)
 }
 
 // GetErrorPayload creates and serializes an error payload
 func GetErrorPayload(serializer serialize.Serializer, err error) ([]byte, error) {
-	code := e.ErrUnknownCode
-	msg := err.Error()
-	metadata := map[string]string{}
-	if val, ok := err.(*e.Error); ok {
-		code = val.Code
-		metadata = val.Metadata
-	}
-	errPayload := &protos.Error{
-		Code: code,
-		Msg:  msg,
-	}
-	if len(metadata) > 0 {
-		errPayload.Metadata = metadata
-	}
-	return SerializeOrRaw(serializer, errPayload)
+	return DefaultErrWrapper.Marshal(err, serializer)
 }
 
 // ConvertProtoToMessageType converts a protos.MsgType to a message.Type

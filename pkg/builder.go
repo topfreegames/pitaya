@@ -18,6 +18,7 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/serialize"
 	"github.com/topfreegames/pitaya/v3/pkg/service"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
 	"github.com/topfreegames/pitaya/v3/pkg/worker"
 )
 
@@ -43,6 +44,7 @@ type Builder struct {
 	Worker           *worker.Worker
 	RemoteHooks      *pipeline.RemoteHooks
 	HandlerHooks     *pipeline.HandlerHooks
+	ErrWrapper       serialize.ErrorWrapper
 }
 
 // PitayaBuilder Builder interface
@@ -259,6 +261,10 @@ func (builder *Builder) Build() Pitaya {
 		builder.MetricsReporters,
 		builder.Config,
 	)
+
+	if builder.ErrWrapper != nil {
+		util.DefaultErrWrapper = builder.ErrWrapper
+	}
 
 	for _, postBuildHook := range builder.postBuildHooks {
 		postBuildHook(app)

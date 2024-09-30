@@ -22,7 +22,7 @@ package serialize
 
 import (
 	"errors"
-
+	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
 )
@@ -51,6 +51,13 @@ type (
 		Marshaler
 		Unmarshaler
 		GetName() string
+	}
+
+	ErrorWrapper interface {
+		// Marshal changes the given error into a custom error bytes.
+		Marshal(err error, serializer Serializer) ([]byte, error)
+		// Unmarshal decode custom error bytes into errors.Error.
+		Unmarshal(payload []byte, serializer Serializer) *e.Error
 	}
 )
 
