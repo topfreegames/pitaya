@@ -151,17 +151,7 @@ func (q *QUICAcceptor) GetConfiguredAddress() string {
     return q.addr
 }
 
-// ServeHTTP3 starts an HTTP/3 server with the QUIC listener
-func (q *QUICAcceptor) ServeHTTP3(certFile, keyFile string, handler http.Handler) {
-    httpServer := http3.Server{
-        Addr:      q.addr,
-        TLSConfig: q.tlsConfig,
-        Handler:   handler,
-    }
-
-    err := httpServer.ListenAndServeTLS(certFile, keyFile)
-    if err != nil {
-        logger.Log.Fatalf("Failed to serve HTTP/3: %s", err.Error())
-    }
-}
+// TODO
+// func (q *QUICAcceptor) ServeHTTP3(certFile, keyFile string, handler http.Handler) {
+// }
 
