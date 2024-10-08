@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"github.com/topfreegames/pitaya/v3/pkg/modules"
+	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/pkg/route"
 )
 
@@ -129,8 +131,15 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCClient = gc
 
 	if isFrontend {
-		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-		builder.AddAcceptor(tcp)
+		// Define TLS and QUIC configurations here
+		tlsConf := &tls.Config{
+			// Configure your TLS settings, such as certificates, here
+		}
+		quicConf := &quic.Config{
+			// Set any specific QUIC configuration options here, or leave nil for defaults
+		}
+		quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)
+		builder.AddAcceptor(quicAcceptor)
 	}
 
 	return builder.Build(), bs
