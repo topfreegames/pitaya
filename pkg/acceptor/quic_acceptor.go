@@ -1,81 +1,79 @@
-// Copyright (c) nano Author and TFG Co. All Rights Reserved.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
 package acceptor
 
 import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
 	"github.com/quic-go/quic-go"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 )
 
 var (
-	// ErrListenerNotInitialized é retornado se o listener QUIC ainda não foi inicializado
+	// ErrListenerNotInitialized is returned if the QUIC listener is not initialized
 	ErrListenerNotInitialized = errors.New("listener not initialized")
-	// ErrConnClosed é retornado quando a conexão QUIC está fechada
+	// ErrConnClosed is returned when the QUIC connection is closed
 	ErrConnClosed = errors.New("connection is closed")
 )
 
-// QuicAcceptor estrutura que representa um acceptor QUIC
+// QuicAcceptor represents a QUIC acceptor
 type QuicAcceptor struct {
 	addr     string
-	listener *quic.Listener
+	connChan chan PlayerConn
+	listener *quic.Listener // Using a pointer to quic.Listener
+	running  bool
 	tlsConf  *tls.Config
 	quicConf *quic.Config
 }
 
-// NewQuicAcceptor cria um novo QuicAcceptor
+// NewQuicAcceptor creates a new QuicAcceptor
 func NewQuicAcceptor(addr string, tlsConf *tls.Config, quicConf *quic.Config) *QuicAcceptor {
 	return &QuicAcceptor{
-		addr:    addr,
-		tlsConf: tlsConf,
+		addr:     addr,
+		tlsConf:  tlsConf,
 		quicConf: quicConf,
+		connChan: make(chan PlayerConn),
 	}
 }
 
-// Listen inicia o listener QUIC para aceitar novas conexões
+func (a *QuicAcceptor) GetAddr() string {
+	if a.listener != nil { // Correct comparison, since listener is a pointer
+		return (*a.listener).Addr().String() // Accessing the value pointed to by the pointer
+	}
+	return ""
+}
+
+// GetConnChan gets a connection channel
+func (a *QuicAcceptor) GetConnChan() chan PlayerConn {
+	return a.connChan
+}
+
+// Listen starts the QUIC listener to accept new connections
 func (a *QuicAcceptor) Listen() error {
-	// Criando um listener QUIC no endereço especificado
+	// Creating a QUIC listener at the specified address
 	listener, err := quic.ListenAddr(a.addr, a.tlsConf, a.quicConf)
 	if err != nil {
 		return err
 	}
-	a.listener = listener
+	a.listener = listener // Storing the pointer to quic.Listener
 	return nil
 }
 
-// Accept aceita novas conexões QUIC
+// Accept accepts new QUIC connections
 func (a *QuicAcceptor) Accept() (quic.Connection, error) {
-	if a.listener == nil {
+	if a.listener == nil { // Correct comparison
 		return nil, ErrListenerNotInitialized
 	}
 
-	// Contexto com timeout para aceitar conexões
+	// Context with timeout for accepting connections
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	conn, err := a.listener.Accept(ctx)
+	conn, err := (*a.listener).Accept(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,27 +81,68 @@ func (a *QuicAcceptor) Accept() (quic.Connection, error) {
 	return conn, nil
 }
 
-// Close fecha o listener QUIC
+// Close closes the QUIC listener
 func (a *QuicAcceptor) Close() error {
-	if a.listener != nil {
-		return a.listener.Close()
+	if a.listener != nil { // Correct comparison
+		return (*a.listener).Close()
 	}
 	return nil
 }
 
-// QuicConnWrapper é um wrapper para uma conexão QUIC, permitindo o uso de deadlines
+// EnableProxyProtocol not implemented for QUIC, keep as No-op or implement as needed
+func (a *QuicAcceptor) EnableProxyProtocol() {
+	// No-op: Implement this method if needed for Proxy Protocol support
+}
+
+func (a *QuicAcceptor) IsRunning() bool {
+	return a.running
+}
+
+func (a *QuicAcceptor) GetConfiguredAddress() string {
+	return a.addr
+}
+
+func (a *QuicAcceptor) ListenAndServe() {
+	// Start the QUIC listener
+	err := a.Listen()
+	if err != nil {
+		fmt.Printf("Failed to start QUIC listener: %s\n", err)
+		return
+	}
+
+	// Loop to continuously accept connections
+	for a.IsRunning() {
+		conn, err := a.Accept()
+		if err != nil {
+			if errors.Is(err, ErrListenerNotInitialized) {
+				fmt.Println("Listener not initialized")
+				continue
+			}
+			fmt.Printf("Failed to accept connection: %s\n", err)
+			continue
+		}
+
+		// Send the connection to the channel for further processing
+		go func(c quic.Connection) {
+			playerConn := NewQuicConnWrapper(c)
+			a.connChan <- playerConn
+		}(conn)
+	}
+}
+
+// QuicConnWrapper is a wrapper for a QUIC connection, allowing the use of deadlines
 type QuicConnWrapper struct {
 	conn quic.Connection
 }
 
-// NewQuicConnWrapper cria um novo wrapper para uma conexão QUIC
+// NewQuicConnWrapper creates a new wrapper for a QUIC connection
 func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
 	return &QuicConnWrapper{conn: conn}
 }
 
-// Read lê dados da conexão com um deadline definido
-func (q *QuicConnWrapper) Read(p []byte, readTimeout time.Duration) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), readTimeout)
+// Read reads data from the QUIC connection
+func (q *QuicConnWrapper) Read(p []byte) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 10 seconds timeout as an example
 	defer cancel()
 
 	stream, err := q.conn.AcceptStream(ctx)
@@ -114,9 +153,9 @@ func (q *QuicConnWrapper) Read(p []byte, readTimeout time.Duration) (int, error)
 	return stream.Read(p)
 }
 
-// Write escreve dados na conexão com um deadline definido
-func (q *QuicConnWrapper) Write(p []byte, writeTimeout time.Duration) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), writeTimeout)
+// Write writes data to the connection with a defined deadline
+func (q *QuicConnWrapper) Write(p []byte) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 10 seconds timeout as an example
 	defer cancel()
 
 	stream, err := q.conn.OpenStreamSync(ctx)
@@ -127,17 +166,74 @@ func (q *QuicConnWrapper) Write(p []byte, writeTimeout time.Duration) (int, erro
 	return stream.Write(p)
 }
 
-// Close fecha a conexão QUIC
+// Close closes the QUIC connection
 func (q *QuicConnWrapper) Close() error {
 	return q.conn.CloseWithError(0, "closed")
 }
 
-// LocalAddr retorna o endereço local da conexão
+// LocalAddr returns the local address of the connection
 func (q *QuicConnWrapper) LocalAddr() net.Addr {
 	return q.conn.LocalAddr()
 }
 
-// RemoteAddr retorna o endereço remoto da conexão
+// RemoteAddr returns the remote address of the connection
 func (q *QuicConnWrapper) RemoteAddr() net.Addr {
 	return q.conn.RemoteAddr()
+}
+
+// GetNextMessage reads the next message available in the QUIC stream
+func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
+	// Define a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Accept a new stream
+	stream, err := q.conn.AcceptStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read data from the stream
+	msgBytes := make([]byte, codec.HeadLength)
+	_, err = stream.Read(msgBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(msgBytes) < codec.HeadLength {
+		return nil, constants.ErrConnectionClosed // Use the appropriate error for your application
+	}
+
+	msgSize, _, err := codec.ParseHeader(msgBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	dataLen := len(msgBytes[codec.HeadLength:])
+	if dataLen < msgSize {
+		return nil, constants.ErrReceivedMsgSmallerThanExpected
+	} else if dataLen > msgSize {
+		return nil, constants.ErrReceivedMsgBiggerThanExpected
+	}
+
+	return msgBytes, nil
+}
+
+func (q *QuicConnWrapper) SetDeadline(t time.Time) error {
+	// If necessary, you can implement some logic related to the deadline
+	return nil
+}
+func (q *QuicConnWrapper) SetReadDeadline(t time.Time) error {
+	// If necessary, you can implement some logic related to the deadline
+	return nil
+}
+
+func (q *QuicConnWrapper) SetWriteDeadline(t time.Time) error {
+	// If necessary, you can implement some logic related to the deadline
+	return nil
+}
+
+func (a *QuicAcceptor) Stop() {
+	a.running = false
+	a.listener.Close()
 }
