@@ -1,3 +1,23 @@
+// Copyright (c) nano Author and TFG Co. All Rights Reserved.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package acceptor
 
 import (
@@ -55,6 +75,7 @@ func (a *QuicAcceptor) GetConnChan() chan PlayerConn {
 // Listen starts the QUIC listener to accept new connections
 func (a *QuicAcceptor) Listen() error {
 	// Creating a QUIC listener at the specified address
+	a.running = true
 	listener, err := quic.ListenAddr(a.addr, a.tlsConf, a.quicConf)
 	if err != nil {
 		return err
@@ -70,7 +91,7 @@ func (a *QuicAcceptor) Accept() (quic.Connection, error) {
 	}
 
 	// Context with timeout for accepting connections
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	conn, err := (*a.listener).Accept(ctx)
