@@ -21,148 +21,123 @@
 package acceptor
 
 import (
-    "context"
-    "crypto/tls"
-    "net"
+	"context"
+	"crypto/tls"
+	"errors"
+	"net"
+	"time"
 
-    "github.com/quic-go/quic-go"
-    "github.com/quic-go/quic-go/http3"
-    "github.com/topfreegames/pitaya/v3/pkg/conn/codec"
-    "github.com/topfreegames/pitaya/v3/pkg/constants"
-    "github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/quic-go/quic-go"
 )
 
-// QUICAcceptor struct
-type QUICAcceptor struct {
-    addr       string
-    connChan   chan PlayerConn
-    listener   quic.Listener
-    running    bool
-    tlsConfig  *tls.Config
-    quicConfig *quic.Config
+var (
+	// ErrListenerNotInitialized é retornado se o listener QUIC ainda não foi inicializado
+	ErrListenerNotInitialized = errors.New("listener not initialized")
+	// ErrConnClosed é retornado quando a conexão QUIC está fechada
+	ErrConnClosed = errors.New("connection is closed")
+)
+
+// QuicAcceptor estrutura que representa um acceptor QUIC
+type QuicAcceptor struct {
+	addr     string
+	listener *quic.Listener
+	tlsConf  *tls.Config
+	quicConf *quic.Config
 }
 
-type quicPlayerConn struct {
-    quic.Connection
-    remoteAddr net.Addr
+// NewQuicAcceptor cria um novo QuicAcceptor
+func NewQuicAcceptor(addr string, tlsConf *tls.Config, quicConf *quic.Config) *QuicAcceptor {
+	return &QuicAcceptor{
+		addr:    addr,
+		tlsConf: tlsConf,
+		quicConf: quicConf,
+	}
 }
 
-func (q *quicPlayerConn) RemoteAddr() net.Addr {
-    return q.remoteAddr
+// Listen inicia o listener QUIC para aceitar novas conexões
+func (a *QuicAcceptor) Listen() error {
+	// Criando um listener QUIC no endereço especificado
+	listener, err := quic.ListenAddr(a.addr, a.tlsConf, a.quicConf)
+	if err != nil {
+		return err
+	}
+	a.listener = listener
+	return nil
 }
 
-// GetNextMessage reads the next message available in the stream
-func (q *quicPlayerConn) GetNextMessage() (b []byte, err error) {
-    stream, err := q.OpenStreamSync(context.Background())
-    if err != nil {
-        return nil, err
-    }
+// Accept aceita novas conexões QUIC
+func (a *QuicAcceptor) Accept() (quic.Connection, error) {
+	if a.listener == nil {
+		return nil, ErrListenerNotInitialized
+	}
 
-    header, err := codec.ReadBytes(stream, codec.HeadLength)
-    if err != nil {
-        return nil, err
-    }
+	// Contexto com timeout para aceitar conexões
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    if len(header) == 0 {
-        return nil, constants.ErrConnectionClosed
-    }
+	conn, err := a.listener.Accept(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-    msgSize, _, err := codec.ParseHeader(header)
-    if err != nil {
-        return nil, err
-    }
-
-    msgData, err := codec.ReadBytes(stream, int(msgSize))
-    if err != nil {
-        return nil, err
-    }
-
-    if len(msgData) < msgSize {
-        return nil, constants.ErrReceivedMsgSmallerThanExpected
-    }
-
-    return append(header, msgData...), nil
+	return conn, nil
 }
 
-// NewQUICAcceptor creates a new instance of QUIC acceptor
-func NewQUICAcceptor(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) *QUICAcceptor {
-    return &QUICAcceptor{
-        addr:       addr,
-        connChan:   make(chan PlayerConn),
-        running:    false,
-        tlsConfig:  tlsConfig,
-        quicConfig: quicConfig,
-    }
+// Close fecha o listener QUIC
+func (a *QuicAcceptor) Close() error {
+	if a.listener != nil {
+		return a.listener.Close()
+	}
+	return nil
 }
 
-// GetAddr returns the address the acceptor will listen on
-func (q *QUICAcceptor) GetAddr() string {
-    if q.listener != nil {
-        return q.listener.Addr().String()
-    }
-    return ""
+// QuicConnWrapper é um wrapper para uma conexão QUIC, permitindo o uso de deadlines
+type QuicConnWrapper struct {
+	conn quic.Connection
 }
 
-// GetConnChan gets a connection channel
-func (q *QUICAcceptor) GetConnChan() chan PlayerConn {
-    return q.connChan
+// NewQuicConnWrapper cria um novo wrapper para uma conexão QUIC
+func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
+	return &QuicConnWrapper{conn: conn}
 }
 
-// Stop stops the acceptor
-func (q *QUICAcceptor) Stop() {
-    q.running = false
-    q.listener.Close()
+// Read lê dados da conexão com um deadline definido
+func (q *QuicConnWrapper) Read(p []byte, readTimeout time.Duration) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), readTimeout)
+	defer cancel()
+
+	stream, err := q.conn.AcceptStream(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return stream.Read(p)
 }
 
-// ListenAndServe starts the QUIC listener
-func (q *QUICAcceptor) ListenAndServe() {
-    listener, err := quic.ListenAddr(q.addr, q.tlsConfig, q.quicConfig)
-    if err != nil {
-        logger.Log.Fatalf("Failed to listen: %s", err.Error())
-    }
+// Write escreve dados na conexão com um deadline definido
+func (q *QuicConnWrapper) Write(p []byte, writeTimeout time.Duration) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), writeTimeout)
+	defer cancel()
 
-    q.listener = listener
-    q.running = true
-    q.serve()
+	stream, err := q.conn.OpenStreamSync(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return stream.Write(p)
 }
 
-func (q *QUICAcceptor) serve() {
-    defer q.Stop()
-    for q.running {
-        session, err := q.listener.Accept(context.Background())
-        if err != nil {
-            logger.Log.Errorf("Failed to accept QUIC connection: %s", err.Error())
-            continue
-        }
-
-        q.connChan <- &quicPlayerConn{
-            Connection: session,
-            remoteAddr: session.RemoteAddr(),
-        }
-    }
+// Close fecha a conexão QUIC
+func (q *QuicConnWrapper) Close() error {
+	return q.conn.CloseWithError(0, "closed")
 }
 
-// IsRunning checks if the acceptor is running
-func (q *QUICAcceptor) IsRunning() bool {
-    return q.running
+// LocalAddr retorna o endereço local da conexão
+func (q *QuicConnWrapper) LocalAddr() net.Addr {
+	return q.conn.LocalAddr()
 }
 
-func (q *QUICAcceptor) GetConfiguredAddress() string {
-    return q.addr
-}
-
-// ServeHTTP3 starts an HTTP/3 server with the QUIC listener
-// TODO: Implement and test HTTP/3 server integration
-func (a *QUICAcceptor) ServeHTTP3(certFile, keyFile string, handler http.Handler) {
-    // Commenting out HTTP/3 functionality for now until testing is done
-    // httpServer := http3.Server{
-    //     Addr:      a.addr,
-    //     TLSConfig: a.tlsConfig,
-    //     Handler:   handler,
-    // }
-
-    // err := httpServer.ListenAndServeTLS(certFile, keyFile)
-    // if err != nil {
-    //     logger.Log.Fatalf("Failed to serve HTTP/3: %s", err.Error())
-    // }
+// RemoteAddr retorna o endereço remoto da conexão
+func (q *QuicConnWrapper) RemoteAddr() net.Addr {
+	return q.conn.RemoteAddr()
 }
