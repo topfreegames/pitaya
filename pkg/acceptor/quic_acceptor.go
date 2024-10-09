@@ -30,6 +30,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 )
 
@@ -222,7 +223,7 @@ func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
 	}
 
 	if len(msgBytes) < codec.HeadLength {
-		return nil, constants.ErrConnectionClosed // Use the appropriate error for your application
+		return nil, packet.ErrInvalidPomeloHeader
 	}
 
 	msgSize, _, err := codec.ParseHeader(msgBytes)
@@ -241,16 +242,14 @@ func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
 }
 
 func (q *QuicConnWrapper) SetDeadline(t time.Time) error {
-	// If necessary, you can implement some logic related to the deadline
 	return nil
 }
+
 func (q *QuicConnWrapper) SetReadDeadline(t time.Time) error {
-	// If necessary, you can implement some logic related to the deadline
 	return nil
 }
 
 func (q *QuicConnWrapper) SetWriteDeadline(t time.Time) error {
-	// If necessary, you can implement some logic related to the deadline
 	return nil
 }
 

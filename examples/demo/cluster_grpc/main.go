@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"strconv"
-
 	"strings"
 
+	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
@@ -18,7 +18,6 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/groups"
 	"github.com/topfreegames/pitaya/v3/pkg/modules"
-	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/pkg/route"
 )
 
@@ -131,16 +130,27 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCClient = gc
 
 	if isFrontend {
-		// Define TLS and QUIC configurations here
 		tlsConf := &tls.Config{
-			// Configure your TLS settings, such as certificates, here
+			Certificates: []tls.Certificate{
+				loadTLSCertificates(),
+			},
 		}
 		quicConf := &quic.Config{
-			// Set any specific QUIC configuration options here, or leave nil for defaults
+			// QUIC specific settings can be placed here
 		}
 		quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)
 		builder.AddAcceptor(quicAcceptor)
 	}
 
 	return builder.Build(), bs
+}
+
+func loadTLSCertificates() tls.Certificate {
+	certPath := "../../../pkg/acceptor/fixtures/server.crt"
+	keyPath := "../../../pkg/acceptor/fixtures/server.key"
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		panic(fmt.Sprintf("Error loading TLS certificates: %v", err))
+	}
+	return cert
 }
