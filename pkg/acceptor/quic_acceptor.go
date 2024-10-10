@@ -33,7 +33,6 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 )
-
 var (
 	// ErrListenerNotInitialized is returned if the QUIC listener is not initialized
 	ErrListenerNotInitialized = errors.New("listener not initialized")
@@ -164,7 +163,7 @@ func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
 
 // Read reads data from the QUIC connection
 func (q *QuicConnWrapper) Read(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 10 seconds timeout as an example
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second) // 1000 seconds timeout as an example
 	defer cancel()
 
 	stream, err := q.conn.AcceptStream(ctx)
@@ -177,7 +176,7 @@ func (q *QuicConnWrapper) Read(p []byte) (int, error) {
 
 // Write writes data to the connection with a defined deadline
 func (q *QuicConnWrapper) Write(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 10 seconds timeout as an example
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 1000 seconds timeout as an example
 	defer cancel()
 
 	stream, err := q.conn.OpenStreamSync(ctx)

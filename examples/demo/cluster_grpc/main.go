@@ -136,7 +136,7 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 			},
 		}
 		quicConf := &quic.Config{
-			// QUIC specific settings can be placed here
+			Allow0RTT: true,
 		}
 		quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)
 		builder.AddAcceptor(quicAcceptor)
