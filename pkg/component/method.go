@@ -189,12 +189,12 @@ func setUpProxy(proxyFunc []*MethodProxyFuncOption, mn string) (proxy MethodProx
 		return
 	}
 	proxy = func(origin reflect.Method, args []reflect.Value) (rets any, err error) {
-		ctx := &MethodProxyContext{State: true}
-		for _, c := range chain {
-			rets, err = c(ctx)(origin, args)
-			if ctx.IsDone() {
-				return rets, err
-			}
+		ctx := NewMethodProxyContext(origin, args, chain)
+		ctx.Next()
+		if ctx.IsDone() {
+			rets = ctx.OutMsg
+			err = ctx.OutErr
+			return
 		}
 		return
 	}
