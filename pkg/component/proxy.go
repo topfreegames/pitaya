@@ -20,6 +20,7 @@ type (
 	MethodProxyContext struct {
 		index          int8
 		handlers       []MethodProxyFunc
+		OriginArgs     []reflect.Value
 		OriginReceiver reflect.Value
 		OriginMethod   reflect.Method
 		InCtx          context.Context
@@ -40,6 +41,7 @@ var DefaultHandlerMethodInvoke = util.Pcall
 func NewMethodProxyContext(origin reflect.Method, args []reflect.Value, fns []MethodProxyFunc) *MethodProxyContext {
 	ret := &MethodProxyContext{
 		OriginMethod: origin,
+		OriginArgs:   args,
 		data:         make(map[string]any),
 		handlers:     fns,
 		index:        -1,
