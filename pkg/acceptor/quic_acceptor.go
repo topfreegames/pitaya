@@ -94,7 +94,7 @@ func (a *QuicAcceptor) Accept() (quic.Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	conn, err := (*a.listener).Accept(ctx)
+	conn, err := a.listener.Accept(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,7 @@ func (a *QuicAcceptor) GetConfiguredAddress() string {
 
 func (a *QuicAcceptor) ListenAndServe() {
 	// Start the QUIC listener
-	err := a.Listen()
-	if err != nil {
+	if err := a.Listen(); err != nil {
 		fmt.Printf("Failed to start QUIC listener: %s\n", err)
 		return
 	}
@@ -163,8 +162,7 @@ func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
 
 // Read reads data from the QUIC connection
 func (q *QuicConnWrapper) Read(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second) // 1000 seconds timeout as an example
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 1000*time.Second) // 1000 seconds timeout as an example
 
 	stream, err := q.conn.AcceptStream(ctx)
 	if err != nil {
@@ -176,8 +174,7 @@ func (q *QuicConnWrapper) Read(p []byte) (int, error) {
 
 // Write writes data to the connection with a defined deadline
 func (q *QuicConnWrapper) Write(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // 1000 seconds timeout as an example
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second) // 1000 seconds timeout as an example
 
 	stream, err := q.conn.OpenStreamSync(ctx)
 	if err != nil {

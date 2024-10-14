@@ -1,13 +1,13 @@
 package main
 
 import (
-    "context"
     "crypto/tls"
     "fmt"
     "log"
-    "time"
+    "github.com/sirupsen/logrus"
 
     "github.com/quic-go/quic-go"
+    "github.com/topfreegames/pitaya/v3/pkg/client"
 )
 
 func main() {
@@ -16,41 +16,32 @@ func main() {
         InsecureSkipVerify: true, // Only for testing, do not use in production
     }
 
-    // Create context
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
-
     // Define QUIC configurations (can be nil if not needed)
     quicConf := &quic.Config{}
 
-    // Connect to the server using QUIC
-    addr := "localhost:3250"
-    session, err := quic.DialAddr(ctx, addr, tlsConf, quicConf)
-    if err != nil {
+    c := client.New(logrus.InfoLevel)
+
+	conn, err := c.ConnectToQUIC("localhost:3250", tlsConf, quicConf)
+
+    if(err != nil) {
         log.Fatalf("Failed to connect to server: %v", err)
     }
-    defer session.CloseWithError(0, "connection closed")
+    
+    msg := "Hello from QUIC client!"
+    fmt.Printf("Sending message: %v\n", msg)
+    _, err = conn.Write([]byte(msg))
 
-    // Open a stream to send data
-    stream, err := session.OpenStreamSync(ctx)
-    if err != nil {
-        log.Fatalf("Failed to open stream: %v", err)
-    }
-    defer stream.Close()
-
-    // Send message to the server
-    message := "Hello from QUIC client!"
-    fmt.Printf("Sending message: %s\n", message)
-    _, err = stream.Write([]byte(message))
-    if err != nil {
-        log.Fatalf("Failed to send data: %v", err)
+    if(err != nil) {
+        log.Fatalf("Failed to send data: %v\n", err)
     }
 
-    // Receive response from the server
+    fmt.Printf("it's all ok\n")
+
     buffer := make([]byte, 1024)
-    n, err := stream.Read(buffer)
+    n, err := conn.Read(buffer)
+
     if err != nil {
-        log.Fatalf("Failed to read response: %v", err)
+        log.Fatalf("Failed to read response data: %v\n", err)
     }
 
     fmt.Printf("Response from server: %s\n", string(buffer[:n]))

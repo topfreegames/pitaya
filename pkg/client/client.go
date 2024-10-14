@@ -22,6 +22,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -34,6 +35,7 @@ import (
 
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
 
+	"github.com/quic-go/quic-go"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/v3/pkg"
@@ -282,6 +284,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 		}
 		buf.Write(data[:n])
 	}
+	fmt.Printf("Response from server: %s\n", string(data[:n]))
 	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
 		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
@@ -364,6 +367,29 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 	c.closeChan = make(chan struct{})
 
 	return nil
+}
+
+func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) (net.Conn, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+    conn, err := quic.DialAddr(ctx, addr, tlsConfig, quicConfig)
+    if err != nil {
+        fmt.Printf("Failed to connect to server: %v", err)
+		return nil, err;
+    }
+
+	c.conn = acceptor.NewQuicConnWrapper(conn);
+
+	c.IncomingMsgChan = make(chan *message.Message, 10)
+
+	c.closeChan = make(chan struct{})
+
+	/*go c.sendHeartbeats(30)
+	go c.handleServerMessages()
+	go c.handlePackets()
+	go c.pendingRequestsReaper()*/
+
+	return c.conn, nil
 }
 
 // ConnectToWS connects using webshocket protocol

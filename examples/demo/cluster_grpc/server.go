@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -45,18 +44,13 @@ func main() {
 }
 
 func handleConnection(conn quic.Connection) {
-	defer conn.CloseWithError(0, "sessão encerrada")
 
 	// Aceitar um stream
-	stream, err := conn.AcceptStream(context.Background())
-	if err != nil {
-		log.Printf("Erro ao aceitar stream: %v", err)
-		return
-	}
+	c := acceptor.NewQuicConnWrapper(conn)
 
 	// Ler dados do cliente
 	buff := make([]byte, 1024)
-	n, err := stream.Read(buff)
+	n, err := c.Read(buff)
 	if err != nil {
 		log.Printf("Erro ao ler do stream: %v", err)
 		return
@@ -65,7 +59,7 @@ func handleConnection(conn quic.Connection) {
 
 	// Enviar resposta ao cliente
 	response := "Olá, cliente QUIC!"
-	_, err = stream.Write([]byte(response))
+	_, err = c.Write([]byte(response))
 	if err != nil {
 		log.Printf("Erro ao enviar resposta: %v", err)
 		return
