@@ -1,56 +1,57 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"fmt"
-	"log"
-	"time"
+    "context"
+    "crypto/tls"
+    "fmt"
+    "log"
+    "time"
 
-	"github.com/quic-go/quic-go"
+    "github.com/quic-go/quic-go"
 )
 
 func main() {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: false, // Skip certificate verification for testing
-	}
+    // Define TLS configurations
+    tlsConf := &tls.Config{
+        InsecureSkipVerify: true, // Only for testing, do not use in production
+    }
 
-	quicConfig := &quic.Config{
-		// QUIC specific settings can be placed here
-	}
+    // Create context
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	// Create a context with a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+    // Define QUIC configurations (can be nil if not needed)
+    quicConf := &quic.Config{}
 
-	// Start the QUIC connection
-	conn, err := quic.DialAddr(ctx, "127.0.0.1:3250", tlsConfig, quicConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %v", err)
-	}
-	// Defer closing the connection using CloseWithError
-	defer conn.CloseWithError(0, "client done")
+    // Connect to the server using QUIC
+    addr := "localhost:3250"
+    session, err := quic.DialAddr(ctx, addr, tlsConf, quicConf)
+    if err != nil {
+        log.Fatalf("Failed to connect to server: %v", err)
+    }
+    defer session.CloseWithError(0, "connection closed")
 
-	// Open a stream
-	stream, err := conn.OpenStreamSync(ctx)
-	if err != nil {
-		log.Fatalf("Failed to open stream: %v", err)
-	}
+    // Open a stream to send data
+    stream, err := session.OpenStreamSync(ctx)
+    if err != nil {
+        log.Fatalf("Failed to open stream: %v", err)
+    }
+    defer stream.Close()
 
-	// Send a message
-	message := []byte("Hello from QUIC client!")
-	_, err = stream.Write(message)
-	if err != nil {
-		log.Fatalf("Failed to write to stream: %v", err)
-	}
+    // Send message to the server
+    message := "Hello from QUIC client!"
+    fmt.Printf("Sending message: %s\n", message)
+    _, err = stream.Write([]byte(message))
+    if err != nil {
+        log.Fatalf("Failed to send data: %v", err)
+    }
 
-	// Read the response
-	response := make([]byte, 1024) // Adjust buffer size as needed
-	n, err := stream.Read(response)
-	if err != nil {
-		log.Fatalf("Failed to read from stream: %v", err)
-	}
+    // Receive response from the server
+    buffer := make([]byte, 1024)
+    n, err := stream.Read(buffer)
+    if err != nil {
+        log.Fatalf("Failed to read response: %v", err)
+    }
 
-	// Print the response
-	fmt.Printf("Received response: %s\n", string(response[:n]))
+    fmt.Printf("Response from server: %s\n", string(buffer[:n]))
 }

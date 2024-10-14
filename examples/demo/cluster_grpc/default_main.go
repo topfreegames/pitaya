@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"strconv"
+
 	"strings"
 
-	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
@@ -130,28 +129,9 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCClient = gc
 
 	if isFrontend {
-		// Configurações de TLS e QUIC
-		tlsConf := &tls.Config{
-			Certificates: []tls.Certificate{
-				loadTLSCertificates(),
-			},
-		}
-		quicConf := &quic.Config{
-			// Configurações específicas do QUIC podem ser colocadas aqui
-		}
-		quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)
-		builder.AddAcceptor(quicAcceptor)
+		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+		builder.AddAcceptor(tcp)
 	}
 
 	return builder.Build(), bs
-}
-
-func loadTLSCertificates() tls.Certificate {
-	certPath := "../../../pkg/acceptor/fixtures/server.crt"
-	keyPath := "../../../pkg/acceptor/fixtures/server.key"
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		panic(fmt.Sprintf("Erro ao carregar certificados TLS: %v", err))
-	}
-	return cert
 }
