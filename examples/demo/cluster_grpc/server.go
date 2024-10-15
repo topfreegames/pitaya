@@ -23,50 +23,50 @@ func main() {
 		Allow0RTT: true,
 	}
 
-	// Inicializar o QuicAcceptor
+	// Initialize the QuicAcceptor
 	quicAcceptor := acceptor.NewQuicAcceptor(":3250", tlsConf, quicConf)
 	err := quicAcceptor.Listen()
 	if err != nil {
-		log.Fatalf("Falha ao iniciar o servidor QUIC: %v", err)
+		log.Fatalf("Failed to start QUIC server: %v", err)
 	}
 	defer quicAcceptor.Close()
 
-	fmt.Println("Servidor QUIC escutando na porta 3250")
+	fmt.Println("QUIC server listening on port 3250")
 
-	// Loop de aceitação de conexões
+	// Connection acceptance loop
 	for {
 		conn, err := quicAcceptor.Accept()
 		if err != nil {
-			log.Printf("Erro ao aceitar conexão: %v", err)
+			log.Printf("Error accepting connection: %v", err)
 			continue
 		}
 
-		// Manusear conexão em uma goroutine separada
+		// Handle connection in a separate goroutine
 		go handleConnection(conn)
 	}
 }
 
 func handleConnection(conn quic.Connection) {
 
-	// Aceitar um stream
+	// Accept a stream
 	c := acceptor.NewQuicConnWrapper(conn)
 
-	// Ler dados do cliente
+	// Read data from the client
 	buff := make([]byte, 1024)
 	n, err := c.Read(buff)
 	if err != nil {
-		log.Printf("Erro ao ler do stream: %v", err)
+		log.Printf("Error reading from stream: %v", err)
 		return
 	}
-	fmt.Printf("Mensagem recebida: %s\n", string(buff[:n]))
+	fmt.Printf("Message received: %s\n", string(buff[:n]))
 
-	// Enviar resposta ao cliente
-	response := "Olá, cliente QUIC!"
+	// Send response to the client
+	response := "Hello, QUIC client!"
 
 	packetEncoder := codec.NewPomeloPacketEncoder()
 	messageEncoder := message.NewMessagesEncoder(false)
 
-	// buildPacket
+	// Build packet
 	m := message.Message{
 		Type:  message.Response,
 		ID:    2,
@@ -77,23 +77,23 @@ func handleConnection(conn quic.Connection) {
 
 	encMsg, err := messageEncoder.Encode(&m)
 
-	fmt.Printf("message encoded\n")
+	fmt.Printf("Message encoded\n")
 	if err != nil {
 		return
 	}
 	p, err := packetEncoder.Encode(packet.Data, encMsg)
 
-	fmt.Printf("packet encoded\n")
+	fmt.Printf("Packet encoded\n")
 	if err != nil {
 		return
 	}
 
 	_, err = c.Write([]byte(p))
 	if err != nil {
-		log.Printf("Erro ao enviar resposta: %v", err)
+		log.Printf("Error sending response: %v", err)
 		return
 	}
-	fmt.Println("Resposta enviada ao cliente")
+	fmt.Println("Response sent to client")
 }
 
 func loadTLSCertificates() tls.Certificate {
@@ -101,7 +101,7 @@ func loadTLSCertificates() tls.Certificate {
 	keyPath := "../../../pkg/acceptor/fixtures/server.key"
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
-		panic(fmt.Sprintf("Erro ao carregar certificados TLS: %v", err))
+		panic(fmt.Sprintf("Error loading TLS certificates: %v", err))
 	}
 	return cert
 }
