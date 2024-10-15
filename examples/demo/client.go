@@ -36,6 +36,8 @@ func main() {
     
     fmt.Printf("It's all ok: id %v!\n", id)
 
+    id, err = c.SendRequest("", []byte("Olá, sou o cliente de novo!"));
+
     for {}
 
 }

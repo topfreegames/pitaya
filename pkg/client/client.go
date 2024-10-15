@@ -193,10 +193,10 @@ func (c *Client) handleHandshakeResponse() error {
 
 	c.Connected = true
 
-	//go c.sendHeartbeats(handshake.Sys.Heartbeat)
+	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
 	go c.handlePackets()
-	//go c.pendingRequestsReaper()
+	go c.pendingRequestsReaper()
 
 	return nil
 }
@@ -379,6 +379,7 @@ func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *q
 
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
+	go c.sendHeartbeats(25)
 	go c.handleServerMessages()
 	go c.handlePackets()
 	go c.pendingRequestsReaper()

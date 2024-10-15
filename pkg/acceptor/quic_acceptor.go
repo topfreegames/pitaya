@@ -162,10 +162,7 @@ func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
 
 // Read reads data from the QUIC connection
 func (q *QuicConnWrapper) Read(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-	
-	stream, err := q.conn.AcceptStream(ctx)
+	stream, err := q.conn.AcceptStream(context.Background())
 	if err != nil {
 		return 0, err
 	}
