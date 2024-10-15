@@ -7,6 +7,9 @@ import (
 
 	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 )
 
 func main() {
@@ -59,7 +62,33 @@ func handleConnection(conn quic.Connection) {
 
 	// Enviar resposta ao cliente
 	response := "Olá, cliente QUIC!"
-	_, err = c.Write([]byte(response))
+
+	packetEncoder := codec.NewPomeloPacketEncoder()
+	messageEncoder := message.NewMessagesEncoder(false)
+
+	// buildPacket
+	m := message.Message{
+		Type:  message.Response,
+		ID:    2,
+		Route: "",
+		Data:  []byte(response),
+		Err:   false,
+	}
+
+	encMsg, err := messageEncoder.Encode(&m)
+
+	fmt.Printf("message encoded\n")
+	if err != nil {
+		return
+	}
+	p, err := packetEncoder.Encode(packet.Data, encMsg)
+
+	fmt.Printf("packet encoded\n")
+	if err != nil {
+		return
+	}
+
+	_, err = c.Write([]byte(p))
 	if err != nil {
 		log.Printf("Erro ao enviar resposta: %v", err)
 		return

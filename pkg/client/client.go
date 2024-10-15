@@ -193,10 +193,10 @@ func (c *Client) handleHandshakeResponse() error {
 
 	c.Connected = true
 
-	go c.sendHeartbeats(handshake.Sys.Heartbeat)
+	//go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
 	go c.handlePackets()
-	go c.pendingRequestsReaper()
+	//go c.pendingRequestsReaper()
 
 	return nil
 }
@@ -244,7 +244,7 @@ func (c *Client) handlePackets() {
 			switch p.Type {
 			case packet.Data:
 				//handle data
-				logger.Log.Debug("got data: %s", string(p.Data))
+				logger.Log.Debug("got data: ", string(p.Data))
 				m, err := message.Decode(p.Data)
 				if err != nil {
 					logger.Log.Errorf("error decoding msg from sv: %s", string(m.Data))
@@ -276,7 +276,6 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	data := make([]byte, 1024)
 	n := len(data)
 	var err error
-
 	for n == len(data) {
 		n, err = c.conn.Read(data)
 		if err != nil {
@@ -284,7 +283,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 		}
 		buf.Write(data[:n])
 	}
-	fmt.Printf("Response from server: %s\n", string(data[:n]))
+
 	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
 		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
@@ -369,27 +368,26 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 	return nil
 }
 
-func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) (net.Conn, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-
-    conn, err := quic.DialAddr(ctx, addr, tlsConfig, quicConfig)
+func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) error {
+    conn, err := quic.DialAddr(context.Background(), addr, tlsConfig, quicConfig)
     if err != nil {
         fmt.Printf("Failed to connect to server: %v", err)
-		return nil, err;
+		return err;
     }
 
 	c.conn = acceptor.NewQuicConnWrapper(conn);
 
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
-	c.closeChan = make(chan struct{})
-
-	/*go c.sendHeartbeats(30)
 	go c.handleServerMessages()
 	go c.handlePackets()
-	go c.pendingRequestsReaper()*/
+	go c.pendingRequestsReaper()
 
-	return c.conn, nil
+	c.Connected = true
+
+	c.closeChan = make(chan struct{})
+
+	return nil
 }
 
 // ConnectToWS connects using webshocket protocol

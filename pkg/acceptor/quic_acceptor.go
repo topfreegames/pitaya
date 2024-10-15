@@ -162,8 +162,9 @@ func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
 
 // Read reads data from the QUIC connection
 func (q *QuicConnWrapper) Read(p []byte) (int, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 1000*time.Second) // 1000 seconds timeout as an example
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+	
 	stream, err := q.conn.AcceptStream(ctx)
 	if err != nil {
 		return 0, err
@@ -174,7 +175,8 @@ func (q *QuicConnWrapper) Read(p []byte) (int, error) {
 
 // Write writes data to the connection with a defined deadline
 func (q *QuicConnWrapper) Write(p []byte) (int, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second) // 1000 seconds timeout as an example
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds timeout as an example
+	defer cancel()
 
 	stream, err := q.conn.OpenStreamSync(ctx)
 	if err != nil {
@@ -201,33 +203,26 @@ func (q *QuicConnWrapper) RemoteAddr() net.Addr {
 
 // GetNextMessage reads the next message available in the QUIC stream
 func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
-	// Define a context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Accept a new stream
-	stream, err := q.conn.AcceptStream(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Read data from the stream
-	msgBytes := make([]byte, codec.HeadLength)
-	_, err = stream.Read(msgBytes)
+	msgBytes := make([]byte, 1024)
+
+	n, err := q.Read(msgBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(msgBytes) < codec.HeadLength {
+	msg := msgBytes[:n]
+
+	if len(msg) < codec.HeadLength {
 		return nil, packet.ErrInvalidPomeloHeader
 	}
+	header := msg[:codec.HeadLength]
 
-	msgSize, _, err := codec.ParseHeader(msgBytes)
+	msgSize, _, err := codec.ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
-
-	dataLen := len(msgBytes[codec.HeadLength:])
+	dataLen := len(msg[codec.HeadLength:])
 	if dataLen < msgSize {
 		return nil, constants.ErrReceivedMsgSmallerThanExpected
 	} else if dataLen > msgSize {

@@ -19,30 +19,23 @@ func main() {
     // Define QUIC configurations (can be nil if not needed)
     quicConf := &quic.Config{}
 
-    c := client.New(logrus.InfoLevel)
+    c := client.New(logrus.DebugLevel)
 
-	conn, err := c.ConnectToQUIC("localhost:3250", tlsConf, quicConf)
+	err := c.ConnectToQUIC("localhost:3250", tlsConf, quicConf)
 
     if(err != nil) {
         log.Fatalf("Failed to connect to server: %v", err)
     }
-    
-    msg := "Hello from QUIC client!"
-    fmt.Printf("Sending message: %v\n", msg)
-    _, err = conn.Write([]byte(msg))
+
+   
+    id, err := c.SendRequest("", []byte("Olá, server!"));
 
     if(err != nil) {
-        log.Fatalf("Failed to send data: %v\n", err)
+        log.Fatalf("Request failed: %v", err)
     }
+    
+    fmt.Printf("It's all ok: id %v!\n", id)
 
-    fmt.Printf("it's all ok\n")
+    for {}
 
-    buffer := make([]byte, 1024)
-    n, err := conn.Read(buffer)
-
-    if err != nil {
-        log.Fatalf("Failed to read response data: %v\n", err)
-    }
-
-    fmt.Printf("Response from server: %s\n", string(buffer[:n]))
 }
