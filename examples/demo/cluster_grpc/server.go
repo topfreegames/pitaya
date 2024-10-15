@@ -23,25 +23,25 @@ func main() {
 		Allow0RTT: true,
 	}
 
-	// Inicializar o QuicAcceptor
+	// Initialize the QuicAcceptor
 	quicAcceptor := acceptor.NewQuicAcceptor(":3250", tlsConf, quicConf)
 	err := quicAcceptor.Listen()
 	if err != nil {
-		log.Fatalf("Falha ao iniciar o servidor QUIC: %v", err)
+		log.Fatalf("Failed to start QUIC server: %v", err)
 	}
 	defer quicAcceptor.Close()
 
-	fmt.Println("Servidor QUIC escutando na porta 3250")
+	fmt.Println("QUIC server listening on port 3250")
 
-	// Loop de aceitação de conexões
+	// Connection acceptance loop
 	for {
 		conn, err := quicAcceptor.Accept()
 		if err != nil {
-			log.Printf("Erro ao aceitar conexão: %v", err)
+			log.Printf("Error accepting connection: %v", err)
 			continue
 		}
 
-		// Manusear conexão em uma goroutine separada
+		// Handle connection in a separate goroutine
 		go handleConnection(conn)
 	}
 }
@@ -59,8 +59,9 @@ func handleConnection(conn quic.Connection) {
 	for {
 		buff := make([]byte, 1024)
 		n, err := c.Read(buff)
+		// Read data from the client
 		if err != nil {
-			log.Printf("Erro ao ler do stream: %v", err)
+			log.Printf("Error reading from stream: %v", err)
 			return
 		}
 
@@ -77,14 +78,14 @@ func handleConnection(conn quic.Connection) {
 				if err != nil {
 					fmt.Printf("error decoding msg from sv: %v\n", string(m.Data))
 				}
-				fmt.Printf("got data from client: %v\n", string(m.Data))
+				fmt.Printf("message received from client: %v\n", string(m.Data))
 			case packet.Heartbeat:
 				fmt.Printf("got heartbeat from client!\n")
 			}
 		}
 
-		// Enviar resposta ao cliente
-		response := "Olá, cliente QUIC!"
+		// Send response to the client
+		response := "Hello, QUIC client!"
 
 		// buildPacket
 		m := message.Message{
@@ -110,11 +111,12 @@ func handleConnection(conn quic.Connection) {
 
 		_, err = c.Write([]byte(p))
 		if err != nil {
-			log.Printf("Erro ao enviar resposta: %v", err)
+			log.Printf("Error sending response: %v", err)
 			return
 		}
-		fmt.Println("Resposta enviada ao cliente")
+		fmt.Println("Response sent to client")
 	}
+	
 }
 
 func loadTLSCertificates() tls.Certificate {
@@ -122,7 +124,7 @@ func loadTLSCertificates() tls.Certificate {
 	keyPath := "../../../pkg/acceptor/fixtures/server.key"
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
-		panic(fmt.Sprintf("Erro ao carregar certificados TLS: %v", err))
+		panic(fmt.Sprintf("Error loading TLS certificates: %v", err))
 	}
 	return cert
 }
