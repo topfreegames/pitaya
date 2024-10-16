@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
@@ -137,6 +138,8 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 			},
 		}
 		quicConf := &quic.Config{
+			MaxIdleTimeout: 35 * time.Second,
+			EnableDatagrams: true,
 			// Configurações específicas do QUIC podem ser colocadas aqui
 		}
 		quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)

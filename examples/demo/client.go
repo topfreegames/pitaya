@@ -4,6 +4,7 @@ import (
     "crypto/tls"
     "fmt"
     "log"
+    "time"
     "github.com/sirupsen/logrus"
 
     "github.com/quic-go/quic-go"
@@ -28,16 +29,34 @@ func main() {
     }
 
    
-    id, err := c.SendRequest("", []byte("Olá, server!"));
+    id, err := c.SendRequest("connector.getsessiondata", []byte{});
 
     if(err != nil) {
         log.Fatalf("Request failed: %v", err)
     }
     
-    fmt.Printf("It's all ok: id %v!\n", id)
+    fmt.Printf("Request was sent to server: reqUid %v!\n", id)
 
-    id, err = c.SendRequest("", []byte("Olá, sou o cliente de novo!"));
+    id, err = c.SendRequest("connector.setsessiondata", []byte("{\"Data\":{\"ipversion\":\"ipv4\", \"novoDado\":\"QuicClient\"}}"));
 
-    for {}
+    if(err != nil) {
+        log.Fatalf("Request failed: %v", err)
+    }
+    
+    fmt.Printf("Request was sent to server: reqUid %v!\n", id)
+
+    time.Sleep(2 * time.Second);
+
+    id, err = c.SendRequest("connector.getsessiondata", []byte{});
+
+    if(err != nil) {
+        log.Fatalf("Request failed: %v", err)
+    }
+    
+    fmt.Printf("Request was sent to server: reqUid %v!\n", id)
+
+    time.Sleep(65 * time.Second);
+
+    c.Disconnect();
 
 }

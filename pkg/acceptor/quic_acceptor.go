@@ -90,11 +90,7 @@ func (a *QuicAcceptor) Accept() (quic.Connection, error) {
 		return nil, ErrListenerNotInitialized
 	}
 
-	// Context with timeout for accepting connections
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	conn, err := a.listener.Accept(ctx)
+	conn, err := a.listener.Accept(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +222,7 @@ func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
 		return nil, constants.ErrReceivedMsgBiggerThanExpected
 	}
 
-	return msgBytes, nil
+	return msg, nil
 }
 
 func (q *QuicConnWrapper) SetDeadline(t time.Time) error {

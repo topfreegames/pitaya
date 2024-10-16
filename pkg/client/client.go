@@ -324,6 +324,7 @@ func (c *Client) sendHeartbeats(interval int) {
 		case <-t.C:
 			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
 			_, err := c.conn.Write(p)
+			logger.Log.Debug("Heartbeat was sent to server!")
 			if err != nil {
 				logger.Log.Errorf("error sending heartbeat to server: %s", err.Error())
 				return
@@ -337,6 +338,7 @@ func (c *Client) sendHeartbeats(interval int) {
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
 	if c.Connected {
+		logger.Log.Debug("Disconnecting!")
 		c.Connected = false
 		close(c.closeChan)
 		c.conn.Close()
@@ -379,12 +381,9 @@ func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *q
 
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
-	go c.sendHeartbeats(25)
-	go c.handleServerMessages()
-	go c.handlePackets()
-	go c.pendingRequestsReaper()
-
-	c.Connected = true
+	if err = c.handleHandshake(); err != nil {
+		return err
+	}
 
 	c.closeChan = make(chan struct{})
 
