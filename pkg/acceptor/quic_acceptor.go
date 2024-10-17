@@ -33,6 +33,7 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 )
+
 var (
 	// ErrListenerNotInitialized is returned if the QUIC listener is not initialized
 	ErrListenerNotInitialized = errors.New("listener not initialized")
@@ -44,7 +45,7 @@ var (
 type QuicAcceptor struct {
 	addr     string
 	connChan chan PlayerConn
-	listener *quic.Listener // Using a pointer to quic.Listener
+	listener *quic.Listener
 	running  bool
 	tlsConf  *tls.Config
 	quicConf *quic.Config
@@ -61,8 +62,8 @@ func NewQuicAcceptor(addr string, tlsConf *tls.Config, quicConf *quic.Config) *Q
 }
 
 func (a *QuicAcceptor) GetAddr() string {
-	if a.listener != nil { // Correct comparison, since listener is a pointer
-		return (*a.listener).Addr().String() // Accessing the value pointed to by the pointer
+	if a.listener != nil {
+		return a.listener.Addr().String()
 	}
 	return ""
 }
@@ -80,7 +81,7 @@ func (a *QuicAcceptor) Listen() error {
 	if err != nil {
 		return err
 	}
-	a.listener = listener // Storing the pointer to quic.Listener
+	a.listener = listener
 	return nil
 }
 
@@ -101,7 +102,7 @@ func (a *QuicAcceptor) Accept() (quic.Connection, error) {
 // Close closes the QUIC listener
 func (a *QuicAcceptor) Close() error {
 	if a.listener != nil { // Correct comparison
-		return (*a.listener).Close()
+		return a.listener.Close()
 	}
 	return nil
 }

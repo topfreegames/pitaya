@@ -370,15 +370,24 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 	return nil
 }
 
-func (c *Client) ConnectToQUIC(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) error {
-    conn, err := quic.DialAddr(context.Background(), addr, tlsConfig, quicConfig)
+func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig ...*tls.Config) error {
+	var conn quic.Connection
+	var err error
+	if(len(tlsConfig) > 0) {
+		conn, err = quic.DialAddr(context.Background(), addr, tlsConfig[0], quicConfig)
+	} else {
+		tls := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		conn, err = quic.DialAddr(context.Background(), addr, tls, quicConfig)
+	}
+
     if err != nil {
-        fmt.Printf("Failed to connect to server: %v", err)
 		return err;
     }
 
 	c.conn = acceptor.NewQuicConnWrapper(conn);
-
+	
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {

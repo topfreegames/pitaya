@@ -22,7 +22,7 @@ func main() {
 
     c := client.New(logrus.DebugLevel)
 
-	err := c.ConnectToQUIC("localhost:3250", tlsConf, quicConf)
+	err := c.ConnectToQUIC("localhost:3250", quicConf, tlsConf)
 
     if(err != nil) {
         log.Fatalf("Failed to connect to server: %v", err)
@@ -48,6 +48,24 @@ func main() {
     time.Sleep(2 * time.Second);
 
     id, err = c.SendRequest("connector.getsessiondata", []byte{});
+
+    if(err != nil) {
+        log.Fatalf("Request failed: %v", err)
+    }
+    
+    fmt.Printf("Request was sent to server: reqUid %v!\n", id)
+
+    id, err = c.SendRequest("requestor.room.entry", []byte{});
+
+    if(err != nil) {
+        log.Fatalf("Request failed: %v", err)
+    }
+    
+    fmt.Printf("Request was sent to server: reqUid %v!\n", id)
+
+    time.Sleep(2 * time.Second)
+
+    id, err = c.SendRequest("requestor.room.join", []byte{});
 
     if(err != nil) {
         log.Fatalf("Request failed: %v", err)

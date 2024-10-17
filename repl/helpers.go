@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/quic-go/quic-go"
 	"github.com/abiosoft/ishell/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -50,15 +51,18 @@ func protoClient(log Log, addr string) error {
 }
 
 func tryConnect(addr string) error {
-	if err := pClient.ConnectToWS(addr, "", &tls.Config{
-		InsecureSkipVerify: true,
+	if err := pClient.ConnectToQUIC(addr, &quic.Config{
 	}); err != nil {
-		if err := pClient.ConnectToWS(addr, ""); err != nil {
-			if err := pClient.ConnectTo(addr, &tls.Config{
-				InsecureSkipVerify: true,
-			}); err != nil {
-				if err := pClient.ConnectTo(addr); err != nil {
-					return err
+		if err := pClient.ConnectToWS(addr, "", &tls.Config{
+			InsecureSkipVerify: true,
+		}); err != nil {
+			if err := pClient.ConnectToWS(addr, ""); err != nil {
+				if err := pClient.ConnectTo(addr, &tls.Config{
+					InsecureSkipVerify: true,
+				}); err != nil {
+					if err := pClient.ConnectTo(addr); err != nil {
+						return err
+					}
 				}
 			}
 		}
