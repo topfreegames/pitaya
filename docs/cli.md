@@ -11,7 +11,7 @@ go install github.com/topfreegames/pitaya/v3@latest
 
 ## Usage
 
-For cli flags, run `pitaya-cli --help`
+For cli flags, run `pitaya --help`
 
 ```
 $ pitaya
@@ -99,7 +99,7 @@ func (c *MyHandler) Descriptors(ctx context.Context, names *protos.ProtoNames) (
 
 When initilizing the CLI, you have to provide the docs route as the following:
 ```
-pitaya-cli -docs connector.docsHandler.docs
+pitaya -docs connector.docsHandler.docs
 ```
 
 NOTE: The descriptors handler is automatically discovered by the client.
@@ -107,7 +107,7 @@ It must only follow the signature mentioned earlier.
 
 A full example of running pitaya-cli with protobuf:
 ```
-pitaya-cli -docs connector.docsHandler.docs
+pitaya -docs connector.docsHandler.docs
 >>> push connector.playerHandler.matchfound protos.FindMatchPush
 >>> connect localhost:30124
 >>> request connector.playerHandler.create
@@ -144,4 +144,4 @@ request connector.playerHandler.create
 request connector.playerHandler.findmatch {"RoomType":"xxxx"}
 ```
 
-Then run: `pitaya-cli --filename commands.txt`
+Then run: `pitaya --filename commands.txt`
