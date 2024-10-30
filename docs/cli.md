@@ -6,7 +6,7 @@ A REPL cli client made in go for pitaya.
 ## Installing
 
 ```
-go install github.com/topfreegames/pitaya/v3
+go install github.com/topfreegames/pitaya/v3@latest
 ```
 
 ## Usage
