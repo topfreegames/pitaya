@@ -35,10 +35,10 @@ import (
 
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
 
-	"github.com/quic-go/quic-go"
 	"github.com/gorilla/websocket"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/v3/pkg"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
@@ -244,7 +244,7 @@ func (c *Client) handlePackets() {
 			switch p.Type {
 			case packet.Data:
 				//handle data
-				logger.Log.Debug("got data: ", string(p.Data))
+				logger.Log.Debug("got data: %s", string(p.Data))
 				m, err := message.Decode(p.Data)
 				if err != nil {
 					logger.Log.Errorf("error decoding msg from sv: %s", string(m.Data))
@@ -283,7 +283,6 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 		}
 		buf.Write(data[:n])
 	}
-
 	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
 		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
@@ -324,7 +323,6 @@ func (c *Client) sendHeartbeats(interval int) {
 		case <-t.C:
 			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
 			_, err := c.conn.Write(p)
-			logger.Log.Debug("Heartbeat was sent to server!")
 			if err != nil {
 				logger.Log.Errorf("error sending heartbeat to server: %s", err.Error())
 				return
@@ -338,7 +336,6 @@ func (c *Client) sendHeartbeats(interval int) {
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
 	if c.Connected {
-		logger.Log.Debug("Disconnecting!")
 		c.Connected = false
 		close(c.closeChan)
 		c.conn.Close()
@@ -373,7 +370,7 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig ...*tls.Config) error {
 	var conn quic.Connection
 	var err error
-	if(len(tlsConfig) > 0) {
+	if len(tlsConfig) > 0 {
 		conn, err = quic.DialAddr(context.Background(), addr, tlsConfig[0], quicConfig)
 	} else {
 		tls := &tls.Config{
@@ -382,12 +379,12 @@ func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig .
 		conn, err = quic.DialAddr(context.Background(), addr, tls, quicConfig)
 	}
 
-    if err != nil {
-		return err;
-    }
+	if err != nil {
+		return err
+	}
 
-	c.conn = acceptor.NewQuicConnWrapper(conn);
-	
+	c.conn = acceptor.NewQuicConnWrapper(conn)
+
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {
