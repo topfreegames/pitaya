@@ -23,7 +23,7 @@ const opts = {
 
 export let options = {
     stages: [
-        { target: 10, duration: '5s' },
+        { target: 10, duration: '10s' },
     ],
     thresholds: {
         pitaya_client_request_duration_ms: ['p(95)<200'], // 95% of requests should be below 200ms
@@ -33,6 +33,7 @@ export let options = {
 const pitayaClient = new pitaya.Client(opts)
 
 export default async () => {
+    sleep(1);
     if (!pitayaClient.isConnected()) {
         pitayaClient.connect("localhost:3250")
     }
