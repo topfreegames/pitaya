@@ -141,7 +141,7 @@ func (a *QuicAcceptor) ListenAndServe() {
 
 		// Send the connection to the channel for further processing
 		go func(c quic.Connection) {
-			playerConn := NewQuicConnWrapper(c)
+			playerConn := NewQuicConnWrapper(c, 100*time.Millisecond)
 			a.connChan <- playerConn
 		}(conn)
 	}
@@ -150,11 +150,12 @@ func (a *QuicAcceptor) ListenAndServe() {
 // QuicConnWrapper is a wrapper for a QUIC connection, allowing the use of deadlines
 type QuicConnWrapper struct {
 	conn quic.Connection
+	writeTimeout   time.Duration // Timeout configurável para escrita
 }
 
 // NewQuicConnWrapper creates a new wrapper for a QUIC connection
-func NewQuicConnWrapper(conn quic.Connection) *QuicConnWrapper {
-	return &QuicConnWrapper{conn: conn}
+func NewQuicConnWrapper(conn quic.Connection, timeout time.Duration) *QuicConnWrapper {
+	return &QuicConnWrapper{conn: conn, writeTimeout: timeout}
 }
 
 // Read reads data from the QUIC connection
@@ -169,7 +170,7 @@ func (q *QuicConnWrapper) Read(p []byte) (int, error) {
 
 // Write writes data to the connection with a defined deadline
 func (q *QuicConnWrapper) Write(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds timeout as an example
+	ctx, cancel := context.WithTimeout(context.Background(), q.writeTimeout)
 	defer cancel()
 
 	stream, err := q.conn.OpenStreamSync(ctx)
