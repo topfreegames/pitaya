@@ -28,7 +28,7 @@ let requestTimeJoinRoomTrend = new Trend('request_time_join_room');
 
 export let options = {
     stages: [
-        { target: 5, duration: '5s' },
+        { target: 15, duration: '5s' },
     ],
     thresholds: {
         pitaya_client_request_duration_ms: ['p(95)<200'], // 95% of requests should be below 200ms
@@ -77,7 +77,6 @@ async function joinRoom() {
 }
 
 export default async () => {
-
     await connectToServer();
 
     sleep(1);
@@ -86,6 +85,7 @@ export default async () => {
     sleep(1);
     await setAndRetrieveSessionData({ data: { "testKey": "testVal" } });
 
+    sleep(1);
     await pitayaClient.disconnect()
 }
 

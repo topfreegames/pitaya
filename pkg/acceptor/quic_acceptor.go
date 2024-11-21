@@ -25,9 +25,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"time"
-	"io"
 
 	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
@@ -149,10 +149,10 @@ func (a *QuicAcceptor) ListenAndServe() {
 
 // QuicConnWrapper is a wrapper for a QUIC connection, allowing the use of deadlines
 type QuicConnWrapper struct {
-	conn quic.Connection
-	stream quic.Stream
+	conn         quic.Connection
+	stream       quic.Stream
 	writeTimeout time.Duration
-	readTimeout time.Duration
+	readTimeout  time.Duration
 }
 
 // NewQuicConnWrapper creates a new wrapper for a QUIC connection
@@ -187,15 +187,24 @@ func (q *QuicConnWrapper) Read(b []byte) (n int, err error) {
 
 // Write writes data to the connection with a defined deadline
 func (q *QuicConnWrapper) Write(b []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), q.writeTimeout)
-	defer cancel()
-
-	stream, err := q.conn.OpenStreamSync(ctx)
-	if err != nil {
-		return 0, err
+	if q.stream == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), q.writeTimeout)
+		defer cancel()
+		stream, err := q.conn.OpenStreamSync(ctx)
+		if err != nil {
+			return 0, err
+		}
+		q.stream = stream
 	}
 
-	return stream.Write(b)
+	n, err := q.stream.Write(b)
+	if err == io.EOF {
+		q.stream = nil
+	} else if err != nil {
+		return n, err
+	}
+
+	return n, err
 }
 
 // Close closes the QUIC connection
@@ -215,29 +224,25 @@ func (q *QuicConnWrapper) RemoteAddr() net.Addr {
 
 // GetNextMessage reads the next message available in the stream
 func (q *QuicConnWrapper) GetNextMessage() (b []byte, err error) {
-    stream, err := q.conn.AcceptStream(context.Background())
-    if err != nil {
-        return nil, err
-    }
-    header, err := io.ReadAll(io.LimitReader(stream, codec.HeadLength))
-    if err != nil {
-        return nil, err
-    }
-    if len(header) == 0 {
-        return nil, constants.ErrConnectionClosed
-    }
-    msgSize, _, err := codec.ParseHeader(header)
-    if err != nil {
-        return nil, err
-    }
-    msgData, err := io.ReadAll(io.LimitReader(stream, int64(msgSize)))
-    if err != nil {
-        return nil, err
-    }
-    if len(msgData) < msgSize {
-        return nil, constants.ErrReceivedMsgSmallerThanExpected
-    }
-    return append(header, msgData...), nil
+	header, err := io.ReadAll(io.LimitReader(q, codec.HeadLength))
+	if err != nil {
+		return nil, err
+	}
+	if len(header) == 0 {
+		return nil, constants.ErrConnectionClosed
+	}
+	msgSize, _, err := codec.ParseHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	msgData, err := io.ReadAll(io.LimitReader(q, int64(msgSize)))
+	if err != nil {
+		return nil, err
+	}
+	if len(msgData) < msgSize {
+		return nil, constants.ErrReceivedMsgSmallerThanExpected
+	}
+	return append(header, msgData...), nil
 }
 
 func (q *QuicConnWrapper) SetDeadline(t time.Time) error {
