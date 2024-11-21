@@ -19,7 +19,7 @@ const opts = {
         }
     },
     requestTimeoutMs: 1000,
-    useTLS: true,
+    useTLS: false,
 }
 
 let requestTimeEntryRoomTrend = new Trend('request_time_entry_room');
