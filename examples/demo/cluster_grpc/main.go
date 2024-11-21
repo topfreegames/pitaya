@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"strconv"
-
 	"strings"
+	"time"
 
+	"github.com/quic-go/quic-go"
 	"github.com/topfreegames/pitaya/v3/examples/demo/cluster_grpc/services"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
@@ -80,6 +82,7 @@ func main() {
 	svType := flag.String("type", "connector", "the server type")
 	isFrontend := flag.Bool("frontend", true, "if server is frontend")
 	rpcServerPort := flag.Int("rpcsvport", 3434, "the port that grpc server will listen")
+	acceptorType := flag.String("acceptor", "tcp", "the type of acceptor to use (tcp or quic)")
 
 	flag.Parse()
 
@@ -89,7 +92,7 @@ func main() {
 	}
 
 	var bs *modules.ETCDBindingStorage
-	app, bs = createApp(*port, *isFrontend, *svType, meta, *rpcServerPort)
+	app, bs = createApp(*port, *isFrontend, *svType, meta, *rpcServerPort, *acceptorType)
 
 	defer app.Shutdown()
 
@@ -102,7 +105,7 @@ func main() {
 	app.Start()
 }
 
-func createApp(port int, isFrontend bool, svType string, meta map[string]string, rpcServerPort int) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
+func createApp(port int, isFrontend bool, svType string, meta map[string]string, rpcServerPort int, acceptorType string) (pitaya.Pitaya, *modules.ETCDBindingStorage) {
 	builder := pitaya.NewDefaultBuilder(isFrontend, svType, pitaya.Cluster, meta, *config.NewDefaultPitayaConfig())
 
 	grpcServerConfig := builder.Config.Cluster.RPC.Server.Grpc
@@ -129,9 +132,36 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 	builder.RPCClient = gc
 
 	if isFrontend {
-		tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
-		builder.AddAcceptor(tcp)
+		switch acceptorType {
+		case "quic":
+			tlsConf := &tls.Config{
+				Certificates: []tls.Certificate{
+					loadTLSCertificates(),
+				},
+			}
+			quicConf := &quic.Config{
+				MaxIdleTimeout: 35 * time.Second,
+				EnableDatagrams: true,
+			}
+			quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)
+			builder.AddAcceptor(quicAcceptor)
+		case "tcp":
+			tcp := acceptor.NewTCPAcceptor(fmt.Sprintf(":%d", port))
+			builder.AddAcceptor(tcp)
+		default:
+			panic(fmt.Sprintf("Invalid acceptor type: %s. Use 'tcp' or 'quic'.", acceptorType))
+		}
 	}
 
 	return builder.Build(), bs
+}
+
+func loadTLSCertificates() tls.Certificate {
+	certPath := "../../../pkg/acceptor/fixtures/server.crt"
+	keyPath := "../../../pkg/acceptor/fixtures/server.key"
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		panic(fmt.Sprintf("Erro ao carregar certificados TLS: %v", err))
+	}
+	return cert
 }

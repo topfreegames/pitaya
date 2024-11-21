@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
+	"github.com/quic-go/quic-go"
 	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
 	pitayamessage "github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
@@ -53,6 +54,27 @@ func (c *Client) Connect(addr string) error {
 	} else {
 		err = c.client.ConnectTo(addr)
 	}
+
+	if err != nil {
+		return err
+	}
+	go c.listen()
+
+	return err
+}
+
+// Connect connects to the server
+// addr is the address of the server to connect to
+func (c *Client) ConnectToQUIC(addr string) error {
+	vuState := c.vu.State()
+
+	if vuState == nil {
+		return errors.New("connecting to a pitaya server in the init context is not supported")
+	}
+
+	var err error
+	tlsConfig := &tls.Config{GetConfigForClient: func(*tls.ClientHelloInfo) (*tls.Config, error) { return nil, nil }, InsecureSkipVerify: true}
+	err = c.client.ConnectToQUIC(addr, &quic.Config{}, tlsConfig)
 
 	if err != nil {
 		return err

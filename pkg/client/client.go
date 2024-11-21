@@ -22,6 +22,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -35,8 +36,9 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
 
 	"github.com/gorilla/websocket"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
-	"github.com/topfreegames/pitaya/v3/pkg"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/packet"
@@ -274,7 +276,6 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	data := make([]byte, 1024)
 	n := len(data)
 	var err error
-
 	for n == len(data) {
 		n, err = c.conn.Read(data)
 		if err != nil {
@@ -355,6 +356,35 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 		return err
 	}
 	c.conn = conn
+	c.IncomingMsgChan = make(chan *message.Message, 10)
+
+	if err = c.handleHandshake(); err != nil {
+		return err
+	}
+
+	c.closeChan = make(chan struct{})
+
+	return nil
+}
+
+func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig ...*tls.Config) error {
+	var conn quic.Connection
+	var err error
+	if len(tlsConfig) > 0 {
+		conn, err = quic.DialAddr(context.Background(), addr, tlsConfig[0], quicConfig)
+	} else {
+		tls := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		conn, err = quic.DialAddr(context.Background(), addr, tls, quicConfig)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c.conn = acceptor.NewQuicConnWrapper(conn, c.requestTimeout, c.requestTimeout)
+
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {

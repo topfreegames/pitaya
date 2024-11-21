@@ -25,12 +25,14 @@ import (
 
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/quic-go/quic-go"
 )
 
 // PitayaClient iface
 type PitayaClient interface {
 	ConnectTo(addr string, tlsConfig ...*tls.Config) error
 	ConnectToWS(addr string, path string, tlsConfig ...*tls.Config) error
+	ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig ...*tls.Config) error
 	ConnectedStatus() bool
 	Disconnect()
 	MsgChannel() chan *message.Message
