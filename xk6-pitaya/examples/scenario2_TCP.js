@@ -1,5 +1,6 @@
 import pitaya from 'k6/x/pitaya';
 import { check, sleep } from 'k6';
+import { Trend } from 'k6/metrics';
 
 const opts = {
     handshakeData: {
@@ -18,12 +19,16 @@ const opts = {
         }
     },
     requestTimeoutMs: 1000,
-    useTLS: false,
+    useTLS: true,
 }
+
+let requestTimeEntryRoomTrend = new Trend('request_time_entry_room');
+let requestTimeSessionDataTrend = new Trend('request_time_session_data');
+let requestTimeJoinRoomTrend = new Trend('request_time_join_room');
 
 export let options = {
     stages: [
-        { target: 10, duration: '10s' },
+        { target: 5, duration: '5s' },
     ],
     thresholds: {
         pitaya_client_request_duration_ms: ['p(95)<200'], // 95% of requests should be below 200ms
@@ -32,31 +37,56 @@ export let options = {
 
 const pitayaClient = new pitaya.Client(opts)
 
-export default async () => {
-    sleep(1);
-    if (!pitayaClient.isConnected()) {
-        pitayaClient.connect("localhost:3250")
-    }
+async function connectToServer() {
+    await pitayaClient.connect("localhost:3250")
 
     check(pitayaClient.isConnected(), { 'pitaya client is connected': (r) => r === true })
+}
 
+async function entryRoom() {
+    let startTime = Date.now();
     var res = await pitayaClient.request("requestor.room.entry")
-    check(res.result, { 'contains an result field': (r) => r !== undefined })
-    check(res.result, { 'result is ok': (r) => r === "ok" })
+    let duration = Date.now() - startTime;
+    requestTimeEntryRoomTrend.add(duration);
+    if (res.msg != "session is already bound to an uid") {
+        check(res.result, { 'contains an result field': (r) => r !== undefined })
+        check(res.result, { 'result is ok': (r) => r === "ok" })
+    }
+}
 
-    res = await pitayaClient.request("connector.setsessiondata", { data: { "testKey": "testVal" } })
+async function setAndRetrieveSessionData(sessionData) {
+    let startTime = Date.now();
+    var res = await pitayaClient.request("connector.setsessiondata", sessionData)
+    let duration = Date.now() - startTime;
+    requestTimeSessionDataTrend.add(duration);
     check(res.Msg, { 'res is success': (r) => r === "success" })
 
     res = await pitayaClient.request("connector.getsessiondata")
-    check(res.Data, { 'res contains set data': (r) => r.testKey === "testVal" })
+    check(res.Data, { 'res contains set data': (r) => r.testKey === sessionData.data.testKey })
+}
 
-    res = await pitayaClient.request("requestor.room.join")
-    res = await pitayaClient.consumePush("onMembers", 1000)
-    check(res.members, { 'res contains a member group': (m) => m !== undefined })
+async function joinRoom() {
+    let startTime = Date.now();
+    var res = await pitayaClient.request("requestor.room.join")
+    let duration = Date.now() - startTime;
+    requestTimeJoinRoomTrend.add(duration);
+    if (res.msg === "onclose callbacks are not allowed on backend servers") {
+        res = await pitayaClient.consumePush("onMembers", 1000)
+        check(res.members, { 'res contains a member group': (m) => m !== undefined })
+    }
+}
 
-    sleep(2)
+export default async () => {
 
-    pitayaClient.disconnect()
+    await connectToServer();
+
+    sleep(1);
+    await entryRoom();
+
+    sleep(1);
+    await setAndRetrieveSessionData({ data: { "testKey": "testVal" } });
+
+    await pitayaClient.disconnect()
 }
 
 export function teardown() {

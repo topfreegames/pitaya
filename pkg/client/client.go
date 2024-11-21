@@ -383,7 +383,7 @@ func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig .
 		return err
 	}
 
-	c.conn = acceptor.NewQuicConnWrapper(conn)
+	c.conn = acceptor.NewQuicConnWrapper(conn, c.requestTimeout, c.requestTimeout)
 
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
