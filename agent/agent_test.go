@@ -523,6 +523,7 @@ func TestAgentResponseMID(t *testing.T) {
 			expected := pendingWrite{ctx: ctx, data: []byte("ok!"), err: nil}
 			var err error
 			if table.msgErr {
+				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil)
 				err = ag.ResponseMID(ctx, table.mid, table.data, table.msgErr)
 			} else {
 				err = ag.ResponseMID(ctx, table.mid, table.data)
@@ -925,7 +926,13 @@ func TestAgentAnswerWithError(t *testing.T) {
 			name:        "should return unknown code for generic error and JSON serializer",
 			answeredErr: assert.AnError,
 			serializer:  jsonSerializer,
-			expectedErr: e.NewError(errors.New(""), e.ErrUnknownCode),
+			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
+		},
+		{
+			name:        "should return custom code for pitaya error and JSON serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  jsonSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
 		},
 		{
 			name:        "should return unknown code for generic error and Protobuf serializer",
@@ -934,10 +941,22 @@ func TestAgentAnswerWithError(t *testing.T) {
 			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
 		},
 		{
+			name:        "should return custom code for pitaya error and Protobuf serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  protobufSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
 			name:        "should return unknown code for generic error and custom serializer",
 			answeredErr: assert.AnError,
 			serializer:  customSerializer,
-			expectedErr: e.NewError(errors.New(""), e.ErrUnknownCode),
+			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
+		},
+		{
+			name:        "should return custom code for pitaya error and custom serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  customSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
 		},
 	}
 

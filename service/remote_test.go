@@ -345,6 +345,16 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
 		},
 		{
+			name:        "should propagate error for routing wrapped pitaya error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   nil,
+			routeErr:    fmt.Errorf("wrapper error: %w", e.NewError(assert.AnError, "CUSTOM-123")),
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
 			name:        "should return error for rpc call error",
 			route:       *route.NewRoute("sv", "svc", "method"),
 			serverArg:   &cluster.Server{Type: "sv"},
