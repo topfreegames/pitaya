@@ -267,17 +267,56 @@ func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
 }
 
 func TestRemoteServiceRemoteCall(t *testing.T) {
-	rt := route.NewRoute("sv", "svc", "method")
-	sv := &cluster.Server{}
 	tables := []struct {
-		name   string
-		server *cluster.Server
-		res    *protos.Response
-		err    error
+		name        string
+		route       route.Route
+		server      *cluster.Server
+		routeErr    error
+		callRes     *protos.Response
+		callErr     error
+		expectedRes *protos.Response
+		expectedErr error
 	}{
-		{"no_target_route_error", nil, nil, e.NewError(constants.ErrServiceDiscoveryNotInitialized, e.ErrInternalCode)},
-		{"error", sv, nil, errors.New("ble")},
-		{"success", sv, &protos.Response{Data: []byte("ok")}, nil},
+		{
+			name:        "should return internal error for routing generic error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			server:      nil,
+			routeErr:    assert.AnError,
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(constants.ErrServiceDiscoveryNotInitialized, e.ErrInternalCode),
+		},
+		{
+			name:        "should return internal error for routing pitaya error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			server:      nil,
+			routeErr:    e.NewError(assert.AnError, "CUSTOM-123"),
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(constants.ErrServiceDiscoveryNotInitialized, e.ErrInternalCode),
+		},
+		{
+			name:        "should return error for rpc call error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			server:      &cluster.Server{},
+			routeErr:    nil,
+			callRes:     nil,
+			callErr:     assert.AnError,
+			expectedRes: nil,
+			expectedErr: assert.AnError,
+		},
+		{
+			name:        "should succeed",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			server:      &cluster.Server{},
+			routeErr:    nil,
+			callRes:     &protos.Response{Data: []byte("ok")},
+			callErr:     nil,
+			expectedRes: &protos.Response{Data: []byte("ok")},
+			expectedErr: nil,
+		},
 	}
 
 	for _, table := range tables {
@@ -288,17 +327,19 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			sessionPool := sessionmocks.NewMockSessionPool(ctrl)
 			router := router.New()
+			router.AddRoute(table.route.SvType, func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
+				return table.server, table.routeErr
+			})
 			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, nil, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
 			msg := &message.Message{}
 			ctx := context.Background()
-			if table.server != nil {
-				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, mockSession, msg, sv).Return(table.res, table.err)
-			}
-			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, mockSession, msg)
-			assert.Equal(t, table.err, err)
-			assert.Equal(t, table.res, res)
+			mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, &table.route, mockSession, msg, table.server).Return(table.callRes, table.callErr).AnyTimes()
+
+			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, &table.route, mockSession, msg)
+			assert.Equal(t, table.expectedErr, err)
+			assert.Equal(t, table.expectedRes, res)
 		})
 	}
 }
