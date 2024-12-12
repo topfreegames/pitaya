@@ -20,6 +20,8 @@
 
 package errors
 
+import "errors"
+
 // ErrUnknownCode is a string code representing an unknown error
 // This will be used when no error code is sent by the handler
 const ErrUnknownCode = "PIT-000"
@@ -46,9 +48,10 @@ type Error struct {
 	Metadata map[string]string
 }
 
-//NewError ctor
+// NewError ctor
 func NewError(err error, code string, metadata ...map[string]string) *Error {
-	if pitayaErr, ok := err.(*Error); ok {
+	var pitayaErr *Error
+	if ok := errors.As(err, &pitayaErr); ok {
 		if len(metadata) > 0 {
 			mergeMetadatas(pitayaErr, metadata[0])
 		}
