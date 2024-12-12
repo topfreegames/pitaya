@@ -266,18 +266,114 @@ func TestRemoteServiceRegisterFailsIfNoRemoteMethods(t *testing.T) {
 	assert.Equal(t, errors.New("type NoHandlerRemoteComp has no exported methods of remote type"), err)
 }
 
-func TestRemoteServiceRemoteCall(t *testing.T) {
-	rt := route.NewRoute("sv", "svc", "method")
-	sv := &cluster.Server{}
-	tables := []struct {
-		name   string
-		server *cluster.Server
-		res    *protos.Response
-		err    error
+func TestRemoteServiceRemoteCallWithDifferentServerArguments(t *testing.T) {
+	route := route.NewRoute("sv", "svc", "method")
+	table := []struct {
+		name           string
+		serverArg      *cluster.Server
+		routeServer    *cluster.Server
+		expectedServer *cluster.Server
 	}{
-		{"no_target_route_error", nil, nil, e.NewError(constants.ErrServiceDiscoveryNotInitialized, e.ErrInternalCode)},
-		{"error", sv, nil, errors.New("ble")},
-		{"success", sv, &protos.Response{Data: []byte("ok")}, nil},
+		{
+			name:           "should use server argument if provided",
+			serverArg:      &cluster.Server{Type: "sv"},
+			routeServer:    &cluster.Server{Type: "sv2"},
+			expectedServer: &cluster.Server{Type: "sv"},
+		},
+		{
+			name:           "should use route's returned server if server argument is nil",
+			serverArg:      nil,
+			routeServer:    &cluster.Server{Type: "sv"},
+			expectedServer: &cluster.Server{Type: "sv"},
+		},
+	}
+
+	for _, row := range table {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockSession := sessionmocks.NewMockSession(ctrl)
+			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
+			sessionPool := sessionmocks.NewMockSessionPool(ctrl)
+			mockServiceDiscovery := clustermocks.NewMockServiceDiscovery(ctrl)
+			router := router.New()
+			router.SetServiceDiscovery(mockServiceDiscovery)
+			mockServiceDiscovery.EXPECT().GetServersByType(gomock.Any()).Return(map[string]*cluster.Server{row.routeServer.Type: row.routeServer}, nil).AnyTimes()
+
+			msg := &message.Message{}
+			ctx := context.Background()
+			mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, gomock.Any(), mockSession, msg, row.expectedServer).Return(nil, nil).AnyTimes()
+
+			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, nil, pipeline.NewHandlerHooks(), nil)
+			assert.NotNil(t, svc)
+
+			_, err := svc.remoteCall(ctx, row.serverArg, protos.RPCType_Sys, route, mockSession, msg)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestRemoteServiceRemoteCall(t *testing.T) {
+	tables := []struct {
+		name        string
+		route       route.Route
+		serverArg   *cluster.Server
+		routeErr    error
+		callRes     *protos.Response
+		callErr     error
+		expectedRes *protos.Response
+		expectedErr error
+	}{
+		{
+			name:        "should return internal error for routing generic error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   nil,
+			routeErr:    assert.AnError,
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(assert.AnError, e.ErrInternalCode),
+		},
+		{
+			name:        "should propagate error for routing pitaya error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   nil,
+			routeErr:    e.NewError(assert.AnError, "CUSTOM-123"),
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
+			name:        "should propagate error for routing wrapped pitaya error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   nil,
+			routeErr:    fmt.Errorf("wrapper error: %w", e.NewError(assert.AnError, "CUSTOM-123")),
+			callRes:     nil,
+			callErr:     nil,
+			expectedRes: nil,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
+			name:        "should return error for rpc call error",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   &cluster.Server{Type: "sv"},
+			routeErr:    nil,
+			callRes:     nil,
+			callErr:     assert.AnError,
+			expectedRes: nil,
+			expectedErr: assert.AnError,
+		},
+		{
+			name:        "should succeed",
+			route:       *route.NewRoute("sv", "svc", "method"),
+			serverArg:   &cluster.Server{Type: "sv"},
+			routeErr:    nil,
+			callRes:     &protos.Response{Data: []byte("ok")},
+			callErr:     nil,
+			expectedRes: &protos.Response{Data: []byte("ok")},
+			expectedErr: nil,
+		},
 	}
 
 	for _, table := range tables {
@@ -287,18 +383,24 @@ func TestRemoteServiceRemoteCall(t *testing.T) {
 			mockSession := sessionmocks.NewMockSession(ctrl)
 			mockRPCClient := clustermocks.NewMockRPCClient(ctrl)
 			sessionPool := sessionmocks.NewMockSessionPool(ctrl)
+			mockServiceDiscovery := clustermocks.NewMockServiceDiscovery(ctrl)
 			router := router.New()
+			router.SetServiceDiscovery(mockServiceDiscovery)
+			mockServiceDiscovery.EXPECT().GetServersByType(table.route.SvType).Return(map[string]*cluster.Server{"sv": {Type: "sv"}}, nil).AnyTimes()
+
+			router.AddRoute(table.route.SvType, func(ctx context.Context, route *route.Route, payload []byte, servers map[string]*cluster.Server) (*cluster.Server, error) {
+				return &cluster.Server{}, table.routeErr
+			})
 			svc := NewRemoteService(mockRPCClient, nil, nil, nil, nil, router, nil, nil, sessionPool, nil, pipeline.NewHandlerHooks(), nil)
 			assert.NotNil(t, svc)
 
-			msg := &message.Message{}
+			mockRPCClient.EXPECT().Call(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(table.callRes, table.callErr).AnyTimes()
+
 			ctx := context.Background()
-			if table.server != nil {
-				mockRPCClient.EXPECT().Call(ctx, protos.RPCType_Sys, rt, mockSession, msg, sv).Return(table.res, table.err)
-			}
-			res, err := svc.remoteCall(ctx, table.server, protos.RPCType_Sys, rt, mockSession, msg)
-			assert.Equal(t, table.err, err)
-			assert.Equal(t, table.res, res)
+			msg := &message.Message{}
+			res, err := svc.remoteCall(ctx, table.serverArg, protos.RPCType_Sys, &table.route, mockSession, msg)
+			assert.Equal(t, table.expectedErr, err)
+			assert.Equal(t, table.expectedRes, res)
 		})
 	}
 }
