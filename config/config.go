@@ -6,6 +6,8 @@ import (
 	"github.com/topfreegames/pitaya/v2/metrics/models"
 )
 
+const DefaultWriteTimeout = 10 * time.Second
+
 // PitayaConfig provides all the configuration for a pitaya app
 type PitayaConfig struct {
 	SerializerType   uint16 `mapstructure:"serializertype"`
@@ -25,7 +27,8 @@ type PitayaConfig struct {
 	} `mapstructure:"handler"`
 	Buffer struct {
 		Agent struct {
-			Messages int `mapstructure:"messages"`
+			Messages     int           `mapstructure:"messages"`
+			WriteTimeout time.Duration `mapstructure:"writeTimeout"`
 		} `mapstructure:"agent"`
 		Handler struct {
 			LocalProcess  int `mapstructure:"localprocess"`
@@ -91,7 +94,8 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		},
 		Buffer: struct {
 			Agent struct {
-				Messages int `mapstructure:"messages"`
+				Messages     int           `mapstructure:"messages"`
+				WriteTimeout time.Duration `mapstructure:"writeTimeout"`
 			} `mapstructure:"agent"`
 			Handler struct {
 				LocalProcess  int `mapstructure:"localprocess"`
@@ -99,9 +103,11 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 			} `mapstructure:"handler"`
 		}{
 			Agent: struct {
-				Messages int `mapstructure:"messages"`
+				Messages     int           `mapstructure:"messages"`
+				WriteTimeout time.Duration `mapstructure:"writeTimeout"`
 			}{
-				Messages: 100,
+				Messages:     100,
+				WriteTimeout: DefaultWriteTimeout,
 			},
 			Handler: struct {
 				LocalProcess  int `mapstructure:"localprocess"`

@@ -215,6 +215,10 @@ Connection
     - 30s
     - time.Time
     - Keepalive heartbeat interval for the client connection
+  * - pitaya.buffer.agent.writetimeout
+    - 10s
+    - time.Duration
+    - Timeout for agent to send packets
   * - pitaya.conn.ratelimiting.interval
     - 1s
     - time.Duration
