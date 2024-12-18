@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/namespace"
-	"go.etcd.io/etcd/api/v3/mvccpb"
 	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/namespace"
 )
 
 var (
@@ -22,6 +22,7 @@ var (
 
 // EtcdGroupService base ETCD struct solution
 type EtcdGroupService struct {
+	cancelFunc context.CancelFunc
 }
 
 // NewEtcdGroupService returns a new group instance
@@ -281,4 +282,10 @@ func (c *EtcdGroupService) GroupRenewTTL(ctx context.Context, groupName string) 
 		return err
 	}
 	return constants.ErrEtcdLeaseNotFound
+}
+
+func (c *EtcdGroupService) Close() {
+	if c.cancelFunc != nil {
+		c.cancelFunc()
+	}
 }

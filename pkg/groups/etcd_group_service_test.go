@@ -41,65 +41,76 @@ func setup(t *testing.T) (*integration.ClusterV3, GroupService) {
 func TestEtcdCreateDuplicatedGroup(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testCreateDuplicatedGroup(etcdGroupService, t)
 }
 
 func TestEtcdCreateGroup(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testCreateGroup(etcdGroupService, t)
 }
 
 func TestEtcdCreateGroupWithTTL(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testCreateGroupWithTTL(etcdGroupService, t)
 }
 
 func TestEtcdGroupAddMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testGroupAddMember(etcdGroupService, t)
 }
 
 func TestEtcdGroupAddDuplicatedMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testGroupAddDuplicatedMember(etcdGroupService, t)
 }
 
 func TestEtcdGroupContainsMember(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testGroupContainsMember(etcdGroupService, t)
 }
 
 func TestEtcdRemove(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testRemove(etcdGroupService, t)
 }
 
 func TestEtcdDelete(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testDelete(etcdGroupService, t)
 }
 
 func TestEtcdRemoveAll(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testRemoveAll(etcdGroupService, t)
 }
 
 func TestEtcdCount(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testCount(etcdGroupService, t)
 }
 
 func TestEtcdMembers(t *testing.T) {
 	cluster, etcdGroupService := setup(t)
 	defer cluster.Terminate(t)
+	defer etcdGroupService.Close()
 	testMembers(etcdGroupService, t)
 }

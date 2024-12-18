@@ -22,6 +22,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -33,6 +34,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/topfreegames/pitaya/v3/pkg/conn/codec"
 	codecmocks "github.com/topfreegames/pitaya/v3/pkg/conn/codec/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	messagemocks "github.com/topfreegames/pitaya/v3/pkg/conn/message/mocks"
@@ -45,6 +48,7 @@ import (
 	metricsmocks "github.com/topfreegames/pitaya/v3/pkg/metrics/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize"
 	serializemocks "github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
 )
@@ -520,6 +524,7 @@ func TestAgentResponseMID(t *testing.T) {
 			expected := pendingWrite{ctx: ctx, data: []byte("ok!"), err: nil}
 			var err error
 			if table.msgErr {
+				mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil)
 				err = ag.ResponseMID(ctx, table.mid, table.data, table.msgErr)
 			} else {
 				err = ag.ResponseMID(ctx, table.mid, table.data)
@@ -837,19 +842,39 @@ func TestAgentSendHandshakeResponse(t *testing.T) {
 }
 
 func TestAnswerWithError(t *testing.T) {
-	tables := []struct {
+	unknownError := e.NewError(errors.New(""), e.ErrUnknownCode)
+	table := []struct {
 		name          string
+		answeredErr   error
+		encoderErr    error
 		getPayloadErr error
-		resErr        error
-		err           error
+		expectedErr   error
 	}{
-		{"success", nil, nil, nil},
-		{"failure_get_payload", errors.New("serialize err"), nil, errors.New("serialize err")},
-		{"failure_response_mid", nil, errors.New("responsemid err"), errors.New("responsemid err")},
+		{
+			name:          "should succeed with unknown error",
+			answeredErr:   assert.AnError,
+			encoderErr:    nil,
+			getPayloadErr: nil,
+			expectedErr:   unknownError,
+		},
+		{
+			name:          "should not answer if fails to get payload",
+			answeredErr:   assert.AnError,
+			encoderErr:    nil,
+			getPayloadErr: errors.New("serialize err"),
+			expectedErr:   nil,
+		},
+		{
+			name:          "should not answer if fails to send",
+			answeredErr:   assert.AnError,
+			encoderErr:    assert.AnError,
+			getPayloadErr: nil,
+			expectedErr:   nil,
+		},
 	}
 
-	for _, table := range tables {
-		t.Run(table.name, func(t *testing.T) {
+	for _, row := range table {
+		t.Run(row.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -862,14 +887,93 @@ func TestAnswerWithError(t *testing.T) {
 			ag := newAgent(nil, nil, mockEncoder, mockSerializer, time.Second, 1, nil, messageEncoder, nil, sessionPool).(*agentImpl)
 			assert.NotNil(t, ag)
 
-			mockSerializer.EXPECT().Marshal(gomock.Any()).Return(nil, table.getPayloadErr)
-			if table.getPayloadErr == nil {
-				mockEncoder.EXPECT().Encode(packet.Type(packet.Data), gomock.Any())
+			mockSerializer.EXPECT().Marshal(gomock.Any()).Return(nil, row.getPayloadErr).AnyTimes()
+			mockSerializer.EXPECT().Unmarshal(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			mockEncoder.EXPECT().Encode(packet.Type(packet.Data), gomock.Any()).Return(nil, row.encoderErr).AnyTimes()
+
+			ag.AnswerWithError(nil, uint(rand.Int()), row.answeredErr)
+			if row.expectedErr != nil {
+				pWrite := helpers.ShouldEventuallyReceive(t, ag.chSend)
+				assert.Equal(t, pendingWrite{err: row.expectedErr}, pWrite)
 			}
-			ag.AnswerWithError(nil, uint(rand.Int()), errors.New("something went wrong"))
-			if table.err == nil {
-				helpers.ShouldEventuallyReceive(t, ag.chSend)
-			}
+		})
+	}
+}
+
+type customSerializer struct{}
+
+func (*customSerializer) Marshal(obj interface{}) ([]byte, error) { return json.Marshal(obj) }
+func (*customSerializer) Unmarshal(data []byte, obj interface{}) error {
+	return json.Unmarshal(data, obj)
+}
+func (*customSerializer) GetName() string { return "custom" }
+
+func TestAgentAnswerWithError(t *testing.T) {
+	jsonSerializer, err := serialize.NewSerializer(serialize.JSON)
+	require.NoError(t, err)
+
+	protobufSerializer, err := serialize.NewSerializer(serialize.PROTOBUF)
+	require.NoError(t, err)
+
+	customSerializer := &customSerializer{}
+
+	table := []struct {
+		name        string
+		answeredErr error
+		serializer  serialize.Serializer
+		expectedErr error
+	}{
+		{
+			name:        "should return unknown code for generic error and JSON serializer",
+			answeredErr: assert.AnError,
+			serializer:  jsonSerializer,
+			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
+		},
+		{
+			name:        "should return custom code for pitaya error and JSON serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  jsonSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
+			name:        "should return unknown code for generic error and Protobuf serializer",
+			answeredErr: assert.AnError,
+			serializer:  protobufSerializer,
+			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
+		},
+		{
+			name:        "should return custom code for pitaya error and Protobuf serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  protobufSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+		{
+			name:        "should return unknown code for generic error and custom serializer",
+			answeredErr: assert.AnError,
+			serializer:  customSerializer,
+			expectedErr: e.NewError(assert.AnError, e.ErrUnknownCode),
+		},
+		{
+			name:        "should return custom code for pitaya error and custom serializer",
+			answeredErr: e.NewError(assert.AnError, "CUSTOM-123"),
+			serializer:  customSerializer,
+			expectedErr: e.NewError(assert.AnError, "CUSTOM-123"),
+		},
+	}
+
+	for _, row := range table {
+		t.Run(row.name, func(t *testing.T) {
+			encoder := codec.NewPomeloPacketEncoder()
+
+			messageEncoder := message.NewMessagesEncoder(false)
+			sessionPool := session.NewSessionPool()
+			ag := newAgent(nil, nil, encoder, row.serializer, time.Second, 1, nil, messageEncoder, nil, sessionPool).(*agentImpl)
+			assert.NotNil(t, ag)
+
+			ag.AnswerWithError(nil, uint(rand.Int()), row.answeredErr)
+
+			pWrite := helpers.ShouldEventuallyReceive(t, ag.chSend)
+			assert.Equal(t, row.expectedErr, pWrite.(pendingWrite).err)
 		})
 	}
 }

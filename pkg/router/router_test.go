@@ -10,6 +10,7 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/cluster"
 	"github.com/topfreegames/pitaya/v3/pkg/cluster/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/conn/message"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/route"
 )
@@ -107,4 +108,14 @@ func TestAddRoute(t *testing.T) {
 			assert.Nil(t, router.routesMap["anotherServerType"])
 		})
 	}
+}
+
+func TestRouteFailIfNullServiceDiscovery(t *testing.T) {
+	t.Parallel()
+
+	router := New()
+	_, err := router.Route(context.Background(), protos.RPCType_Sys, serverType, route.NewRoute(serverType, "service", "method"), &message.Message{
+		Data: []byte{0x01},
+	})
+	assert.Equal(t, constants.ErrServiceDiscoveryNotInitialized, err)
 }
