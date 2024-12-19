@@ -549,7 +549,7 @@ func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentra
 
 	tags := opentracing.Tags{
 		"span.kind": "connection",
-		"addr": remoteAddress,
+		"addr":      remoteAddress,
 	}
 
 	var parent opentracing.SpanContext
