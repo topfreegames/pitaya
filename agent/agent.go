@@ -663,7 +663,7 @@ func (a *agentImpl) reportChannelSize() {
 		logger.Log.Warnf("chSend is at maximum capacity")
 	}
 	for _, mr := range a.metricsReporters {
-		if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
+		if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
 			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
 		}
 	}

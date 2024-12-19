@@ -188,12 +188,13 @@ func (p *PrometheusReporter) registerMetrics(
 		append([]string{"type"}, additionalLabelsKeys...),
 	)
 
-	p.gaugeReportersMap[ChannelCapacity] = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
+	p.histogramReportersMap[ChannelCapacity] = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
 			Namespace:   "pitaya",
 			Subsystem:   "channel",
 			Name:        ChannelCapacity,
 			Help:        "the available capacity of the channel",
+			Buckets:     []float64{50, 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000},
 			ConstLabels: constLabels,
 		},
 		append([]string{"channel"}, additionalLabelsKeys...),
