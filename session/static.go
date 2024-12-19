@@ -39,5 +39,5 @@ func CloseAll() {
 
 // GetNumberOfConnectedClients returns the number of connected clients
 func GetNumberOfConnectedClients() int64 {
-	return DefaultSessionPool.GetSessionCount()
+	return DefaultSessionPool.GetNumberOfConnectedClients()
 }

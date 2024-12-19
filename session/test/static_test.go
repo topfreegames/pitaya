@@ -1,6 +1,7 @@
 package test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -114,4 +115,16 @@ func TestStaticCloseAll(t *testing.T) {
 
 	session.DefaultSessionPool = sessionPool
 	session.CloseAll()
+}
+
+func TestGetNumberOfConnectedClients(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	expected := int64(math.MaxInt64)
+	sessionPool := mocks.NewMockSessionPool(ctrl)
+	sessionPool.EXPECT().GetNumberOfConnectedClients().Return(expected)
+
+	session.DefaultSessionPool = sessionPool
+	numberOfConnections := session.GetNumberOfConnectedClients()
+	require.Equal(t, expected, numberOfConnections)
 }
