@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"github.com/topfreegames/pitaya/v2/constants"
+	"math"
 	"testing"
 	"time"
 
@@ -921,4 +922,16 @@ func TestStaticGetModule(t *testing.T) {
 			require.Equal(t, row.module, module)
 		})
 	}
+}
+
+func TestGetNumberOfConnectedClients(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	expected := int64(math.MaxInt64)
+
+	app := mocks.NewMockPitaya(ctrl)
+	app.EXPECT().GetNumberOfConnectedClients().Return(expected)
+
+	DefaultApp = app
+	require.Equal(t, expected, GetNumberOfConnectedClients())
 }
