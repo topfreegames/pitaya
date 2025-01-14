@@ -125,6 +125,8 @@ type Pitaya interface {
 	RegisterModuleAfter(module interfaces.Module, name string) error
 	RegisterModuleBefore(module interfaces.Module, name string) error
 	GetModule(name string) (interfaces.Module, error)
+
+	GetNumberOfConnectedClients() int64
 }
 
 // App is the base app struct
@@ -552,4 +554,9 @@ func (app *App) StartWorker() {
 func (app *App) RegisterRPCJob(rpcJob worker.RPCJob) error {
 	err := app.worker.RegisterRPCJob(rpcJob)
 	return err
+}
+
+// GetNumberOfConnectedClients returns the number of connected clients
+func (app *App) GetNumberOfConnectedClients() int64 {
+	return app.sessionPool.GetSessionCount()
 }
