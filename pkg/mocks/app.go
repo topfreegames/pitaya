@@ -116,6 +116,20 @@ func (mr *MockPitayaMockRecorder) GetModule(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModule", reflect.TypeOf((*MockPitaya)(nil).GetModule), arg0)
 }
 
+// GetNumberOfConnectedClients mocks base method.
+func (m *MockPitaya) GetNumberOfConnectedClients() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNumberOfConnectedClients")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetNumberOfConnectedClients indicates an expected call of GetNumberOfConnectedClients.
+func (mr *MockPitayaMockRecorder) GetNumberOfConnectedClients() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNumberOfConnectedClients", reflect.TypeOf((*MockPitaya)(nil).GetNumberOfConnectedClients))
+}
+
 // GetServer mocks base method.
 func (m *MockPitaya) GetServer() *cluster.Server {
 	m.ctrl.T.Helper()

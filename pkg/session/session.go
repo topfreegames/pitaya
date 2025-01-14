@@ -64,6 +64,7 @@ type SessionPool interface {
 	OnSessionClose(f func(s Session))
 	CloseAll()
 	AddHandshakeValidator(name string, f func(data *HandshakeData) error)
+	GetNumberOfConnectedClients() int64
 }
 
 // HandshakeClientData represents information about the client sent on the handshake.
@@ -308,6 +309,11 @@ func (pool *sessionPoolImpl) CloseAll() {
 // handshake packets are processed. Errors will be raised with the given name.
 func (pool *sessionPoolImpl) AddHandshakeValidator(name string, f func(data *HandshakeData) error) {
 	pool.handshakeValidators[name] = f
+}
+
+// GetNumberOfConnectedClients returns the number of connected clients
+func (pool *sessionPoolImpl) GetNumberOfConnectedClients() int64 {
+	return pool.GetSessionCount()
 }
 
 func (s *sessionImpl) updateEncodedData() error {
