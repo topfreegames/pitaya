@@ -256,6 +256,7 @@ type NatsRPCClientConfig struct {
 	MaxReconnectionRetries int           `mapstructure:"maxreconnectionretries"`
 	RequestTimeout         time.Duration `mapstructure:"requesttimeout"`
 	ConnectionTimeout      time.Duration `mapstructure:"connectiontimeout"`
+	WebsocketCompression   bool          `mapstructure:"websocketcompression"`
 }
 
 // NewDefaultNatsRPCClientConfig provides default nats client configuration
@@ -265,6 +266,7 @@ func NewDefaultNatsRPCClientConfig() *NatsRPCClientConfig {
 		MaxReconnectionRetries: 15,
 		RequestTimeout:         time.Duration(5 * time.Second),
 		ConnectionTimeout:      time.Duration(2 * time.Second),
+		WebsocketCompression:   true,
 	}
 }
 
@@ -285,8 +287,9 @@ type NatsRPCServerConfig struct {
 		Messages int `mapstructure:"messages"`
 		Push     int `mapstructure:"push"`
 	} `mapstructure:"buffer"`
-	Services          int           `mapstructure:"services"`
-	ConnectionTimeout time.Duration `mapstructure:"connectiontimeout"`
+	Services             int           `mapstructure:"services"`
+	ConnectionTimeout    time.Duration `mapstructure:"connectiontimeout"`
+	WebsocketCompression bool          `mapstructure:"websocketcompression"`
 }
 
 // NewDefaultNatsRPCServerConfig provides default nats server configuration
@@ -301,8 +304,9 @@ func NewDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
 			Messages: 75,
 			Push:     100,
 		},
-		Services:          30,
-		ConnectionTimeout: time.Duration(2 * time.Second),
+		Services:             30,
+		ConnectionTimeout:    time.Duration(2 * time.Second),
+		WebsocketCompression: true,
 	}
 }
 

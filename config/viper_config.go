@@ -21,10 +21,11 @@
 package config
 
 import (
-	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/spf13/viper"
 )
@@ -81,11 +82,13 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.client.nats.connect":                natsRPCClientConfig.Connect,
 		"pitaya.cluster.rpc.client.nats.connectiontimeout":      natsRPCClientConfig.ConnectionTimeout,
 		"pitaya.cluster.rpc.client.nats.maxreconnectionretries": natsRPCClientConfig.MaxReconnectionRetries,
+		"pitaya.cluster.rpc.client.nats.websocketcompression":   natsRPCClientConfig.WebsocketCompression,
 		"pitaya.cluster.rpc.client.nats.requesttimeout":         natsRPCClientConfig.RequestTimeout,
 		"pitaya.cluster.rpc.server.grpc.port":                   grpcRPCServerConfig.Port,
 		"pitaya.cluster.rpc.server.nats.connect":                natsRPCServerConfig.Connect,
 		"pitaya.cluster.rpc.server.nats.connectiontimeout":      natsRPCServerConfig.ConnectionTimeout,
 		"pitaya.cluster.rpc.server.nats.maxreconnectionretries": natsRPCServerConfig.MaxReconnectionRetries,
+		"pitaya.cluster.rpc.server.nats.websocketcompression":   natsRPCServerConfig.WebsocketCompression,
 		"pitaya.cluster.rpc.server.nats.services":               natsRPCServerConfig.Services,
 		"pitaya.cluster.rpc.server.nats.buffer.messages":        natsRPCServerConfig.Buffer.Messages,
 		"pitaya.cluster.rpc.server.nats.buffer.push":            natsRPCServerConfig.Buffer.Push,
