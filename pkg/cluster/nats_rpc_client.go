@@ -54,6 +54,7 @@ type NatsRPCClient struct {
 	server                 *Server
 	metricsReporters       []metrics.Reporter
 	appDieChan             chan bool
+	websocketCompression   bool
 }
 
 // NewNatsRPCClient ctor
@@ -87,6 +88,7 @@ func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
 	if ns.reqTimeout == 0 {
 		return constants.ErrNatsNoRequestTimeout
 	}
+	ns.websocketCompression = config.WebsocketCompression
 	return nil
 }
 
@@ -242,6 +244,7 @@ func (ns *NatsRPCClient) Init() error {
 		ns.appDieChan,
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
+		nats.Compression(ns.websocketCompression),
 	)
 	if err != nil {
 		return err

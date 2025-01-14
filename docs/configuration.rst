@@ -130,6 +130,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 15
     - int
     - Maximum number of retries to reconnect to nats for the client
+  * - pitaya.cluster.rpc.client.nats.websocketcompression
+    - true
+    - bool
+    - Enables compression in websocket connections to NATS. Needs both client and server to be enabled
   * - pitaya.cluster.rpc.server.nats.connect
     - nats://localhost:4222
     - string
@@ -142,6 +146,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - 15
     - int
     - Maximum number of retries to reconnect to nats for the server
+  * - pitaya.cluster.rpc.server.nats.websocketcompression
+    - true
+    - bool
+    - Enables compression in websocket connections to NATS. Needs both client and server to be enabled
   * - pitaya.cluster.rpc.server.grpc.port
     - 3434
     - int
