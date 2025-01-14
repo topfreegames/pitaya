@@ -732,6 +732,20 @@ func (mr *MockSessionPoolMockRecorder) CloseAll() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAll", reflect.TypeOf((*MockSessionPool)(nil).CloseAll))
 }
 
+// GetNumberOfConnectedClients mocks base method.
+func (m *MockSessionPool) GetNumberOfConnectedClients() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNumberOfConnectedClients")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetNumberOfConnectedClients indicates an expected call of GetNumberOfConnectedClients.
+func (mr *MockSessionPoolMockRecorder) GetNumberOfConnectedClients() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNumberOfConnectedClients", reflect.TypeOf((*MockSessionPool)(nil).GetNumberOfConnectedClients))
+}
+
 // GetSessionByID mocks base method.
 func (m *MockSessionPool) GetSessionByID(arg0 int64) session.Session {
 	m.ctrl.T.Helper()
