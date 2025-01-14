@@ -63,6 +63,7 @@ type NatsRPCServer struct {
 	metricsReporters       []metrics.Reporter
 	sessionPool            session.SessionPool
 	appDieChan             chan bool
+	websocketCompression   bool
 }
 
 // NewNatsRPCServer ctor
@@ -114,6 +115,7 @@ func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
 	ns.userKickCh = make(chan *protos.KickMsg, ns.messagesBufferSize)
 	ns.responses = make([]*protos.Response, ns.service)
 	ns.requests = make([]*protos.Request, ns.service)
+	ns.websocketCompression = config.WebsocketCompression
 	return nil
 }
 
@@ -332,6 +334,7 @@ func (ns *NatsRPCServer) Init() error {
 		ns.appDieChan,
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
+		nats.Compression(ns.websocketCompression),
 	)
 	if err != nil {
 		return err
