@@ -239,7 +239,7 @@ func (r *RemoteService) DoRPC(ctx context.Context, serverID string, route *route
 		Data:  protoData,
 	}
 
-	if route.SvType == r.server.Type || serverID == r.server.ID {
+	if (route.SvType == r.server.Type && serverID == "") || serverID == r.server.ID {
 		return r.Loopback(ctx, route, msg)
 	}
 
