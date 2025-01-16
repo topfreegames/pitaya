@@ -79,9 +79,5 @@ func (app *App) doSendRPC(ctx context.Context, serverID, routeStr string, reply 
 		return constants.ErrNoServerTypeChosenForRPC
 	}
 
-	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
-		return constants.ErrNonsenseRPC
-	}
-
 	return app.remoteService.RPC(ctx, serverID, r, reply, arg)
 }
