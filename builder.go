@@ -222,6 +222,7 @@ func (builder *Builder) Build() Pitaya {
 		builder.PacketEncoder,
 		builder.Serializer,
 		builder.Config.Heartbeat.Interval,
+		builder.Config.Buffer.Agent.WriteTimeout,
 		builder.MessageEncoder,
 		builder.Config.Buffer.Agent.Messages,
 		builder.SessionPool,
