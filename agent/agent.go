@@ -264,20 +264,31 @@ func (a *agentImpl) packetEncodeMessage(m *message.Message) ([]byte, error) {
 func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			brokenPipeErr := errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
-			err = fmt.Errorf("%w: %v", brokenPipeErr, panicErr)
+			err = errors.NewError(
+				fmt.Errorf("%s: %s", constants.ErrBrokenPipe.Error(), panicErr),
+				errors.ErrClientClosedRequest,
+			)
+			logger.Log.Error("agent send panicked: ", err)
 		}
 	}()
 	a.reportChannelSize()
 
 	m, err := a.getMessageFromPendingMessage(pendingMsg)
 	if err != nil {
+		logger.Log.Errorf(
+			"agent send failed when getting pending msg. route: %s, type: %s, err: %s",
+			pendingMsg.route, &pendingMsg.typ, err,
+		)
 		return err
 	}
 
 	// packet encode
 	p, err := a.packetEncodeMessage(m)
 	if err != nil {
+		logger.Log.Errorf(
+			"agent send failed when encoding the msg. route: %s, type: %s, err: %s",
+			pendingMsg.route, &pendingMsg.typ, err,
+		)
 		return err
 	}
 
@@ -522,10 +533,16 @@ func (a *agentImpl) write() {
 			if writeErr != nil {
 				if e.Is(writeErr, os.ErrDeadlineExceeded) {
 					// Log the timeout error but continue processing
-					logger.Log.Warnf("Context deadline exceeded for write in conn %s: %s (ctx=%v)", writeErr.Error(), ctx)
+					logger.Log.Warnf(
+						"Context deadline exceeded for write in conn (%s) | session (%s): %s",
+						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
+					)
 				} else {
 					err = errors.NewError(writeErr, errors.ErrClosedRequest)
-					logger.Log.Errorf("Failed to write in conn: %s (ctx=%v), agent will close", writeErr.Error(), ctx)
+					logger.Log.Errorf(
+						"Failed to write in conn (%s) | session (%s): %s, agent will close",
+						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
+					)
 					metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 					// close agent if low-level conn broke during write
 					return

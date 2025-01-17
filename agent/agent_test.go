@@ -160,7 +160,10 @@ func TestAgentSend(t *testing.T) {
 		err  error
 	}{
 		{"success", nil},
-		{"failure", e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
+		{"failure", e.NewError(
+			fmt.Errorf("%s: send on closed channel", constants.ErrBrokenPipe.Error()),
+			e.ErrClientClosedRequest,
+		)},
 	}
 
 	for _, table := range tables {
@@ -363,7 +366,10 @@ func TestAgentPush(t *testing.T) {
 		err  error
 	}{
 		{"success_raw", []byte("ok"), nil},
-		{"failure", []byte("ok"), e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
+		{"failure", []byte("ok"), e.NewError(
+			fmt.Errorf("%s: send on closed channel", constants.ErrBrokenPipe.Error()),
+			e.ErrClientClosedRequest,
+		)},
 	}
 
 	for _, table := range tables {
@@ -490,8 +496,10 @@ func TestAgentResponseMID(t *testing.T) {
 		{"success_raw_msg_err", uint(rand.Int()), []byte("ok"), true, nil},
 		{"success_struct", uint(rand.Int()), &someStruct{A: "ok"}, false, nil},
 		{"failure_empty_mid", 0, []byte("ok"), false, constants.ErrSessionOnNotify},
-		{"failure_send", uint(rand.Int()), []byte("ok"), false,
-			e.NewError(constants.ErrBrokenPipe, e.ErrClientClosedRequest)},
+		{"failure_send", uint(rand.Int()), []byte("ok"), false, e.NewError(
+			fmt.Errorf("%s: send on closed channel", constants.ErrBrokenPipe.Error()),
+			e.ErrClientClosedRequest,
+		)},
 	}
 
 	for _, table := range tables {
@@ -1267,7 +1275,7 @@ func TestAgentWriteChSendWriteError(t *testing.T) {
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, errorTags, gomock.Any())
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(3)
+	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(4)
 	mockConn.EXPECT().Close().Do(func() {
 		wg.Done()
 	})
@@ -1311,7 +1319,7 @@ func TestAgentWriteChSendWriteTimeout(t *testing.T) {
 
 	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any()).Times(2)
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(4)
+	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(5)
 	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil).Times(2)
 	mockConn.EXPECT().Write(expectedFirstPacket).Do(func(b []byte) {
 		time.Sleep(writeTimeout * 2)
