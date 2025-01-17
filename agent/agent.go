@@ -263,8 +263,9 @@ func (a *agentImpl) packetEncodeMessage(m *message.Message) ([]byte, error) {
 
 func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			err = errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
+		if panicErr := recover(); panicErr != nil {
+			brokenPipeErr := errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
+			err = fmt.Errorf("%w: %v", brokenPipeErr, panicErr)
 		}
 	}()
 	a.reportChannelSize()
