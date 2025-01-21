@@ -34,8 +34,8 @@ func getChannel(serverType, serverID string) string {
 func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
 	natsOptions := append(
 		options,
-		nats.DisconnectHandler(func(_ *nats.Conn) {
-			logger.Log.Warn("disconnected from nats!")
+		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
+			logger.Log.Warnf("disconnected from nats! Reason: %q\n", err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())

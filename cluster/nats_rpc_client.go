@@ -54,6 +54,11 @@ type NatsRPCClient struct {
 	metricsReporters       []metrics.Reporter
 	appDieChan             chan bool
 	websocketCompression   bool
+	reconnectJitter        time.Duration
+	reconnectJitterTLS     time.Duration
+	reconnectWait          time.Duration
+	pingInterval           time.Duration
+	maxPingsOutstanding    int
 }
 
 // NewNatsRPCClient ctor
@@ -88,6 +93,11 @@ func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
 		return constants.ErrNatsNoRequestTimeout
 	}
 	ns.websocketCompression = config.WebsocketCompression
+	ns.reconnectJitter = config.ReconnectJitter
+	ns.reconnectJitterTLS = config.ReconnectJitterTLS
+	ns.reconnectWait = config.ReconnectWait
+	ns.pingInterval = config.PingInterval
+	ns.maxPingsOutstanding = config.MaxPingsOutstanding
 	return nil
 }
 
@@ -240,9 +250,14 @@ func (ns *NatsRPCClient) Init() error {
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
 		nats.Compression(ns.websocketCompression),
+		nats.ReconnectJitter(ns.reconnectJitter, ns.reconnectJitterTLS),
+		nats.ReconnectWait(ns.reconnectWait),
+		nats.PingInterval(ns.pingInterval),
+		nats.MaxPingsOutstanding(ns.maxPingsOutstanding),
 	)
 	if err != nil {
 		return err
