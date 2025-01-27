@@ -32,6 +32,7 @@ func TestGRPCServerInit(t *testing.T) {
 
 	sv := getServer()
 	gs, err := NewGRPCServer(c, sv, []metrics.Reporter{})
+	assert.NoError(t, err)
 	gs.SetPitayaServer(mockPitayaServer)
 	err = gs.Init()
 	assert.NoError(t, err)

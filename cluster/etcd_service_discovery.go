@@ -614,18 +614,18 @@ func (sd *etcdServiceDiscovery) revoke() error {
 	close(sd.stopLeaseChan)
 	c := make(chan error, 1)
 	go func() {
-		defer close(c)
-		logger.Log.Debug("waiting for etcd revoke")
-		ctx, cancel := context.WithTimeout(context.Background(), sd.revokeTimeout)
-		_, err := sd.cli.Revoke(ctx, sd.leaseID)
-		cancel()
-		c <- err
-		logger.Log.Debug("finished waiting for etcd revoke")
+		if sd.cli != nil {
+			defer close(c)
+			logger.Log.Debug("waiting for etcd revoke")
+			ctx, cancel := context.WithTimeout(context.Background(), sd.revokeTimeout)
+			_, err := sd.cli.Revoke(ctx, sd.leaseID)
+			cancel()
+			c <- err
+			logger.Log.Debug("finished waiting for etcd revoke")
+		}
 	}()
-	select {
-	case err := <-c:
-		return err // completed normally
-	}
+	err := <-c
+	return err // completed normally
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
