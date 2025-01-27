@@ -324,8 +324,8 @@ func (app *App) Start() {
 		app.running = false
 	}()
 
-	sg := make(chan os.Signal)
-	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+	sg := make(chan os.Signal, 1)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
 	maxSessionCount := func() int64 {
 		count := app.sessionPool.GetSessionCount()
