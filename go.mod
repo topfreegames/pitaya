@@ -1,6 +1,6 @@
 module github.com/topfreegames/pitaya/v2
 
-go 1.20
+go 1.22.0
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible
@@ -13,7 +13,7 @@ require (
 	github.com/mailgun/proxyproto v1.0.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats-server/v2 v2.8.4
-	github.com/nats-io/nats.go v1.38.0
+	github.com/nats-io/nats.go v1.39.0
 	github.com/nats-io/nuid v1.0.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.16.0
