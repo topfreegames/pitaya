@@ -1,8 +1,6 @@
 module github.com/topfreegames/pitaya/v3
 
-go 1.22
-
-toolchain go1.22.4
+go 1.22.0
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible
@@ -17,7 +15,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats-server/v2 v2.10.24
-	github.com/nats-io/nats.go v1.38.0
+	github.com/nats-io/nats.go v1.39.0
 	github.com/nats-io/nuid v1.0.1
 	github.com/prometheus/client_golang v1.16.0
 	github.com/sirupsen/logrus v1.9.3
