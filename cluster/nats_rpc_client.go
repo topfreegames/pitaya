@@ -250,7 +250,7 @@ func (ns *NatsRPCClient) Init() error {
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
-		nats.RetryOnFailedConnect(true),
+		nats.RetryOnFailedConnect(false),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
 		nats.Compression(ns.websocketCompression),
