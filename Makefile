@@ -29,7 +29,7 @@ init-submodules:
 	@git submodule init
 
 setup-ci:
-	@go get github.com/mattn/goveralls
+	@go install github.com/mattn/goveralls
 	@go get -u github.com/wadey/gocovmerge
 
 setup-protobuf-macos:

@@ -156,13 +156,17 @@ func TestNatsRPCServerOnSessionBind(t *testing.T) {
 
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.onSessionBind(context.Background(), mockSession)
 	assert.NoError(t, err)
 	assert.NotNil(t, rpcServer.userKickCh)
+	conn.Close()
 }
 
 func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
@@ -171,7 +175,10 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	sv := getServer()
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
@@ -181,6 +188,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	conn.Publish(GetBindBroadcastTopic(sv.Type), dt)
 	msg := helpers.ShouldEventuallyReceive(t, rpcServer.GetBindingsChannel()).(*nats.Msg)
 	assert.Equal(t, msg.Data, dt)
+	conn.Close()
 }
 
 func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
@@ -189,7 +197,10 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	sv := getServer()
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
@@ -203,6 +214,7 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	assert.NoError(t, err)
 	msg := helpers.ShouldEventuallyReceive(t, rpcServer.getUserKickChannel()).(*protos.KickMsg)
 	assert.Equal(t, msg.UserId, kick.UserId)
+	conn.Close()
 }
 
 func TestNatsRPCServerGetUserPushChannel(t *testing.T) {
@@ -228,7 +240,10 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	sv := getServer()
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
@@ -251,6 +266,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 			helpers.ShouldEventuallyReceive(t, rpcServer.userPushCh)
 		})
 	}
+	conn.Close()
 }
 
 func TestNatsRPCServerSubscribe(t *testing.T) {
@@ -258,7 +274,10 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 	sv := getServer()
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
@@ -281,6 +300,7 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 			assert.Equal(t, table.msg, r.Data)
 		})
 	}
+	conn.Close()
 }
 
 func TestNatsRPCServerHandleMessages(t *testing.T) {
@@ -293,7 +313,10 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil, nil)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
@@ -324,6 +347,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			assert.Equal(t, table.req.Msg.Id, r.Msg.Id)
 		})
 	}
+	conn.Close()
 }
 
 func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
@@ -343,7 +367,10 @@ func TestNatsRPCServerInitShouldFailIfConnFails(t *testing.T) {
 func TestNatsRPCServerInit(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	ctrl := gomock.NewController(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	cfg := config.NewDefaultPitayaConfig().Cluster.RPC.Server.Nats
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
@@ -381,7 +408,10 @@ func TestNatsRPCServerInit(t *testing.T) {
 func TestNatsRPCServerProcessBindings(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	cfg := config.NewDefaultPitayaConfig().Cluster.RPC.Server.Nats
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
@@ -424,7 +454,10 @@ func TestNatsRPCServerProcessBindings(t *testing.T) {
 func TestNatsRPCServerProcessPushes(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	ctrl := gomock.NewController(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	cfg := config.NewDefaultPitayaConfig().Cluster.RPC.Server.Nats
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()
@@ -459,7 +492,10 @@ func TestNatsRPCServerProcessPushes(t *testing.T) {
 func TestNatsRPCServerProcessKick(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	ctrl := gomock.NewController(t)
-	defer s.Shutdown()
+	defer func() {
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	cfg := config.NewDefaultPitayaConfig().Cluster.RPC.Server.Nats
 	cfg.Connect = fmt.Sprintf("nats://%s", s.Addr())
 	sv := getServer()

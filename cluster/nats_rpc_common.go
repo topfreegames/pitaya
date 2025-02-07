@@ -34,13 +34,46 @@ func getChannel(serverType, serverID string) string {
 	return fmt.Sprintf("pitaya/servers/%s/%s", serverType, serverID)
 }
 
+func drainAndClose(nc *nats.Conn) error {
+	if nc == nil {
+		return nil
+	}
+	// Drain connection (this will flush any pending messages and prevent new ones)
+	err := nc.Drain()
+	if err != nil {
+		logger.Log.Warnf("error draining nats connection: %v", err)
+		// Even if drain fails, try to close
+		nc.Close()
+		return err
+	}
+
+	// Wait for drain to complete with timeout
+	timeout := time.After(5 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for nc.IsDraining() {
+		select {
+		case <-ticker.C:
+			continue
+		case <-timeout:
+			logger.Log.Warn("drain timeout exceeded, forcing close")
+			nc.Close()
+			return fmt.Errorf("drain timeout exceeded")
+		}
+	}
+
+	// Close will happen automatically after drain completes
+	return nil
+}
+
 func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
 	connectedCh := make(chan bool)
 	initialConnectErrorCh := make(chan error)
 	natsOptions := append(
 		options,
-		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
-			logger.Log.Warnf("disconnected from nats! Reason: %q\n", err)
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+			logger.Log.Warnf("disconnected from nats (%s)! Reason: %q\n", nc.ConnectedAddr(), err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
@@ -78,7 +111,8 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 				logger.Log.Errorf(err.Error())
 			}
 		}),
-		nats.ConnectHandler(func(*nats.Conn) {
+		nats.ConnectHandler(func(nc *nats.Conn) {
+			logger.Log.Infof("connected to nats on %s", nc.ConnectedAddr())
 			connectedCh <- true
 		}),
 	)
@@ -104,8 +138,16 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 	case <-connectedCh:
 		return nc, nil
 	case err := <-initialConnectErrorCh:
+		drainErr := drainAndClose(nc)
+		if drainErr != nil {
+			logger.Log.Warnf("failed to drain and close: %s", drainErr)
+		}
 		return nil, err
 	case <-time.After(maxConnTimeout * 2):
+		drainErr := drainAndClose(nc)
+		if drainErr != nil {
+			logger.Log.Warnf("failed to drain and close: %s", drainErr)
+		}
 		return nil, fmt.Errorf("timeout setting up nats connection")
 	}
 }
