@@ -77,6 +77,17 @@ const (
 	DEL
 )
 
+func BuildRequest(
+	ctx context.Context,
+	rpcType protos.RPCType,
+	route *route.Route,
+	session session.Session,
+	msg *message.Message,
+	thisServer *Server,
+) (protos.Request, error) {
+	return buildRequest(ctx, rpcType, route, session, msg, thisServer)
+}
+
 func buildRequest(
 	ctx context.Context,
 	rpcType protos.RPCType,
