@@ -26,9 +26,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/quic-go/quic-go"
 	"github.com/abiosoft/ishell/v2"
 	"github.com/mitchellh/go-homedir"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 	"github.com/topfreegames/pitaya/v3/pkg/client"
 )
@@ -51,17 +51,22 @@ func protoClient(log Log, addr string) error {
 }
 
 func tryConnect(addr string) error {
-	if err := pClient.ConnectToQUIC(addr, &quic.Config{
+	if err := pClient.ConnectToQUIC(addr, &quic.Config{}, &tls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"h3"},
 	}); err != nil {
-		if err := pClient.ConnectToWS(addr, "", &tls.Config{
-			InsecureSkipVerify: true,
-		}); err != nil {
-			if err := pClient.ConnectToWS(addr, ""); err != nil {
-				if err := pClient.ConnectTo(addr, &tls.Config{
-					InsecureSkipVerify: true,
-				}); err != nil {
-					if err := pClient.ConnectTo(addr); err != nil {
-						return err
+		if err := pClient.ConnectToQUIC(addr, &quic.Config{}); err != nil {
+			fmt.Println(err)
+			if err := pClient.ConnectToWS(addr, "", &tls.Config{
+				InsecureSkipVerify: true,
+			}); err != nil {
+				if err := pClient.ConnectToWS(addr, ""); err != nil {
+					if err := pClient.ConnectTo(addr, &tls.Config{
+						InsecureSkipVerify: true,
+					}); err != nil {
+						if err := pClient.ConnectTo(addr); err != nil {
+							return err
+						}
 					}
 				}
 			}

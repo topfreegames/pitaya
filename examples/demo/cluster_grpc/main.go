@@ -138,9 +138,10 @@ func createApp(port int, isFrontend bool, svType string, meta map[string]string,
 				Certificates: []tls.Certificate{
 					loadTLSCertificates(),
 				},
+				NextProtos: []string{"h3"},
 			}
 			quicConf := &quic.Config{
-				MaxIdleTimeout: 35 * time.Second,
+				MaxIdleTimeout:  35 * time.Second,
 				EnableDatagrams: true,
 			}
 			quicAcceptor := acceptor.NewQuicAcceptor(fmt.Sprintf(":%d", port), tlsConf, quicConf)

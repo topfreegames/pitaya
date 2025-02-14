@@ -375,6 +375,7 @@ func (c *Client) ConnectToQUIC(addr string, quicConfig *quic.Config, tlsConfig .
 	} else {
 		tls := &tls.Config{
 			InsecureSkipVerify: true,
+			NextProtos:         []string{"h3"},
 		}
 		conn, err = quic.DialAddr(context.Background(), addr, tls, quicConfig)
 	}
