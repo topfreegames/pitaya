@@ -394,6 +394,7 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 				Msg:  err.Error(),
 			},
 		}
+		err = r.overrideError(err)
 		if val, ok := err.(*e.Error); ok {
 			response.Error.Code = val.Code
 			if val.Metadata != nil {
@@ -466,6 +467,7 @@ func (r *RemoteService) handleRPCSys(ctx context.Context, req *protos.Request, r
 				Msg:  err.Error(),
 			},
 		}
+		err = r.overrideError(err)
 		if val, ok := err.(*e.Error); ok {
 			response.Error.Code = val.Code
 			if val.Metadata != nil {
@@ -520,4 +522,9 @@ func (r *RemoteService) Docs(getPtrNames bool) (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil
 	}
 	return docgenerator.RemotesDocs(r.server.Type, r.services, getPtrNames)
+}
+
+func (r *RemoteService) overrideError(err error) *e.Error {
+	ee, _ := util.GetErrorPayload(r.serializer, err)
+	return util.GetErrorFromPayload(r.serializer, ee).(*e.Error)
 }
