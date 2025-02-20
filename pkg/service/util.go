@@ -147,7 +147,11 @@ func processHandlerMessage(
 		args = append(args, reflect.ValueOf(arg))
 	}
 
-	resp, err := util.Pcall(handler.Method, args)
+	fn := component.DefaultHandlerMethodInvoke
+	if handler.MethodProxy != nil {
+		fn = handler.MethodProxy
+	}
+	resp, err := fn(handler.Method, args) //util.Pcall(handler.Method, args)
 	if remote && msgType == message.Notify {
 		// This is a special case and should only happen with nats rpc client
 		// because we used nats request we have to answer to it or else a timeout

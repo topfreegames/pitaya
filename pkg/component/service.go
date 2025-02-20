@@ -36,14 +36,16 @@ type (
 		Type        reflect.Type   // low-level type of method
 		IsRawArg    bool           // whether the data need to serialize
 		MessageType message.Type   // handler allowed message type (either request or notify)
+		MethodProxy MethodProxy    // method proxy
 	}
 
 	//Remote represents remote's meta information.
 	Remote struct {
-		Receiver reflect.Value  // receiver of method
-		Method   reflect.Method // method stub
-		HasArgs  bool           // if remote has no args we won't try to serialize received data into arguments
-		Type     reflect.Type   // low-level type of method
+		Receiver    reflect.Value  // receiver of method
+		Method      reflect.Method // method stub
+		HasArgs     bool           // if remote has no args we won't try to serialize received data into arguments
+		Type        reflect.Type   // low-level type of method
+		MethodProxy MethodProxy    // method proxy
 	}
 
 	// Service implements a specific service, some of it's methods will be
@@ -98,12 +100,12 @@ func (s *Service) ExtractHandler() error {
 	}
 
 	// Install the methods
-	s.Handlers = suitableHandlerMethods(s.Type, s.Options.nameFunc)
+	s.Handlers = suitableHandlerMethods(s.Type, s.Options.nameFunc, s.Options.proxyChain)
 
 	if len(s.Handlers) == 0 {
 		str := ""
 		// To help the user, see if a pointer receiver would work.
-		method := suitableHandlerMethods(reflect.PtrTo(s.Type), s.Options.nameFunc)
+		method := suitableHandlerMethods(reflect.PointerTo(s.Type), s.Options.nameFunc, s.Options.proxyChain)
 		if len(method) != 0 {
 			str = "type " + s.Name + " has no exported methods of handler type (hint: pass a pointer to value of that type)"
 		} else {

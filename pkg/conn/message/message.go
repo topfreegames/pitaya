@@ -73,7 +73,7 @@ type Message struct {
 	ID         uint   // unique id, zero while notify mode
 	Route      string // route for locating service
 	Data       []byte // payload
-	compressed bool   // is message compressed
+	Compressed bool   // is message Compressed
 	Err        bool   // is an error message
 }
 
@@ -92,7 +92,7 @@ func (m *Message) String() string {
 		types[m.Type],
 		m.ID,
 		m.Route,
-		m.compressed,
+		m.Compressed,
 		m.Err,
 		m.Data,
 		len(m.Data))
@@ -144,6 +144,14 @@ func GetDictionary() map[string]uint16 {
 		dict[k] = v
 	}
 	return dict
+}
+
+func GetDictCode(route string) uint16 {
+	return routes[route]
+}
+
+func GetDictRoute(code uint16) string {
+	return codes[code]
 }
 
 func (t *Type) String() string {

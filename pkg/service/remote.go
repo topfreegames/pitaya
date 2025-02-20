@@ -384,7 +384,11 @@ func (r *RemoteService) handleRPCUser(ctx context.Context, req *protos.Request, 
 	if remote.HasArgs {
 		params = append(params, reflect.ValueOf(arg))
 	}
-	ret, err = util.Pcall(remote.Method, params)
+	fn := component.DefaultHandlerMethodInvoke
+	if remote.MethodProxy != nil {
+		fn = remote.MethodProxy
+	}
+	ret, err = fn(remote.Method, params) //util.Pcall(remote.Method, params)
 
 	ret, err = r.remoteHooks.AfterHandler.ExecuteAfterPipeline(ctx, ret, err)
 	if err != nil {

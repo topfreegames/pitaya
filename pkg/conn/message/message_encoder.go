@@ -168,7 +168,7 @@ func Decode(data []byte) (*Message, error) {
 				return nil, ErrInvalidMessage
 			}
 
-			m.compressed = true
+			m.Compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
 			routesCodesMutex.RLock()
 			route, ok := codes[code]
@@ -179,7 +179,7 @@ func Decode(data []byte) (*Message, error) {
 			m.Route = route
 			offset += 2
 		} else {
-			m.compressed = false
+			m.Compressed = false
 			rl := data[offset]
 			offset++
 
