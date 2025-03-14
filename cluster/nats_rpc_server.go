@@ -63,6 +63,12 @@ type NatsRPCServer struct {
 	metricsReporters       []metrics.Reporter
 	sessionPool            session.SessionPool
 	appDieChan             chan bool
+	websocketCompression   bool
+	reconnectJitter        time.Duration
+	reconnectJitterTLS     time.Duration
+	reconnectWait          time.Duration
+	pingInterval           time.Duration
+	maxPingsOutstanding    int
 }
 
 // NewNatsRPCServer ctor
@@ -114,6 +120,12 @@ func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
 	ns.userKickCh = make(chan *protos.KickMsg, ns.messagesBufferSize)
 	ns.responses = make([]*protos.Response, ns.service)
 	ns.requests = make([]*protos.Request, ns.service)
+	ns.websocketCompression = config.WebsocketCompression
+	ns.reconnectJitter = config.ReconnectJitter
+	ns.reconnectJitterTLS = config.ReconnectJitterTLS
+	ns.reconnectWait = config.ReconnectWait
+	ns.pingInterval = config.PingInterval
+	ns.maxPingsOutstanding = config.MaxPingsOutstanding
 	return nil
 }
 
@@ -245,6 +257,8 @@ func (ns *NatsRPCServer) getUserKickChannel() chan *protos.KickMsg {
 func (ns *NatsRPCServer) marshalResponse(res *protos.Response) ([]byte, error) {
 	p, err := proto.Marshal(res)
 	if err != nil {
+		logger.Log.Errorf("error marshaling response: %s", err.Error())
+
 		res := &protos.Response{
 			Error: &protos.Error{
 				Code: e.ErrUnknownCode,
@@ -271,6 +285,8 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 					Msg:  err.Error(),
 				},
 			}
+
+			logger.Log.Errorf("error getting context from request: %s", err)
 		} else {
 			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
 			if err != nil {
@@ -326,8 +342,14 @@ func (ns *NatsRPCServer) Init() error {
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
+		nats.RetryOnFailedConnect(false),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
+		nats.Compression(ns.websocketCompression),
+		nats.ReconnectJitter(ns.reconnectJitter, ns.reconnectJitterTLS),
+		nats.ReconnectWait(ns.reconnectWait),
+		nats.PingInterval(ns.pingInterval),
+		nats.MaxPingsOutstanding(ns.maxPingsOutstanding),
 	)
 	if err != nil {
 		return err

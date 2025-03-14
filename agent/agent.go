@@ -26,11 +26,13 @@ import (
 	e "errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/conn/codec"
 	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/conn/packet"
@@ -56,6 +58,8 @@ var (
 	// herd contains the handshake error response data
 	herd []byte
 	once sync.Once
+
+	noOpTracer = opentracing.NoopTracer{}
 )
 
 const handlerType = "handler"
@@ -74,6 +78,7 @@ type (
 		decoder            codec.PacketDecoder // binary decoder
 		encoder            codec.PacketEncoder // binary encoder
 		heartbeatTimeout   time.Duration
+		writeTimeout       time.Duration
 		lastAt             int64 // last heartbeat unix time stamp
 		messageEncoder     message.Encoder
 		messagesBufferSize int // size of the pending messages buffer
@@ -128,6 +133,7 @@ type (
 		decoder            codec.PacketDecoder // binary decoder
 		encoder            codec.PacketEncoder // binary encoder
 		heartbeatTimeout   time.Duration
+		writeTimeout       time.Duration
 		messageEncoder     message.Encoder
 		messagesBufferSize int // size of the pending messages buffer
 		metricsReporters   []metrics.Reporter
@@ -142,6 +148,7 @@ func NewAgentFactory(
 	encoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	heartbeatTimeout time.Duration,
+	writeTimeout time.Duration,
 	messageEncoder message.Encoder,
 	messagesBufferSize int,
 	sessionPool session.SessionPool,
@@ -152,6 +159,7 @@ func NewAgentFactory(
 		decoder:            decoder,
 		encoder:            encoder,
 		heartbeatTimeout:   heartbeatTimeout,
+		writeTimeout:       writeTimeout,
 		messageEncoder:     messageEncoder,
 		messagesBufferSize: messagesBufferSize,
 		sessionPool:        sessionPool,
@@ -162,7 +170,7 @@ func NewAgentFactory(
 
 // CreateAgent returns a new agent
 func (f *agentFactoryImpl) CreateAgent(conn net.Conn) Agent {
-	return newAgent(conn, f.decoder, f.encoder, f.serializer, f.heartbeatTimeout, f.messagesBufferSize, f.appDieChan, f.messageEncoder, f.metricsReporters, f.sessionPool)
+	return newAgent(conn, f.decoder, f.encoder, f.serializer, f.heartbeatTimeout, f.writeTimeout, f.messagesBufferSize, f.appDieChan, f.messageEncoder, f.metricsReporters, f.sessionPool)
 }
 
 // NewAgent create new agent instance
@@ -172,6 +180,7 @@ func newAgent(
 	packetEncoder codec.PacketEncoder,
 	serializer serialize.Serializer,
 	heartbeatTime time.Duration,
+	writeTimeout time.Duration,
 	messagesBufferSize int,
 	dieChan chan bool,
 	messageEncoder message.Encoder,
@@ -186,6 +195,10 @@ func newAgent(
 		herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
 	})
 
+	if writeTimeout <= 0 {
+		writeTimeout = config.DefaultWriteTimeout
+	}
+
 	a := &agentImpl{
 		appDieChan:         dieChan,
 		chDie:              make(chan struct{}),
@@ -197,6 +210,7 @@ func newAgent(
 		decoder:            packetDecoder,
 		encoder:            packetEncoder,
 		heartbeatTimeout:   heartbeatTime,
+		writeTimeout:       writeTimeout,
 		lastAt:             time.Now().Unix(),
 		serializer:         serializer,
 		state:              constants.StatusStart,
@@ -249,20 +263,32 @@ func (a *agentImpl) packetEncodeMessage(m *message.Message) ([]byte, error) {
 
 func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			err = errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
+		if panicErr := recover(); panicErr != nil {
+			err = errors.NewError(
+				fmt.Errorf("%s: %s", constants.ErrBrokenPipe.Error(), panicErr),
+				errors.ErrClientClosedRequest,
+			)
+			logger.Log.Error("agent send panicked: ", err)
 		}
 	}()
 	a.reportChannelSize()
 
 	m, err := a.getMessageFromPendingMessage(pendingMsg)
 	if err != nil {
+		logger.Log.Errorf(
+			"agent send failed when getting pending msg. route: %s, type: %s, err: %s",
+			pendingMsg.route, &pendingMsg.typ, err,
+		)
 		return err
 	}
 
 	// packet encode
 	p, err := a.packetEncodeMessage(m)
 	if err != nil {
+		logger.Log.Errorf(
+			"agent send failed when encoding the msg. route: %s, type: %s, err: %s",
+			pendingMsg.route, &pendingMsg.typ, err,
+		)
 		return err
 	}
 
@@ -498,20 +524,72 @@ func (a *agentImpl) write() {
 	for {
 		select {
 		case pWrite := <-a.chSend:
-			// close agent if low-level Conn broken
-			if _, err := a.conn.Write(pWrite.data); err != nil {
-				tracing.FinishSpan(pWrite.ctx, err)
-				metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, err)
-				logger.Log.Errorf("Failed to write in conn: %s", err.Error())
-				return
+			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
+
+			writeErr := a.writeToConnection(ctx, data)
+
+			tracing.FinishSpan(ctx, nil)
+
+			if writeErr != nil {
+				if e.Is(writeErr, os.ErrDeadlineExceeded) {
+					// Log the timeout error but continue processing
+					logger.Log.Warnf(
+						"Context deadline exceeded for write in conn (%s) | session (%s): %s",
+						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
+					)
+				} else {
+					err = errors.NewError(writeErr, errors.ErrClosedRequest)
+					logger.Log.Errorf(
+						"Failed to write in conn (%s) | session (%s): %s, agent will close",
+						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
+					)
+					metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
+					// close agent if low-level conn broke during write
+					return
+				}
 			}
-			var e error
-			tracing.FinishSpan(pWrite.ctx, e)
-			metrics.ReportTimingFromCtx(pWrite.ctx, a.metricsReporters, handlerType, pWrite.err)
+
+			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		case <-a.chStopWrite:
 			return
 		}
 	}
+}
+
+func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
+	span := createConnectionSpan(ctx, a.conn, "conn write")
+	defer span.Finish()
+
+	a.conn.SetWriteDeadline(time.Now().Add(a.writeTimeout))
+	_, writeErr := a.conn.Write(data)
+	if writeErr != nil {
+		tracing.LogError(span, writeErr.Error())
+		return writeErr
+	}
+	return writeErr
+}
+
+func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentracing.Span {
+	if ctx == nil {
+		return noOpTracer.StartSpan(op)
+	}
+
+	remoteAddress := ""
+	if conn.RemoteAddr() != nil {
+		remoteAddress = conn.RemoteAddr().String()
+	}
+
+	tags := opentracing.Tags{
+		"span.kind": "connection",
+		"addr":      remoteAddress,
+	}
+
+	var parent opentracing.SpanContext
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		parent = span.Context()
+	}
+
+	return opentracing.StartSpan(op, opentracing.ChildOf(parent), tags)
 }
 
 // SendRequest sends a request to a server

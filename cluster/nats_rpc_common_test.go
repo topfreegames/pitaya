@@ -46,8 +46,13 @@ func TestNatsRPCCommonGetChannel(t *testing.T) {
 
 func TestNatsRPCCommonSetupNatsConn(t *testing.T) {
 	t.Parallel()
+	var conn *nats.Conn
 	s := helpers.GetTestNatsServer(t)
-	defer s.Shutdown()
+	defer func() {
+		drainAndClose(conn)
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -55,25 +60,124 @@ func TestNatsRPCCommonSetupNatsConn(t *testing.T) {
 
 func TestNatsRPCCommonSetupNatsConnShouldError(t *testing.T) {
 	t.Parallel()
-	conn, err := setupNatsConn("nats://localhost:1234", nil)
+	conn, err := setupNatsConn("nats://invalid:1234", nil)
 	assert.Error(t, err)
 	assert.Nil(t, conn)
 }
 
 func TestNatsRPCCommonCloseHandler(t *testing.T) {
 	t.Parallel()
+	var conn *nats.Conn
 	s := helpers.GetTestNatsServer(t)
+	defer func() {
+		drainAndClose(conn)
+		s.Shutdown()
+		s.WaitForShutdown()
+	}()
 
 	dieChan := make(chan bool)
+
+	go func() {
+		value, ok := <-dieChan
+		assert.True(t, ok)
+		assert.True(t, value)
+	}()
 
 	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), dieChan, nats.MaxReconnects(1),
 		nats.ReconnectWait(1*time.Millisecond))
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
+}
 
-	s.Shutdown()
+func TestNatsRPCCommonWaitReconnections(t *testing.T) {
+	var conn *nats.Conn
+	ts := helpers.GetTestNatsServer(t)
+	defer func() {
+		drainAndClose(conn)
+		ts.Shutdown()
+		ts.WaitForShutdown()
+	}()
 
-	value, ok := <-dieChan
-	assert.True(t, ok)
-	assert.True(t, value)
+	invalidAddr := "nats://invalid:4222"
+	validAddr := ts.ClientURL()
+
+	urls := fmt.Sprintf("%s,%s", invalidAddr, validAddr)
+
+	// Setup connection with retry enabled
+	appDieCh := make(chan bool)
+	conn, err := setupNatsConn(
+		urls,
+		appDieCh,
+		nats.ReconnectWait(10*time.Millisecond),
+		nats.MaxReconnects(5),
+		nats.RetryOnFailedConnect(true),
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	assert.True(t, conn.IsConnected())
+}
+
+func TestNatsRPCCommonDoNotBlockOnConnectionFail(t *testing.T) {
+	invalidAddr := "nats://invalid:4222"
+
+	appDieCh := make(chan bool)
+	done := make(chan any)
+
+	var conn *nats.Conn
+	ts := helpers.GetTestNatsServer(t)
+	defer func() {
+		drainAndClose(conn)
+		ts.Shutdown()
+		ts.WaitForShutdown()
+	}()
+
+	go func() {
+		conn, err := setupNatsConn(
+			invalidAddr,
+			appDieCh,
+			nats.ReconnectWait(10*time.Millisecond),
+			nats.MaxReconnects(2),
+			nats.RetryOnFailedConnect(true),
+		)
+		assert.Error(t, err)
+		assert.Nil(t, conn)
+		close(done)
+		close(appDieCh)
+	}()
+
+	select {
+	case <-appDieCh:
+	case <-done:
+	case <-time.After(250 * time.Millisecond):
+		t.Fail()
+	}
+}
+
+func TestNatsRPCCommonFailWithoutAppDieChan(t *testing.T) {
+	invalidAddr := "nats://invalid:4222"
+
+	appDieCh := make(chan bool)
+	done := make(chan any)
+
+	var conn *nats.Conn
+	ts := helpers.GetTestNatsServer(t)
+	defer func() {
+		drainAndClose(conn)
+		ts.Shutdown()
+		ts.WaitForShutdown()
+	}()
+
+	go func() {
+		conn, err := setupNatsConn(invalidAddr, appDieCh)
+		assert.Error(t, err)
+		assert.Nil(t, conn)
+		close(done)
+		close(appDieCh)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(200 * time.Millisecond):
+		t.Fail()
+	}
 }

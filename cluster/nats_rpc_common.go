@@ -22,6 +22,9 @@ package cluster
 
 import (
 	"fmt"
+	"os"
+	"syscall"
+	"time"
 
 	nats "github.com/nats-io/nats.go"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -31,11 +34,46 @@ func getChannel(serverType, serverID string) string {
 	return fmt.Sprintf("pitaya/servers/%s/%s", serverType, serverID)
 }
 
+func drainAndClose(nc *nats.Conn) error {
+	if nc == nil {
+		return nil
+	}
+	// Drain connection (this will flush any pending messages and prevent new ones)
+	err := nc.Drain()
+	if err != nil {
+		logger.Log.Warnf("error draining nats connection: %v", err)
+		// Even if drain fails, try to close
+		nc.Close()
+		return err
+	}
+
+	// Wait for drain to complete with timeout
+	timeout := time.After(5 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for nc.IsDraining() {
+		select {
+		case <-ticker.C:
+			continue
+		case <-timeout:
+			logger.Log.Warn("drain timeout exceeded, forcing close")
+			nc.Close()
+			return fmt.Errorf("drain timeout exceeded")
+		}
+	}
+
+	// Close will happen automatically after drain completes
+	return nil
+}
+
 func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
+	connectedCh := make(chan bool)
+	initialConnectErrorCh := make(chan error)
 	natsOptions := append(
 		options,
-		nats.DisconnectHandler(func(_ *nats.Conn) {
-			logger.Log.Warn("disconnected from nats!")
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+			logger.Log.Warnf("disconnected from nats (%s)! Reason: %q\n", nc.ConnectedAddr(), err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
@@ -49,7 +87,19 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 
 			logger.Log.Errorf("nats connection closed. reason: %q", nc.LastError())
 			if appDieChan != nil {
-				appDieChan <- true
+				select {
+				case appDieChan <- true:
+					return
+				case initialConnectErrorCh <- nc.LastError():
+					logger.Log.Warnf("appDieChan not ready, sending error in initialConnectCh")
+				default:
+					logger.Log.Warnf("no termination channel available, sending SIGTERM to app")
+					err := syscall.Kill(os.Getpid(), syscall.SIGTERM)
+					if err != nil {
+						logger.Log.Errorf("could not kill the application via SIGTERM, exiting", err)
+						os.Exit(1)
+					}
+				}
 			}
 		}),
 		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
@@ -61,11 +111,43 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 				logger.Log.Errorf(err.Error())
 			}
 		}),
+		nats.ConnectHandler(func(nc *nats.Conn) {
+			logger.Log.Infof("connected to nats on %s", nc.ConnectedAddr())
+			connectedCh <- true
+		}),
 	)
 
 	nc, err := nats.Connect(connectString, natsOptions...)
 	if err != nil {
 		return nil, err
 	}
-	return nc, nil
+	maxConnTimeout := nc.Opts.Timeout
+	if nc.Opts.RetryOnFailedConnect {
+		// This is non-deterministic becase jitter TLS is different and we need to simplify
+		// the calculations. What we want to do is simply not block forever the call while
+		// we don't set a timeout so low that hinders our own reconnect config:
+		// 		maxReconnectTimeout = reconnectWait + reconnectJitter + reconnectTimeout
+		// 		connectionTimeout + (maxReconnectionAttemps * maxReconnectTimeout)
+		// Thus, the time.After considers 2 times this value
+		maxReconnectionTimeout := nc.Opts.ReconnectWait + nc.Opts.ReconnectJitter + nc.Opts.Timeout
+		maxConnTimeout += time.Duration(nc.Opts.MaxReconnect) * maxReconnectionTimeout
+	}
+
+	logger.Log.Debugf("attempting nats connection for a max of %v", maxConnTimeout)
+	select {
+	case <-connectedCh:
+		return nc, nil
+	case err := <-initialConnectErrorCh:
+		drainErr := drainAndClose(nc)
+		if drainErr != nil {
+			logger.Log.Warnf("failed to drain and close: %s", drainErr)
+		}
+		return nil, err
+	case <-time.After(maxConnTimeout * 2):
+		drainErr := drainAndClose(nc)
+		if drainErr != nil {
+			logger.Log.Warnf("failed to drain and close: %s", drainErr)
+		}
+		return nil, fmt.Errorf("timeout setting up nats connection")
+	}
 }

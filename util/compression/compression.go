@@ -3,7 +3,7 @@ package compression
 import (
 	"bytes"
 	"compress/zlib"
-	"io/ioutil"
+	"io"
 )
 
 func DeflateData(data []byte) ([]byte, error) {
@@ -24,7 +24,7 @@ func InflateData(data []byte) ([]byte, error) {
 	}
 	defer zr.Close()
 
-	return ioutil.ReadAll(zr)
+	return io.ReadAll(zr)
 }
 
 func IsCompressed(data []byte) bool {
