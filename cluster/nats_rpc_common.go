@@ -23,7 +23,6 @@ package cluster
 import (
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	nats "github.com/nats-io/nats.go"
@@ -93,10 +92,19 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 				case initialConnectErrorCh <- nc.LastError():
 					logger.Log.Warnf("appDieChan not ready, sending error in initialConnectCh")
 				default:
-					logger.Log.Warnf("no termination channel available, sending SIGTERM to app")
-					err := syscall.Kill(os.Getpid(), syscall.SIGTERM)
+					logger.Log.Warnf("no termination channel available, sending termination signal to app")
+
+					p, err := os.FindProcess(os.Getpid())
 					if err != nil {
-						logger.Log.Errorf("could not kill the application via SIGTERM, exiting", err)
+						logger.Log.Errorf("could not find current process: %v", err)
+						os.Exit(1)
+					}
+
+					// On Windows, Signal() with Interrupt works
+					// On Unix-like systems, this is equivalent to SIGINT
+					err = p.Signal(os.Interrupt)
+					if err != nil {
+						logger.Log.Errorf("could not send interrupt signal to the application: %v", err)
 						os.Exit(1)
 					}
 				}
