@@ -34,6 +34,7 @@ type Server struct {
 	Metadata map[string]string `json:"metadata"`
 	Frontend bool              `json:"frontend"`
 	Hostname string            `json:"hostname"`
+	Loopback bool              `json:"loopback"`
 }
 
 // NewServer ctor
@@ -52,6 +53,7 @@ func NewServer(id, serverType string, frontend bool, metadata ...map[string]stri
 		Metadata: d,
 		Frontend: frontend,
 		Hostname: h,
+		Loopback: false,
 	}
 }
 

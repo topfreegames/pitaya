@@ -92,6 +92,8 @@ func NewBuilder(isFrontend bool,
 	config config.PitayaConfig,
 ) *Builder {
 	server := cluster.NewServer(uuid.New().String(), serverType, isFrontend, serverMetadata)
+	server.Loopback = config.Cluster.RPC.Server.Loopback
+
 	dieChan := make(chan bool)
 
 	metricsReporters := []metrics.Reporter{}
