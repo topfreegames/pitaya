@@ -91,8 +91,13 @@ func NewBuilder(isFrontend bool,
 	serverMetadata map[string]string,
 	config config.PitayaConfig,
 ) *Builder {
-	server := cluster.NewServer(uuid.New().String(), serverType, isFrontend, serverMetadata)
-	server.Loopback = config.Cluster.RPC.Server.Loopback
+	server := cluster.NewServerWithOptions(
+		uuid.New().String(),
+		serverType,
+		isFrontend,
+		cluster.WithMetadata(serverMetadata),
+		cluster.WithLoopbackEnabled(config.Cluster.RPC.Server.Loopback),
+	)
 
 	dieChan := make(chan bool)
 
