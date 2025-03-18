@@ -455,9 +455,9 @@ type ClusterRPCConfig struct {
 		Nats NatsRPCClientConfig `mapstructure:"nats"`
 	} `mapstructure:"client"`
 	Server struct {
-		Grpc     GRPCServerConfig    `mapstructure:"grpc"`
-		Nats     NatsRPCServerConfig `mapstructure:"nats"`
-		Loopback bool                `mapstructure:"loopback"`
+		Grpc            GRPCServerConfig    `mapstructure:"grpc"`
+		Nats            NatsRPCServerConfig `mapstructure:"nats"`
+		LoopbackEnabled bool                `mapstructure:"loopbackenabled"`
 	} `mapstructure:"server"`
 }
 
@@ -471,13 +471,13 @@ func newDefaultClusterRPCConfig() *ClusterRPCConfig {
 			Nats: *newDefaultNatsRPCClientConfig(),
 		},
 		Server: struct {
-			Grpc     GRPCServerConfig    `mapstructure:"grpc"`
-			Nats     NatsRPCServerConfig `mapstructure:"nats"`
-			Loopback bool                `mapstructure:"loopback"`
+			Grpc            GRPCServerConfig    `mapstructure:"grpc"`
+			Nats            NatsRPCServerConfig `mapstructure:"nats"`
+			LoopbackEnabled bool                `mapstructure:"loopbackenabled"`
 		}{
-			Grpc:     *newDefaultGRPCServerConfig(),
-			Nats:     *newDefaultNatsRPCServerConfig(),
-			Loopback: false,
+			Grpc:            *newDefaultGRPCServerConfig(),
+			Nats:            *newDefaultNatsRPCServerConfig(),
+			LoopbackEnabled: false,
 		},
 	}
 

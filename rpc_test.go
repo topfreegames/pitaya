@@ -66,6 +66,7 @@ func (r *RemoteMock) Bla(ctx context.Context, args *test.SomeStruct) (*test.Some
 
 func TestDoSendRPC(t *testing.T) {
 	config := config.NewDefaultPitayaConfig()
+	config.Cluster.RPC.Server.LoopbackEnabled = true
 	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *config).(*App)
 	app.server.ID = "myserver"
 	app.rpcServer = &cluster.NatsRPCServer{}

@@ -96,7 +96,7 @@ func NewBuilder(isFrontend bool,
 		serverType,
 		isFrontend,
 		cluster.WithMetadata(serverMetadata),
-		cluster.WithLoopbackEnabled(config.Cluster.RPC.Server.Loopback),
+		cluster.WithLoopbackEnabled(config.Cluster.RPC.Server.LoopbackEnabled),
 	)
 
 	dieChan := make(chan bool)

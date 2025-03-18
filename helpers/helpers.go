@@ -168,7 +168,7 @@ func startServer(
 	cmd.Env = []string{
 		fmt.Sprintf("PITAYA_METRICS_PROMETHEUS_PORT=%d", promPort),
 		fmt.Sprintf("PITAYA_CLUSTER_RPC_CLIENT_GRPC_LAZYCONNECTION=%v", lazyConnection),
-		fmt.Sprintf("PITAYA_CLUSTER_RPC_SERVER_LOOPBACK=%v", loopback),
+		fmt.Sprintf("PITAYA_CLUSTER_RPC_SERVER_LOOPBACKENABLED=%v", loopback),
 	}
 
 	outPipe, err := cmd.StderrPipe()
