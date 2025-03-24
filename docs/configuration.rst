@@ -94,6 +94,10 @@ The configurations only need to be set if the RPC Service is enabled with the gi
     - Default value
     - Type
     - Description
+  * - pitaya.cluster.rpc.server.loopbackenabled
+    - false
+    - bool
+    - When enabled, allow to make RPC calls to the same pitaya server, which is not possible by default.
   * - pitaya.cluster.rpc.server.nats.buffer.messages
     - 75
     - int

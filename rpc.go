@@ -79,7 +79,7 @@ func (app *App) doSendRPC(ctx context.Context, serverID, routeStr string, reply 
 		return constants.ErrNoServerTypeChosenForRPC
 	}
 
-	if (r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID {
+	if ((r.SvType == app.server.Type && serverID == "") || serverID == app.server.ID) && !app.server.IsLoopbackEnabled() {
 		return constants.ErrNonsenseRPC
 	}
 

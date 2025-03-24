@@ -105,7 +105,6 @@ func waitForServerToBeReady(t testing.TB, out *bufio.Reader) {
 	}, true, 100*time.Millisecond, 30*time.Second)
 }
 
-// StartServer starts a server
 func StartServer(
 	t testing.TB,
 	frontend, debug bool,
@@ -113,6 +112,29 @@ func StartServer(
 	port int,
 	sdPrefix string,
 	grpc, lazyConnection bool,
+) func() {
+	return startServer(t, frontend, debug, svType, port, sdPrefix, grpc, lazyConnection, false)
+}
+
+func StartServerWithLoopback(
+	t testing.TB,
+	frontend, debug bool,
+	svType string,
+	port int,
+	sdPrefix string,
+	grpc, lazyConnection bool,
+) func() {
+	return startServer(t, frontend, debug, svType, port, sdPrefix, grpc, lazyConnection, true)
+}
+
+// StartServer starts a server
+func startServer(
+	t testing.TB,
+	frontend, debug bool,
+	svType string,
+	port int,
+	sdPrefix string,
+	grpc, lazyConnection, loopback bool,
 ) func() {
 	grpcPort := GetFreePort(t)
 	promPort := GetFreePort(t)
@@ -146,6 +168,7 @@ func StartServer(
 	cmd.Env = []string{
 		fmt.Sprintf("PITAYA_METRICS_PROMETHEUS_PORT=%d", promPort),
 		fmt.Sprintf("PITAYA_CLUSTER_RPC_CLIENT_GRPC_LAZYCONNECTION=%v", lazyConnection),
+		fmt.Sprintf("PITAYA_CLUSTER_RPC_SERVER_LOOPBACKENABLED=%v", loopback),
 	}
 
 	outPipe, err := cmd.StderrPipe()

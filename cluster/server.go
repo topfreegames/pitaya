@@ -29,11 +29,38 @@ import (
 
 // Server struct
 type Server struct {
+	loopbackEnabled bool
+
 	ID       string            `json:"id"`
 	Type     string            `json:"type"`
 	Metadata map[string]string `json:"metadata"`
 	Frontend bool              `json:"frontend"`
 	Hostname string            `json:"hostname"`
+}
+
+type ServerOption func(*Server)
+
+func NewServerWithOptions(id, serverType string, frontend bool, opts ...ServerOption) *Server {
+	server := NewServer(id, serverType, frontend, nil)
+	for _, option := range opts {
+		option(server)
+	}
+
+	return server
+}
+
+func WithMetadata(metadata ...map[string]string) func(*Server) {
+	return func(server *Server) {
+		if len(metadata) > 0 {
+			server.Metadata = metadata[0]
+		}
+	}
+}
+
+func WithLoopbackEnabled(enabled bool) func(*Server) {
+	return func(server *Server) {
+		server.loopbackEnabled = enabled
+	}
 }
 
 // NewServer ctor
@@ -47,11 +74,12 @@ func NewServer(id, serverType string, frontend bool, metadata ...map[string]stri
 		d = metadata[0]
 	}
 	return &Server{
-		ID:       id,
-		Type:     serverType,
-		Metadata: d,
-		Frontend: frontend,
-		Hostname: h,
+		loopbackEnabled: false,
+		ID:              id,
+		Type:            serverType,
+		Metadata:        d,
+		Frontend:        frontend,
+		Hostname:        h,
 	}
 }
 
@@ -63,4 +91,8 @@ func (s *Server) AsJSONString() string {
 		return ""
 	}
 	return string(str)
+}
+
+func (s *Server) IsLoopbackEnabled() bool {
+	return s.loopbackEnabled
 }

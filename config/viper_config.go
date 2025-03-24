@@ -73,6 +73,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.cluster.rpc.client.nats.pinginterval":           pitayaConfig.Cluster.RPC.Client.Nats.PingInterval,
 		"pitaya.cluster.rpc.client.nats.maxpingsoutstanding":    pitayaConfig.Cluster.RPC.Client.Nats.MaxPingsOutstanding,
 		"pitaya.cluster.rpc.client.nats.requesttimeout":         pitayaConfig.Cluster.RPC.Client.Nats.RequestTimeout,
+		"pitaya.cluster.rpc.server.loopbackenabled":             pitayaConfig.Cluster.RPC.Server.LoopbackEnabled,
 		"pitaya.cluster.rpc.server.grpc.port":                   pitayaConfig.Cluster.RPC.Server.Grpc.Port,
 		"pitaya.cluster.rpc.server.nats.connect":                pitayaConfig.Cluster.RPC.Server.Nats.Connect,
 		"pitaya.cluster.rpc.server.nats.connectiontimeout":      pitayaConfig.Cluster.RPC.Server.Nats.ConnectionTimeout,
