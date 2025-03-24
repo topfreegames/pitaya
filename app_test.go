@@ -42,6 +42,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/constants"
 	e "github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/internal/testing/assertions"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/logger/logrus"
 	"github.com/topfreegames/pitaya/v2/route"
@@ -204,6 +205,19 @@ func TestShutdown(t *testing.T) {
 		app.Shutdown()
 	}()
 	<-app.dieChan
+}
+
+func TestDieChan_ShouldCloseWhenMessageIsSent(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	go func() {
+		app.Start()
+	}()
+
+	app.dieChan <- true
+
+	assertions.ShouldEventuallyClose(t, app.dieChan, 1*time.Second)
 }
 
 func TestConfigureDefaultMetricsReporter(t *testing.T) {

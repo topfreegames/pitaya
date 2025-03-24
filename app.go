@@ -70,6 +70,8 @@ const (
 
 // Pitaya App interface
 type Pitaya interface {
+	// GetDieChan gets the channel that the app sinalizes when its going to die. Note that listening to this channel
+	// might swallow internal signals, so it's recommended to wait for Start to return or invoke Shutdown when terminating the application.
 	GetDieChan() chan bool
 	SetDebug(debug bool)
 	SetHeartbeatTime(interval time.Duration)
@@ -212,7 +214,8 @@ func NewApp(
 	return app
 }
 
-// GetDieChan gets the channel that the app sinalizes when its going to die
+// GetDieChan gets the channel that the app sinalizes when its going to die. Note that listening to this channel
+// might swallow internal signals, so it's recommended to wait for Start to return or invoke Shutdown when terminating the application.
 func (app *App) GetDieChan() chan bool {
 	return app.dieChan
 }
@@ -340,6 +343,7 @@ func (app *App) Start() {
 	select {
 	case <-app.dieChan:
 		logger.Log.Warn("the app will shutdown in a few seconds")
+		close(app.dieChan)
 	case s := <-sg:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
 		if app.config.Session.Drain.Enabled && s == syscall.SIGTERM {

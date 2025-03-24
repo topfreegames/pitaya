@@ -58,6 +58,8 @@ func Configure(
 	session.DefaultSessionPool = builder.SessionPool
 }
 
+// GetDieChan gets the channel that the app sinalizes when its going to die. Note that listening to this channel
+// might swallow internal signals, so it's recommended to wait for Start to return or invoke Shutdown when terminating the application.
 func GetDieChan() chan bool {
 	return DefaultApp.GetDieChan()
 }
