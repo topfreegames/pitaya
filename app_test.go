@@ -27,6 +27,8 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -112,12 +114,6 @@ func TestSetLogger(t *testing.T) {
 	l := logrus.New()
 	SetLogger(l)
 	assert.Equal(t, l, logger.Log)
-}
-
-func TestGetDieChan(t *testing.T) {
-	builderConfig := config.NewDefaultPitayaConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
-	assert.Equal(t, app.dieChan, app.GetDieChan())
 }
 
 func TestGetSever(t *testing.T) {
@@ -207,6 +203,46 @@ func TestShutdown(t *testing.T) {
 	<-app.dieChan
 }
 
+func TestGetDieChan_ShouldNotHangOnDieIfListenedByApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.dieChan <- true
+	}()
+
+	<-app.GetDieChan()
+
+	assertions.ShouldEventuallyReturn(t, &wait, 2*time.Second)
+}
+
+func TestGetDieChan_ShouldNotHangOnTerminationIfListenedByApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.sgChan <- syscall.SIGTERM
+	}()
+
+	<-app.GetDieChan()
+
+	assertions.ShouldEventuallyReturn(t, &wait, 2*time.Second)
+}
+
 func TestDieChan_ShouldCloseWhenMessageIsSent(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()
 	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
@@ -216,6 +252,19 @@ func TestDieChan_ShouldCloseWhenMessageIsSent(t *testing.T) {
 	}()
 
 	app.dieChan <- true
+
+	assertions.ShouldEventuallyClose(t, app.dieChan, 1*time.Second)
+}
+
+func TestDieChan_ShouldCloseWhenSignal(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	go func() {
+		app.Start()
+	}()
+
+	app.sgChan <- syscall.SIGTERM
 
 	assertions.ShouldEventuallyClose(t, app.dieChan, 1*time.Second)
 }
