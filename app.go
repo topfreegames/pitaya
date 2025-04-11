@@ -344,7 +344,6 @@ func (app *App) Start() {
 	select {
 	case <-app.dieChan:
 		logger.Log.Warn("the app will shutdown in a few seconds")
-		close(app.dieChan)
 	case s := <-app.sgChan:
 		logger.Log.Warn("got signal: ", s, ", shutting down...")
 		if app.config.Session.Drain.Enabled && s == syscall.SIGTERM {
@@ -372,9 +371,9 @@ func (app *App) Start() {
 				}
 			}
 		}
-		close(app.dieChan)
 	}
 
+	app.Shutdown()
 	close(app.externalDieChan)
 	close(app.sgChan)
 

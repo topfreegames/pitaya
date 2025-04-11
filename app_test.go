@@ -203,6 +203,24 @@ func TestShutdown(t *testing.T) {
 	<-app.dieChan
 }
 
+func TestShutdown_ShouldSucceedOnStartedApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.Shutdown()
+	}()
+
+	wait.Wait()
+}
+
 func TestGetDieChan_ShouldNotHangOnDieIfListenedByApp(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()
 	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
@@ -241,6 +259,29 @@ func TestGetDieChan_ShouldNotHangOnTerminationIfListenedByApp(t *testing.T) {
 	<-app.GetDieChan()
 
 	assertions.ShouldEventuallyReturn(t, &wait, 2*time.Second)
+}
+
+func TestShutdown_ShouldSucceedOnDrainingApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	builderConfig.Session.Drain.Enabled = true
+	app := NewDefaultApp(false, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	successChan := make(chan bool)
+	go func() {
+		app.sgChan <- syscall.SIGTERM
+		app.Shutdown()
+		successChan <- true
+	}()
+
+	wait.Wait()
+	assertions.ShouldEventuallyClose(t, successChan, 2*time.Second)
 }
 
 func TestDieChan_ShouldCloseWhenMessageIsSent(t *testing.T) {
