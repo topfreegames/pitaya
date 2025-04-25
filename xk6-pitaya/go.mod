@@ -1,8 +1,8 @@
 module github.com/topfreegames/pitaya/xk6-pitaya
 
-go 1.22
+go 1.23
 
-toolchain go1.22.5
+toolchain go1.23.4
 
 require (
 	github.com/dop251/goja v0.0.0-20240610225006-393f6d42497b

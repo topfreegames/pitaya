@@ -1,5 +1,5 @@
 # Build the k6 binary with the extension
-FROM golang:1.22 as builder
+FROM golang:1.23 as builder
 
 ARG pitaya_revision
 
