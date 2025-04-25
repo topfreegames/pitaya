@@ -699,7 +699,10 @@ func (a *agentImpl) reportChannelSize() {
 	}
 	for _, mr := range a.metricsReporters {
 		if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
-			logger.Log.Warnf("failed to report chSend channel capaacity: %s", err.Error())
+			logger.Log.Warnf("failed to report gauge chSend channel capacity: %s", err.Error())
+		}
+		if err := mr.ReportHistogram(metrics.ChannelCapacityHistogram, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
+			logger.Log.Warnf("failed to report histogram chSend channel capacity: %s", err.Error())
 		}
 	}
 }
