@@ -8,7 +8,10 @@ var (
 	// CountServers counts the number of servers of different types
 	CountServers = "count_servers"
 	// ChannelCapacity represents the capacity of a channel (available slots)
+	// Deprecated: This variable will be removed in future versions. Use ChannelCapacityHistogram instead.
 	ChannelCapacity = "channel_capacity"
+	// ChannelCapacityHistogram represents the capacity of a channel as a histogram (distribution of available slots)
+	ChannelCapacityHistogram = "channel_capacity_histogram"
 	// DroppedMessages reports the number of dropped messages in rpc server (messages that will not be handled)
 	DroppedMessages = "dropped_messages"
 	// ProcessDelay reports the message processing delay to handle the messages at the handler service
