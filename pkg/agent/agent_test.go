@@ -275,7 +275,6 @@ func TestAgentSendSerializeErr(t *testing.T) {
 		wg.Done()
 	})
 	go ag.write()
-	mockMetricsReporter.EXPECT().ReportGauge(gomock.Any(), gomock.Any(), gomock.Any())
 	mockMetricsReporter.EXPECT().ReportHistogram(gomock.Any(), gomock.Any(), gomock.Any())
 	ag.send(expected)
 	wg.Wait()
@@ -348,8 +347,7 @@ func TestAgentPushStruct(t *testing.T) {
 				close(ag.chSend)
 			}
 
-			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(10))
-			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(10))
+			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(10))
 			err = ag.Push(msg.Route, table.data)
 			assert.Equal(t, table.err, err)
 
@@ -411,8 +409,7 @@ func TestAgentPush(t *testing.T) {
 				close(ag.chSend)
 			}
 
-			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(10))
-			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(10))
+			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(10))
 			err = ag.Push(msg.Route, table.data)
 			assert.Equal(t, table.err, err)
 
@@ -445,8 +442,7 @@ func TestAgentPushFullChannel(t *testing.T) {
 	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 0, dieChan, messageEncoder, mockMetricsReporters, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
 
-	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
-	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(0))
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(0))
 
 	msg := &message.Message{
 		Route: "route",
@@ -532,8 +528,7 @@ func TestAgentResponseMID(t *testing.T) {
 			ctx := getCtxWithRequestKeys()
 			if table.mid != 0 {
 				mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Any()).Return([]byte("ok!"), nil)
-				mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(10))
-				mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(10))
+				mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(10))
 			}
 			if table.mid != 0 {
 				if table.err != nil {
@@ -586,8 +581,7 @@ func TestAgentResponseMIDFullChannel(t *testing.T) {
 	sessionPool := session.NewSessionPool()
 	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 0, dieChan, messageEncoder, mockMetricsReporters, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
-	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(0))
-	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(0))
+	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(0))
 	go func() {
 		err := ag.ResponseMID(nil, 1, []byte("data"))
 		assert.NoError(t, err)
@@ -1210,8 +1204,7 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 
 	ag.chSend <- pendingWrite{}
 
-	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(-1)) // because buffersize is 0 and chan sz is 1
-	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(-1))
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(-1))
 	ag.reportChannelSize()
 }
 
