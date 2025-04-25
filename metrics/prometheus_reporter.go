@@ -209,6 +209,7 @@ func (p *PrometheusReporter) registerMetrics(
 			ConstLabels: constLabels,
 		},
 		append([]string{"channel"}, additionalLabelsKeys...),
+	)
 
 	p.gaugeReportersMap[DroppedMessages] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
