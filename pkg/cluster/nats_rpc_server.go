@@ -408,16 +408,15 @@ func (ns *NatsRPCServer) reportMetrics() {
 			if subChanCapacity == 0 {
 				logger.Log.Warn("subChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report subChan queue capacity: %s", err.Error())
 			}
-
 			// bindingschan
 			bindingsChanCapacity := ns.messagesBufferSize - len(ns.bindingsChan)
 			if bindingsChanCapacity == 0 {
 				logger.Log.Warn("bindingsChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report bindingsChan capacity: %s", err.Error())
 			}
 
@@ -426,7 +425,7 @@ func (ns *NatsRPCServer) reportMetrics() {
 			if userPushChanCapacity == 0 {
 				logger.Log.Warn("userPushChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report userPushCh capacity: %s", err.Error())
 			}
 		}
