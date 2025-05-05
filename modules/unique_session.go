@@ -22,8 +22,10 @@ package modules
 
 import (
 	"context"
+	"errors"
 
 	"github.com/topfreegames/pitaya/v2/cluster"
+	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/session"
 )
 
@@ -61,7 +63,19 @@ func (u *UniqueSession) Init() error {
 	u.sessionPool.OnSessionBind(func(ctx context.Context, s session.Session) error {
 		oldSession := u.sessionPool.GetSessionByUID(s.UID())
 		if oldSession != nil {
-			return oldSession.Kick(ctx)
+			err := oldSession.Kick(ctx)
+			if err != nil {
+				if !errors.Is(err, context.DeadlineExceeded) {
+					return err
+				}
+
+				logger.Log.WithFields(map[string]interface{}{
+					"old_session_id": oldSession.ID(),
+					"new_session_id": s.ID(),
+					"uid":            s.UID(),
+				}).WithError(err).Warnf("kicking old session timed out, forcing close")
+				oldSession.Close()
+			}
 		}
 		err := u.rpcClient.BroadcastSessionBind(s.UID())
 		return err
