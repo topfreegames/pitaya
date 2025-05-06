@@ -154,6 +154,59 @@ func TestKick(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestKickWriteError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
+	dieChan := make(chan bool)
+	hbTime := time.Second
+	writeTimeout := time.Second
+
+	mockConn := mocks.NewMockPlayerConn(ctrl)
+	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockConn.EXPECT().Write(gomock.Any()).Return(0, assert.AnError)
+	messageEncoder := message.NewMessagesEncoder(false)
+
+	mockSerializer.EXPECT().GetName()
+
+	sessionPool := session.NewSessionPool()
+	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 10, dieChan, messageEncoder, nil, sessionPool)
+	c := context.Background()
+	err := ag.Kick(c)
+	assert.ErrorIs(t, err, assert.AnError)
+}
+
+func TestKickEncodeError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSerializer := serializemocks.NewMockSerializer(ctrl)
+	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
+	dieChan := make(chan bool)
+	hbTime := time.Second
+	writeTimeout := time.Second
+
+	mockConn := mocks.NewMockPlayerConn(ctrl)
+
+	// We need to add explicit expectations for these encode calls as they are called by newAgent with once.Do(). So these calls might not happen when running multiple tests simultaneously.
+	mockEncoder.EXPECT().Encode(packet.Type(packet.Handshake), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockEncoder.EXPECT().Encode(packet.Type(packet.Heartbeat), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockEncoder.EXPECT().Encode(packet.Type(packet.Kick), nil).Return(nil, assert.AnError)
+	messageEncoder := message.NewMessagesEncoder(false)
+
+	mockSerializer.EXPECT().GetName()
+
+	sessionPool := session.NewSessionPool()
+	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 10, dieChan, messageEncoder, nil, sessionPool)
+	c := context.Background()
+	err := ag.Kick(c)
+	assert.ErrorIs(t, err, assert.AnError)
+}
+
 func TestAgentSend(t *testing.T) {
 	tables := []struct {
 		name string
