@@ -169,6 +169,42 @@ func TestKick(t *testing.T) {
 	}, false, 10*time.Millisecond, 1*time.Second)
 }
 
+func TestUniqueSessionKickSession(t *testing.T) {
+	port1 := helpers.GetFreePort(t)
+
+	envVars := []string{"PITAYA_SESSION_UNIQUE=true"}
+
+	sdPrefix := fmt.Sprintf("%s/", uuid.New().String())
+	defer helpers.StartServer(t, true, true, "connector", port1, sdPrefix, *grpc, false, envVars...)()
+	c1 := client.New(logrus.InfoLevel)
+	c2 := client.New(logrus.InfoLevel)
+
+	err := c1.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c1.Disconnect()
+
+	uid1 := uuid.New().String()
+	_, err = c1.SendRequest("connector.testsvc.testonlybindid", []byte(uid1))
+	assert.NoError(t, err)
+
+	res1 := helpers.ShouldEventuallyReceive(t, c1.IncomingMsgChan)
+	assert.False(t, res1.(*message.Message).Err)
+
+	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port1))
+	assert.NoError(t, err)
+	defer c2.Disconnect()
+
+	_, err = c2.SendRequest("connector.testsvc.testonlybindid", []byte(uid1))
+	assert.NoError(t, err)
+
+	res2 := helpers.ShouldEventuallyReceive(t, c2.IncomingMsgChan)
+	assert.False(t, res2.(*message.Message).Err)
+
+	helpers.ShouldEventuallyReturn(t, func() bool {
+		return c1.Connected
+	}, false, 10*time.Millisecond, 1*time.Second)
+}
+
 func TestSameUIDUserShouldBeKicked(t *testing.T) {
 	port1 := helpers.GetFreePort(t)
 
