@@ -205,7 +205,7 @@ func TestShutdown(t *testing.T) {
 
 func TestShutdown_ShouldSucceedOnStartedApp(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()
-	app := NewDefaultApp(false, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
 
 	var wait sync.WaitGroup
 	wait.Add(1)
@@ -264,7 +264,7 @@ func TestGetDieChan_ShouldNotHangOnTerminationIfListenedByApp(t *testing.T) {
 func TestShutdown_ShouldSucceedOnDrainingApp(t *testing.T) {
 	builderConfig := config.NewDefaultPitayaConfig()
 	builderConfig.Session.Drain.Enabled = true
-	app := NewDefaultApp(false, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
 
 	var wait sync.WaitGroup
 	wait.Add(1)
