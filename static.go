@@ -58,6 +58,7 @@ func Configure(
 	session.DefaultSessionPool = builder.SessionPool
 }
 
+// GetDieChan gets the channel that the app sinalizes when its going to die.
 func GetDieChan() chan bool {
 	return DefaultApp.GetDieChan()
 }

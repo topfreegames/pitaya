@@ -27,6 +27,8 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -42,6 +44,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/constants"
 	e "github.com/topfreegames/pitaya/v2/errors"
 	"github.com/topfreegames/pitaya/v2/helpers"
+	"github.com/topfreegames/pitaya/v2/internal/testing/assertions"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/logger/logrus"
 	"github.com/topfreegames/pitaya/v2/route"
@@ -111,12 +114,6 @@ func TestSetLogger(t *testing.T) {
 	l := logrus.New()
 	SetLogger(l)
 	assert.Equal(t, l, logger.Log)
-}
-
-func TestGetDieChan(t *testing.T) {
-	builderConfig := config.NewDefaultPitayaConfig()
-	app := NewDefaultApp(true, "testtype", Cluster, map[string]string{}, *builderConfig).(*App)
-	assert.Equal(t, app.dieChan, app.GetDieChan())
 }
 
 func TestGetSever(t *testing.T) {
@@ -204,6 +201,113 @@ func TestShutdown(t *testing.T) {
 		app.Shutdown()
 	}()
 	<-app.dieChan
+}
+
+func TestShutdown_ShouldSucceedOnStartedApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.Shutdown()
+	}()
+
+	wait.Wait()
+}
+
+func TestGetDieChan_ShouldNotHangOnDieIfListenedByApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.dieChan <- true
+	}()
+
+	<-app.GetDieChan()
+
+	assertions.ShouldEventuallyReturn(t, &wait, 2*time.Second)
+}
+
+func TestGetDieChan_ShouldNotHangOnTerminationIfListenedByApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	go func() {
+		app.sgChan <- syscall.SIGTERM
+	}()
+
+	<-app.GetDieChan()
+
+	assertions.ShouldEventuallyReturn(t, &wait, 2*time.Second)
+}
+
+func TestShutdown_ShouldSucceedOnDrainingApp(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	builderConfig.Session.Drain.Enabled = true
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		app.Start()
+	}()
+
+	successChan := make(chan bool)
+	go func() {
+		app.sgChan <- syscall.SIGTERM
+		app.Shutdown()
+		successChan <- true
+	}()
+
+	wait.Wait()
+	assertions.ShouldEventuallyClose(t, successChan, 2*time.Second)
+}
+
+func TestDieChan_ShouldCloseWhenMessageIsSent(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	go func() {
+		app.Start()
+	}()
+
+	app.dieChan <- true
+
+	assertions.ShouldEventuallyClose(t, app.dieChan, 1*time.Second)
+}
+
+func TestDieChan_ShouldCloseWhenSignal(t *testing.T) {
+	builderConfig := config.NewDefaultPitayaConfig()
+	app := NewDefaultApp(false, "testtype", Standalone, map[string]string{}, *builderConfig).(*App)
+
+	go func() {
+		app.Start()
+	}()
+
+	app.sgChan <- syscall.SIGTERM
+
+	assertions.ShouldEventuallyClose(t, app.dieChan, 1*time.Second)
 }
 
 func TestConfigureDefaultMetricsReporter(t *testing.T) {
