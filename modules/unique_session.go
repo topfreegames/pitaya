@@ -23,6 +23,7 @@ package modules
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/topfreegames/pitaya/v2/cluster"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -65,7 +66,7 @@ func (u *UniqueSession) Init() error {
 		if oldSession != nil {
 			err := oldSession.Kick(ctx)
 			if err != nil {
-				if !errors.Is(err, context.DeadlineExceeded) {
+				if !errors.Is(err, os.ErrDeadlineExceeded) {
 					return err
 				}
 
