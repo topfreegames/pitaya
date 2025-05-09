@@ -209,6 +209,17 @@ func (t *TestSvc) TestBindID(ctx context.Context, byteUID []byte) ([]byte, error
 	return []byte("ack"), nil
 }
 
+// TestOnlyBindID handler for e2e tests
+func (t *TestSvc) TestOnlyBindID(ctx context.Context, byteUID []byte) ([]byte, error) {
+	s := t.app.GetSessionFromCtx(ctx)
+	err := s.Bind(ctx, string(byteUID))
+	if err != nil {
+		return nil, pitaya.Error(err, "PIT-444")
+	}
+
+	return []byte("ack"), nil
+}
+
 // TestSendGroupMsg handler for e2e tests
 func (t *TestSvc) TestSendGroupMsg(ctx context.Context, msg []byte) {
 	t.app.GroupBroadcast(ctx, "connector", "g1", "route.test", msg)

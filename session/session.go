@@ -473,7 +473,9 @@ func (s *sessionImpl) Kick(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return s.entity.Close()
+
+	s.Close()
+	return nil
 }
 
 // OnClose adds the function it receives to the callbacks that will be called
@@ -489,8 +491,9 @@ func (s *sessionImpl) OnClose(c func()) error {
 // Close terminates current session, session related data will not be released,
 // all related data should be cleared explicitly in Session closed callback
 func (s *sessionImpl) Close() {
-	atomic.AddInt64(&s.pool.SessionCount, -1)
-	s.pool.sessionsByID.Delete(s.ID())
+	if _, ok := s.pool.sessionsByID.LoadAndDelete(s.ID()); ok {
+		atomic.AddInt64(&s.pool.SessionCount, -1)
+	}
 	// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
 	if val, ok := s.pool.sessionsByUID.Load(s.UID()); ok {
 		if (val.(Session)).ID() == s.ID() {

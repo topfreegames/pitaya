@@ -624,6 +624,21 @@ func TestSessionClose(t *testing.T) {
 	}
 }
 
+func TestSessionCount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	sessionPool := NewSessionPool().(*sessionPoolImpl)
+	ss := sessionPool.NewSession(mockEntity, true)
+	assert.NotNil(t, ss)
+
+	mockEntity.EXPECT().Close().AnyTimes()
+
+	ss.Close()
+	ss.Close()
+	assert.Equal(t, int64(0), sessionPool.GetSessionCount())
+}
+
 func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()

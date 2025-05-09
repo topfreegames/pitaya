@@ -190,6 +190,7 @@ func newAgent(
 	// initialize heartbeat and handshake data on first user connection
 	serializerName := serializer.GetName()
 
+	// Remove this once.Do and move the validation somewhere else, maybe during pitaya initialization. The current approach makes tests interfere with each other quite easily.
 	once.Do(func() {
 		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
 		herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
@@ -408,10 +409,12 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 	// packet encode
 	p, err := a.encoder.Encode(packet.Kick, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("agent kick encoding failed: %w", err)
 	}
-	_, err = a.conn.Write(p)
-	return err
+	if _, err := a.conn.Write(p); err != nil {
+		return fmt.Errorf("agent kick message failed: %w", err)
+	}
+	return nil
 }
 
 // SetLastAt sets the last at to now
