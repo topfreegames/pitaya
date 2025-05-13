@@ -321,14 +321,22 @@ func (a *agentImpl) Push(route string, v interface{}) error {
 		return errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 	}
 
+	logger := logger.Log.WithFields(map[string]interface{}{
+		"type":       "Push",
+		"session_id": a.Session.ID(),
+		"uid":        a.Session.UID(),
+		"route":      route,
+	})
+
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
-			a.Session.ID(), a.Session.UID(), route, len(d))
+		logger = logger.WithField("bytes", len(d))
 	default:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
-			a.Session.ID(), a.Session.UID(), route, v)
+		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
 	}
+
+	logger.Debugf("pushing message to session")
+
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
@@ -347,14 +355,21 @@ func (a *agentImpl) ResponseMID(ctx context.Context, mid uint, v interface{}, is
 		return constants.ErrSessionOnNotify
 	}
 
+	logger := logger.Log.WithFields(map[string]interface{}{
+		"type":       "Push",
+		"session_id": a.Session.ID(),
+		"uid":        a.Session.UID(),
+		"mid":        mid,
+	})
+
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
-			a.Session.ID(), a.Session.UID(), mid, len(d))
+		logger = logger.WithField("bytes", len(d))
 	default:
-		logger.Log.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
-			a.Session.ID(), a.Session.UID(), mid, v)
+		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
 	}
+
+	logger.Debugf("responding message to session")
 
 	return a.send(pendingMessage{ctx: ctx, typ: message.Response, mid: mid, payload: v, err: err})
 }
@@ -369,8 +384,11 @@ func (a *agentImpl) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
-		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
+	logger.Log.WithFields(map[string]interface{}{
+		"session_id":  a.Session.ID(),
+		"uid":         a.Session.UID(),
+		"remote_addr": a.conn.RemoteAddr().String(),
+	}).Debugf("Session closed")
 
 	// prevent closing closed channel
 	select {
@@ -431,7 +449,10 @@ func (a *agentImpl) SetStatus(state int32) {
 func (a *agentImpl) Handle() {
 	defer func() {
 		a.Close()
-		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
+		logger.Log.WithFields(map[string]interface{}{
+			"session_id": a.Session.ID(),
+			"uid":        a.Session.UID(),
+		}).Debugf("Session handle goroutine exit")
 	}()
 
 	go a.write()
@@ -469,7 +490,13 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				logger.Log.WithFields(map[string]interface{}{
+					"session_id":  a.Session.ID(),
+					"uid":         a.Session.UID(),
+					"remote_addr": a.conn.RemoteAddr().String(),
+					"last_at":     atomic.LoadInt64(&a.lastAt),
+					"deadline":    deadline,
+				}).Debugf("Session heartbeat timeout")
 				return
 			}
 

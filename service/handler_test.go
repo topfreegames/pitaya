@@ -426,7 +426,7 @@ func TestHandlerServiceHandle(t *testing.T) {
 	mockSession.EXPECT().Set(constants.IPVersionKey, constants.IPv4)
 	mockSession.EXPECT().Close()
 
-	mockAgent.EXPECT().String().Return("")
+	mockAgent.EXPECT().String().Return("").AnyTimes()
 	mockAgent.EXPECT().GetStatus().AnyTimes()
 	mockAgent.EXPECT().SetStatus(constants.StatusHandshake)
 	mockAgent.EXPECT().GetSession().Return(mockSession).AnyTimes()

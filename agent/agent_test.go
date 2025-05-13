@@ -322,7 +322,7 @@ func TestAgentSendSerializeErr(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		wg.Done()
@@ -703,7 +703,7 @@ func TestAgentClose(t *testing.T) {
 		}
 	}()
 
-	mockConn.EXPECT().RemoteAddr()
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().Close()
 	err = ag.Close()
 	assert.NoError(t, err)
@@ -730,7 +730,7 @@ func TestAgentRemoteAddr(t *testing.T) {
 	assert.NotNil(t, ag)
 
 	expected := &mockAddr{}
-	mockConn.EXPECT().RemoteAddr().Return(expected)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(expected)
 	addr := ag.RemoteAddr()
 	assert.Equal(t, expected, addr)
 }
@@ -750,7 +750,7 @@ func TestAgentString(t *testing.T) {
 	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, time.Second, time.Second, 0, nil, mockMessageEncoder, nil, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{})
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	expected := fmt.Sprintf("Remote=remote-string, LastTime=%d", ag.lastAt)
 	str := ag.String()
 	assert.Equal(t, expected, str)
@@ -1063,13 +1063,13 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockPlayerConn(ctrl)
-	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockSerializer.EXPECT().GetName()
 	sessionPool := session.NewSessionPool()
-	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, time.Second, 1, nil, mockMessageEncoder, nil, sessionPool).(*agentImpl)
+	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, time.Second, 1, nil, messageEncoder, nil, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
 
-	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	die := false
@@ -1098,13 +1098,13 @@ func TestAgentHeartbeatExitsIfConnError(t *testing.T) {
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
 	heartbeatAndHandshakeMocks(mockEncoder)
 	mockConn := mocks.NewMockPlayerConn(ctrl)
-	mockMessageEncoder := messagemocks.NewMockEncoder(ctrl)
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockSerializer.EXPECT().GetName()
 	sessionPool := session.NewSessionPool()
-	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, time.Second, 1, nil, mockMessageEncoder, nil, sessionPool).(*agentImpl)
+	ag := newAgent(mockConn, nil, mockEncoder, mockSerializer, 1*time.Second, time.Second, 1, nil, messageEncoder, nil, sessionPool).(*agentImpl)
 	assert.NotNil(t, ag)
 
-	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	die := false
@@ -1136,7 +1136,7 @@ func TestAgentHeartbeatExitsOnStopHeartbeat(t *testing.T) {
 	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 
-	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	mockSerializer.EXPECT().GetName()
@@ -1180,7 +1180,7 @@ func TestAgentWriteChSend(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		time.Sleep(10 * time.Millisecond)
@@ -1227,7 +1227,7 @@ func TestAgentHandle(t *testing.T) {
 	})
 
 	// ag.Close on method exit
-	mockConn.EXPECT().RemoteAddr().MaxTimes(1)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().Close().MaxTimes(1)
 
 	ag.chSend <- pendingWrite{ctx: nil, data: expectedBytes, err: nil}
@@ -1291,7 +1291,7 @@ func TestIPVersion(t *testing.T) {
 			mockConn := mocks.NewMockPlayerConn(ctrl)
 			mockAddr := &customMockAddr{str: table.addr}
 
-			mockConn.EXPECT().RemoteAddr().Return(mockAddr)
+			mockConn.EXPECT().RemoteAddr().AnyTimes().Return(mockAddr)
 			a := &agentImpl{conn: mockConn}
 
 			assert.Equal(t, table.ipVersion, a.IPVersion())
@@ -1335,7 +1335,7 @@ func TestAgentWriteChSendWriteError(t *testing.T) {
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ConnectedClients, gomock.Any(), gomock.Any())
 	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, errorTags, gomock.Any())
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(4)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{}).Times(4)
 	mockConn.EXPECT().Close().Do(func() {
 		wg.Done()
 	})
@@ -1379,7 +1379,7 @@ func TestAgentWriteChSendWriteTimeout(t *testing.T) {
 
 	mockMetricsReporter.EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any()).Times(2)
 
-	mockConn.EXPECT().RemoteAddr().Return(&mockAddr{}).Times(5)
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{}).Times(5)
 	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil).Times(2)
 	mockConn.EXPECT().Write(expectedFirstPacket).Do(func(b []byte) {
 		time.Sleep(writeTimeout * 2)
