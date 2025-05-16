@@ -653,7 +653,7 @@ func TestSessionBindOnClosedSession(t *testing.T) {
 	uid := "test-uid"
 	err := ss.Bind(context.Background(), uid)
 
-	assert.ErrorIs(t, err, constants.ErrCloseClosedSession)
+	assert.ErrorIs(t, err, constants.ErrSessionNotFound)
 	assert.Equal(t, int64(0), sessionPool.GetSessionCount())
 	assert.Nil(t, sessionPool.GetSessionByUID(uid))
 }
