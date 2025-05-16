@@ -62,11 +62,18 @@ func (u *UniqueSession) OnUserBind(uid, fid string) {
 
 // Init initializes the module
 func (u *UniqueSession) Init() error {
-	u.sessionPool.OnSessionBind(u.unbindOldSession)
+	u.sessionPool.OnSessionBind(func(ctx context.Context, s session.Session) error {
+		err := u.kickOldSession(ctx, s)
+		if err != nil {
+			return err
+		}
+
+		return u.rpcClient.BroadcastSessionBind(s.UID())
+	})
 	return nil
 }
 
-func (u *UniqueSession) unbindOldSession(ctx context.Context, s session.Session) error {
+func (u *UniqueSession) kickOldSession(ctx context.Context, s session.Session) error {
 	oldSession := u.sessionPool.GetSessionByUID(s.UID())
 	if oldSession != nil {
 		err := oldSession.Kick(ctx)
@@ -79,10 +86,9 @@ func (u *UniqueSession) unbindOldSession(ctx context.Context, s session.Session)
 				"old_session_id": oldSession.ID(),
 				"new_session_id": s.ID(),
 				"uid":            s.UID(),
-			}).WithError(err).Warnf("kicking old session timed out, forcing close")
+			}).WithError(err).Warnf("kicking old session failed, forcing close")
 			oldSession.Close()
 		}
 	}
-	err := u.rpcClient.BroadcastSessionBind(s.UID())
-	return err
+	return nil
 }
