@@ -223,6 +223,7 @@ func TestUniqueSession_ShouldSucceedIfKickFails(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Force break the connection so that the kick fails
+	// This will also force a race condition between binding and session closing
 	c1.Disconnect()
 
 	err = c2.ConnectTo(fmt.Sprintf("localhost:%d", port1))

@@ -428,6 +428,12 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		return constants.ErrSessionAlreadyBound
 	}
 
+	if s.IsFrontend {
+		if _, ok := s.pool.sessionsByID.Load(s.ID()); !ok {
+			return constants.ErrSessionNotFound
+		}
+	}
+
 	s.uid = uid
 	for _, cb := range s.pool.sessionBindCallbacks {
 		err := cb(ctx, s)

@@ -639,6 +639,25 @@ func TestSessionCount(t *testing.T) {
 	assert.Equal(t, int64(0), sessionPool.GetSessionCount())
 }
 
+func TestSessionBindOnClosedSession(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sessionPool := NewSessionPool()
+
+	mockEntity := mocks.NewMockNetworkEntity(ctrl)
+	mockEntity.EXPECT().Close()
+	ss := sessionPool.NewSession(mockEntity, true)
+	assert.NotNil(t, ss)
+
+	ss.Close()
+
+	uid := "test-uid"
+	err := ss.Bind(context.Background(), uid)
+
+	assert.ErrorIs(t, err, constants.ErrCloseClosedSession)
+	assert.Equal(t, int64(0), sessionPool.GetSessionCount())
+	assert.Nil(t, sessionPool.GetSessionByUID(uid))
+}
+
 func TestSessionCloseFrontendWithSubscription(t *testing.T) {
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
