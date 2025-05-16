@@ -78,6 +78,7 @@ func (u *UniqueSession) kickOldSession(ctx context.Context, s session.Session) e
 	if oldSession != nil {
 		err := oldSession.Kick(ctx)
 		if err != nil {
+			// Maybe we can just ignore any errors here and let the old session close
 			if !errors.Is(err, os.ErrDeadlineExceeded) && !errors.Is(err, net.ErrClosed) {
 				return err
 			}
