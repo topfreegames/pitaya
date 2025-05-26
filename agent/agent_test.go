@@ -26,9 +26,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"reflect"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -138,13 +140,21 @@ func TestKick(t *testing.T) {
 	writeTimeout := time.Second
 
 	mockConn := mocks.NewMockPlayerConn(ctrl)
+
+	// Mock the handshake and heartbeat encoding that happens during agent creation
+	heartbeatAndHandshakeMocks(mockEncoder)
+
 	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Nil()).Do(
 		func(typ packet.Type, d []byte) {
 			assert.EqualValues(t, packet.Kick, typ)
 		})
+	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	mockConn.EXPECT().Write(gomock.Any()).Return(0, nil)
-	messageEncoder := message.NewMessagesEncoder(false)
 
+	// Mock RemoteAddr calls that happen in createConnectionSpan
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
+
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockSerializer.EXPECT().GetName()
 
 	sessionPool := session.NewSessionPool()
@@ -166,17 +176,25 @@ func TestKickWriteError(t *testing.T) {
 	writeTimeout := time.Second
 
 	mockConn := mocks.NewMockPlayerConn(ctrl)
-	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
-	mockConn.EXPECT().Write(gomock.Any()).Return(0, assert.AnError)
-	messageEncoder := message.NewMessagesEncoder(false)
 
+	// Mock the handshake and heartbeat encoding that happens during agent creation
+	heartbeatAndHandshakeMocks(mockEncoder)
+
+	mockEncoder.EXPECT().Encode(gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
+	mockConn.EXPECT().Write(gomock.Any()).Return(0, assert.AnError)
+
+	// Mock RemoteAddr calls that happen in createConnectionSpan
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
+
+	messageEncoder := message.NewMessagesEncoder(false)
 	mockSerializer.EXPECT().GetName()
 
 	sessionPool := session.NewSessionPool()
 	ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 10, dieChan, messageEncoder, nil, sessionPool)
 	c := context.Background()
 	err := ag.Kick(c)
-	assert.ErrorIs(t, err, assert.AnError)
+	assert.Contains(t, err.Error(), assert.AnError.Error())
 }
 
 func TestKickEncodeError(t *testing.T) {
@@ -205,6 +223,83 @@ func TestKickEncodeError(t *testing.T) {
 	c := context.Background()
 	err := ag.Kick(c)
 	assert.ErrorIs(t, err, assert.AnError)
+}
+
+func TestKickNetworkErrors(t *testing.T) {
+	table := []struct {
+		name          string
+		writeError    error
+		expectedError string
+	}{
+		{
+			name:          "net.ErrClosed should return ErrClientClosedRequest",
+			writeError:    net.ErrClosed,
+			expectedError: e.ErrClientClosedRequest,
+		},
+		{
+			name:          "os.ErrDeadlineExceeded should return ErrRequestTimeout",
+			writeError:    os.ErrDeadlineExceeded,
+			expectedError: e.ErrRequestTimeout,
+		},
+		{
+			name:          "syscall.EPIPE should return ErrClosedRequest",
+			writeError:    &net.OpError{Err: syscall.EPIPE},
+			expectedError: e.ErrClosedRequest,
+		},
+		{
+			name:          "syscall.ECONNRESET should return ErrClientClosedRequest",
+			writeError:    &net.OpError{Err: syscall.ECONNRESET},
+			expectedError: e.ErrClientClosedRequest,
+		},
+		{
+			name:          "generic error should return ErrClosedRequest",
+			writeError:    assert.AnError,
+			expectedError: e.ErrClosedRequest,
+		},
+	}
+
+	for _, row := range table {
+		t.Run(row.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockSerializer := serializemocks.NewMockSerializer(ctrl)
+			mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+			mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
+			dieChan := make(chan bool)
+			hbTime := time.Second
+			writeTimeout := time.Second
+
+			mockConn := mocks.NewMockPlayerConn(ctrl)
+
+			// Mock the handshake and heartbeat encoding that happens during agent creation
+			heartbeatAndHandshakeMocks(mockEncoder)
+
+			// Mock the kick packet encoding
+			mockEncoder.EXPECT().Encode(packet.Type(packet.Kick), nil).Return([]byte{}, nil)
+
+			// Mock the write operation that will fail
+			mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
+			mockConn.EXPECT().Write(gomock.Any()).Return(0, row.writeError)
+
+			// Mock RemoteAddr calls that happen in createConnectionSpan
+			mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
+
+			messageEncoder := message.NewMessagesEncoder(false)
+			mockSerializer.EXPECT().GetName()
+
+			sessionPool := session.NewSessionPool()
+			ag := newAgent(mockConn, mockDecoder, mockEncoder, mockSerializer, hbTime, writeTimeout, 10, dieChan, messageEncoder, nil, sessionPool)
+			c := context.Background()
+			err := ag.Kick(c)
+
+			// Verify that the error is wrapped with the expected Pitaya error code
+			var pitayaErr *e.Error
+			assert.True(t, errors.As(err, &pitayaErr))
+			assert.Equal(t, row.expectedError, pitayaErr.Code)
+			assert.Contains(t, err.Error(), row.writeError.Error())
+		})
+	}
 }
 
 func TestAgentSend(t *testing.T) {
@@ -1307,6 +1402,8 @@ func TestAgentWriteChSendWriteError(t *testing.T) {
 	mockSerializer.EXPECT().GetName()
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	heartbeatAndHandshakeMocks(mockEncoder)
+
 	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
@@ -1357,6 +1454,8 @@ func TestAgentWriteChSendWriteTimeout(t *testing.T) {
 	mockSerializer.EXPECT().GetName()
 
 	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	heartbeatAndHandshakeMocks(mockEncoder)
+
 	mockConn := mocks.NewMockPlayerConn(ctrl)
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)

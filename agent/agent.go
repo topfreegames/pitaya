@@ -30,6 +30,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/topfreegames/pitaya/v2/config"
@@ -190,7 +191,7 @@ func newAgent(
 	// initialize heartbeat and handshake data on first user connection
 	serializerName := serializer.GetName()
 
-	// Remove this once.Do and move the validation somewhere else, maybe during pitaya initialization. The current approach makes tests interfere with each other quite easily.
+	// TODO: Remove this once.Do and move the validation somewhere else, maybe during pitaya initialization. The current approach makes tests interfere with each other quite easily.
 	once.Do(func() {
 		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
 		herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
@@ -429,8 +430,44 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("agent kick encoding failed: %w", err)
 	}
-	if _, err := a.conn.Write(p); err != nil {
-		return fmt.Errorf("agent kick message failed: %w", err)
+	if err := a.writeToConnection(ctx, p); err != nil {
+		// 1. Check for a closed connection (most likely scenario for a "dead connection")
+		if e.Is(err, net.ErrClosed) {
+			// Handle specifically: connection was already closed
+			// This could mean the client disconnected before the kick.
+			return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
+				"reason": "agent kick failed: connection already closed",
+			})
+		}
+
+		// 2. Check for a timeout (if you have write deadlines)
+		if e.Is(err, os.ErrDeadlineExceeded) {
+			// Handle specifically: write operation timed out
+			return errors.NewError(err, errors.ErrRequestTimeout, map[string]string{
+				"reason": "agent kick failed: write timeout",
+			})
+		}
+
+		// 3. Unwrap OpError to check for specific syscall errors if needed
+		var opError *net.OpError
+		if e.As(err, &opError) {
+			if e.Is(opError.Err, syscall.EPIPE) {
+				// Handle specifically: broken pipe (often means client disconnected)
+				return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
+					"reason": "agent kick failed: write timeout",
+				})
+			}
+			if e.Is(opError.Err, syscall.ECONNRESET) {
+				// Handle specifically: connection reset by peer
+				return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
+					"reason": "agent kick failed: connection reset by peer",
+				})
+			}
+		}
+
+		return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
+			"reason": "agent kick message failed",
+		})
 	}
 	return nil
 }
