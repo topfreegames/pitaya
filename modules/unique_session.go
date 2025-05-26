@@ -24,6 +24,7 @@ import (
 	"context"
 
 	"github.com/topfreegames/pitaya/v2/cluster"
+	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/session"
 )
 
@@ -59,12 +60,25 @@ func (u *UniqueSession) OnUserBind(uid, fid string) {
 // Init initializes the module
 func (u *UniqueSession) Init() error {
 	u.sessionPool.OnSessionBind(func(ctx context.Context, s session.Session) error {
-		oldSession := u.sessionPool.GetSessionByUID(s.UID())
-		if oldSession != nil {
-			return oldSession.Kick(ctx)
-		}
-		err := u.rpcClient.BroadcastSessionBind(s.UID())
-		return err
+		u.kickOldSession(ctx, s)
+		return u.rpcClient.BroadcastSessionBind(s.UID())
 	})
+	return nil
+}
+
+func (u *UniqueSession) kickOldSession(ctx context.Context, s session.Session) error {
+	oldSession := u.sessionPool.GetSessionByUID(s.UID())
+	if oldSession != nil {
+		err := oldSession.Kick(ctx)
+		if err != nil {
+			logger.Log.WithFields(map[string]interface{}{
+				"old_session_id": oldSession.ID(),
+				"new_session_id": s.ID(),
+				"uid":            s.UID(),
+				"error":          err.Error(),
+			}).WithError(err).Warnf("kicking old session failed, forcing close")
+			oldSession.Close()
+		}
+	}
 	return nil
 }

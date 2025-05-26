@@ -171,12 +171,18 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 	// startup agent goroutine
 	go a.Handle()
 
-	logger.Log.Debugf("New session established: %s", a.String())
+	logger := logger.Log.WithFields(map[string]interface{}{
+		"session_id": a.GetSession().ID(),
+		"uid":        a.GetSession().UID(),
+		"remote":     a.RemoteAddr().String(),
+	})
+
+	logger.Debugf("New session established")
 
 	// guarantee agent related resource is destroyed
 	defer func() {
 		a.GetSession().Close()
-		logger.Log.Debugf("Session read goroutine exit, SessionID=%d, UID=%s", a.GetSession().ID(), a.GetSession().UID())
+		logger.Debugf("Session read goroutine exit")
 	}()
 
 	for {
@@ -184,16 +190,14 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 
 		if err != nil {
 			// Check if this is an expected error due to connection being closed
-			if errors.Is(err, net.ErrClosed) {
-				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
-			} else if err == constants.ErrConnectionClosed {
-				logger.Log.Debugf("Connection no longer available while reading next available message: %s", err.Error())
+			if errors.Is(err, net.ErrClosed) || err == constants.ErrConnectionClosed {
+				logger.WithError(err).Debug("Connection no longer available while reading next available message")
 			} else {
 				// Differentiate errors for valid sessions, to avoid noise from load balancer healthchecks and other internet noise
 				if a.GetStatus() != constants.StatusStart {
-					logger.Log.Errorf("Error reading next available message for UID: %s, Build: %s, error: %s", a.GetSession().UID(), "a.GetSession().GetHandshakeData().Sys.BuildNumber", err.Error())
+					logger.WithError(err).Error("Error reading next available message")
 				} else {
-					logger.Log.Debugf("Error reading next available message on initial connection: %s", err.Error())
+					logger.WithError(err).Debug("Error reading next available message on initial connection")
 				}
 			}
 
@@ -202,19 +206,19 @@ func (h *HandlerService) Handle(conn acceptor.PlayerConn) {
 
 		packets, err := h.decoder.Decode(msg)
 		if err != nil {
-			logger.Log.Errorf("Failed to decode message: %s", err.Error())
+			logger.WithError(err).Errorf("Failed to decode message")
 			return
 		}
 
 		if len(packets) < 1 {
-			logger.Log.Warnf("Read no packets, data: %v", msg)
+			logger.WithField("data", msg).Warnf("Read no packets")
 			continue
 		}
 
 		// process all packet
 		for i := range packets {
 			if err := h.processPacket(a, packets[i]); err != nil {
-				logger.Log.Errorf("Failed to process packet: %s", err.Error())
+				logger.WithError(err).Errorf("Failed to process packet")
 				return
 			}
 		}

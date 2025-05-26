@@ -43,7 +43,9 @@ jobs:
     - name: Send coverage
       env:
         COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        goveralls -coverprofile=coverprofile.out -service=github
   e2e-test-nats:
     name: Nats Test End to End
     runs-on: ubuntu-latest

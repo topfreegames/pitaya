@@ -30,6 +30,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/topfreegames/pitaya/v2/config"
@@ -190,6 +191,7 @@ func newAgent(
 	// initialize heartbeat and handshake data on first user connection
 	serializerName := serializer.GetName()
 
+	// TODO: Remove this once.Do and move the validation somewhere else, maybe during pitaya initialization. The current approach makes tests interfere with each other quite easily.
 	once.Do(func() {
 		hbdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
 		herdEncode(heartbeatTime, packetEncoder, messageEncoder.IsCompressionEnabled(), serializerName)
@@ -320,14 +322,22 @@ func (a *agentImpl) Push(route string, v interface{}) error {
 		return errors.NewError(constants.ErrBrokenPipe, errors.ErrClientClosedRequest)
 	}
 
+	logger := logger.Log.WithFields(map[string]interface{}{
+		"type":       "Push",
+		"session_id": a.Session.ID(),
+		"uid":        a.Session.UID(),
+		"route":      route,
+	})
+
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
-			a.Session.ID(), a.Session.UID(), route, len(d))
+		logger = logger.WithField("bytes", len(d))
 	default:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
-			a.Session.ID(), a.Session.UID(), route, v)
+		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
 	}
+
+	logger.Debugf("pushing message to session")
+
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
@@ -346,14 +356,21 @@ func (a *agentImpl) ResponseMID(ctx context.Context, mid uint, v interface{}, is
 		return constants.ErrSessionOnNotify
 	}
 
+	logger := logger.Log.WithFields(map[string]interface{}{
+		"type":       "Push",
+		"session_id": a.Session.ID(),
+		"uid":        a.Session.UID(),
+		"mid":        mid,
+	})
+
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
-			a.Session.ID(), a.Session.UID(), mid, len(d))
+		logger = logger.WithField("bytes", len(d))
 	default:
-		logger.Log.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
-			a.Session.ID(), a.Session.UID(), mid, v)
+		logger = logger.WithField("data", fmt.Sprintf("%+v", d))
 	}
+
+	logger.Debugf("responding message to session")
 
 	return a.send(pendingMessage{ctx: ctx, typ: message.Response, mid: mid, payload: v, err: err})
 }
@@ -368,8 +385,11 @@ func (a *agentImpl) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
-		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
+	logger.Log.WithFields(map[string]interface{}{
+		"session_id":  a.Session.ID(),
+		"uid":         a.Session.UID(),
+		"remote_addr": a.conn.RemoteAddr().String(),
+	}).Debugf("Session closed")
 
 	// prevent closing closed channel
 	select {
@@ -408,10 +428,48 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 	// packet encode
 	p, err := a.encoder.Encode(packet.Kick, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("agent kick encoding failed: %w", err)
 	}
-	_, err = a.conn.Write(p)
-	return err
+	if err := a.writeToConnection(ctx, p); err != nil {
+		// 1. Check for a closed connection (most likely scenario for a "dead connection")
+		if e.Is(err, net.ErrClosed) {
+			// Handle specifically: connection was already closed
+			// This could mean the client disconnected before the kick.
+			return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
+				"reason": "agent kick failed: connection already closed",
+			})
+		}
+
+		// 2. Check for a timeout (if you have write deadlines)
+		if e.Is(err, os.ErrDeadlineExceeded) {
+			// Handle specifically: write operation timed out
+			return errors.NewError(err, errors.ErrRequestTimeout, map[string]string{
+				"reason": "agent kick failed: write timeout",
+			})
+		}
+
+		// 3. Unwrap OpError to check for specific syscall errors if needed
+		var opError *net.OpError
+		if e.As(err, &opError) {
+			if e.Is(opError.Err, syscall.EPIPE) {
+				// Handle specifically: broken pipe (often means client disconnected)
+				return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
+					"reason": "agent kick failed: write timeout",
+				})
+			}
+			if e.Is(opError.Err, syscall.ECONNRESET) {
+				// Handle specifically: connection reset by peer
+				return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
+					"reason": "agent kick failed: connection reset by peer",
+				})
+			}
+		}
+
+		return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
+			"reason": "agent kick message failed",
+		})
+	}
+	return nil
 }
 
 // SetLastAt sets the last at to now
@@ -428,7 +486,10 @@ func (a *agentImpl) SetStatus(state int32) {
 func (a *agentImpl) Handle() {
 	defer func() {
 		a.Close()
-		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
+		logger.Log.WithFields(map[string]interface{}{
+			"session_id": a.Session.ID(),
+			"uid":        a.Session.UID(),
+		}).Debugf("Session handle goroutine exit")
 	}()
 
 	go a.write()
@@ -466,7 +527,13 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				logger.Log.WithFields(map[string]interface{}{
+					"session_id":  a.Session.ID(),
+					"uid":         a.Session.UID(),
+					"remote_addr": a.conn.RemoteAddr().String(),
+					"last_at":     atomic.LoadInt64(&a.lastAt),
+					"deadline":    deadline,
+				}).Debugf("Session heartbeat timeout")
 				return
 			}
 
