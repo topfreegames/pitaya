@@ -297,6 +297,9 @@ func TestKickNetworkErrors(t *testing.T) {
 			var pitayaErr *e.Error
 			assert.True(t, errors.As(err, &pitayaErr))
 			assert.Equal(t, row.expectedError, pitayaErr.Code)
+
+			// Verify that the underlying error message is preserved in the error message
+			// Since Pitaya errors don't support unwrapping, we check if the message contains the original error
 			assert.Contains(t, err.Error(), row.writeError.Error())
 		})
 	}
