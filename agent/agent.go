@@ -425,27 +425,22 @@ func (a *agentImpl) GetStatus() int32 {
 
 // Kick sends a kick packet to a client
 func (a *agentImpl) Kick(ctx context.Context) error {
-	// packet encode
 	p, err := a.encoder.Encode(packet.Kick, nil)
 	if err != nil {
-		return fmt.Errorf("agent kick encoding failed: %w", err)
+		return fmt.Errorf("agent kick failed: %w", err)
 	}
 	if err := a.writeToConnection(ctx, p); err != nil {
 		// 1. Check for a closed connection (most likely scenario for a "dead connection")
 		if e.Is(err, net.ErrClosed) {
 			// Handle specifically: connection was already closed
 			// This could mean the client disconnected before the kick.
-			return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
-				"reason": "agent kick failed: connection already closed",
-			})
+			return errors.NewError(fmt.Errorf("agent kick failed: %w", err), errors.ErrClientClosedRequest)
 		}
 
 		// 2. Check for a timeout (if you have write deadlines)
 		if e.Is(err, os.ErrDeadlineExceeded) {
 			// Handle specifically: write operation timed out
-			return errors.NewError(err, errors.ErrRequestTimeout, map[string]string{
-				"reason": "agent kick failed: write timeout",
-			})
+			return errors.NewError(fmt.Errorf("agent kick failed: %w", err), errors.ErrRequestTimeout)
 		}
 
 		// 3. Unwrap OpError to check for specific syscall errors if needed
@@ -453,21 +448,15 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 		if e.As(err, &opError) {
 			if e.Is(opError.Err, syscall.EPIPE) {
 				// Handle specifically: broken pipe (often means client disconnected)
-				return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
-					"reason": "agent kick failed: write timeout",
-				})
+				return errors.NewError(fmt.Errorf("agent kick failed: %w", err), errors.ErrClosedRequest)
 			}
 			if e.Is(opError.Err, syscall.ECONNRESET) {
 				// Handle specifically: connection reset by peer
-				return errors.NewError(err, errors.ErrClientClosedRequest, map[string]string{
-					"reason": "agent kick failed: connection reset by peer",
-				})
+				return errors.NewError(fmt.Errorf("agent kick failed: %w", err), errors.ErrClientClosedRequest)
 			}
 		}
 
-		return errors.NewError(err, errors.ErrClosedRequest, map[string]string{
-			"reason": "agent kick message failed",
-		})
+		return errors.NewError(fmt.Errorf("agent kick failed: %w", err), errors.ErrClosedRequest)
 	}
 	return nil
 }
