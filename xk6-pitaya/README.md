@@ -6,16 +6,47 @@
 
 ## Building the k6 binary
 
+### From the repository (local build)
 ```shell
-xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v2=../
+# Clone the repository and navigate to it
+git clone https://github.com/topfreegames/pitaya.git
+cd pitaya/xk6-pitaya
+
+# Build with the latest commit
+xk6 build \
+  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@v2.11.16 \
+  --replace github.com/topfreegames/pitaya/v2=github.com/topfreegames/pitaya/v2@v2.11.16 \
+  --output ./k6-pitaya
+```
+
+### From anywhere (remote build)
+```shell
+# Build from any directory using a specific version
+xk6 build \
+  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@v2.11.16 \
+  --replace github.com/topfreegames/pitaya/v2=github.com/topfreegames/pitaya/v2@v2.11.16 \
+  --output ./k6-pitaya
 ```
 
 ## Building the k6 docker image
 
 ```shell
-docker build --build-arg pitaya_revision=ac6eb29bdb -t xk6-pitaya
-# change the pitaya_revision to the revision you want to use
+# Build with a specific version
+docker build --build-arg pitaya_revision=v2.11.16 -t xk6-pitaya .
 ```
+
+## Requirements
+
+- **Go 1.23+** (required for k6 v1.1.0+ compatibility)
+- **xk6** (latest version recommended)
+- **Pitaya v2.11.16+** (for the client implementation)
+
+## Compatibility
+
+This extension is compatible with:
+- **k6 v1.1.0+** (uses sobek JavaScript engine)
+- **Pitaya v2.x** (uses the v2 client API)
+- **Go 1.23+** (required for the latest k6)
 
 ## Example usage
 
@@ -93,7 +124,7 @@ make run-cluster-example-backend
 make run-cluster-example-frontend
 
 # run k6 scenario
-./k6 run ./examples/scenario1.js
+./k6-pitaya run ./examples/scenario1.js
 ```
 
 # Metrics
@@ -115,6 +146,16 @@ builder.Serializer = json.NewSerializer()
 ```
 
 Or just don't set it, since json is the default serializer.
+
+# Migration from older versions
+
+If you're upgrading from an older version of xk6-pitaya:
+
+1. **Update your build command** to use the new module path (`/v2`)
+2. **Use a compatible k6 version** (v1.1.0+ recommended)
+3. **Update your Go version** to 1.23+ if needed
+
+The extension now uses the **sobek JavaScript engine** (instead of goja) for better compatibility with the latest k6 versions.
 
 # Additional Documentation
 
