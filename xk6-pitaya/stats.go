@@ -1,4 +1,4 @@
-package pitaya
+package xk6pitaya
 
 import (
 	"errors"

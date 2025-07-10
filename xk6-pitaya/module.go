@@ -1,4 +1,4 @@
-package pitaya
+package xk6pitaya
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dop251/goja"
+	"github.com/grafana/sobek"
 	"github.com/sirupsen/logrus"
 	pitayaclient "github.com/topfreegames/pitaya/v2/client"
 	"github.com/topfreegames/pitaya/v2/session"
@@ -63,7 +63,7 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 // - handshakeData: the handshake data to send to the server
 // - requestTimeoutMs: the timeout for requests in milliseconds
 // - logLevel: the log level to use
-func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
+func (mi *ModuleInstance) NewClient(call sobek.ConstructorCall) *sobek.Object {
 	rt := mi.vu.Runtime()
 
 	var optionsArg map[string]interface{}
@@ -99,7 +99,7 @@ type options struct {
 }
 
 // newOptionsFrom validates and instantiates an options struct from its map representation
-// as obtained by calling a Goja's Runtime.ExportTo.
+// as obtained by calling a Sobek's Runtime.ExportTo.
 func newOptionsFrom(argument map[string]interface{}) (*options, error) {
 	jsonStr, err := json.Marshal(argument)
 	if err != nil {

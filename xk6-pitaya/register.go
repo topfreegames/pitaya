@@ -1,5 +1,5 @@
-// Package pitays only exists to register the pitaya extension
-package pitaya
+// Package xk6pitaya only exists to register the pitaya extension
+package xk6pitaya
 
 import (
 	"go.k6.io/k6/js/modules"

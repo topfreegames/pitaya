@@ -1,4 +1,4 @@
-package pitaya
+package xk6pitaya
 
 import (
 	"encoding/json"
@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dop251/goja"
-	pitayaclient "github.com/topfreegames/pitaya/v2/client"
-	pitayamessage "github.com/topfreegames/pitaya/v2/conn/message"
+	"github.com/grafana/sobek"
+	"github.com/topfreegames/pitaya/v2/client"
+	"github.com/topfreegames/pitaya/v2/conn/message"
 	"github.com/topfreegames/pitaya/v2/session"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/metrics"
@@ -24,7 +24,7 @@ type Response interface{}
 // It is also used to consume pushes
 type Client struct {
 	vu             modules.VU
-	client         pitayaclient.PitayaClient
+	client         client.PitayaClient
 	handshake      *session.HandshakeData
 	responsesMutex sync.Mutex
 	responses      map[uint]chan []byte
@@ -61,7 +61,7 @@ func (c *Client) IsConnected() bool {
 // ConsumePush will return a promise that will be resolved when a push is received on the given route.
 // The promise will be rejected if the timeout is reached before a push is received.
 // The promise will be resolved with the push data.
-func (c *Client) ConsumePush(route string, timeoutMs int) *goja.Promise {
+func (c *Client) ConsumePush(route string, timeoutMs int) *sobek.Promise {
 	promise, resolve, reject := c.makeHandledPromise()
 	ch := c.getPushChannelForRoute(route)
 	go func() {
@@ -105,7 +105,7 @@ func (c *Client) Notify(route string, msg interface{}) error {
 // msg is the message to send
 // returns a promise that will be resolved when the response is received
 // the promise will be rejected if the timeout is reached before a response is received
-func (c *Client) Request(route string, msg interface{}) *goja.Promise { // TODO: add custom timeout
+func (c *Client) Request(route string, msg interface{}) *sobek.Promise { // TODO: add custom timeout
 	m := msg
 	if m == nil {
 		m = map[string]interface{}{}
@@ -198,11 +198,11 @@ func (c *Client) listen() {
 	go func() {
 		for m := range channel {
 			switch m.Type {
-			case pitayamessage.Response:
+			case message.Response:
 				ch := c.getResponseChannelForID(m.ID)
 				ch <- m.Data
 				c.removeResponseChannelForID(m.ID)
-			case pitayamessage.Push:
+			case message.Push:
 				ch := c.getPushChannelForRoute(m.Route)
 				// only keep one message in the channel, discard the rest
 				if len(ch) == 0 {
@@ -245,7 +245,7 @@ func (c *Client) getPushChannelForRoute(route string) chan []byte {
 // makeHandledPromise will create a promise and return its resolve and reject methods,
 // wrapped in such a way that it will block the eventloop from exiting before they are
 // called even if the promise isn't resolved by the time the current script ends executing.
-func (c *Client) makeHandledPromise() (*goja.Promise, func(interface{}), func(interface{})) {
+func (c *Client) makeHandledPromise() (*sobek.Promise, func(interface{}), func(interface{})) {
 	runtime := c.vu.Runtime()
 	callback := c.vu.RegisterCallback()
 	p, resolve, reject := runtime.NewPromise()
