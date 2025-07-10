@@ -1,6 +1,6 @@
 module github.com/topfreegames/pitaya/v3
 
-go 1.23
+go 1.24
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible
