@@ -2,12 +2,32 @@
 
 `xk6-pitaya` is a [k6](https://go.k6.io/k6) extension that provides a [Pitaya](https://github.com/topfreegames/pitaya) client implementation.
 
+## Compatibility
+
+This extension has been updated to work with:
+- **k6 v1.0+** (uses sobek JavaScript runtime)
+- **Pitaya v3.0.0-beta.6+**
+- **Go 1.23+**
+
 # Usage
 
 ## Building the k6 binary
 
+### From the pitaya monorepo (with go.work file)
+
 ```shell
-xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v3/pkg=../pkg
+# Temporarily move go.work to avoid workspace conflicts
+mv go.work go.work.bak
+xk6 build --with github.com/topfreegames/pitaya/xk6-pitaya=./xk6-pitaya
+mv go.work.bak go.work
+```
+
+### From a standalone directory
+
+If you're building from outside the pitaya monorepo, simply run:
+
+```shell
+xk6 build --with github.com/topfreegames/pitaya/xk6-pitaya=./path/to/xk6-pitaya
 ```
 
 ## Building the k6 docker image
@@ -53,28 +73,28 @@ const opts = {
 const pitayaClient = new pitaya.Client(opts)
 
 export default async () => {
-  if (!pitayaClient.isConnected()) {
-    pitayaClient.connect("localhost:3250")
+  if (!pitayaClient.IsConnected()) {
+    pitayaClient.Connect("localhost:3250")
   }
 
-  check(pitayaClient.isConnected(), { 'pitaya client is connected': (r) => r === true })
+  check(pitayaClient.IsConnected(), { 'pitaya client is connected': (r) => r === true })
 
-  var res = await pitayaClient.request("room.room.entry")
+  var res = await pitayaClient.Request("room.room.entry")
   check(res.result, { 'contains an result field': (r) => r !== undefined })
   check(res.result, { 'result is ok': (r) => r === "ok" })
 
-  var res = await pitayaClient.request("room.room.setsessiondata", { data: {"testKey": "testVal"} })
+  var res = await pitayaClient.Request("room.room.setsessiondata", { data: {"testKey": "testVal"} })
   check(res, { 'res is success': (r) => String.fromCharCode.apply(null,r) === "success"} )
-  var res = await pitayaClient.request("room.room.getsessiondata")
+  var res = await pitayaClient.Request("room.room.getsessiondata")
   check(res.Data, { 'res contains set data': (r) => r.testKey === "testVal"} )
-  res = await pitayaClient.request("room.room.join")
+  res = await pitayaClient.Request("room.room.join")
   check(res.result, { 'result from join is successful': (r) => r === "success"} )
-  res = await pitayaClient.consumePush("onMembers", 500)
+  res = await pitayaClient.ConsumePush("onMembers", 500)
   check(res.Members, { 'res contains a member group': (m) => m !== undefined } )
-  res = await pitayaClient.request("room.room.leave")
+  res = await pitayaClient.Request("room.room.leave")
   check(res, { 'result from leave is successful': (r) => String.fromCharCode.apply(null,r) === "success"})
 
- pitayaClient.disconnect()
+ pitayaClient.Disconnect()
 }
 
 export function teardown() {

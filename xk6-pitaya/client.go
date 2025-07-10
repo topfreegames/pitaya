@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dop251/goja"
+	"github.com/grafana/sobek"
 	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
 	pitayamessage "github.com/topfreegames/pitaya/v3/pkg/conn/message"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
@@ -68,26 +68,21 @@ func (c *Client) IsConnected() bool {
 	return res.Bool()
 }
 
-// ConsumePush will return a promise that will be resolved when a push is received on the given route.
-// The promise will be rejected if the timeout is reached before a push is received.
-// The promise will be resolved with the push data.
-func (c *Client) ConsumePush(route string, timeoutMs int) *goja.Promise {
+// ConsumePush consumes a push message from the server
+// route is the route to consume the push from
+// timeoutMs is the timeout in milliseconds
+// returns a promise that will be resolved when the push is received
+// the promise will be rejected if the timeout is reached before a push is received
+func (c *Client) ConsumePush(route string, timeoutMs int) *sobek.Promise {
 	promise, resolve, reject := c.makeHandledPromise()
 	ch := c.getPushChannelForRoute(route)
 	go func() {
 		select {
-		case data := <-ch:
-			var ret Response
-			if err := json.Unmarshal(data, &ret); err != nil {
-				err = fmt.Errorf("Error unmarshaling response: %s", err)
-				reject(err)
-				return
-			}
-			resolve(ret)
+		case pushData := <-ch:
+			resolve(pushData)
 			return
 		case <-time.After(time.Duration(timeoutMs) * time.Millisecond):
 			reject(fmt.Errorf("Timeout waiting for push on route %s", route))
-			return
 		}
 	}()
 	return promise
@@ -110,12 +105,12 @@ func (c *Client) Notify(route string, msg interface{}) error {
 	return c.client.SendNotify(route, data)
 }
 
-// RequestB64 sends a request to the server using a base64 string
+// RequestB64 sends a request to the server
 // route is the route to send the request to
-// str is the string passed in request
+// b64msg is the base64 encoded message to send
 // returns a promise that will be resolved when the response is received
 // the promise will be rejected if the timeout is reached before a response is received
-func (c *Client) RequestB64(route string, b64msg string) *goja.Promise { // TODO: add custom timeout
+func (c *Client) RequestB64(route string, b64msg string) *sobek.Promise { // TODO: add custom timeout
 	promise, resolve, reject := c.makeHandledPromise()
 	data, err := base64.StdEncoding.DecodeString(b64msg)
 	if err != nil {
@@ -155,7 +150,7 @@ func (c *Client) RequestB64(route string, b64msg string) *goja.Promise { // TODO
 // msg is the message to send
 // returns a promise that will be resolved when the response is received
 // the promise will be rejected if the timeout is reached before a response is received
-func (c *Client) Request(route string, msg interface{}) *goja.Promise { // TODO: add custom timeout
+func (c *Client) Request(route string, msg interface{}) *sobek.Promise { // TODO: add custom timeout
 	m := msg
 	if m == nil {
 		m = map[string]interface{}{}
@@ -295,7 +290,7 @@ func (c *Client) getPushChannelForRoute(route string) chan []byte {
 // makeHandledPromise will create a promise and return its resolve and reject methods,
 // wrapped in such a way that it will block the eventloop from exiting before they are
 // called even if the promise isn't resolved by the time the current script ends executing.
-func (c *Client) makeHandledPromise() (*goja.Promise, func(interface{}), func(interface{})) {
+func (c *Client) makeHandledPromise() (*sobek.Promise, func(interface{}), func(interface{})) {
 	runtime := c.vu.Runtime()
 	callback := c.vu.RegisterCallback()
 	p, resolve, reject := runtime.NewPromise()

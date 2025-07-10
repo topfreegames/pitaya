@@ -5,10 +5,10 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/dop251/goja v0.0.0-20240610225006-393f6d42497b
+	github.com/grafana/sobek v0.0.0-20240613124309-cb36746e8fee
 	github.com/sirupsen/logrus v1.9.3
-	github.com/topfreegames/pitaya/v3 v3.0.0-20240729164016-edc136f224b3
-	go.k6.io/k6 v0.52.0
+	github.com/topfreegames/pitaya/v3 v3.0.0-beta.6
+	go.k6.io/k6 v0.51.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/dlclark/regexp2 v1.9.0 // indirect
-	github.com/evanw/esbuild v0.21.2 // indirect
+	github.com/dop251/goja v0.0.0-20240610225006-393f6d42497b // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -37,7 +37,6 @@ require (
 	github.com/google/pprof v0.0.0-20230728192033-2ba5b33183c6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
-	github.com/grafana/sobek v0.0.0-20240613124309-cb36746e8fee // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jhump/protoreflect v1.15.6 // indirect
@@ -52,8 +51,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mstoykov/atlas v0.0.0-20220811071828-388f114305dd // indirect
-	github.com/nats-io/nats-server/v2 v2.10.24 // indirect
-	github.com/nats-io/nats.go v1.38.0 // indirect
+	github.com/nats-io/nats.go v1.39.0 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
@@ -76,7 +74,6 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.11 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.11 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.11 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.28.0 // indirect
@@ -96,7 +93,6 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
-	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
