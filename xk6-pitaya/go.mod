@@ -1,11 +1,11 @@
-module github.com/topfreegames/pitaya/xk6-pitaya/v2
+module github.com/topfreegames/pitaya/v2/xk6-pitaya
 
 go 1.23.0
 
 require (
 	github.com/grafana/sobek v0.0.0-20240613124309-cb36746e8fee
 	github.com/sirupsen/logrus v1.9.3
-	github.com/topfreegames/pitaya/v2 v2.11.15
+	github.com/topfreegames/pitaya/v2 v2.11.16
 	go.k6.io/k6 v0.51.0
 )
 
