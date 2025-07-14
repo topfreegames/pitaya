@@ -6,33 +6,16 @@
 
 ## Building the k6 binary
 
-### From the repository (local build)
 ```shell
-# Clone the repository and navigate to it
-git clone https://github.com/topfreegames/pitaya.git
-cd pitaya/xk6-pitaya
-
-# Build with the latest commit
 xk6 build \
-  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@v2.11.16 \
-  --replace github.com/topfreegames/pitaya/v2=github.com/topfreegames/pitaya/v2@v2.11.16 \
-  --output ./k6-pitaya
-```
-
-### From anywhere (remote build)
-```shell
-# Build from any directory using a specific version
-xk6 build \
-  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@v2.11.16 \
-  --replace github.com/topfreegames/pitaya/v2=github.com/topfreegames/pitaya/v2@v2.11.16 \
+  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@01338f1 \
   --output ./k6-pitaya
 ```
 
 ## Building the k6 docker image
 
 ```shell
-# Build with a specific version
-docker build --build-arg pitaya_revision=v2.11.16 -t xk6-pitaya .
+docker build --build-arg pitaya_revision=01338f1 -t xk6-pitaya .
 ```
 
 ## Requirements
@@ -160,6 +143,18 @@ The extension now uses the **sobek JavaScript engine** (instead of goja) for bet
 # Additional Documentation
 
 All k6 documentation also applies to this extension. See https://k6.io/docs/ for more information.
+
+# Developing
+
+While developing you can build xk6-pitaya with latest changes from pitaya
+by cloning the repo and building with replace:
+
+```shell
+xk6 build \
+  --with github.com/topfreegames/pitaya/xk6-pitaya/v2@01338f1 \
+  --replace github.com/topfreegames/pitaya/v2=./ \
+  --output ./k6-pitaya
+```
 
 # Running distributed tests
 
