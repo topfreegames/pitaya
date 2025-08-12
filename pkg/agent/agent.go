@@ -459,7 +459,11 @@ func (a *agentImpl) heartbeat() {
 
 	defer func() {
 		ticker.Stop()
+		logger.Log.Debugf("[HEARTBEAT] [%s] Starting close process - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 		a.Close()
+		logger.Log.Debugf("[HEARTBEAT] [%s] Close process completed - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 	}()
 
 	for {
@@ -467,7 +471,8 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				logger.Log.Debugf("[HEARTBEAT] [%s] Session heartbeat timeout, LastTime=%d, Deadline=%d",
+					time.Now().Format("15:04:05.000"), atomic.LoadInt64(&a.lastAt), deadline)
 				return
 			}
 
@@ -519,7 +524,11 @@ func (a *agentImpl) SendHandshakeErrorResponse() error {
 func (a *agentImpl) write() {
 	// clean func
 	defer func() {
+		logger.Log.Debugf("[WRITE] [%s] Starting close process - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 		a.Close()
+		logger.Log.Debugf("[WRITE] [%s] Close process completed - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 	}()
 
 	for {
@@ -527,7 +536,11 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
+			logger.Log.Debugf("[WRITE] [%s] Starting writeToConnection - Session ID=%d, UID=%s, DataLength=%d",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), len(data))
 			writeErr := a.writeToConnection(ctx, data)
+			logger.Log.Debugf("[WRITE] [%s] writeToConnection completed - Session ID=%d, UID=%s, Error=%v",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), writeErr)
 
 			tracing.FinishSpan(ctx, nil)
 
@@ -544,14 +557,13 @@ func (a *agentImpl) write() {
 						"Failed to write in conn (%s) | session (%s): %s, agent will close",
 						a.conn.RemoteAddr(), a.Session.UID(), writeErr.Error(),
 					)
-					metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
-					// close agent if low-level conn broke during write
-					return
 				}
 			}
 
 			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		case <-a.chStopWrite:
+			logger.Log.Debugf("[WRITE] [%s] Received stop signal - Session ID=%d, UID=%s",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 			return
 		}
 	}
@@ -560,8 +572,8 @@ func (a *agentImpl) write() {
 func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 	span := createConnectionSpan(ctx, a.conn, "conn write")
 
-        a.conn.SetWriteDeadline(time.Now().Add(a.writeTimeout))
-        _, writeErr := a.conn.Write(data)
+	a.conn.SetWriteDeadline(time.Now().Add(a.writeTimeout))
+	_, writeErr := a.conn.Write(data)
 
 	if span != nil {
 		defer span.End()
@@ -569,6 +581,8 @@ func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 		if writeErr != nil {
 			span.RecordError(writeErr)
 			span.SetStatus(codes.Error, writeErr.Error())
+			logger.Log.Debugf("Write error in writeToConnection - Session ID=%d, UID=%s, Error=%v",
+				a.Session.ID(), a.Session.UID(), writeErr)
 		}
 	}
 
