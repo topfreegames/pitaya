@@ -508,7 +508,11 @@ func (a *agentImpl) heartbeat() {
 
 	defer func() {
 		ticker.Stop()
+		logger.Log.Debugf("[HEARTBEAT] [%s] Starting close process - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 		a.Close()
+		logger.Log.Debugf("[HEARTBEAT] [%s] Close process completed - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 	}()
 
 	for {
@@ -574,7 +578,11 @@ func (a *agentImpl) SendHandshakeErrorResponse() error {
 func (a *agentImpl) write() {
 	// clean func
 	defer func() {
+		logger.Log.Debugf("[WRITE] [%s] Starting close process - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 		a.Close()
+		logger.Log.Debugf("[WRITE] [%s] Close process completed - Session ID=%d, UID=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 	}()
 
 	for {
@@ -582,7 +590,11 @@ func (a *agentImpl) write() {
 		case pWrite := <-a.chSend:
 			ctx, err, data := pWrite.ctx, pWrite.err, pWrite.data
 
+			logger.Log.Debugf("[WRITE] [%s] Starting writeToConnection - Session ID=%d, UID=%s, DataLength=%d",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), len(data))
 			writeErr := a.writeToConnection(ctx, data)
+			logger.Log.Debugf("[WRITE] [%s] writeToConnection completed - Session ID=%d, UID=%s, Error=%v",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), writeErr)
 
 			tracing.FinishSpan(ctx, nil)
 
@@ -607,6 +619,8 @@ func (a *agentImpl) write() {
 
 			metrics.ReportTimingFromCtx(ctx, a.metricsReporters, handlerType, err)
 		case <-a.chStopWrite:
+			logger.Log.Debugf("[WRITE] [%s] Received stop signal - Session ID=%d, UID=%s",
+				time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
 			return
 		}
 	}
@@ -620,6 +634,8 @@ func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 	_, writeErr := a.conn.Write(data)
 	if writeErr != nil {
 		tracing.LogError(span, writeErr.Error())
+		logger.Log.Debugf("Write error in writeToConnection - Session ID=%d, UID=%s, Error=%v",
+			a.Session.ID(), a.Session.UID(), writeErr)
 		return writeErr
 	}
 	return writeErr
