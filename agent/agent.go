@@ -344,8 +344,8 @@ func (a *agentImpl) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.Debugf("[CLOSE] [%s] Session closed, ID=%d, UID=%s, IP=%s",
-		time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
+	logger.Log.Debugf("[CLOSE] [%s] Session closed, SessionID=%d  IP=%s",
+		time.Now().Format("15:04:05.000"), a.Session.ID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
 	select {
@@ -434,11 +434,11 @@ func (a *agentImpl) heartbeat() {
 
 	defer func() {
 		ticker.Stop()
-		logger.Log.Debugf("[HEARTBEAT] [%s] Starting close process - Session ID=%d, UID=%s",
-			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("[HEARTBEAT] [%s] Starting close process - Session ID=%d",
+			time.Now().Format("15:04:05.000"), a.Session.ID())
 		a.Close()
-		logger.Log.Debugf("[HEARTBEAT] [%s] Close process completed - Session ID=%d, UID=%s",
-			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID())
+		logger.Log.Debugf("[HEARTBEAT] [%s] Close process completed - Session ID=%d",
+			time.Now().Format("15:04:05.000"), a.Session.ID())
 	}()
 
 	for {
@@ -446,8 +446,8 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("[HEARTBEAT] [%s] Session heartbeat timeout, LastTime=%d, Deadline=%d",
-					time.Now().Format("15:04:05.000"), atomic.LoadInt64(&a.lastAt), deadline)
+				logger.Log.Debugf("[HEARTBEAT] [%s] Session heartbeat timeout, LastTime=%d, Deadline=%d Session ID=%d",
+					time.Now().Format("15:04:05.000"), atomic.LoadInt64(&a.lastAt), deadline, a.Session.ID())
 				return
 			}
 
@@ -462,6 +462,8 @@ func (a *agentImpl) heartbeat() {
 		case <-a.chDie:
 			return
 		case <-a.chStopHeartbeat:
+			logger.Log.Debugf("[HEARTBEAT] [%s] Session receive signal, Session ID=%d",
+				time.Now().Format("15:04:05.000"), a.Session.ID())
 			return
 		}
 	}
@@ -475,11 +477,19 @@ func (a *agentImpl) onSessionClosed(s session.Session) {
 	}()
 
 	for _, fn1 := range s.GetOnCloseCallbacks() {
+		logger.Log.Debugf("[CALLBACK] [%s] Start Session closed, ID=%d, UID=%s, IP=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 		fn1()
+		logger.Log.Debugf("[CALLBACK] [%s] End Session closed, ID=%d, UID=%s, IP=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 	}
 
 	for _, fn2 := range a.sessionPool.GetSessionCloseCallbacks() {
+		logger.Log.Debugf("[CALLBACK] [%s] Start Session Pool closed, ID=%d, UID=%s, IP=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 		fn2(s)
+		logger.Log.Debugf("[CALLBACK] [%s] End Session Pool closed, ID=%d, UID=%s, IP=%s",
+			time.Now().Format("15:04:05.000"), a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 	}
 }
 
@@ -566,7 +576,7 @@ func createConnectionSpan(ctx context.Context, conn net.Conn, op string) opentra
 
 	tags := opentracing.Tags{
 		"span.kind": "connection",
-		"addr": remoteAddress,
+		"addr":      remoteAddress,
 	}
 
 	var parent opentracing.SpanContext
