@@ -32,6 +32,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/logger"
 	"github.com/topfreegames/pitaya/v2/util"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	logutil "go.etcd.io/etcd/client/pkg/v3/logutil"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
@@ -658,7 +659,15 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			case wResp, ok := <-chn:
 				if wResp.Err() != nil {
 					logger.Log.Warnf("etcd watcher response error: %s", wResp.Err())
-					time.Sleep(100 * time.Millisecond)
+					switch wResp.Err() {
+					case rpctypes.ErrCompacted, rpctypes.ErrFutureRev:
+						logger.Log.Warn("etcd revision error, restarting watcher from current revision")
+						chn = sd.cli.Watch(context.Background(), "servers/", clientv3.WithPrefix())
+					default:
+						// For other errors, just retry after a delay
+						time.Sleep(100 * time.Millisecond)
+					}
+					continue
 				}
 				if !ok {
 					logger.Log.Error("etcd watcher died, retrying to watch in 1 second")
