@@ -30,6 +30,7 @@ import (
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/helpers"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -505,4 +506,20 @@ func TestParallelGetter(t *testing.T) {
 		assert.Equal(t, serverToAdd.ID, sv.ID)
 		assert.Equal(t, serverToAdd.Frontend, sv.Frontend)
 	}
+}
+
+func TestEtcdWatcherCompactionErrorHandling(t *testing.T) {
+	t.Parallel()
+
+	config := config.NewDefaultPitayaConfig().Cluster.SD.Etcd
+	config.SyncServers.Interval = 100 * time.Millisecond
+	c, cli := helpers.GetTestEtcd(t)
+	defer c.Terminate(t)
+
+	server := NewServer("test-server", "test-type", false, nil)
+	e := getEtcdSD(t, config, server, cli)
+	e.Init()
+
+	assert.NotNil(t, rpctypes.ErrCompacted)
+	assert.NotNil(t, rpctypes.ErrFutureRev)
 }
