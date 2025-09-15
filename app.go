@@ -375,7 +375,7 @@ func (app *App) Start() {
 
 	app.Shutdown()
 	close(app.externalDieChan)
-	close(app.sgChan)
+	// close(app.sgChan) // Do not close the signal channel unless you have full control over its lifecycle
 
 	logger.Log.Warn("server is stopping...")
 
