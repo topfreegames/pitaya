@@ -51,6 +51,8 @@ type PrometheusReporter struct {
 	additionalLabels      map[string]string
 }
 
+var _ Reporter = (*PrometheusReporter)(nil)
+
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
 	additionalLabelsKeys []string,
