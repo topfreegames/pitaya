@@ -23,8 +23,6 @@ package metrics
 import (
 	"fmt"
 
-	"github.com/topfreegames/pitaya/v2/constants"
-
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/topfreegames/pitaya/v2/config"
 	"github.com/topfreegames/pitaya/v2/logger"
@@ -35,6 +33,7 @@ type Client interface {
 	Count(name string, value int64, tags []string, rate float64) error
 	Gauge(name string, value float64, tags []string, rate float64) error
 	TimeInMilliseconds(name string, value float64, tags []string, rate float64) error
+	Histogram(name string, value float64, tags []string, rate float64) error
 }
 
 // StatsdReporter sends application metrics to statsd
@@ -44,6 +43,8 @@ type StatsdReporter struct {
 	serverType  string
 	defaultTags []string
 }
+
+var _ Reporter = (*StatsdReporter)(nil)
 
 // NewStatsdReporter returns an instance of statsd reportar and an
 // error if something fails
@@ -143,5 +144,16 @@ func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string,
 
 // ReportHistogram observes the histogram value and reports to statsd
 func (s *StatsdReporter) ReportHistogram(metric string, tagsMap map[string]string, value float64) error {
-	return constants.ErrNotImplemented
+	fullTags := s.defaultTags
+
+	for k, v := range tagsMap {
+		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
+	}
+
+	err := s.client.Histogram(metric, value, fullTags, s.rate)
+	if err != nil {
+		logger.Log.Errorf("failed to report histogram: %q", err)
+	}
+
+	return err
 }

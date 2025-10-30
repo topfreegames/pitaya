@@ -61,6 +61,20 @@ func (mr *MockClientMockRecorder) Gauge(arg0, arg1, arg2, arg3 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Gauge", reflect.TypeOf((*MockClient)(nil).Gauge), arg0, arg1, arg2, arg3)
 }
 
+// Histogram mocks base method.
+func (m *MockClient) Histogram(arg0 string, arg1 float64, arg2 []string, arg3 float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Histogram", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Histogram indicates an expected call of Histogram.
+func (mr *MockClientMockRecorder) Histogram(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Histogram", reflect.TypeOf((*MockClient)(nil).Histogram), arg0, arg1, arg2, arg3)
+}
+
 // TimeInMilliseconds mocks base method.
 func (m *MockClient) TimeInMilliseconds(arg0 string, arg1 float64, arg2 []string, arg3 float64) error {
 	m.ctrl.T.Helper()
