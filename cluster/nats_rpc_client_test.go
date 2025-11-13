@@ -440,7 +440,7 @@ func TestNatsRPCClientCall(t *testing.T) {
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+			conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 			defer conn.Close()
 			assert.NoError(t, err)
 

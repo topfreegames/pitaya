@@ -53,14 +53,14 @@ func TestNatsRPCCommonSetupNatsConn(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 }
 
 func TestNatsRPCCommonSetupNatsConnShouldError(t *testing.T) {
 	t.Parallel()
-	conn, err := setupNatsConn("nats://invalid:1234", nil)
+	conn, err := setupNatsConn("nats://invalid:1234", nil, nil)
 	assert.Error(t, err)
 	assert.Nil(t, conn)
 }
@@ -83,7 +83,7 @@ func TestNatsRPCCommonCloseHandler(t *testing.T) {
 		assert.True(t, value)
 	}()
 
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), dieChan, nats.MaxReconnects(1),
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), dieChan, nil, nats.MaxReconnects(1),
 		nats.ReconnectWait(1*time.Millisecond))
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -108,6 +108,7 @@ func TestNatsRPCCommonWaitReconnections(t *testing.T) {
 	conn, err := setupNatsConn(
 		urls,
 		appDieCh,
+		nil,
 		nats.ReconnectWait(10*time.Millisecond),
 		nats.MaxReconnects(5),
 		nats.RetryOnFailedConnect(true),
@@ -135,6 +136,7 @@ func TestNatsRPCCommonDoNotBlockOnConnectionFail(t *testing.T) {
 		conn, err := setupNatsConn(
 			invalidAddr,
 			appDieCh,
+			nil,
 			nats.ReconnectWait(10*time.Millisecond),
 			nats.MaxReconnects(2),
 			nats.RetryOnFailedConnect(true),
@@ -168,7 +170,7 @@ func TestNatsRPCCommonFailWithoutAppDieChan(t *testing.T) {
 	}()
 
 	go func() {
-		conn, err := setupNatsConn(invalidAddr, appDieCh)
+		conn, err := setupNatsConn(invalidAddr, appDieCh, nil)
 		assert.Error(t, err)
 		assert.Nil(t, conn)
 		close(done)

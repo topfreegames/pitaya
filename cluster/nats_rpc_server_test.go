@@ -160,7 +160,7 @@ func TestNatsRPCServerOnSessionBind(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.onSessionBind(context.Background(), mockSession)
@@ -179,7 +179,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.subscribeToBindingsChannel()
@@ -201,7 +201,7 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	sub, err := rpcServer.subscribeToUserKickChannel("someuid", sv.Type)
@@ -244,7 +244,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -278,7 +278,7 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -317,7 +317,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 		s.Shutdown()
 		s.WaitForShutdown()
 	}()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
