@@ -363,7 +363,7 @@ func (ns *NatsRPCServer) initConnection(isReplacement bool) error {
 		ns.connString,
 		ns.appDieChan,
 		ns.replaceConnection,
-		nats.RetryOnFailedConnect(false),
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
 		nats.Compression(ns.websocketCompression),
