@@ -116,7 +116,7 @@ func setupNatsConn(connectString string, appDieChan chan bool, lameDuckReplaceme
 	natsOptions := append(
 		options,
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			logger.Log.Warnf("disconnected from nats (%s)! Reason: %q\n", nc.ConnectedAddr(), err)
+			logger.Log.Warnf("disconnected from nats (%s)! Reason: %v", nc.ConnectedAddr(), err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
