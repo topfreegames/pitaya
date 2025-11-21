@@ -23,9 +23,11 @@ package pitaya
 import (
 	"context"
 	"errors"
-	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	"math"
 	"testing"
 	"time"
+
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -921,4 +923,16 @@ func TestStaticGetModule(t *testing.T) {
 			require.Equal(t, row.module, module)
 		})
 	}
+}
+
+func TestGetNumberOfConnectedClients(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	expected := int64(math.MaxInt64)
+
+	app := mocks.NewMockPitaya(ctrl)
+	app.EXPECT().GetNumberOfConnectedClients().Return(expected)
+
+	DefaultApp = app
+	require.Equal(t, expected, GetNumberOfConnectedClients())
 }

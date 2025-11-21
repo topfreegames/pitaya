@@ -39,8 +39,6 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize"
-	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
-	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
 	"github.com/topfreegames/pitaya/v3/pkg/tracing"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -126,16 +124,9 @@ func FileExists(filename string) bool {
 
 // GetErrorFromPayload gets the error from payload
 func GetErrorFromPayload(serializer serialize.Serializer, payload []byte) error {
-	err := &e.Error{Code: e.ErrUnknownCode}
-	switch serializer.(type) {
-	case *json.Serializer:
-		_ = serializer.Unmarshal(payload, err)
-	case *protobuf.Serializer:
-		pErr := &protos.Error{Code: e.ErrUnknownCode}
-		_ = serializer.Unmarshal(payload, pErr)
-		err = &e.Error{Code: pErr.Code, Message: pErr.Msg, Metadata: pErr.Metadata}
-	}
-	return err
+	pErr := &protos.Error{Code: e.ErrUnknownCode}
+	_ = serializer.Unmarshal(payload, pErr)
+	return &e.Error{Code: pErr.Code, Message: pErr.Msg, Metadata: pErr.Metadata}
 }
 
 // GetErrorPayload creates and serializes an error payload

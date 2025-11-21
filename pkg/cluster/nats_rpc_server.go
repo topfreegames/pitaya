@@ -63,6 +63,12 @@ type NatsRPCServer struct {
 	metricsReporters       []metrics.Reporter
 	sessionPool            session.SessionPool
 	appDieChan             chan bool
+	websocketCompression   bool
+	reconnectJitter        time.Duration
+	reconnectJitterTLS     time.Duration
+	reconnectWait          time.Duration
+	pingInterval           time.Duration
+	maxPingsOutstanding    int
 }
 
 // NewNatsRPCServer ctor
@@ -114,6 +120,12 @@ func (ns *NatsRPCServer) configure(config config.NatsRPCServerConfig) error {
 	ns.userKickCh = make(chan *protos.KickMsg, ns.messagesBufferSize)
 	ns.responses = make([]*protos.Response, ns.service)
 	ns.requests = make([]*protos.Request, ns.service)
+	ns.websocketCompression = config.WebsocketCompression
+	ns.reconnectJitter = config.ReconnectJitter
+	ns.reconnectJitterTLS = config.ReconnectJitterTLS
+	ns.reconnectWait = config.ReconnectWait
+	ns.pingInterval = config.PingInterval
+	ns.maxPingsOutstanding = config.MaxPingsOutstanding
 	return nil
 }
 
@@ -273,7 +285,7 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 					Msg:  err.Error(),
 				},
 			}
-			
+
 			logger.Log.Errorf("error getting context from request: %s", err)
 		} else {
 			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
@@ -321,17 +333,44 @@ func (ns *NatsRPCServer) processKick() {
 	}
 }
 
+// replaceConnection replaces the NATS connection, draining the old one and re-subscribing
+func (ns *NatsRPCServer) replaceConnection() error {
+	return replaceNatsConnection(
+		ns.conn,
+		ns.sub,
+		func() error { return ns.initConnection(true) },
+		"server",
+	)
+}
+
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
-	// TODO should we have concurrency here? it feels like we should
-	go ns.handleMessages()
+	return ns.initConnection(false)
+}
 
-	logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
+// initConnection initializes or replaces the NATS connection
+func (ns *NatsRPCServer) initConnection(isReplacement bool) error {
+
+	if !isReplacement {
+		// TODO should we have concurrency here? it feels like we should
+		go ns.handleMessages()
+		logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
+	} else {
+		logger.Log.Debugf("re-initializing nats server connection")
+	}
+
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
+		ns.replaceConnection,
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
+		nats.Compression(ns.websocketCompression),
+		nats.ReconnectJitter(ns.reconnectJitter, ns.reconnectJitterTLS),
+		nats.ReconnectWait(ns.reconnectWait),
+		nats.PingInterval(ns.pingInterval),
+		nats.MaxPingsOutstanding(ns.maxPingsOutstanding),
 	)
 	if err != nil {
 		return err
@@ -345,17 +384,37 @@ func (ns *NatsRPCServer) Init() error {
 	if err != nil {
 		return err
 	}
-	// this handles remote messages
-	for i := 0; i < ns.service; i++ {
-		go ns.processMessages(i)
+
+	// Re-subscribe to all session subscriptions if this is a replacement
+	// The onSessionBind callback is already set up, we just need to trigger it for existing sessions
+	if isReplacement && ns.server.Frontend && ns.sessionPool != nil {
+		ns.sessionPool.ForEachSession(func(s session.Session) {
+			if s.GetIsFrontend() && s.UID() != "" {
+				// Re-use the same subscription logic as onSessionBind
+				if err := ns.onSessionBind(context.Background(), s); err != nil {
+					logger.Log.Errorf("failed to re-subscribe session for user %s: %v", s.UID(), err)
+				}
+			}
+		})
 	}
 
-	ns.sessionPool.OnSessionBind(ns.onSessionBind)
+	if !isReplacement {
+		// this handles remote messages
+		for i := 0; i < ns.service; i++ {
+			go ns.processMessages(i)
+		}
 
-	// this should be so fast that we shoudn't need concurrency
-	go ns.processPushes()
-	go ns.processSessionBindings()
-	go ns.processKick()
+		ns.sessionPool.OnSessionBind(ns.onSessionBind)
+
+		// this should be so fast that we shoudn't need concurrency
+		go ns.processPushes()
+		go ns.processSessionBindings()
+		go ns.processKick()
+	}
+
+	if isReplacement {
+		logger.Log.Infof("successfully replaced nats server connection")
+	}
 
 	return nil
 }
@@ -391,16 +450,15 @@ func (ns *NatsRPCServer) reportMetrics() {
 			if subChanCapacity == 0 {
 				logger.Log.Warn("subChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report subChan queue capacity: %s", err.Error())
 			}
-
 			// bindingschan
 			bindingsChanCapacity := ns.messagesBufferSize - len(ns.bindingsChan)
 			if bindingsChanCapacity == 0 {
 				logger.Log.Warn("bindingsChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report bindingsChan capacity: %s", err.Error())
 			}
 
@@ -409,7 +467,7 @@ func (ns *NatsRPCServer) reportMetrics() {
 			if userPushChanCapacity == 0 {
 				logger.Log.Warn("userPushChan is at maximum capacity")
 			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
+			if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
 				logger.Log.Warnf("failed to report userPushCh capacity: %s", err.Error())
 			}
 		}

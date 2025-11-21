@@ -157,7 +157,7 @@ func TestNatsRPCServerOnSessionBind(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.onSessionBind(context.Background(), mockSession)
@@ -172,7 +172,7 @@ func TestNatsRPCServerSubscribeToBindingsChannel(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	err = rpcServer.subscribeToBindingsChannel()
@@ -190,7 +190,7 @@ func TestNatsRPCServerSubscribeUserKickChannel(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	sub, err := rpcServer.subscribeToUserKickChannel("someuid", sv.Type)
@@ -229,7 +229,7 @@ func TestNatsRPCServerSubscribeToUserMessages(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -259,7 +259,7 @@ func TestNatsRPCServerSubscribe(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, nil, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -294,7 +294,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 	rpcServer, _ := NewNatsRPCServer(cfg, sv, mockMetricsReporters, nil, nil)
 	s := helpers.GetTestNatsServer(t)
 	defer s.Shutdown()
-	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil)
+	conn, err := setupNatsConn(fmt.Sprintf("nats://%s", s.Addr()), nil, nil)
 	assert.NoError(t, err)
 	rpcServer.conn = conn
 	tables := []struct {
@@ -316,7 +316,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(0))
-			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
+			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
 
 			conn.Publish(table.topic, b)
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
@@ -505,6 +505,6 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	rpcServer.userPushCh <- &protos.Push{}
 
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
-	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
 	rpcServer.reportMetrics()
 }

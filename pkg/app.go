@@ -125,6 +125,8 @@ type Pitaya interface {
 	RegisterModuleAfter(module interfaces.Module, name string) error
 	RegisterModuleBefore(module interfaces.Module, name string) error
 	GetModule(name string) (interfaces.Module, error)
+
+	GetNumberOfConnectedClients() int64
 }
 
 // App is the base app struct
@@ -322,8 +324,8 @@ func (app *App) Start() {
 		app.running = false
 	}()
 
-	sg := make(chan os.Signal)
-	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+	sg := make(chan os.Signal, 1)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
 	maxSessionCount := func() int64 {
 		count := app.sessionPool.GetSessionCount()
@@ -552,4 +554,9 @@ func (app *App) StartWorker() {
 func (app *App) RegisterRPCJob(rpcJob worker.RPCJob) error {
 	err := app.worker.RegisterRPCJob(rpcJob)
 	return err
+}
+
+// GetNumberOfConnectedClients returns the number of connected clients
+func (app *App) GetNumberOfConnectedClients() int64 {
+	return app.sessionPool.GetSessionCount()
 }

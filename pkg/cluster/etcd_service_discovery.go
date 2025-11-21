@@ -24,6 +24,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
@@ -32,9 +36,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
 	"google.golang.org/grpc"
-	"strings"
-	"sync"
-	"time"
 )
 
 type etcdServiceDiscovery struct {
@@ -615,10 +616,15 @@ func (sd *etcdServiceDiscovery) revoke() error {
 	go func() {
 		defer close(c)
 		logger.Log.Debug("waiting for etcd revoke")
-		ctx, cancel := context.WithTimeout(context.Background(), sd.revokeTimeout)
-		_, err := sd.cli.Revoke(ctx, sd.leaseID)
-		cancel()
-		c <- err
+
+		if sd.cli != nil {
+		  ctx, cancel := context.WithTimeout(context.Background(), sd.revokeTimeout)
+		  _, err := sd.cli.Revoke(ctx, sd.leaseID)
+		  cancel()
+			c <- err
+		} else {
+			c <- nil
+		}
 		logger.Log.Debug("finished waiting for etcd revoke")
 	}()
 	select {

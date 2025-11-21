@@ -6,6 +6,8 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/metrics/models"
 )
 
+const DefaultWriteTimeout = 10 * time.Second
+
 // PitayaConfig provides all the configuration for a pitaya app
 type PitayaConfig struct {
 	SerializerType   uint16 `mapstructure:"serializertype"`
@@ -25,7 +27,8 @@ type PitayaConfig struct {
 	} `mapstructure:"handler"`
 	Buffer struct {
 		Agent struct {
-			Messages int `mapstructure:"messages"`
+			Messages     int           `mapstructure:"messages"`
+			WriteTimeout time.Duration `mapstructure:"conntimeout"`
 		} `mapstructure:"agent"`
 		Handler struct {
 			LocalProcess  int `mapstructure:"localprocess"`
@@ -91,7 +94,8 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 		},
 		Buffer: struct {
 			Agent struct {
-				Messages int `mapstructure:"messages"`
+				Messages     int           `mapstructure:"messages"`
+				WriteTimeout time.Duration `mapstructure:"conntimeout"`
 			} `mapstructure:"agent"`
 			Handler struct {
 				LocalProcess  int `mapstructure:"localprocess"`
@@ -99,9 +103,11 @@ func NewDefaultPitayaConfig() *PitayaConfig {
 			} `mapstructure:"handler"`
 		}{
 			Agent: struct {
-				Messages int `mapstructure:"messages"`
+				Messages     int           `mapstructure:"messages"`
+				WriteTimeout time.Duration `mapstructure:"conntimeout"`
 			}{
-				Messages: 100,
+				Messages:     100,
+				WriteTimeout: DefaultWriteTimeout,
 			},
 			Handler: struct {
 				LocalProcess  int `mapstructure:"localprocess"`
@@ -202,6 +208,12 @@ type NatsRPCClientConfig struct {
 	MaxReconnectionRetries int           `mapstructure:"maxreconnectionretries"`
 	RequestTimeout         time.Duration `mapstructure:"requesttimeout"`
 	ConnectionTimeout      time.Duration `mapstructure:"connectiontimeout"`
+	WebsocketCompression   bool          `mapstructure:"websocketcompression"`
+	ReconnectJitter        time.Duration `mapstructure:"reconnectjitter"`
+	ReconnectJitterTLS     time.Duration `mapstructure:"reconnectjittertls"`
+	ReconnectWait          time.Duration `mapstructure:"reconnectwait"`
+	PingInterval           time.Duration `mapstructure:"pinginterval"`
+	MaxPingsOutstanding    int           `mapstructure:"maxpingsoutstanding"`
 }
 
 // newDefaultNatsRPCClientConfig provides default nats client configuration
@@ -211,6 +223,12 @@ func newDefaultNatsRPCClientConfig() *NatsRPCClientConfig {
 		MaxReconnectionRetries: 15,
 		RequestTimeout:         time.Duration(5 * time.Second),
 		ConnectionTimeout:      time.Duration(2 * time.Second),
+		WebsocketCompression:   true,
+		ReconnectJitter:        time.Duration(100 * time.Millisecond),
+		ReconnectJitterTLS:     time.Duration(1 * time.Second),
+		ReconnectWait:          time.Duration(time.Second),
+		PingInterval:           time.Duration(2 * time.Minute),
+		MaxPingsOutstanding:    3,
 	}
 }
 
@@ -222,8 +240,14 @@ type NatsRPCServerConfig struct {
 		Messages int `mapstructure:"messages"`
 		Push     int `mapstructure:"push"`
 	} `mapstructure:"buffer"`
-	Services          int           `mapstructure:"services"`
-	ConnectionTimeout time.Duration `mapstructure:"connectiontimeout"`
+	Services             int           `mapstructure:"services"`
+	ConnectionTimeout    time.Duration `mapstructure:"connectiontimeout"`
+	WebsocketCompression bool          `mapstructure:"websocketcompression"`
+	ReconnectJitter      time.Duration `mapstructure:"reconnectjitter"`
+	ReconnectJitterTLS   time.Duration `mapstructure:"reconnectjittertls"`
+	ReconnectWait        time.Duration `mapstructure:"reconnectwait"`
+	PingInterval         time.Duration `mapstructure:"pinginterval"`
+	MaxPingsOutstanding  int           `mapstructure:"maxpingsoutstanding"`
 }
 
 // newDefaultNatsRPCServerConfig provides default nats server configuration
@@ -238,8 +262,14 @@ func newDefaultNatsRPCServerConfig() *NatsRPCServerConfig {
 			Messages: 75,
 			Push:     100,
 		},
-		Services:          30,
-		ConnectionTimeout: time.Duration(2 * time.Second),
+		Services:             30,
+		ConnectionTimeout:    time.Duration(2 * time.Second),
+		WebsocketCompression: true,
+		ReconnectJitter:      time.Duration(100 * time.Millisecond),
+		ReconnectJitterTLS:   time.Duration(1 * time.Second),
+		ReconnectWait:        time.Duration(time.Second),
+		PingInterval:         time.Duration(2 * time.Minute),
+		MaxPingsOutstanding:  3,
 	}
 }
 

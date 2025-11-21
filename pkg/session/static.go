@@ -36,3 +36,8 @@ func OnSessionClose(f func(s Session)) {
 func CloseAll() {
 	DefaultSessionPool.CloseAll()
 }
+
+// GetNumberOfConnectedClients returns the number of connected clients
+func GetNumberOfConnectedClients() int64 {
+	return DefaultSessionPool.GetNumberOfConnectedClients()
+}

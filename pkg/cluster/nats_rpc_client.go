@@ -54,6 +54,12 @@ type NatsRPCClient struct {
 	server                 *Server
 	metricsReporters       []metrics.Reporter
 	appDieChan             chan bool
+	websocketCompression   bool
+	reconnectJitter        time.Duration
+	reconnectJitterTLS     time.Duration
+	reconnectWait          time.Duration
+	pingInterval           time.Duration
+	maxPingsOutstanding    int
 }
 
 // NewNatsRPCClient ctor
@@ -87,6 +93,12 @@ func (ns *NatsRPCClient) configure(config config.NatsRPCClientConfig) error {
 	if ns.reqTimeout == 0 {
 		return constants.ErrNatsNoRequestTimeout
 	}
+	ns.websocketCompression = config.WebsocketCompression
+	ns.reconnectJitter = config.ReconnectJitter
+	ns.reconnectJitterTLS = config.ReconnectJitterTLS
+	ns.reconnectWait = config.ReconnectWait
+	ns.pingInterval = config.PingInterval
+	ns.maxPingsOutstanding = config.MaxPingsOutstanding
 	return nil
 }
 
@@ -233,20 +245,52 @@ func (ns *NatsRPCClient) Call(
 	return res, nil
 }
 
+// replaceConnection replaces the NATS connection, draining the old one
+func (ns *NatsRPCClient) replaceConnection() error {
+	return replaceNatsConnection(
+		ns.conn,
+		nil, // client doesn't have subscriptions
+		func() error { return ns.initConnection(true) },
+		"client",
+	)
+}
+
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
-	ns.running = true
-	logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
+	return ns.initConnection(false)
+}
+
+// initConnection initializes or replaces the NATS connection
+func (ns *NatsRPCClient) initConnection(isReplacement bool) error {
+
+	if !isReplacement {
+		ns.running = true
+		logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
+	} else {
+		logger.Log.Debugf("re-initializing nats client connection")
+	}
+
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
+		ns.replaceConnection,
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
+		nats.Compression(ns.websocketCompression),
+		nats.ReconnectJitter(ns.reconnectJitter, ns.reconnectJitterTLS),
+		nats.ReconnectWait(ns.reconnectWait),
+		nats.PingInterval(ns.pingInterval),
+		nats.MaxPingsOutstanding(ns.maxPingsOutstanding),
 	)
 	if err != nil {
 		return err
 	}
 	ns.conn = conn
+
+	if isReplacement {
+		logger.Log.Infof("successfully replaced nats client connection")
+	}
 	return nil
 }
 

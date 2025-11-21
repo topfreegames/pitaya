@@ -1507,3 +1507,18 @@ func TestSessionValidateHandshake(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNumberOfConnectedClients(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	entity := mocks.NewMockNetworkEntity(ctrl)
+	sessionPool := NewSessionPool()
+	connections := sessionPool.GetNumberOfConnectedClients()
+	assert.Equal(t, int64(0), connections)
+
+	ss := sessionPool.NewSession(entity, true)
+	assert.NotNil(t, ss)
+	connections = sessionPool.GetNumberOfConnectedClients()
+	assert.Equal(t, int64(1), connections)
+}

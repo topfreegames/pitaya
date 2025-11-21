@@ -225,3 +225,7 @@ func RegisterModuleBefore(module interfaces.Module, name string) error {
 func GetModule(name string) (interfaces.Module, error) {
 	return DefaultApp.GetModule(name)
 }
+
+func GetNumberOfConnectedClients() int64 {
+	return DefaultApp.GetNumberOfConnectedClients()
+}

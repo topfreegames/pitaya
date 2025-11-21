@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	mconfig.TickDuration = 10 * time.Millisecond
 	memoryGroupService = NewMemoryGroupService(mconfig)
 	exit := m.Run()
-	time.Sleep(mconfig.TickDuration)
+	memoryGroupService.Close()
 	os.Exit(exit)
 }
 
