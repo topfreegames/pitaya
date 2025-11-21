@@ -45,6 +45,7 @@ import (
 	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
 	e "github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/helpers"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"github.com/topfreegames/pitaya/v3/pkg/metrics"
 	metricsmocks "github.com/topfreegames/pitaya/v3/pkg/metrics/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/mocks"
@@ -227,13 +228,19 @@ func TestAgentSendSerializeErr(t *testing.T) {
 	ag := &agentImpl{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingWrite, 10),
+		chDie:            make(chan struct{}),
+		chStopWrite:      make(chan struct{}),
+		chStopHeartbeat:  make(chan struct{}),
 		encoder:          mockEncoder,
 		heartbeatTimeout: time.Second,
+		writeTimeout:     time.Second,
 		lastAt:           time.Now().Unix(),
 		serializer:       mockSerializer,
 		messageEncoder:   messageEncoder,
 		metricsReporters: mockMetricsReporters,
 		Session:          sessionPool.NewSession(nil, true),
+		logger:           logger.Log,
+		sessionPool:      sessionPool,
 	}
 
 	ctx := getCtxWithRequestKeys()
@@ -269,15 +276,19 @@ func TestAgentSendSerializeErr(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	mockConn.EXPECT().RemoteAddr().Times(2).Return(&mockAddr{})
+	mockConn.EXPECT().RemoteAddr().AnyTimes().Return(&mockAddr{})
 	mockConn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	mockConn.EXPECT().Write(expectedPacket).Do(func(b []byte) {
 		wg.Done()
 	})
+	mockConn.EXPECT().Close().Return(nil)
 	go ag.write()
 	mockMetricsReporter.EXPECT().ReportHistogram(gomock.Any(), gomock.Any(), gomock.Any())
+	mockMetricsReporter.EXPECT().ReportGauge(gomock.Any(), gomock.Any(), gomock.Any())
 	ag.send(expected)
 	wg.Wait()
+	// Close the agent to properly clean up the write goroutine
+	ag.Close()
 
 }
 
