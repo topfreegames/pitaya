@@ -117,9 +117,6 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 		appDieCh := make(chan bool)
 		done := make(chan any)
 
-		ts := test.RunDefaultServer()
-		defer ts.Shutdown()
-
 		go func() {
 			conn, err := setupNatsConn(
 				invalidAddr,
@@ -147,9 +144,6 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 
 		appDieCh := make(chan bool)
 		done := make(chan any)
-
-		ts := test.RunDefaultServer()
-		defer ts.Shutdown()
 
 		go func() {
 			conn, err := setupNatsConn(invalidAddr, appDieCh)
@@ -183,9 +177,6 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 
 		// Assert that if it fails because of connection timeout the test will capture
 		assert.Greater(t, maxTestTimeout, maxReconnTimeout)
-
-		ts := test.RunDefaultServer()
-		defer ts.Shutdown()
 
 		go func() {
 			conn, err := setupNatsConn(
