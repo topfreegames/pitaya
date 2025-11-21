@@ -1103,6 +1103,7 @@ func TestAgentWriteChSend(t *testing.T) {
 	messageEncoder := message.NewMessagesEncoder(false)
 	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
 	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	sessionPool := session.NewSessionPool()
 	ag := &agentImpl{ // avoid heartbeat and handshake to fully test serialize
 		conn:             mockConn,
 		chSend:           make(chan pendingWrite, 10),
@@ -1113,7 +1114,9 @@ func TestAgentWriteChSend(t *testing.T) {
 		messageEncoder:   messageEncoder,
 		metricsReporters: mockMetricsReporters,
 		writeTimeout:     time.Second,
+		sessionPool:      sessionPool,
 	}
+	ag.Session = sessionPool.NewSession(ag, true)
 	ctx := getCtxWithRequestKeys()
 	mockMetricsReporters[0].(*metricsmocks.MockReporter).EXPECT().ReportSummary(metrics.ResponseTime, gomock.Any(), gomock.Any())
 

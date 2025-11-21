@@ -122,6 +122,16 @@ func setupNatsConn(connectString string, appDieChan chan bool, lameDuckReplaceme
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
+			// Recover from potential panics when sending on channels that may be closed
+			// This can happen if the callback is invoked after setupNatsConn has returned
+			defer func() {
+				if r := recover(); r != nil {
+					// Channel might be closed or in invalid state, just log and continue
+					// This is safe because setupNatsConn has already handled the error
+					logger.Log.Debugf("recovered from panic in ClosedHandler (channel may be closed): %v", r)
+				}
+			}()
+
 			err := nc.LastError()
 			if err == nil {
 				logger.Log.Warn("nats connection closed with no error.")
