@@ -1,6 +1,6 @@
 module github.com/topfreegames/pitaya/v3
 
-go 1.24.0
+go 1.25.4
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible
@@ -108,7 +108,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
