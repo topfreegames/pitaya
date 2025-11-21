@@ -7,7 +7,7 @@
 ## Building the k6 binary
 
 ```shell
-xk6 build --with github.com/topfreegames/xk6-pitaya=. --with github.com/topfreegames/pitaya/v3/pkg=../pkg
+xk6 build --with github.com/topfreegames/pitaya/xk6-pitaya=./ --replace github.com/topfreegames/pitaya/v3=../
 ```
 
 ## Building the k6 docker image

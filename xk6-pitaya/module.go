@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dop251/goja"
+	"github.com/grafana/sobek"
 	"github.com/sirupsen/logrus"
 	pitayaclient "github.com/topfreegames/pitaya/v3/pkg/client"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
@@ -63,7 +63,7 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 // - handshakeData: the handshake data to send to the server
 // - requestTimeoutMs: the timeout for requests in milliseconds
 // - logLevel: the log level to use
-func (mi *ModuleInstance) NewClient(call goja.ConstructorCall) *goja.Object {
+func (mi *ModuleInstance) NewClient(call sobek.ConstructorCall) *sobek.Object {
 	rt := mi.vu.Runtime()
 
 	var optionsArg map[string]interface{}
