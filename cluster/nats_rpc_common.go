@@ -37,12 +37,18 @@ func drainAndClose(nc *nats.Conn) error {
 	if nc == nil {
 		return nil
 	}
+	// If connection is already closed, just return
+	if nc.IsClosed() {
+		return nil
+	}
 	// Drain connection (this will flush any pending messages and prevent new ones)
 	err := nc.Drain()
 	if err != nil {
 		logger.Log.Warnf("error draining nats connection: %v", err)
-		// Even if drain fails, try to close
-		nc.Close()
+		// Even if drain fails, try to close (but only if not already closed)
+		if !nc.IsClosed() {
+			nc.Close()
+		}
 		return err
 	}
 
@@ -57,7 +63,9 @@ func drainAndClose(nc *nats.Conn) error {
 			continue
 		case <-timeout:
 			logger.Log.Warn("drain timeout exceeded, forcing close")
-			nc.Close()
+			if !nc.IsClosed() {
+				nc.Close()
+			}
 			return fmt.Errorf("drain timeout exceeded")
 		}
 	}
@@ -66,13 +74,49 @@ func drainAndClose(nc *nats.Conn) error {
 	return nil
 }
 
-func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
+// replaceNatsConnection handles the common logic for replacing NATS connections
+// It stores old connection/subscription references, calls initFunc to set up the new connection,
+// and then drains the old resources after the new connection is ready.
+func replaceNatsConnection(
+	oldConn *nats.Conn,
+	oldSub *nats.Subscription,
+	initFunc func() error,
+	componentName string,
+) error {
+	logger.Log.Infof("replacing nats %s connection due to lame duck mode", componentName)
+
+	// Re-initialize connection (pass true to indicate this is a replacement)
+	if err := initFunc(); err != nil {
+		return err
+	}
+
+	// Drain and close old connection and subscription after new one is set up
+	if oldSub != nil {
+		go func() {
+			if err := oldSub.Drain(); err != nil {
+				logger.Log.Warnf("error draining old %s subscription: %v", componentName, err)
+			}
+		}()
+	}
+
+	if oldConn != nil {
+		go func() {
+			if err := drainAndClose(oldConn); err != nil {
+				logger.Log.Warnf("error draining old nats %s connection: %v", componentName, err)
+			}
+		}()
+	}
+
+	return nil
+}
+
+func setupNatsConn(connectString string, appDieChan chan bool, lameDuckReplacement func() error, options ...nats.Option) (*nats.Conn, error) {
 	connectedCh := make(chan bool)
 	initialConnectErrorCh := make(chan error)
 	natsOptions := append(
 		options,
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			logger.Log.Warnf("disconnected from nats (%s)! Reason: %q\n", nc.ConnectedAddr(), err)
+			logger.Log.Warnf("disconnected from nats (%s)! Reason: %v", nc.ConnectedAddr(), err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Log.Warnf("reconnected to nats server %s with address %s in cluster %s!", nc.ConnectedServerName(), nc.ConnectedAddr(), nc.ConnectedClusterName())
@@ -85,12 +129,28 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 			}
 
 			logger.Log.Errorf("nats connection closed. reason: %q", nc.LastError())
+
+			// If connection was never successfully established, prioritize initialConnectErrorCh
+			// to allow setupNatsConn to return quickly with an error
+			wasConnected := nc.ConnectedAddr() != ""
+
+			if !wasConnected {
+				// During initial connection, send error to initialConnectErrorCh first
+				select {
+				case initialConnectErrorCh <- nc.LastError():
+					return
+				default:
+					// If channel is not ready, fall through to appDieChan handling
+				}
+			}
+
 			if appDieChan != nil {
 				select {
 				case appDieChan <- true:
 					return
 				case initialConnectErrorCh <- nc.LastError():
 					logger.Log.Warnf("appDieChan not ready, sending error in initialConnectCh")
+					return
 				default:
 					logger.Log.Warnf("no termination channel available, sending termination signal to app")
 
@@ -108,6 +168,14 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 						os.Exit(1)
 					}
 				}
+			} else if !wasConnected {
+				// If no appDieChan and connection was never established, try initialConnectErrorCh again
+				select {
+				case initialConnectErrorCh <- nc.LastError():
+					return
+				default:
+					// Channel not ready, but we've already logged the error
+				}
 			}
 		}),
 		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
@@ -122,6 +190,18 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 		nats.ConnectHandler(func(nc *nats.Conn) {
 			logger.Log.Infof("connected to nats on %s", nc.ConnectedAddr())
 			connectedCh <- true
+		}),
+		nats.LameDuckModeHandler(func(nc *nats.Conn) {
+			logger.Log.Warnf("nats connection entered lame duck mode")
+			if lameDuckReplacement != nil {
+				go func() {
+					if err := lameDuckReplacement(); err != nil {
+						logger.Log.Errorf("failed to replace connection: %v", err)
+						// The old connection will eventually close (it's in lame duck mode),
+						// which will trigger ClosedHandler and appDieChan
+					}
+				}()
+			}
 		}),
 	)
 

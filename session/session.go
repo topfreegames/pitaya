@@ -65,6 +65,7 @@ type SessionPool interface {
 	CloseAll()
 	AddHandshakeValidator(name string, f func(data *HandshakeData) error)
 	GetNumberOfConnectedClients() int64
+	ForEachSession(f func(s Session))
 }
 
 // HandshakeClientData represents information about the client sent on the handshake.
@@ -314,6 +315,15 @@ func (pool *sessionPoolImpl) AddHandshakeValidator(name string, f func(data *Han
 // GetNumberOfConnectedClients returns the number of connected clients
 func (pool *sessionPoolImpl) GetNumberOfConnectedClients() int64 {
 	return pool.GetSessionCount()
+}
+
+// ForEachSession iterates through all sessions in the pool and calls f for each one
+func (pool *sessionPoolImpl) ForEachSession(f func(s Session)) {
+	pool.sessionsByID.Range(func(_, value interface{}) bool {
+		s := value.(Session)
+		f(s)
+		return true
+	})
 }
 
 func (s *sessionImpl) updateEncodedData() error {

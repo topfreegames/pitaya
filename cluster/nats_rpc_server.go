@@ -333,16 +333,37 @@ func (ns *NatsRPCServer) processKick() {
 	}
 }
 
+// replaceConnection replaces the NATS connection, draining the old one and re-subscribing
+func (ns *NatsRPCServer) replaceConnection() error {
+	return replaceNatsConnection(
+		ns.conn,
+		ns.sub,
+		func() error { return ns.initConnection(true) },
+		"server",
+	)
+}
+
 // Init inits nats rpc server
 func (ns *NatsRPCServer) Init() error {
-	// TODO should we have concurrency here? it feels like we should
-	go ns.handleMessages()
+	return ns.initConnection(false)
+}
 
-	logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
+// initConnection initializes or replaces the NATS connection
+func (ns *NatsRPCServer) initConnection(isReplacement bool) error {
+
+	if !isReplacement {
+		// TODO should we have concurrency here? it feels like we should
+		go ns.handleMessages()
+		logger.Log.Debugf("connecting to nats (server) with timeout of %s", ns.connectionTimeout)
+	} else {
+		logger.Log.Debugf("re-initializing nats server connection")
+	}
+
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
-		nats.RetryOnFailedConnect(false),
+		ns.replaceConnection,
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
 		nats.Compression(ns.websocketCompression),
@@ -363,17 +384,37 @@ func (ns *NatsRPCServer) Init() error {
 	if err != nil {
 		return err
 	}
-	// this handles remote messages
-	for i := 0; i < ns.service; i++ {
-		go ns.processMessages(i)
+
+	// Re-subscribe to all session subscriptions if this is a replacement
+	// The onSessionBind callback is already set up, we just need to trigger it for existing sessions
+	if isReplacement && ns.server.Frontend && ns.sessionPool != nil {
+		ns.sessionPool.ForEachSession(func(s session.Session) {
+			if s.GetIsFrontend() && s.UID() != "" {
+				// Re-use the same subscription logic as onSessionBind
+				if err := ns.onSessionBind(context.Background(), s); err != nil {
+					logger.Log.Errorf("failed to re-subscribe session for user %s: %v", s.UID(), err)
+				}
+			}
+		})
 	}
 
-	ns.sessionPool.OnSessionBind(ns.onSessionBind)
+	if !isReplacement {
+		// this handles remote messages
+		for i := 0; i < ns.service; i++ {
+			go ns.processMessages(i)
+		}
 
-	// this should be so fast that we shoudn't need concurrency
-	go ns.processPushes()
-	go ns.processSessionBindings()
-	go ns.processKick()
+		ns.sessionPool.OnSessionBind(ns.onSessionBind)
+
+		// this should be so fast that we shoudn't need concurrency
+		go ns.processPushes()
+		go ns.processSessionBindings()
+		go ns.processKick()
+	}
+
+	if isReplacement {
+		logger.Log.Infof("successfully replaced nats server connection")
+	}
 
 	return nil
 }

@@ -243,14 +243,36 @@ func (ns *NatsRPCClient) Call(
 	return res, nil
 }
 
+// replaceConnection replaces the NATS connection, draining the old one
+func (ns *NatsRPCClient) replaceConnection() error {
+	return replaceNatsConnection(
+		ns.conn,
+		nil, // client doesn't have subscriptions
+		func() error { return ns.initConnection(true) },
+		"client",
+	)
+}
+
 // Init inits nats rpc client
 func (ns *NatsRPCClient) Init() error {
-	ns.running = true
-	logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
+	return ns.initConnection(false)
+}
+
+// initConnection initializes or replaces the NATS connection
+func (ns *NatsRPCClient) initConnection(isReplacement bool) error {
+
+	if !isReplacement {
+		ns.running = true
+		logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
+	} else {
+		logger.Log.Debugf("re-initializing nats client connection")
+	}
+
 	conn, err := setupNatsConn(
 		ns.connString,
 		ns.appDieChan,
-		nats.RetryOnFailedConnect(false),
+		ns.replaceConnection,
+		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(ns.maxReconnectionRetries),
 		nats.Timeout(ns.connectionTimeout),
 		nats.Compression(ns.websocketCompression),
@@ -263,6 +285,10 @@ func (ns *NatsRPCClient) Init() error {
 		return err
 	}
 	ns.conn = conn
+
+	if isReplacement {
+		logger.Log.Infof("successfully replaced nats client connection")
+	}
 	return nil
 }
 
