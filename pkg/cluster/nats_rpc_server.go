@@ -214,20 +214,26 @@ func (ns *NatsRPCServer) handleMessages() {
 		select {
 		case msg := <-ns.subChan:
 			ns.reportMetrics()
-			dropped, err := ns.sub.Dropped()
-			if err != nil {
-				logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
-			}
-			if dropped > ns.dropped {
-				logger.Log.Warnf("[rpc server] some messages were dropped! numDropped: %d", dropped)
-				ns.dropped = dropped
+			// Check if subscription is still valid before accessing it
+			// This can happen during connection replacement when the old subscription becomes invalid
+			var dropped int
+			if ns.sub != nil && ns.sub.IsValid() {
+				var err error
+				dropped, err = ns.sub.Dropped()
+				if err != nil {
+					logger.Log.Errorf("error getting number of dropped messages: %s", err.Error())
+				}
+				if dropped > ns.dropped {
+					logger.Log.Warnf("[rpc server] some messages were dropped! numDropped: %d", dropped)
+					ns.dropped = dropped
+				}
 			}
 			subsChanLen := float64(len(ns.subChan))
 			maxPending = math.Max(float64(maxPending), subsChanLen)
 			logger.Log.Debugf("subs channel size: %v, max: %v, dropped: %v", subsChanLen, maxPending, dropped)
 			req := &protos.Request{}
 			// TODO: Add tracing here to report delay to start processing message in spans
-			err = proto.Unmarshal(msg.Data, req)
+			err := proto.Unmarshal(msg.Data, req)
 			if err != nil {
 				// should answer rpc with an error
 				logger.Log.Error("error unmarshalling rpc message:", err.Error())

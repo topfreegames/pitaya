@@ -549,7 +549,7 @@ func (sd *etcdServiceDiscovery) SyncServers(firstSync bool) error {
 	}
 
 	// delete invalid servers (local ones that are not in etcd)
-	var allIds = make([]string, 0)
+	allIds := make([]string, 0)
 
 	// Spawn worker goroutines that will work in parallel
 	parallelGetter := newParallelGetter(sd.cli, sd.syncServersParallelism)
@@ -616,21 +616,19 @@ func (sd *etcdServiceDiscovery) revoke() error {
 	go func() {
 		defer close(c)
 		logger.Log.Debug("waiting for etcd revoke")
+
 		if sd.cli != nil {
-			_, err := sd.cli.Revoke(context.TODO(), sd.leaseID)
+			ctx, cancel := context.WithTimeout(context.Background(), sd.revokeTimeout)
+			_, err := sd.cli.Revoke(ctx, sd.leaseID)
+			cancel()
 			c <- err
 		} else {
 			c <- nil
 		}
 		logger.Log.Debug("finished waiting for etcd revoke")
 	}()
-	select {
-	case err := <-c:
-		return err // completed normally
-	case <-time.After(sd.revokeTimeout):
-		logger.Log.Warn("timed out waiting for etcd revoke")
-		return nil // timed out
-	}
+	err := <-c
+	return err
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
@@ -712,7 +710,6 @@ func (sd *etcdServiceDiscovery) watchEtcdChanges() {
 			case <-sd.stopChan:
 				return
 			}
-
 		}
 	}(w)
 }

@@ -16,6 +16,7 @@ var (
 	globalCtx      context.Context
 	globalCancel   context.CancelFunc
 	cleanupWG      sync.WaitGroup
+	cleanupOnce    sync.Once
 )
 
 // MemoryGroupService base in server memory solution
@@ -230,11 +231,12 @@ func (c *MemoryGroupService) GroupRenewTTL(ctx context.Context, groupName string
 }
 
 func (c *MemoryGroupService) Close() {
-	// Only cancel if this is the last service (we can't easily track refs, so we cancel anyway)
-	// The goroutine will exit when the context is cancelled
-	if globalCancel != nil {
-		globalCancel()
-		// Wait for the goroutine to exit
-		cleanupWG.Wait()
-	}
+	// Only cancel once, even if Close() is called multiple times
+	cleanupOnce.Do(func() {
+		if globalCancel != nil {
+			globalCancel()
+			// Wait for the goroutine to exit
+			cleanupWG.Wait()
+		}
+	})
 }
