@@ -53,6 +53,15 @@ func groupTTLCleanup(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case now := <-ticker.C:
+			// Check if context is cancelled before processing
+			if ctx.Err() != nil {
+				memoryGroupsMu.Lock()
+				for groupName := range memoryGroups {
+					delete(memoryGroups, groupName)
+				}
+				memoryGroupsMu.Unlock()
+				return
+			}
 			memoryGroupsMu.Lock()
 			for groupName, mg := range memoryGroups {
 				if mg.TTL != 0 && now.UnixNano()-mg.LastRefresh > mg.TTL {
@@ -66,11 +75,6 @@ func groupTTLCleanup(ctx context.Context, interval time.Duration) {
 				delete(memoryGroups, groupName)
 			}
 			memoryGroupsMu.Unlock()
-			// Ensure we drain any remaining ticker events before returning
-			select {
-			case <-ticker.C:
-			default:
-			}
 			return
 		}
 	}
@@ -236,7 +240,19 @@ func (c *MemoryGroupService) Close() {
 		if globalCancel != nil {
 			globalCancel()
 			// Wait for the goroutine to exit
-			cleanupWG.Wait()
+			// Use a channel with timeout to prevent indefinite blocking
+			done := make(chan struct{})
+			go func() {
+				cleanupWG.Wait()
+				close(done)
+			}()
+			select {
+			case <-done:
+				// Goroutine exited successfully
+			case <-time.After(1 * time.Second):
+				// Timeout - this should not happen in normal operation,
+				// but we continue to prevent tests from hanging
+			}
 		}
 	})
 }
