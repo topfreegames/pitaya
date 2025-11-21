@@ -30,20 +30,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/cluster"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
-	"github.com/topfreegames/pitaya/v2/constants"
-	"github.com/topfreegames/pitaya/v2/examples/testing/protos"
-	"github.com/topfreegames/pitaya/v2/groups"
-	logruswrapper "github.com/topfreegames/pitaya/v2/logger/logrus"
-	"github.com/topfreegames/pitaya/v2/modules"
-	"github.com/topfreegames/pitaya/v2/protos/test"
-	"github.com/topfreegames/pitaya/v2/serialize/json"
-	"github.com/topfreegames/pitaya/v2/serialize/protobuf"
-	"github.com/topfreegames/pitaya/v2/session"
+	"github.com/topfreegames/pitaya/v3/examples/testing/protos"
+	pitaya "github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/cluster"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
+	"github.com/topfreegames/pitaya/v3/pkg/constants"
+	"github.com/topfreegames/pitaya/v3/pkg/groups"
+	logruswrapper "github.com/topfreegames/pitaya/v3/pkg/logger/logrus"
+	"github.com/topfreegames/pitaya/v3/pkg/modules"
+	"github.com/topfreegames/pitaya/v3/pkg/protos/test"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/json"
+	"github.com/topfreegames/pitaya/v3/pkg/serialize/protobuf"
+	"github.com/topfreegames/pitaya/v3/pkg/session"
 )
 
 // TestSvc service for e2e tests
@@ -307,7 +307,7 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		builder.AddAcceptor(tcp)
 	}
 
-	builder.Groups = groups.NewMemoryGroupService(*config.NewDefaultMemoryGroupConfig())
+	builder.Groups = groups.NewMemoryGroupService(builder.Config.Groups.Memory)
 
 	if serializer == "json" {
 		builder.Serializer = json.NewSerializer()
@@ -317,21 +317,23 @@ func createApp(serializer string, port int, grpc bool, isFrontend bool, svType s
 		panic("serializer should be either json or protobuf")
 	}
 
+	pitayaConfig := config.NewPitayaConfig(conf)
+
 	var bs *modules.ETCDBindingStorage
 	if grpc {
-		gs, err := cluster.NewGRPCServer(*config.NewGRPCServerConfig(conf), builder.Server, builder.MetricsReporters)
+		gs, err := cluster.NewGRPCServer(pitayaConfig.Cluster.RPC.Server.Grpc, builder.Server, builder.MetricsReporters)
 		if err != nil {
 			panic(err)
 		}
 
-		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, *config.NewETCDBindingConfig(conf))
+		bs = modules.NewETCDBindingStorage(builder.Server, builder.SessionPool, pitayaConfig.Modules.BindingStorage.Etcd)
 
 		gc, err := cluster.NewGRPCClient(
-			*config.NewGRPCClientConfig(conf),
+			pitayaConfig.Cluster.RPC.Client.Grpc,
 			builder.Server,
 			builder.MetricsReporters,
 			bs,
-			cluster.NewInfoRetriever(*config.NewInfoRetrieverConfig(conf)),
+			cluster.NewInfoRetriever(pitayaConfig.Cluster.Info),
 		)
 		if err != nil {
 			panic(err)

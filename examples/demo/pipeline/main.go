@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/topfreegames/pitaya/v2"
-	"github.com/topfreegames/pitaya/v2/acceptor"
-	"github.com/topfreegames/pitaya/v2/component"
-	"github.com/topfreegames/pitaya/v2/config"
+	"github.com/topfreegames/pitaya/v3/pkg"
+	"github.com/topfreegames/pitaya/v3/pkg/acceptor"
+	"github.com/topfreegames/pitaya/v3/pkg/component"
+	"github.com/topfreegames/pitaya/v3/pkg/config"
 )
 
 // MetagameServer ...
@@ -97,7 +97,7 @@ func main() {
 	port := 3251
 	metagameServer := NewMetagameMock()
 
-	config := config.NewDefaultBuilderConfig()
+	config := config.NewDefaultPitayaConfig()
 	config.DefaultPipelines.StructValidation.Enabled = true
 
 	builder := pitaya.NewDefaultBuilder(*isFrontend, *svType, pitaya.Cluster, map[string]string{}, *config)

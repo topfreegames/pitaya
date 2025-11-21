@@ -1,11 +1,14 @@
-version: '3'
 services:
   nats:
     image: nats
     ports:
       - 4222:4222
   etcd:
-    image: appcelerator/etcd
+    image: quay.io/coreos/etcd:v3.5.15
+    command:
+      - /usr/local/bin/etcd
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://0.0.0.0:2379
     ports:
       - 2379:2379
   redis:
