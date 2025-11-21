@@ -74,7 +74,43 @@ func drainAndClose(nc *nats.Conn) error {
 	return nil
 }
 
-func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.Option) (*nats.Conn, error) {
+// replaceNatsConnection handles the common logic for replacing NATS connections
+// It stores old connection/subscription references, calls initFunc to set up the new connection,
+// and then drains the old resources after the new connection is ready.
+func replaceNatsConnection(
+	oldConn *nats.Conn,
+	oldSub *nats.Subscription,
+	initFunc func() error,
+	componentName string,
+) error {
+	logger.Log.Infof("replacing nats %s connection due to lame duck mode", componentName)
+
+	// Re-initialize connection (pass true to indicate this is a replacement)
+	if err := initFunc(); err != nil {
+		return err
+	}
+
+	// Drain and close old connection and subscription after new one is set up
+	if oldSub != nil {
+		go func() {
+			if err := oldSub.Drain(); err != nil {
+				logger.Log.Warnf("error draining old %s subscription: %v", componentName, err)
+			}
+		}()
+	}
+
+	if oldConn != nil {
+		go func() {
+			if err := drainAndClose(oldConn); err != nil {
+				logger.Log.Warnf("error draining old nats %s connection: %v", componentName, err)
+			}
+		}()
+	}
+
+	return nil
+}
+
+func setupNatsConn(connectString string, appDieChan chan bool, lameDuckReplacement func() error, options ...nats.Option) (*nats.Conn, error) {
 	connectedCh := make(chan bool)
 	initialConnectErrorCh := make(chan error)
 	natsOptions := append(
@@ -164,6 +200,18 @@ func setupNatsConn(connectString string, appDieChan chan bool, options ...nats.O
 		nats.ConnectHandler(func(nc *nats.Conn) {
 			logger.Log.Infof("connected to nats on %s", nc.ConnectedAddr())
 			connectedCh <- true
+		}),
+		nats.LameDuckModeHandler(func(nc *nats.Conn) {
+			logger.Log.Warnf("nats connection entered lame duck mode")
+			if lameDuckReplacement != nil {
+				go func() {
+					if err := lameDuckReplacement(); err != nil {
+						logger.Log.Errorf("failed to replace connection: %v", err)
+						// The old connection will eventually close (it's in lame duck mode),
+						// which will trigger ClosedHandler and appDieChan
+					}
+				}()
+			}
 		}),
 	)
 

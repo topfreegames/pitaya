@@ -746,6 +746,18 @@ func (mr *MockSessionPoolMockRecorder) GetNumberOfConnectedClients() *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNumberOfConnectedClients", reflect.TypeOf((*MockSessionPool)(nil).GetNumberOfConnectedClients))
 }
 
+// ForEachSession mocks base method.
+func (m *MockSessionPool) ForEachSession(arg0 func(session.Session)) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ForEachSession", arg0)
+}
+
+// ForEachSession indicates an expected call of ForEachSession.
+func (mr *MockSessionPoolMockRecorder) ForEachSession(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForEachSession", reflect.TypeOf((*MockSessionPool)(nil).ForEachSession), arg0)
+}
+
 // GetSessionByID mocks base method.
 func (m *MockSessionPool) GetSessionByID(arg0 int64) session.Session {
 	m.ctrl.T.Helper()

@@ -15,6 +15,7 @@ var (
 	memoryOnce     sync.Once
 	globalCtx      context.Context
 	globalCancel   context.CancelFunc
+	cleanupWG      sync.WaitGroup
 )
 
 // MemoryGroupService base in server memory solution
@@ -35,6 +36,7 @@ func NewMemoryGroupService(config config.MemoryGroupConfig) *MemoryGroupService 
 	memoryOnce.Do(func() {
 		memoryGroups = make(map[string]*MemoryGroup)
 		globalCtx, globalCancel = context.WithCancel(context.Background())
+		cleanupWG.Add(1)
 		go groupTTLCleanup(globalCtx, config.TickDuration)
 	})
 	// All services share the same cancel function
@@ -43,6 +45,7 @@ func NewMemoryGroupService(config config.MemoryGroupConfig) *MemoryGroupService 
 }
 
 func groupTTLCleanup(ctx context.Context, interval time.Duration) {
+	defer cleanupWG.Done()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -231,5 +234,7 @@ func (c *MemoryGroupService) Close() {
 	// The goroutine will exit when the context is cancelled
 	if globalCancel != nil {
 		globalCancel()
+		// Wait for the goroutine to exit
+		cleanupWG.Wait()
 	}
 }

@@ -36,8 +36,6 @@ func TestMain(m *testing.M) {
 	memoryGroupService = NewMemoryGroupService(mconfig)
 	exit := m.Run()
 	memoryGroupService.Close()
-	// Wait for the goroutine to exit (give it time to process the context cancellation)
-	time.Sleep(2 * mconfig.TickDuration)
 	os.Exit(exit)
 }
 
