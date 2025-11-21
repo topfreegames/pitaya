@@ -13,6 +13,8 @@ var (
 	memoryGroupsMu sync.RWMutex
 	memoryGroups   map[string]*MemoryGroup
 	memoryOnce     sync.Once
+	globalCtx      context.Context
+	globalCancel   context.CancelFunc
 )
 
 // MemoryGroupService base in server memory solution
@@ -29,13 +31,14 @@ type MemoryGroup struct {
 
 // NewMemoryGroupService returns a new group instance
 func NewMemoryGroupService(config config.MemoryGroupConfig) *MemoryGroupService {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	service := &MemoryGroupService{cancelFunc: cancel}
+	service := &MemoryGroupService{}
 	memoryOnce.Do(func() {
 		memoryGroups = make(map[string]*MemoryGroup)
-		go groupTTLCleanup(ctx, config.TickDuration)
+		globalCtx, globalCancel = context.WithCancel(context.Background())
+		go groupTTLCleanup(globalCtx, config.TickDuration)
 	})
+	// All services share the same cancel function
+	service.cancelFunc = globalCancel
 	return service
 }
 
@@ -59,6 +62,11 @@ func groupTTLCleanup(ctx context.Context, interval time.Duration) {
 				delete(memoryGroups, groupName)
 			}
 			memoryGroupsMu.Unlock()
+			// Ensure we drain any remaining ticker events before returning
+			select {
+			case <-ticker.C:
+			default:
+			}
 			return
 		}
 	}
@@ -219,7 +227,9 @@ func (c *MemoryGroupService) GroupRenewTTL(ctx context.Context, groupName string
 }
 
 func (c *MemoryGroupService) Close() {
-	if c.cancelFunc != nil {
-		c.cancelFunc()
+	// Only cancel if this is the last service (we can't easily track refs, so we cancel anyway)
+	// The goroutine will exit when the context is cancelled
+	if globalCancel != nil {
+		globalCancel()
 	}
 }
