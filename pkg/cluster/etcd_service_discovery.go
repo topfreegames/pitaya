@@ -627,10 +627,8 @@ func (sd *etcdServiceDiscovery) revoke() error {
 		}
 		logger.Log.Debug("finished waiting for etcd revoke")
 	}()
-	select {
-	case err := <-c:
-		return err // completed normally
-	}
+	err := <-c
+	return err
 }
 
 func (sd *etcdServiceDiscovery) addServer(sv *Server) {
