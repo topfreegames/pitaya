@@ -99,6 +99,7 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 		conn, err := setupNatsConn(
 			urls,
 			appDieCh,
+			nil,
 			nats.ReconnectWait(10*time.Millisecond),
 			nats.MaxReconnects(5),
 			nats.RetryOnFailedConnect(true),
@@ -121,6 +122,7 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 			conn, err := setupNatsConn(
 				invalidAddr,
 				appDieCh,
+				nil,
 				nats.ReconnectWait(10*time.Millisecond),
 				nats.MaxReconnects(2),
 				nats.RetryOnFailedConnect(true),
@@ -146,7 +148,7 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 		done := make(chan any)
 
 		go func() {
-			conn, err := setupNatsConn(invalidAddr, appDieCh)
+			conn, err := setupNatsConn(invalidAddr, appDieCh, nil)
 			assert.Error(t, err)
 			assert.Nil(t, conn)
 			close(done)
@@ -182,6 +184,7 @@ func TestSetupNatsConnReconnection(t *testing.T) {
 			conn, err := setupNatsConn(
 				invalidAddr,
 				appDieCh,
+				nil,
 				nats.Timeout(initialConnectionTimeout),
 				nats.ReconnectWait(reconnectWait),
 				nats.MaxReconnects(maxReconnectionAtetmpts),
