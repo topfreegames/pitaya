@@ -7,7 +7,7 @@ var (
 	ConnectedClients = "connected_clients"
 	// CountServers counts the number of servers of different types
 	CountServers = "count_servers"
-	// ChannelCapacity represents the capacity of a channel (available slots)
+	// ChannelCapacity represents the capacity of a channel as a histogram (distribution of available slots)
 	ChannelCapacity = "channel_capacity"
 	// DroppedMessages reports the number of dropped messages in rpc server (messages that will not be handled)
 	DroppedMessages = "dropped_messages"

@@ -316,7 +316,7 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(0))
-			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
+			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
 
 			conn.Publish(table.topic, b)
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
@@ -505,6 +505,6 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	rpcServer.userPushCh <- &protos.Push{}
 
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
-	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
 	rpcServer.reportMetrics()
 }
