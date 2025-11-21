@@ -34,6 +34,7 @@ import (
 	nats "github.com/nats-io/nats.go"
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
 	"github.com/topfreegames/pitaya/v3/pkg/networkentity"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 )
@@ -101,6 +102,7 @@ type sessionImpl struct {
 	Subscriptions       []*nats.Subscription                  // subscription created on bind when using nats rpc server
 	requestsInFlight    ReqInFlight                           // whether the session is waiting from a response from a remote
 	pool                *sessionPoolImpl
+	logger              interfaces.Logger                     // logger instance for this session
 }
 
 type ReqInFlight struct {
@@ -192,13 +194,16 @@ func (pool *sessionPoolImpl) NewSession(entity networkentity.NetworkEntity, fron
 		IsFrontend:          frontend,
 		pool:                pool,
 		requestsInFlight:    ReqInFlight{m: make(map[string]string)},
+		logger:              logger.Log,
 	}
 	if frontend {
 		pool.sessionsByID.Store(s.id, s)
 		atomic.AddInt64(&pool.SessionCount, 1)
 	}
+	s.logger = s.logger.WithField("session_id",s.id)
 	if len(UID) > 0 {
 		s.uid = UID[0]
+		s.logger = s.logger.WithField("uid",s.uid)
 	}
 	return s
 }
@@ -435,6 +440,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 	}
 
 	if s.UID() != "" {
+		s.logger.Debugf("Error trying to bind UID %s. A UID is already bound in this session", uid)
 		return constants.ErrSessionAlreadyBound
 	}
 
@@ -442,6 +448,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 	for _, cb := range s.pool.sessionBindCallbacks {
 		err := cb(ctx, s)
 		if err != nil {
+			s.logger.Error("Error running session bind callback. Removing uid from session")
 			s.uid = ""
 			return err
 		}
@@ -451,6 +458,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 	if s.IsFrontend {
 		// If a session with the same UID already exists in this frontend server, close it
 		if val, ok := s.pool.sessionsByUID.Load(uid); ok {
+			s.logger.Warn("A session for this UID %s already existed in this frontend, on session ID %v closing it", val.(Session).ID())
 			val.(Session).Close()
 		}
 		s.pool.sessionsByUID.Store(uid, s)
@@ -459,7 +467,7 @@ func (s *sessionImpl) Bind(ctx context.Context, uid string) error {
 		// is not the frontend server that received the user request
 		err := s.bindInFront(ctx)
 		if err != nil {
-			logger.Log.Error("error while trying to push session to front: ", err)
+			s.logger.Error("error while trying to push session to front: ", err)
 			s.uid = ""
 			return err
 		}
@@ -501,6 +509,7 @@ func (s *sessionImpl) OnClose(c func()) error {
 func (s *sessionImpl) Close() {
 	atomic.AddInt64(&s.pool.SessionCount, -1)
 	s.pool.sessionsByID.Delete(s.ID())
+	s.logger.Debug("Closing session")
 	// Only remove session by UID if the session ID matches the one being closed. This avoids problems with removing a valid session after the user has already reconnected before this session's heartbeat times out
 	if val, ok := s.pool.sessionsByUID.Load(s.UID()); ok {
 		if (val.(Session)).ID() == s.ID() {
@@ -513,9 +522,9 @@ func (s *sessionImpl) Close() {
 		for _, sub := range s.Subscriptions {
 			err := sub.Drain()
 			if err != nil {
-				logger.Log.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
+				s.logger.Errorf("error unsubscribing to user's messages channel: %s, this can cause performance and leak issues", err.Error())
 			} else {
-				logger.Log.Debugf("successfully unsubscribed to user's %s messages channel", s.UID())
+				s.logger.Debug("successfully unsubscribed to user's messages channel")
 			}
 		}
 	}
@@ -846,6 +855,7 @@ func (s *sessionImpl) ValidateHandshake(data *HandshakeData) error {
 }
 
 func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, includeData bool) error {
+	log := s.logger.WithField("route", route)
 	sessionData := &protos.Session{
 		Id:  s.frontendSessionID,
 		Uid: s.uid,
@@ -861,7 +871,7 @@ func (s *sessionImpl) sendRequestToFront(ctx context.Context, route string, incl
 	if err != nil {
 		return err
 	}
-	logger.Log.Debugf("%s Got response: %+v", route, res)
+	log.Debugf("Got response: %+v", res)
 	return nil
 }
 

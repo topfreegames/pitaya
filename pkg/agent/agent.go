@@ -39,6 +39,7 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/errors"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"github.com/topfreegames/pitaya/v3/pkg/logger/interfaces"
 	"github.com/topfreegames/pitaya/v3/pkg/metrics"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize"
@@ -86,6 +87,7 @@ type (
 		metricsReporters   []metrics.Reporter
 		serializer         serialize.Serializer // message serializer
 		state              int32                // current agent state
+		logger             interfaces.Logger
 	}
 
 	pendingMessage struct {
@@ -218,10 +220,11 @@ func newAgent(
 		messageEncoder:     messageEncoder,
 		metricsReporters:   metricsReporters,
 		sessionPool:        sessionPool,
+		logger:             logger.Log,
 	}
-
 	// binding session
 	s := sessionPool.NewSession(a, true)
+	a.logger = a.logger.WithField("session_id", s.ID())
 	metrics.ReportNumberOfConnectedClients(metricsReporters, sessionPool.GetSessionCount())
 	a.Session = s
 	return a
@@ -323,10 +326,10 @@ func (a *agentImpl) Push(route string, v interface{}) error {
 
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
+		a.logger.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%dbytes",
 			a.Session.ID(), a.Session.UID(), route, len(d))
 	default:
-		logger.Log.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
+		a.logger.Debugf("Type=Push, ID=%d, UID=%s, Route=%s, Data=%+v",
 			a.Session.ID(), a.Session.UID(), route, v)
 	}
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
@@ -349,10 +352,10 @@ func (a *agentImpl) ResponseMID(ctx context.Context, mid uint, v interface{}, is
 
 	switch d := v.(type) {
 	case []byte:
-		logger.Log.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
+		a.logger.Debugf("Type=Response, ID=%d, UID=%s, MID=%d, Data=%dbytes",
 			a.Session.ID(), a.Session.UID(), mid, len(d))
 	default:
-		logger.Log.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
+		a.logger.Infof("Type=Response, ID=%d, UID=%s, MID=%d, Data=%+v",
 			a.Session.ID(), a.Session.UID(), mid, v)
 	}
 
@@ -369,7 +372,7 @@ func (a *agentImpl) Close() error {
 	}
 	a.SetStatus(constants.StatusClosed)
 
-	logger.Log.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
+	a.logger.Debugf("Session closed, ID=%d, UID=%s, IP=%s",
 		a.Session.ID(), a.Session.UID(), a.conn.RemoteAddr())
 
 	// prevent closing closed channel
@@ -429,7 +432,7 @@ func (a *agentImpl) SetStatus(state int32) {
 func (a *agentImpl) Handle() {
 	defer func() {
 		a.Close()
-		logger.Log.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
+		a.logger.Debugf("Session handle goroutine exit, SessionID=%d, UID=%s", a.Session.ID(), a.Session.UID())
 	}()
 
 	go a.write()
@@ -467,7 +470,7 @@ func (a *agentImpl) heartbeat() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * a.heartbeatTimeout).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Log.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
+				a.logger.Debugf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline)
 				return
 			}
 
@@ -490,7 +493,7 @@ func (a *agentImpl) heartbeat() {
 func (a *agentImpl) onSessionClosed(s session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Log.Errorf("pitaya/onSessionClosed: %v", err)
+			a.logger.Errorf("pitaya/onSessionClosed: %v", err)
 		}
 	}()
 
@@ -560,8 +563,8 @@ func (a *agentImpl) write() {
 func (a *agentImpl) writeToConnection(ctx context.Context, data []byte) error {
 	span := createConnectionSpan(ctx, a.conn, "conn write")
 
-        a.conn.SetWriteDeadline(time.Now().Add(a.writeTimeout))
-        _, writeErr := a.conn.Write(data)
+	a.conn.SetWriteDeadline(time.Now().Add(a.writeTimeout))
+	_, writeErr := a.conn.Write(data)
 
 	if span != nil {
 		defer span.End()
@@ -617,12 +620,12 @@ func (a *agentImpl) AnswerWithError(ctx context.Context, mid uint, err error) {
 	}
 	p, e := util.GetErrorPayload(a.serializer, err)
 	if e != nil {
-		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
+		a.logger.Errorf("error answering the user with an error: %s", e.Error())
 		return
 	}
 	e = a.Session.ResponseMID(ctx, mid, p, true)
 	if e != nil {
-		logger.Log.Errorf("error answering the user with an error: %s", e.Error())
+		a.logger.Errorf("error answering the user with an error: %s", e.Error())
 	}
 }
 
@@ -695,7 +698,7 @@ func encodeAndCompress(data interface{}, dataCompression bool) ([]byte, error) {
 func (a *agentImpl) reportChannelSize() {
 	chSendCapacity := a.messagesBufferSize - len(a.chSend)
 	if chSendCapacity == 0 {
-		logger.Log.Warnf("chSend is at maximum capacity")
+		a.logger.Warnf("chSend is at maximum capacity")
 	}
 	for _, mr := range a.metricsReporters {
 		if err := mr.ReportHistogram(metrics.ChannelCapacity, map[string]string{"channel": "agent_chsend"}, float64(chSendCapacity)); err != nil {
