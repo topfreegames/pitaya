@@ -350,7 +350,6 @@ func (ns *NatsRPCServer) Init() error {
 
 // initConnection initializes or replaces the NATS connection
 func (ns *NatsRPCServer) initConnection(isReplacement bool) error {
-
 	if !isReplacement {
 		// TODO should we have concurrency here? it feels like we should
 		go ns.handleMessages()
@@ -481,4 +480,8 @@ func (ns *NatsRPCServer) reportMetrics() {
 			}
 		}
 	}
+}
+
+func (ns *NatsRPCServer) IsConnected() bool {
+	return ns.conn != nil && ns.conn.IsConnected()
 }

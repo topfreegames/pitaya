@@ -27,7 +27,6 @@ import (
 	"reflect"
 	"strings"
 	"syscall"
-
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -128,6 +127,7 @@ type Pitaya interface {
 	GetModule(name string) (interfaces.Module, error)
 
 	GetNumberOfConnectedClients() int64
+	IsReady(ctx context.Context) bool
 }
 
 // App is the base app struct
@@ -566,4 +566,42 @@ func (app *App) RegisterRPCJob(rpcJob worker.RPCJob) error {
 // GetNumberOfConnectedClients returns the number of connected clients
 func (app *App) GetNumberOfConnectedClients() int64 {
 	return app.sessionPool.GetSessionCount()
+}
+
+// IsReady checks if pitaya is ready and able to serve requests
+func (app *App) IsReady(ctx context.Context) bool {
+	if !app.IsRunning() {
+		return false
+	}
+
+	// Check NATS RPC Client connection
+	if app.rpcClient != nil {
+		if natsClient, ok := app.rpcClient.(*cluster.NatsRPCClient); ok {
+			if !natsClient.IsConnected() {
+				logger.Log.Info("pitaya is not ready")
+				return false
+			}
+		}
+	}
+
+	// Check NATS RPC Server connection
+	if app.rpcServer != nil {
+		if natsServer, ok := app.rpcServer.(*cluster.NatsRPCServer); ok {
+			if !natsServer.IsConnected() {
+				logger.Log.Info("pitaya is not ready")
+				return false
+			}
+		}
+	}
+
+	// Check ETCD connection
+	if app.serviceDiscovery != nil {
+		if !app.serviceDiscovery.IsConnected(ctx) {
+			logger.Log.Info("pitaya is not ready")
+			return false
+		}
+	}
+
+	logger.Log.Info("pitaya is ready")
+	return true
 }

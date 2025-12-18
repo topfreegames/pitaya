@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -154,4 +155,18 @@ func (m *MockServiceDiscovery) SyncServers(firstSync bool) error {
 func (mr *MockServiceDiscoveryMockRecorder) SyncServers(firstSync interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncServers", reflect.TypeOf((*MockServiceDiscovery)(nil).SyncServers), firstSync)
+}
+
+// IsConnected mocks base method.
+func (m *MockServiceDiscovery) IsConnected(arg0 context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsConnected", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsConnected indicates an expected call of IsConnected.
+func (mr *MockServiceDiscoveryMockRecorder) IsConnected(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsConnected", reflect.TypeOf((*MockServiceDiscovery)(nil).IsConnected), arg0)
 }
