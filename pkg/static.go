@@ -229,3 +229,7 @@ func GetModule(name string) (interfaces.Module, error) {
 func GetNumberOfConnectedClients() int64 {
 	return DefaultApp.GetNumberOfConnectedClients()
 }
+
+func IsReady(ctx context.Context) bool {
+	return DefaultApp.IsReady(ctx)
+}

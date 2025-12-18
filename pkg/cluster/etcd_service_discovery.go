@@ -722,3 +722,15 @@ func (sd *etcdServiceDiscovery) isServerTypeBlacklisted(svType string) bool {
 	}
 	return false
 }
+
+func (sd *etcdServiceDiscovery) IsConnected(ctx context.Context) bool {
+	if sd.cli == nil {
+		return false
+	}
+
+	checkCtx, cancel := context.WithTimeout(ctx, sd.revokeTimeout)
+	defer cancel()
+
+	_, err := sd.cli.Get(checkCtx, "health-check", clientv3.WithLimit(1))
+	return err == nil
+}

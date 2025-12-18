@@ -262,7 +262,6 @@ func (ns *NatsRPCClient) Init() error {
 
 // initConnection initializes or replaces the NATS connection
 func (ns *NatsRPCClient) initConnection(isReplacement bool) error {
-
 	if !isReplacement {
 		ns.running = true
 		logger.Log.Debugf("connecting to nats (client) with timeout of %s", ns.connectionTimeout)
@@ -311,4 +310,8 @@ func (ns *NatsRPCClient) stop() {
 
 func (ns *NatsRPCClient) getSubscribeChannel() string {
 	return fmt.Sprintf("pitaya/servers/%s/%s", ns.server.Type, ns.server.ID)
+}
+
+func (ns *NatsRPCClient) IsConnected() bool {
+	return ns.conn != nil && ns.conn.IsConnected()
 }
