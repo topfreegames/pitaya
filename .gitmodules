@@ -1,3 +1,6 @@
 [submodule "protos"]
 	path = pitaya-protos
 	url = https://github.com/topfreegames/pitaya-protos
+[submodule "pitaya-protos"]
+	path = pitaya-protos
+	url = https://github.com/topfreegames/pitaya-protos

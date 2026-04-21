@@ -1,0 +1,339 @@
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler connector.Connect, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler connector.Disconnect, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler connector.Heartbeat, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler connector.Reconnect, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.bindsession" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.kick" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.pushsession" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="starting server connector:07a407b1-a5a1-4231-90f5-8407aea1bd8b" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="PROXY protocol is disabled for inbound connections" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="Waiting for Acceptor *acceptor.WSAcceptor to start on addr :3250" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="Acceptor *acceptor.WSAcceptor on addr [::]:3250 is now accepting connections" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing all modules" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: rpcClient" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="connecting to nats (client) with timeout of 2s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="attempting nats connection for a max of 48.5s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="connected to nats on [::1]:4222" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: rpcServer" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="connecting to nats (server) with timeout of 2s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="attempting nats connection for a max of 48.5s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="connected to nats on [::1]:4222" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: serviceDiscovery" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="Initializing ETCD client" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="sd: got leaseID: 2a099dae2513d427" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="server servers/connector/07a407b1-a5a1-4231-90f5-8407aea1bd8b added by watcher" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="loading info from missing server: room/94f224a9-8d37-4435-b90b-bef5a180e0c2" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="adding server &{94f224a9-8d37-4435-b90b-bef5a180e0c2 room map[] false DESKTOP-8T6PDDA}" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="SyncServers took : 28.679ms to run" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="initializing module: uniqueSession" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: rpcClient successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: rpcServer successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: serviceDiscovery successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: uniqueSession successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="server servers/room/94f224a9-8d37-4435-b90b-bef5a180e0c2 added by watcher" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="all modules started!" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=info msg="SyncServers took : 3.6961ms to run" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=info msg="SyncServers took : 2.894ms to run" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=info msg="SyncServers took : 3.4448ms to run" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=info msg="SyncServers took : 4.0566ms to run" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=info msg="SyncServers took : 4.1309ms to run" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=info msg="SyncServers took : 3.6258ms to run" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=info msg="SyncServers took : 3.0486ms to run" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=info msg="SyncServers took : 3.3372ms to run" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=info msg="SyncServers took : 3.8226ms to run" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=info msg="SyncServers took : 4.7636ms to run" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=info msg="SyncServers took : 11.7215ms to run" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=info msg="SyncServers took : 3.2187ms to run" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=info msg="SyncServers took : 2.8413ms to run" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=info msg="SyncServers took : 2.727ms to run" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=info msg="SyncServers took : 3.9276ms to run" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="New session established: Remote=127.0.0.1:60919, LastTime=1776763615" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="Session handshake Id=1, Remote=127.0.0.1:60919" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="Receive handshake ACK Id=1, Remote=127.0.0.1:60919" source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="SID=1, Data={\"player_id\":\"test_player_1\"}" requestId=P2o8fLixDtzW2iNYvQZvdj route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:26:55+08:00" level=debug msg="Type=Response, ID=1, UID=test_player_1, MID=1, Data=43bytes" session_id=1 source=pitaya
+time="2026-04-21T17:26:55+08:00" level=debug msg="SID=1, Data={}" requestId=Y5qOFW26PXmYlslvdUnAVq route=connector.connector.Heartbeat source=pitaya userId=test_player_1
+time="2026-04-21T17:26:55+08:00" level=debug msg="Type=Response, ID=1, UID=test_player_1, MID=2, Data=26bytes" session_id=1 source=pitaya
+time="2026-04-21T17:26:57+08:00" level=error msg="Error reading next available message for UID: test_player_1, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:26:57+08:00" level=debug msg="Closing session" session_id=1 source=pitaya
+time="2026-04-21T17:26:57+08:00" level=debug msg="Session closed, ID=1, UID=test_player_1, IP=127.0.0.1:60919" session_id=1 source=pitaya
+time="2026-04-21T17:26:57+08:00" level=debug msg="Session read goroutine exit, SessionID=1, UID=test_player_1" source=pitaya
+time="2026-04-21T17:26:57+08:00" level=debug msg="Session handle goroutine exit, SessionID=1, UID=test_player_1" session_id=1 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="New session established: Remote=127.0.0.1:60920, LastTime=1776763618" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Session handshake Id=2, Remote=127.0.0.1:60920" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Receive handshake ACK Id=2, Remote=127.0.0.1:60920" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="SID=2, Data={\"player_id\":\"test_player_2\"}" requestId=LHJjMoK05tlyeC3NUNxziN route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:26:58+08:00" level=debug msg="Type=Response, ID=2, UID=test_player_2, MID=1, Data=43bytes" session_id=2 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.CreateRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Type=Response, ID=2, UID=test_player_2, MID=2, Data=118bytes" session_id=2 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.GetRoomInfo with timeout of 5s" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Type=Response, ID=2, UID=test_player_2, MID=3, Data=101bytes" session_id=2 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=error msg="Error reading next available message for UID: test_player_2, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Closing session" session_id=2 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Session closed, ID=2, UID=test_player_2, IP=127.0.0.1:60920" session_id=2 source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Session read goroutine exit, SessionID=2, UID=test_player_2" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="Session handle goroutine exit, SessionID=2, UID=test_player_2" session_id=2 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="New session established: Remote=127.0.0.1:60921, LastTime=1776763619" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session handshake Id=3, Remote=127.0.0.1:60921" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Receive handshake ACK Id=3, Remote=127.0.0.1:60921" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="SID=3, Data={\"player_id\":\"test_player_3\"}" requestId=QxZZonxffuxRh27Lz2tDv5 route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:26:59+08:00" level=debug msg="Type=Response, ID=3, UID=test_player_3, MID=1, Data=43bytes" session_id=3 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.CreateRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Type=Response, ID=3, UID=test_player_3, MID=2, Data=118bytes" session_id=3 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="New session established: Remote=127.0.0.1:60922, LastTime=1776763619" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session handshake Id=4, Remote=127.0.0.1:60922" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Receive handshake ACK Id=4, Remote=127.0.0.1:60922" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="SID=4, Data={\"player_id\":\"test_player_4\"}" requestId=YDLEvmoMCAKorBrfCDHGeH route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:26:59+08:00" level=debug msg="Type=Response, ID=4, UID=test_player_4, MID=1, Data=43bytes" session_id=4 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.JoinRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Type=Response, ID=4, UID=test_player_4, MID=2, Data=285bytes" session_id=4 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.GetRoomInfo with timeout of 5s" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Type=Response, ID=3, UID=test_player_3, MID=3, Data=233bytes" session_id=3 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=error msg="Error reading next available message for UID: test_player_4, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Closing session" session_id=4 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session closed, ID=4, UID=test_player_4, IP=127.0.0.1:60922" session_id=4 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=error msg="Error reading next available message for UID: test_player_3, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Closing session" session_id=3 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session closed, ID=3, UID=test_player_3, IP=127.0.0.1:60921" session_id=3 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session handle goroutine exit, SessionID=4, UID=test_player_4" session_id=4 source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session read goroutine exit, SessionID=4, UID=test_player_4" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session read goroutine exit, SessionID=3, UID=test_player_3" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="Session handle goroutine exit, SessionID=3, UID=test_player_3" session_id=3 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="New session established: Remote=127.0.0.1:60923, LastTime=1776763620" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Session handshake Id=5, Remote=127.0.0.1:60923" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Receive handshake ACK Id=5, Remote=127.0.0.1:60923" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=5, Data={\"player_id\":\"test_player_5\"}" requestId=7zmnquh7FvEYl9B8hDPxxy route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=1, Data=43bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.CreateRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=2, Data=118bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.StartGame with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.StartGame and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-404 pitaya/handler: room.room.StartGame not found map[]})" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="Failed to process remote server: pitaya/handler: room.room.StartGame not found" route=room.room.StartGame source=pitaya uid=test_player_5
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=3, Data=72bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_5
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=4, Data=49bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_5
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=5, Data=49bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.UseSkill and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.UseSkill source=pitaya uid=test_player_5
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=6, Data=49bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.GetRoomInfo with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Type=Response, ID=5, UID=test_player_5, MID=7, Data=101bytes" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=error msg="Error reading next available message for UID: test_player_5, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Closing session" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Session closed, ID=5, UID=test_player_5, IP=127.0.0.1:60923" session_id=5 source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Session read goroutine exit, SessionID=5, UID=test_player_5" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="Session handle goroutine exit, SessionID=5, UID=test_player_5" session_id=5 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="New session established: Remote=127.0.0.1:60924, LastTime=1776763621" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Session handshake Id=6, Remote=127.0.0.1:60924" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Receive handshake ACK Id=6, Remote=127.0.0.1:60924" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=6, Data={\"player_id\":\"test_player_6\"}" requestId=5Vgpf1AfFbcPCbmT50X0ps route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=1, Data=43bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.CreateRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=2, Data=118bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="New session established: Remote=127.0.0.1:60925, LastTime=1776763621" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Received handshake packet" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Session handshake Id=7, Remote=127.0.0.1:60925" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Successfully saved handshake data" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Receive handshake ACK Id=7, Remote=127.0.0.1:60925" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=7, Data={\"player_id\":\"test_player_7\"}" requestId=51LctsA5mgczrLAfR3xyRp route=connector.connector.Connect source=pitaya userId=
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=1, Data=43bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.JoinRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=2, Data=285bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.StartGame with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.StartGame and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-404 pitaya/handler: room.room.StartGame not found map[]})" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="Failed to process remote server: pitaya/handler: room.room.StartGame not found" route=room.room.StartGame source=pitaya uid=test_player_6
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=3, Data=72bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_6
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=4, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=3, Data=45bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_6
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=5, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=4, Data=54bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_6
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=6, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=5, Data=46bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_6
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=7, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=6, Data=54bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_6
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=8, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=7, Data=46bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_6
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=9, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=8, Data=54bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_6
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=10, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=9, Data=46bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_6
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=11, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=10, Data=54bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Move and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Move source=pitaya uid=test_player_6
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=12, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Move with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=11, Data=46bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.Attack with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="error making call to target with id 94f224a9-8d37-4435-b90b-bef5a180e0c2, route room.room.Attack and host DESKTOP-8T6PDDA: %!w(*errors.Error=&{PIT-000 player not in any room map[]})" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=error msg="Failed to process remote server: player not in any room" route=room.room.Attack source=pitaya uid=test_player_6
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=13, Data=49bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.UseSkill with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=12, Data=54bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.GetRoomInfo with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=14, Data=245bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.RoomList with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=15, Data=655bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.RoomList with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=16, Data=655bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.LeaveRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Type=Response, ID=6, UID=test_player_6, MID=17, Data=2bytes" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="no specific route for svType: room, using default route" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="[rpc_client] sending remote nats request for route room.room.LeaveRoom with timeout of 5s" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Type=Response, ID=7, UID=test_player_7, MID=13, Data=16bytes" session_id=7 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=error msg="Error reading next available message for UID: test_player_7, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Closing session" session_id=7 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session closed, ID=7, UID=test_player_7, IP=127.0.0.1:60925" session_id=7 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=error msg="Error reading next available message for UID: test_player_6, Build: a.GetSession().GetHandshakeData().Sys.BuildNumber, error: websocket: close 1006 (abnormal closure): unexpected EOF" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Closing session" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session closed, ID=6, UID=test_player_6, IP=127.0.0.1:60924" session_id=6 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session handle goroutine exit, SessionID=7, UID=test_player_7" session_id=7 source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session read goroutine exit, SessionID=7, UID=test_player_7" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session read goroutine exit, SessionID=6, UID=test_player_6" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="Session handle goroutine exit, SessionID=6, UID=test_player_6" session_id=6 source=pitaya
+time="2026-04-21T17:27:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x35390401f400]" source=pitaya
+time="2026-04-21T17:27:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:27:43+08:00" level=info msg="SyncServers took : 2.8406ms to run" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=warning msg="got signal: terminated, shutting down..." source=pitaya
+time="2026-04-21T17:28:21+08:00" level=warning msg="server is stopping..." source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="closing all sessions, 0 sessions" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="finished closing sessions" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="waiting for etcd revoke" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="server 07a407b1-a5a1-4231-90f5-8407aea1bd8b deleted by watcher" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x353903e88640]" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="type: connector, servers: map[]" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="finished waiting for etcd revoke" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="stopping module: uniqueSession" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="module: uniqueSession stopped!" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="stopping module: serviceDiscovery" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="module: serviceDiscovery stopped!" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="stopping module: rpcServer" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="module: rpcServer stopped!" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="stopping module: rpcClient" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=info msg="module: rpcClient stopped!" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=warning msg="disconnected from nats ()! Reason: <nil>" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=warning msg="nats connection closed with no error." source=pitaya

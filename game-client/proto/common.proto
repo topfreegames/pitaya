@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/topfreegames/pitaya/v3/game/proto";
+
+message Response {
+    int32 code = 1;
+    string message = 2;
+    bytes data = 3;
+}
+
+enum ErrorCode {
+    SUCCESS = 0;
+    INVALID_REQUEST = 1;
+    AUTH_FAILED = 2;
+    ROOM_FULL = 3;
+    PLAYER_NOT_FOUND = 4;
+    ROOM_NOT_FOUND = 5;
+    GAME_ALREADY_STARTED = 6;
+    INSUFFICIENT_RESOURCES = 7;
+    INTERNAL_ERROR = 8;
+    TIMEOUT = 9;
+    RATE_LIMIT_EXCEEDED = 10;
+}
+
+message Position {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}

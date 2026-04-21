@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/topfreegames/pitaya/v3/game/proto";
+
+import "common.proto";
+
+message ConnectRequest {
+    string player_id = 1;
+    string auth_token = 2;
+    string client_version = 3;
+    string device_id = 4;
+}
+
+message ConnectResponse {
+    string session_id = 1;
+    int64 server_time = 2;
+    repeated string available_rooms = 3;
+}
+
+message HeartbeatRequest {
+    int64 timestamp = 1;
+}
+
+message HeartbeatResponse {
+    int64 server_time = 1;
+    HeartbeatStatus status = 2;
+}
+
+enum HeartbeatStatus {
+    OK = 0;
+    WARNING = 1;
+    CRITICAL = 2;
+}
+
+message ReconnectRequest {
+    string session_id = 1;
+    string player_id = 2;
+    string auth_token = 3;
+}
+
+message ReconnectResponse {
+    bool success = 1;
+    string session_id = 2;
+    int64 server_time = 3;
+    string room_id = 4;
+    bytes game_state = 5;
+}
+
+message DisconnectRequest {
+    string player_id = 1;
+    string reason = 2;
+}
+
+message DisconnectResponse {
+    bool success = 1;
+}

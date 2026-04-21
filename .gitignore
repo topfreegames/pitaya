@@ -27,3 +27,9 @@ debug
 
 examples/testing/server
 examples/demo/cluster_grpc/main
+
+# AI agent skills and configurations
+.agents/
+skills/
+
+skills-lock.json

@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/topfreegames/pitaya/v3/game/proto";
+
+import "common.proto";
+
+message CreateRoomRequest {
+    string room_type = 1;
+    int32 max_players = 2;
+    int32 difficulty = 3;
+    string password = 4;
+}
+
+message CreateRoomResponse {
+    string room_id = 1;
+    string room_token = 2;
+    int32 max_players = 3;
+}
+
+message JoinRoomRequest {
+    string room_id = 1;
+    string room_token = 2;
+    string password = 3;
+}
+
+message JoinRoomResponse {
+    bool success = 1;
+    string message = 2;
+    RoomInfo room_info = 3;
+}
+
+message LeaveRoomRequest {
+    string room_id = 1;
+    string player_id = 2;
+}
+
+message LeaveRoomResponse {
+    bool success = 1;
+}
+
+message RoomInfo {
+    string room_id = 1;
+    string room_type = 2;
+    int32 max_players = 3;
+    int32 current_players = 4;
+    RoomStatus status = 5;
+    int32 current_wave = 6;
+    int32 score = 7;
+    repeated PlayerInfo players = 8;
+}
+
+enum RoomStatus {
+    WAITING = 0;
+    PLAYING = 1;
+    PAUSED = 2;
+    FINISHED = 3;
+}
+
+message PlayerInfo {
+    string player_id = 1;
+    string name = 2;
+    int32 level = 3;
+    int32 health = 4;
+    int32 max_health = 5;
+    Position position = 6;
+    int32 score = 7;
+}
+
+message GetRoomInfoRequest {
+    string room_id = 1;
+}
+
+message GetRoomInfoResponse {
+    RoomInfo room_info = 1;
+}
+
+message RoomListRequest {
+    string room_type = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message RoomListResponse {
+    repeated RoomInfo rooms = 1;
+    int32 total_count = 2;
+}

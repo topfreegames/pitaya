@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/topfreegames/pitaya/v3/game/proto";
+
+message GetRankingRequest {
+    RankingType type = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message GetRankingResponse {
+    repeated RankingEntry entries = 1;
+    int32 total_count = 2;
+    int32 player_rank = 3;
+}
+
+message RankingEntry {
+    int32 rank = 1;
+    string player_id = 2;
+    string player_name = 3;
+    int64 score = 4;
+    int32 level = 5;
+}
+
+enum RankingType {
+    SCORE = 0;
+    WAVES_SURVIVED = 1;
+    ROOM_SCORE = 2;
+}
+
+message UpdateRankingRequest {
+    string player_id = 1;
+    int64 score = 2;
+    int32 waves_survived = 3;
+    RankingType type = 4;
+}
+
+message UpdateRankingResponse {
+    bool success = 1;
+    int32 new_rank = 2;
+}
+
+message GetPlayerRankRequest {
+    string player_id = 1;
+    RankingType type = 2;
+}
+
+message GetPlayerRankResponse {
+    int32 rank = 1;
+    int64 score = 2;
+}

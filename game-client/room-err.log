@@ -1,0 +1,234 @@
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.RoomList, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.UseSkill, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.Attack, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.CreateRoom, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.GetRoomInfo, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.JoinRoom, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.LeaveRoom, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered handler room.Move, isRawArg: false" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.bindsession" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.kick" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="registered remote sys.pushsession" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="starting server room:94f224a9-8d37-4435-b90b-bef5a180e0c2" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing all modules" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: rpcClient" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="connecting to nats (client) with timeout of 2s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="attempting nats connection for a max of 48.5s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="connected to nats on 127.0.0.1:4222" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: rpcServer" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="connecting to nats (server) with timeout of 2s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="attempting nats connection for a max of 48.5s" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="connected to nats on [::1]:4222" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=debug msg="initializing module: serviceDiscovery" source=pitaya
+time="2026-04-21T16:55:42+08:00" level=info msg="Initializing ETCD client" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="sd: got leaseID: 2a099dae2513d429" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="server servers/connector/07a407b1-a5a1-4231-90f5-8407aea1bd8b added by watcher" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="server servers/room/94f224a9-8d37-4435-b90b-bef5a180e0c2 added by watcher" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="SyncServers took : 1.073ms to run" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: rpcClient successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: rpcServer successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="module: serviceDiscovery successfully loaded" source=pitaya
+time="2026-04-21T16:55:43+08:00" level=info msg="all modules started!" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T16:57:43+08:00" level=info msg="SyncServers took : 4.2205ms to run" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T16:59:43+08:00" level=info msg="SyncServers took : 2.331ms to run" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:01:43+08:00" level=info msg="SyncServers took : 2.9032ms to run" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:03:43+08:00" level=info msg="SyncServers took : 3.5291ms to run" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:05:43+08:00" level=info msg="SyncServers took : 2.7971ms to run" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:07:43+08:00" level=info msg="SyncServers took : 3.3867ms to run" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:09:43+08:00" level=info msg="SyncServers took : 2.5287ms to run" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:11:43+08:00" level=info msg="SyncServers took : 3.3369ms to run" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:13:43+08:00" level=info msg="SyncServers took : 3.8226ms to run" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:15:43+08:00" level=info msg="SyncServers took : 4.2383ms to run" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:17:43+08:00" level=info msg="SyncServers took : 11.7569ms to run" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:19:43+08:00" level=info msg="SyncServers took : 3.2157ms to run" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:21:43+08:00" level=info msg="SyncServers took : 2.3053ms to run" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:23:43+08:00" level=info msg="SyncServers took : 2.727ms to run" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:25:43+08:00" level=info msg="SyncServers took : 3.403ms to run" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="(2) processing message 2" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="SID=1, Data={\"room_type\":\"normal\",\"max_players\":4}" requestId=a3MV5qaELNsCazXNsnzth4 route=room.room.CreateRoom source=pitaya userId=test_player_2
+time="2026-04-21T17:26:58+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="(0) processing message 3" source=pitaya
+time="2026-04-21T17:26:58+08:00" level=debug msg="SID=2, Data={\"room_id\":\"3f2b416a-5f33-4f19-8b43-bcf0b356599c\"}" requestId=Gi6bAZYTGSoyiYOegBUNp6 route=room.room.GetRoomInfo source=pitaya userId=test_player_2
+time="2026-04-21T17:26:59+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="(1) processing message 2" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="SID=3, Data={\"room_type\":\"normal\",\"max_players\":4}" requestId=2lT6ysSoUEN0Kzwh1Xzixs route=room.room.CreateRoom source=pitaya userId=test_player_3
+time="2026-04-21T17:26:59+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="(6) processing message 2" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="SID=4, Data={\"room_id\":\"2ec57c53-a339-4942-8012-467c7bc4ae9e\"}" requestId=z1iMrkNY6o2qpBrr0cWwXP route=room.room.JoinRoom source=pitaya userId=test_player_4
+time="2026-04-21T17:26:59+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="(3) processing message 3" source=pitaya
+time="2026-04-21T17:26:59+08:00" level=debug msg="SID=5, Data={\"room_id\":\"2ec57c53-a339-4942-8012-467c7bc4ae9e\"}" requestId=kdSGLTFyGoOsgZx8JpkdpA route=room.room.GetRoomInfo source=pitaya userId=test_player_3
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(4) processing message 2" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=6, Data={\"room_type\":\"normal\",\"max_players\":4}" requestId=9xc0TO8mfEvHoIfgLNgWWN route=room.room.CreateRoom source=pitaya userId=test_player_5
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(5) processing message 3" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=warning msg="pitaya/handler: room.room.StartGame not found" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(9) processing message 4" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=8, Data={\"target_position\":{\"x\":10,\"z\":5},\"timestamp\":1776763620}" requestId=JOngRpb6om4fyXqtIhKW4i route=room.room.Move source=pitaya userId=test_player_5
+time="2026-04-21T17:27:00+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(7) processing message 5" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=9, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763620}" requestId=2sMKOg7WLdKVnxZKbsKctB route=room.room.Attack source=pitaya userId=test_player_5
+time="2026-04-21T17:27:00+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(8) processing message 6" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=10, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763620}" requestId=t5vBTFnsjpiQegCwSSgEd4 route=room.room.UseSkill source=pitaya userId=test_player_5
+time="2026-04-21T17:27:00+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="(10) processing message 7" source=pitaya
+time="2026-04-21T17:27:00+08:00" level=debug msg="SID=11, Data={\"room_id\":\"3f5f4e57-8657-42a2-8f84-f01453470152\"}" requestId=MC8mySm7oCVnzDVzzxEvyi route=room.room.GetRoomInfo source=pitaya userId=test_player_5
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(12) processing message 2" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=12, Data={\"room_type\":\"normal\",\"max_players\":4}" requestId=K94Y230RuUuddkk9ZETbgh route=room.room.CreateRoom source=pitaya userId=test_player_6
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(13) processing message 2" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=13, Data={\"room_id\":\"6e8e58e3-a0ae-4576-8923-704ca551e60f\"}" requestId=Kz5M52wRG5dOpdDymg51bc route=room.room.JoinRoom source=pitaya userId=test_player_7
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(11) processing message 3" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=warning msg="pitaya/handler: room.room.StartGame not found" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(14) processing message 4" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=15, Data={\"target_position\":{\"z\":5},\"timestamp\":1776763621}" requestId=rV16H4hqH5vo2eJZMIQVZ0 route=room.room.Move source=pitaya userId=test_player_6
+time="2026-04-21T17:27:01+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(15) processing message 3" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=16, Data={\"target_position\":{\"x\":5,\"z\":5},\"timestamp\":1776763621}" requestId=iNxgQUCOHMGwDYKw8O5Hp4 route=room.room.Move source=pitaya userId=test_player_7
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(16) processing message 5" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=17, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763621}" requestId=JgzZtfhx9AmbWzoPG0xnG2 route=room.room.Attack source=pitaya userId=test_player_6
+time="2026-04-21T17:27:01+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="(17) processing message 4" source=pitaya
+time="2026-04-21T17:27:01+08:00" level=debug msg="SID=18, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763621}" requestId=vQBkQZmWpBkfX9JgBxr1CP route=room.room.UseSkill source=pitaya userId=test_player_7
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(18) processing message 6" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=19, Data={\"target_position\":{\"x\":10,\"z\":5},\"timestamp\":1776763622}" requestId=rpzzLhkX1OnjKmj5YpJsyc route=room.room.Move source=pitaya userId=test_player_6
+time="2026-04-21T17:27:02+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(20) processing message 5" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=20, Data={\"target_position\":{\"x\":15,\"z\":5},\"timestamp\":1776763622}" requestId=k0GrPCLVhV2OFK2R5zgLDK route=room.room.Move source=pitaya userId=test_player_7
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(19) processing message 7" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=21, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763622}" requestId=Dhdhu4jEtWH1leKbCpSce6 route=room.room.Attack source=pitaya userId=test_player_6
+time="2026-04-21T17:27:02+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(22) processing message 6" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=22, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763622}" requestId=LdCd1VxeWm17AwAiVxcNEs route=room.room.UseSkill source=pitaya userId=test_player_7
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(21) processing message 8" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=23, Data={\"target_position\":{\"x\":20,\"z\":5},\"timestamp\":1776763622}" requestId=IXGzUhzLDQPLU5jLw9MRCQ route=room.room.Move source=pitaya userId=test_player_6
+time="2026-04-21T17:27:02+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(23) processing message 7" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=24, Data={\"target_position\":{\"x\":25,\"z\":5},\"timestamp\":1776763622}" requestId=en3ui0iR44055SjA0LkFqj route=room.room.Move source=pitaya userId=test_player_7
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(24) processing message 9" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=25, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763622}" requestId=dc3U9LeeTjO5J7kQZwG1R9 route=room.room.Attack source=pitaya userId=test_player_6
+time="2026-04-21T17:27:02+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="(25) processing message 8" source=pitaya
+time="2026-04-21T17:27:02+08:00" level=debug msg="SID=26, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763622}" requestId=s8f35eAafzYNSiucmw1PUP route=room.room.UseSkill source=pitaya userId=test_player_7
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(26) processing message 10" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=27, Data={\"target_position\":{\"x\":30,\"z\":5},\"timestamp\":1776763623}" requestId=N0uCMBaXnXwMGbLRpY2BqM route=room.room.Move source=pitaya userId=test_player_6
+time="2026-04-21T17:27:03+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(27) processing message 9" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=28, Data={\"target_position\":{\"x\":35,\"z\":5},\"timestamp\":1776763623}" requestId=I6VUdzxk3B49sCGhSEsGq1 route=room.room.Move source=pitaya userId=test_player_7
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(28) processing message 11" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=29, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763623}" requestId=PzWWAR6l3Wc07uDSLldTA1 route=room.room.Attack source=pitaya userId=test_player_6
+time="2026-04-21T17:27:03+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(29) processing message 10" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=30, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763623}" requestId=aR47QtXUNhLYMEv8iNshgT route=room.room.UseSkill source=pitaya userId=test_player_7
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(2) processing message 12" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=31, Data={\"target_position\":{\"x\":40,\"z\":5},\"timestamp\":1776763623}" requestId=bTrQPp22K1bla8uW0wzvIz route=room.room.Move source=pitaya userId=test_player_6
+time="2026-04-21T17:27:03+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(0) processing message 11" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=32, Data={\"target_position\":{\"x\":45,\"z\":5},\"timestamp\":1776763623}" requestId=pGRLhS6Mxy6pGtRksKz18Z route=room.room.Move source=pitaya userId=test_player_7
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(1) processing message 13" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=33, Data={\"target_id\":\"enemy_1\",\"target_position\":{},\"timestamp\":1776763623}" requestId=jC4vnhc5UfhEHhBldeH7r7 route=room.room.Attack source=pitaya userId=test_player_6
+time="2026-04-21T17:27:03+08:00" level=warning msg="player not in any room" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="(6) processing message 12" source=pitaya
+time="2026-04-21T17:27:03+08:00" level=debug msg="SID=34, Data={\"skill_id\":1,\"target_position\":{},\"timestamp\":1776763623}" requestId=GkJfTy3S4FWU88dR6tooTk route=room.room.UseSkill source=pitaya userId=test_player_7
+time="2026-04-21T17:27:04+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="(3) processing message 14" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="SID=35, Data={\"room_id\":\"6e8e58e3-a0ae-4576-8923-704ca551e60f\"}" requestId=UgAoFO1LyrmSSnQbUYRTVl route=room.room.GetRoomInfo source=pitaya userId=test_player_6
+time="2026-04-21T17:27:04+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="(4) processing message 15" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="SID=36, Data={\"limit\":10}" requestId=cFv9EbVAYyMqN15bo5SFoW route=room.room.RoomList source=pitaya userId=test_player_6
+time="2026-04-21T17:27:04+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="(5) processing message 16" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="SID=37, Data={\"limit\":10}" requestId=R2bY459YSjagyDtNAyWokZ route=room.room.RoomList source=pitaya userId=test_player_6
+time="2026-04-21T17:27:04+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="(9) processing message 17" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="SID=38, Data={\"room_id\":\"6e8e58e3-a0ae-4576-8923-704ca551e60f\"}" requestId=FgbE6PCOOYHyTWMW4D40pc route=room.room.LeaveRoom source=pitaya userId=test_player_6
+time="2026-04-21T17:27:04+08:00" level=debug msg="subs channel size: 0, max: 0, dropped: 0" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="(7) processing message 13" source=pitaya
+time="2026-04-21T17:27:04+08:00" level=debug msg="SID=39, Data={\"room_id\":\"6e8e58e3-a0ae-4576-8923-704ca551e60f\"}" requestId=BBCkw0kjMVVTA2CGdsaTgb route=room.room.LeaveRoom source=pitaya userId=test_player_7
+time="2026-04-21T17:27:43+08:00" level=debug msg="type: connector, servers: map[07a407b1-a5a1-4231-90f5-8407aea1bd8b:0x134e052b4300]" source=pitaya
+time="2026-04-21T17:27:43+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:27:43+08:00" level=info msg="SyncServers took : 2.3235ms to run" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="server 07a407b1-a5a1-4231-90f5-8407aea1bd8b deleted by watcher" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="type: connector, servers: map[]" source=pitaya
+time="2026-04-21T17:28:21+08:00" level=debug msg="type: room, servers: map[94f224a9-8d37-4435-b90b-bef5a180e0c2:0x134e053baf80]" source=pitaya
+time="2026-04-21T17:28:22+08:00" level=warning msg="got signal: terminated, shutting down..." source=pitaya
+time="2026-04-21T17:28:22+08:00" level=warning msg="server is stopping..." source=pitaya
+time="2026-04-21T17:28:22+08:00" level=info msg="closing all sessions, 0 sessions" source=pitaya
+time="2026-04-21T17:28:22+08:00" level=info msg="finished closing sessions" source=pitaya
+time="2026-04-21T17:28:22+08:00" level=debug msg="waiting for etcd revoke" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="server 94f224a9-8d37-4435-b90b-bef5a180e0c2 deleted by watcher" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="type: connector, servers: map[]" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="type: room, servers: map[]" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="finished waiting for etcd revoke" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="stopping module: serviceDiscovery" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=info msg="module: serviceDiscovery stopped!" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="stopping module: rpcServer" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=info msg="module: rpcServer stopped!" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=debug msg="stopping module: rpcClient" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=info msg="module: rpcClient stopped!" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=warning msg="disconnected from nats ()! Reason: <nil>" source=pitaya
+time="2026-04-21T17:28:23+08:00" level=warning msg="nats connection closed with no error." source=pitaya

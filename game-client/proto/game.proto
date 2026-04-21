@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "github.com/topfreegames/pitaya/v3/game/proto";
+
+import "common.proto";
+
+message MoveRequest {
+    Position target_position = 1;
+    int64 timestamp = 2;
+}
+
+message MoveResponse {
+    bool success = 1;
+    Position new_position = 2;
+    int32 movement_cost = 3;
+}
+
+message AttackRequest {
+    string target_id = 1;
+    int32 skill_id = 2;
+    Position target_position = 3;
+    int64 timestamp = 4;
+}
+
+message AttackResponse {
+    bool success = 1;
+    int32 damage_dealt = 2;
+    bool target_killed = 3;
+    int32 new_score = 4;
+}
+
+message UseSkillRequest {
+    int32 skill_id = 1;
+    Position target_position = 2;
+    int64 timestamp = 3;
+}
+
+message UseSkillResponse {
+    bool success = 1;
+    int32 cooldown_remaining = 2;
+    int32 mana_cost = 3;
+}
+
+message GameStateUpdate {
+    string room_id = 1;
+    int32 current_wave = 2;
+    int32 enemies_remaining = 3;
+    int32 score = 4;
+    repeated EnemyState enemies = 5;
+    repeated PlayerState players = 6;
+    int64 server_time = 7;
+}
+
+message EnemyState {
+    string enemy_id = 1;
+    string enemy_type = 2;
+    Position position = 3;
+    int32 health = 4;
+    int32 max_health = 5;
+    EnemyStatus status = 6;
+}
+
+enum EnemyStatus {
+    SPAWNING = 0;
+    ALIVE = 1;
+    DEAD = 2;
+    DESPAWNING = 3;
+}
+
+message PlayerState {
+    string player_id = 1;
+    int32 health = 2;
+    int32 max_health = 3;
+    Position position = 4;
+    int32 score = 5;
+    repeated ActiveSkill skills = 6;
+}
+
+message ActiveSkill {
+    int32 skill_id = 1;
+    int32 cooldown_remaining = 2;
+    bool is_active = 3;
+}
+
+message StartGameRequest {
+    string room_id = 1;
+}
+
+message StartGameResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message WaveCompleteNotification {
+    int32 wave_number = 1;
+    int32 score = 2;
+    repeated Reward rewards = 3;
+}
+
+message Reward {
+    string type = 1;
+    int32 amount = 2;
+}
+
+message GameOverNotification {
+    int32 final_score = 1;
+    int32 waves_survived = 2;
+    repeated Reward rewards = 3;
+}

@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--http_port", "8222", "--cluster", "nats://0.0.0.0:6222", "--routes", "nats://nats:6222"]
+    networks:
+      - game-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/varz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.15
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    command:
+      - /usr/local/bin/etcd
+      - --name
+      - etcd
+      - --data-dir
+      - /etcd-data
+      - --listen-client-urls
+      - http://0.0.0.0:2379
+      - --advertise-client-urls
+      - http://etcd:2379
+      - --listen-peer-urls
+      - http://0.0.0.0:2380
+      - --initial-advertise-peer-urls
+      - http://etcd:2380
+      - --initial-cluster
+      - etcd=http://etcd:2380
+      - --initial-cluster-token
+      - etcd-cluster
+      - --initial-cluster-state
+      - new
+    networks:
+      - game-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - game-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: gamedb
+      MYSQL_USER: gameuser
+      MYSQL_PASSWORD: gamepassword
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - game-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+networks:
+  game-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

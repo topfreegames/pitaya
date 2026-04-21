@@ -1,0 +1,14 @@
+Room server starting on port 3260...
+Error processing event in room 6e8e58e3-a0ae-4576-8923-704ca551e60f: player not found in room
+Shutting down room: 3f2b416a-5f33-4f19-8b43-bcf0b356599c
+Room actor 3f2b416a-5f33-4f19-8b43-bcf0b356599c shutting down
+Game loop shutting down
+Shutting down room: 2ec57c53-a339-4942-8012-467c7bc4ae9e
+Room actor 2ec57c53-a339-4942-8012-467c7bc4ae9e shutting down
+Game loop shutting down
+Shutting down room: 3f5f4e57-8657-42a2-8f84-f01453470152
+Room actor 3f5f4e57-8657-42a2-8f84-f01453470152 shutting down
+Game loop shutting down
+Shutting down room: 6e8e58e3-a0ae-4576-8923-704ca551e60f
+Room actor 6e8e58e3-a0ae-4576-8923-704ca551e60f shutting down
+Game loop shutting down
