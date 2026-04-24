@@ -51,8 +51,11 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/protos"
 	"github.com/topfreegames/pitaya/v3/pkg/serialize"
+	serializejson "github.com/topfreegames/pitaya/v3/pkg/serialize/json"
 	serializemocks "github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
+	"github.com/topfreegames/pitaya/v3/pkg/util"
+	"github.com/topfreegames/pitaya/v3/pkg/util/compression"
 )
 
 type mockAddr struct{}
@@ -1348,4 +1351,88 @@ func TestAgentWriteChSendWriteTimeout(t *testing.T) {
 	ag.chSend <- pendingWrite{ctx: ctx, data: expectedFirstPacket, err: nil}
 	ag.chSend <- pendingWrite{ctx: ctx, data: expectedSecondPacket, err: nil}
 	wg.Wait()
+}
+
+// TestAgentResponseMIDPreservesErrorCodeWithCompression regresses a bug
+// where the code tag on the response_time metric fell back to
+// errors.ErrUnknownCode ("PIT-000") instead of carrying the real status
+// code returned by the handler.
+//
+// Root cause: MessagesEncoder.Encode mutates message.Data in place to
+// deflated bytes when compression produces smaller output. The send()
+// function used to read the error code from m.Data AFTER calling
+// packetEncodeMessage, so GetErrorFromPayload would try to JSON-unmarshal
+// deflated bytes, silently fail, and return a default-coded Error. The
+// payload on the wire still carried the right code (clients were not
+// affected), but monitors filtering by the `code` tag broke.
+//
+// This test exercises the end-to-end flow with compression enabled and an
+// error payload whose metadata is large enough to compress smaller than
+// the source. It asserts that pendingWrite.err carries the original code.
+func TestAgentResponseMIDPreservesErrorCodeWithCompression(t *testing.T) {
+	originalCode := "PIT-COMPRESSION-TEST"
+	originalMsg := "an error whose payload is large enough to compress"
+	originalMetadata := map[string]string{
+		"contextual_field_a": "contextual value a worth some bytes",
+		"contextual_field_b": "contextual value b worth some bytes",
+		"contextual_field_c": "contextual value c worth some bytes",
+	}
+
+	jsonSerializer := serializejson.NewSerializer()
+	originalErr := &e.Error{
+		Code:     originalCode,
+		Message:  originalMsg,
+		Metadata: originalMetadata,
+	}
+	payload, err := util.GetErrorPayload(jsonSerializer, originalErr)
+	require.NoError(t, err)
+
+	// Sanity check: the test premise requires deflate to produce fewer
+	// bytes than the source so that MessagesEncoder.Encode takes the
+	// mutating branch. If this fails, enlarge the metadata above.
+	deflated, err := compression.DeflateData(payload)
+	require.NoError(t, err)
+	require.Less(t, len(deflated), len(payload),
+		"test payload must compress smaller than source to exercise the bug (payload=%d, deflated=%d)",
+		len(payload), len(deflated))
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEncoder := codecmocks.NewMockPacketEncoder(ctrl)
+	heartbeatAndHandshakeMocks(mockEncoder)
+	mockDecoder := codecmocks.NewMockPacketDecoder(ctrl)
+	mockConn := mocks.NewMockPlayerConn(ctrl)
+	dieChan := make(chan bool)
+	messageEncoder := message.NewMessagesEncoder(true) // compression ON
+	sessionPool := session.NewSessionPool()
+
+	ag := newAgent(
+		mockConn, mockDecoder, mockEncoder, jsonSerializer,
+		time.Second, time.Second, 10, dieChan,
+		messageEncoder, nil, sessionPool,
+	).(*agentImpl)
+	require.NotNil(t, ag)
+
+	mockEncoder.EXPECT().
+		Encode(packet.Type(packet.Data), gomock.Any()).
+		Return([]byte("encoded-packet"), nil)
+
+	ctx := getCtxWithRequestKeys()
+	require.NoError(t, ag.ResponseMID(ctx, uint(42), payload, true))
+
+	recv := helpers.ShouldEventuallyReceive(t, ag.chSend).(pendingWrite)
+	require.NotNil(t, recv.err,
+		"pendingWrite.err must be set when ResponseMID is called with isError=true")
+
+	recovered, ok := recv.err.(*e.Error)
+	require.Truef(t, ok, "pendingWrite.err must be *errors.Error, got %T", recv.err)
+
+	assert.Equalf(t, originalCode, recovered.Code,
+		"pendingWrite.err.Code was %q, expected %q — compression likely mutated m.Data "+
+			"before GetErrorFromPayload read it; the metric `code` tag will be wrong for "+
+			"any error whose payload compresses smaller than the source",
+		recovered.Code, originalCode)
+	assert.Equal(t, originalMsg, recovered.Message)
+	assert.Equal(t, originalMetadata, recovered.Metadata)
 }
