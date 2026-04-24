@@ -284,6 +284,21 @@ func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 		return err
 	}
 
+	pWrite := pendingWrite{
+		ctx: pendingMsg.ctx,
+	}
+
+	// Capture the error code from the payload BEFORE packetEncodeMessage
+	// runs, because MessagesEncoder.Encode mutates m.Data in place when
+	// compression produces smaller output. If we read m.Data after encoding,
+	// the payload may be deflated bytes and GetErrorFromPayload's silent
+	// Unmarshal failure causes the metric code tag to fall back to the
+	// default ErrUnknownCode (PIT-000), masking the real status code for
+	// any error whose JSON payload is large enough to compress.
+	if pendingMsg.err {
+		pWrite.err = util.GetErrorFromPayload(a.serializer, m.Data)
+	}
+
 	// packet encode
 	p, err := a.packetEncodeMessage(m)
 	if err != nil {
@@ -293,15 +308,7 @@ func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 		)
 		return err
 	}
-
-	pWrite := pendingWrite{
-		ctx:  pendingMsg.ctx,
-		data: p,
-	}
-
-	if pendingMsg.err {
-		pWrite.err = util.GetErrorFromPayload(a.serializer, m.Data)
-	}
+	pWrite.data = p
 
 	// chSend is never closed so we need this to don't block if agent is already closed
 	select {
