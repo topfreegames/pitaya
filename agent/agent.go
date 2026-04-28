@@ -297,6 +297,15 @@ func (a *agentImpl) send(pendingMsg pendingMessage) (err error) {
 	// any error whose JSON payload is large enough to compress.
 	if pendingMsg.err {
 		pWrite.err = util.GetErrorFromPayload(a.serializer, m.Data)
+		// log resolved error code so we can confirm in staging
+		// that the metric `code` tag would carry the real status code instead of
+		// falling back to ErrUnknownCode.
+		if pe, ok := pWrite.err.(*errors.Error); ok {
+			logger.Log.Infof(
+				"[validation] send resolved error code=%q route=%s",
+				pe.Code, pendingMsg.route,
+			)
+		}
 	}
 
 	// packet encode
