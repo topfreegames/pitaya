@@ -29,8 +29,7 @@ init-submodules:
 	@git submodule init
 
 setup-ci:
-	@go install github.com/mattn/goveralls@latest
-	@go install github.com/wadey/gocovmerge@latest
+	@go install github.com/mattn/goveralls@v0.0.12
 
 setup-protobuf-macos:
 	@brew install protobuf
@@ -165,16 +164,12 @@ test-coverage: unit-test-coverage
 test-coverage-html: test-coverage
 	@go tool cover -html=coverprofile.out
 
-merge-profiles:
-	@rm -f coverage-all.out
-	@gocovmerge *.out > coverage-all.out
-
-test-coverage-func coverage-func: test-coverage merge-profiles
+test-coverage-func coverage-func: test-coverage
 	@echo
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
 	@echo "\033[1;34mFunctions NOT COVERED by Tests\033[0m"
 	@echo "\033[1;34m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\033[0m"
-	@go tool cover -func=coverage-all.out | egrep -v "100.0[%]"
+	@go tool cover -func=coverprofile.out | egrep -v "100.0[%]"
 
 mocks: agent-mock session-mock networkentity-mock pitaya-mock serializer-mock metrics-mock acceptor-mock
 
