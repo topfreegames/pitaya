@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -59,6 +60,7 @@ type NatsRPCServer struct {
 	userKickCh             chan *protos.KickMsg
 	sub                    *nats.Subscription
 	dropped                int
+	busyRemoteWorkers      int32 // atomic: number of processMessages workers currently in pitayaServer.Call
 	pitayaServer           protos.PitayaServer
 	metricsReporters       []metrics.Reporter
 	sessionPool            session.SessionPool
@@ -288,7 +290,9 @@ func (ns *NatsRPCServer) processMessages(threadID int) {
 
 			logger.Log.Errorf("error getting context from request: %s", err)
 		} else {
+			atomic.AddInt32(&ns.busyRemoteWorkers, 1)
 			ns.responses[threadID], err = ns.pitayaServer.Call(ctx, ns.requests[threadID])
+			atomic.AddInt32(&ns.busyRemoteWorkers, -1)
 			if err != nil {
 				logger.Log.Errorf("error processing route %s: %s", ns.requests[threadID].GetMsg().GetRoute(), err)
 			}
@@ -438,48 +442,24 @@ func (ns *NatsRPCServer) stop() {
 }
 
 func (ns *NatsRPCServer) reportMetrics() {
-	if ns.metricsReporters != nil {
-		for _, mr := range ns.metricsReporters {
-			if err := mr.ReportGauge(metrics.DroppedMessages, map[string]string{}, float64(ns.dropped)); err != nil {
-				logger.Log.Warnf("failed to report dropped message: %s", err.Error())
-			}
-
-			// subchan
-			subChanCapacity := ns.messagesBufferSize - len(ns.subChan)
-			if subChanCapacity == 0 {
-				logger.Log.Warn("subChan is at maximum capacity")
-			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report subChan queue capacity: %s", err.Error())
-			}
-			if err := mr.ReportHistogram(metrics.ChannelCapacityHistogram, map[string]string{"channel": "rpc_server_subchan"}, float64(subChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report subChan queue capacity histogram: %s", err.Error())
-			}
-			// bindingschan
-			bindingsChanCapacity := ns.messagesBufferSize - len(ns.bindingsChan)
-			if bindingsChanCapacity == 0 {
-				logger.Log.Warn("bindingsChan is at maximum capacity")
-			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report bindingsChan capacity: %s", err.Error())
-			}
-			if err := mr.ReportHistogram(metrics.ChannelCapacityHistogram, map[string]string{"channel": "rpc_server_bindingschan"}, float64(bindingsChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report bindingsChan capacity histogram: %s", err.Error())
-			}
-
-			// userpushch
-			userPushChanCapacity := ns.pushBufferSize - len(ns.userPushCh)
-			if userPushChanCapacity == 0 {
-				logger.Log.Warn("userPushChan is at maximum capacity")
-			}
-			if err := mr.ReportGauge(metrics.ChannelCapacity, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report userPushCh capacity: %s", err.Error())
-			}
-			if err := mr.ReportHistogram(metrics.ChannelCapacityHistogram, map[string]string{"channel": "rpc_server_userpushchan"}, float64(userPushChanCapacity)); err != nil {
-				logger.Log.Warnf("failed to report userPushCh capacity histogram: %s", err.Error())
-			}
+	if len(ns.metricsReporters) == 0 {
+		return
+	}
+	for _, mr := range ns.metricsReporters {
+		if err := mr.ReportGauge(metrics.DroppedMessages, map[string]string{}, float64(ns.dropped)); err != nil {
+			logger.Log.Warnf("failed to report dropped message: %s", err.Error())
 		}
 	}
+
+	// incoming rpc messages, session bindings and outgoing user pushes/kicks all share
+	// the configured buffers; report the available capacity (free slots) of each
+	metrics.ReportChannelCapacity(ns.metricsReporters, "rpc_server_subchan", ns.messagesBufferSize-len(ns.subChan))
+	metrics.ReportChannelCapacity(ns.metricsReporters, "rpc_server_bindingschan", ns.messagesBufferSize-len(ns.bindingsChan))
+	metrics.ReportChannelCapacity(ns.metricsReporters, "rpc_server_userpushchan", ns.pushBufferSize-len(ns.userPushCh))
+	metrics.ReportChannelCapacity(ns.metricsReporters, "rpc_server_userkickchan", ns.messagesBufferSize-len(ns.userKickCh))
+
+	// remote request worker pool utilization (sized by cluster.rpc.server.nats.services)
+	metrics.ReportWorkerPoolUsage(ns.metricsReporters, "rpc_server_remote", int(atomic.LoadInt32(&ns.busyRemoteWorkers)), ns.service)
 }
 
 func (ns *NatsRPCServer) IsConnected() bool {

@@ -31,4 +31,10 @@ var (
 	// ExceededRateLimiting reports the number of requests made in a connection
 	// after the rate limit was exceeded
 	ExceededRateLimiting = "exceeded_rate_limiting"
+	// WorkerPoolBusyWorkers reports the number of workers of a goroutine pool that
+	// are currently processing a message (labeled by pool)
+	WorkerPoolBusyWorkers = "busy_workers"
+	// WorkerPoolTotalWorkers reports the total number of workers of a goroutine pool
+	// (labeled by pool); together with WorkerPoolBusyWorkers it describes pool utilization
+	WorkerPoolTotalWorkers = "total_workers"
 )
