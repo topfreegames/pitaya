@@ -27,6 +27,7 @@ import (
 
 	"github.com/topfreegames/pitaya/v3/pkg/constants"
 	"github.com/topfreegames/pitaya/v3/pkg/errors"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 
 	pcontext "github.com/topfreegames/pitaya/v3/pkg/context"
 )
@@ -77,6 +78,38 @@ func ReportMessageProcessDelayFromCtx(ctx context.Context, reporters []Reporter,
 func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
 	for _, r := range reporters {
 		r.ReportGauge(ConnectedClients, map[string]string{}, float64(number))
+	}
+}
+
+// ReportChannelCapacity reports a channel's available capacity (free slots) as the
+// channel_capacity histogram, tagged with the given channel name. A warning is logged
+// when the channel has no free slots.
+func ReportChannelCapacity(reporters []Reporter, channel string, available int) {
+	if available == 0 {
+		logger.Log.Warnf("channel %s is at maximum capacity", channel)
+	}
+	// a fresh labels map is built per call because some reporters (e.g. prometheus)
+	// mutate the map they receive, which would otherwise leak across reporters
+	for _, r := range reporters {
+		if err := r.ReportHistogram(ChannelCapacity, map[string]string{"channel": channel}, float64(available)); err != nil {
+			logger.Log.Warnf("failed to report %s capacity histogram: %s", channel, err.Error())
+		}
+	}
+}
+
+// ReportWorkerPoolUsage reports the number of busy workers and the total worker count
+// of a goroutine pool, tagged with the given pool name. Together they describe the
+// pool's utilization (busy/total).
+func ReportWorkerPoolUsage(reporters []Reporter, pool string, busy, total int) {
+	// a fresh labels map is built per call because some reporters (e.g. prometheus)
+	// mutate the map they receive, which would otherwise leak across reporters
+	for _, r := range reporters {
+		if err := r.ReportGauge(WorkerPoolBusyWorkers, map[string]string{"pool": pool}, float64(busy)); err != nil {
+			logger.Log.Warnf("failed to report %s busy workers: %s", pool, err.Error())
+		}
+		if err := r.ReportGauge(WorkerPoolTotalWorkers, map[string]string{"pool": pool}, float64(total)); err != nil {
+			logger.Log.Warnf("failed to report %s total workers: %s", pool, err.Error())
+		}
 	}
 }
 

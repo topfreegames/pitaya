@@ -119,6 +119,33 @@ func TestNewHandlerService(t *testing.T) {
 	assert.Equal(t, handlerPool, svc.handlerPool)
 }
 
+func TestHandlerServiceReportMetrics(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMetricsReporter := metricsmocks.NewMockReporter(ctrl)
+	mockMetricsReporters := []metrics.Reporter{mockMetricsReporter}
+	svc := NewHandlerService(
+		codec.NewPomeloPacketDecoder(),
+		json.NewSerializer(),
+		9, 8,
+		&cluster.Server{},
+		&RemoteService{},
+		agentmocks.NewMockAgentFactory(ctrl),
+		mockMetricsReporters,
+		pipeline.NewHandlerHooks(),
+		NewHandlerPool(),
+	)
+
+	// both dispatch channels are empty, so all buffer slots are available
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(9))
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacity, gomock.Any(), float64(8))
+	// no Dispatch goroutines were started in this test, so the pool is empty and idle
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolBusyWorkers, gomock.Any(), float64(0))
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolTotalWorkers, gomock.Any(), float64(0))
+
+	svc.ReportMetrics()
+}
+
 func TestHandlerServiceRegister(t *testing.T) {
 	handlerPool := NewHandlerPool()
 	svc := NewHandlerService(nil, nil, 0, 0, nil, nil, nil, nil, nil, handlerPool)
