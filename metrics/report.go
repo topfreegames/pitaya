@@ -27,6 +27,7 @@ import (
 
 	"github.com/topfreegames/pitaya/v2/constants"
 	"github.com/topfreegames/pitaya/v2/errors"
+	"github.com/topfreegames/pitaya/v2/logger"
 
 	pcontext "github.com/topfreegames/pitaya/v2/context"
 )
@@ -77,6 +78,41 @@ func ReportMessageProcessDelayFromCtx(ctx context.Context, reporters []Reporter,
 func ReportNumberOfConnectedClients(reporters []Reporter, number int64) {
 	for _, r := range reporters {
 		r.ReportGauge(ConnectedClients, map[string]string{}, float64(number))
+	}
+}
+
+// ReportChannelCapacity reports a channel's available capacity (free slots) as both
+// the deprecated channel_capacity gauge and the channel_capacity_histogram, tagged
+// with the given channel name. A warning is logged when the channel has no free slots.
+func ReportChannelCapacity(reporters []Reporter, channel string, available int) {
+	if available == 0 {
+		logger.Log.Warnf("channel %s is at maximum capacity", channel)
+	}
+	// a fresh labels map is built per call because some reporters (e.g. prometheus)
+	// mutate the map they receive, which would otherwise leak across reporters
+	for _, r := range reporters {
+		if err := r.ReportGauge(ChannelCapacity, map[string]string{"channel": channel}, float64(available)); err != nil {
+			logger.Log.Warnf("failed to report %s capacity gauge: %s", channel, err.Error())
+		}
+		if err := r.ReportHistogram(ChannelCapacityHistogram, map[string]string{"channel": channel}, float64(available)); err != nil {
+			logger.Log.Warnf("failed to report %s capacity histogram: %s", channel, err.Error())
+		}
+	}
+}
+
+// ReportWorkerPoolUsage reports the number of busy workers and the total worker count
+// of a goroutine pool, tagged with the given pool name. Together they describe the
+// pool's utilization (busy/total).
+func ReportWorkerPoolUsage(reporters []Reporter, pool string, busy, total int) {
+	// a fresh labels map is built per call because some reporters (e.g. prometheus)
+	// mutate the map they receive, which would otherwise leak across reporters
+	for _, r := range reporters {
+		if err := r.ReportGauge(WorkerPoolBusyWorkers, map[string]string{"pool": pool}, float64(busy)); err != nil {
+			logger.Log.Warnf("failed to report %s busy workers: %s", pool, err.Error())
+		}
+		if err := r.ReportGauge(WorkerPoolTotalWorkers, map[string]string{"pool": pool}, float64(total)); err != nil {
+			logger.Log.Warnf("failed to report %s total workers: %s", pool, err.Error())
+		}
 	}
 }
 

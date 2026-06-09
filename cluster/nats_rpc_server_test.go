@@ -339,8 +339,10 @@ func TestNatsRPCServerHandleMessages(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(0))
-			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(3)
-			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), gomock.Any()).Times(3)
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), gomock.Any()).Times(4)
+			mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), gomock.Any()).Times(4)
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolBusyWorkers, gomock.Any(), gomock.Any())
+			mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolTotalWorkers, gomock.Any(), gomock.Any())
 
 			conn.Publish(table.topic, b)
 			r := helpers.ShouldEventuallyReceive(t, rpcServer.unhandledReqCh).(*protos.Request)
@@ -542,7 +544,14 @@ func TestNatsRPCServerReportMetrics(t *testing.T) {
 	rpcServer.userPushCh <- &protos.Push{}
 
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.DroppedMessages, gomock.Any(), float64(rpcServer.dropped))
+	// subChan, bindingsChan and userPushCh each hold one message -> 99 free slots
 	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(99)).Times(3)
 	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(99)).Times(3)
+	// userKickCh is empty -> full capacity available
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.ChannelCapacity, gomock.Any(), float64(100))
+	mockMetricsReporter.EXPECT().ReportHistogram(metrics.ChannelCapacityHistogram, gomock.Any(), float64(100))
+	// remote worker pool: none busy, sized by cluster.rpc.server.nats.services
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolBusyWorkers, gomock.Any(), float64(0))
+	mockMetricsReporter.EXPECT().ReportGauge(metrics.WorkerPoolTotalWorkers, gomock.Any(), float64(rpcServer.service))
 	rpcServer.reportMetrics()
 }

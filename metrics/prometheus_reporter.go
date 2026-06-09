@@ -224,6 +224,28 @@ func (p *PrometheusReporter) registerMetrics(
 		additionalLabelsKeys,
 	)
 
+	p.gaugeReportersMap[WorkerPoolBusyWorkers] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "worker_pool",
+			Name:        WorkerPoolBusyWorkers,
+			Help:        "the number of workers of a goroutine pool currently processing a message",
+			ConstLabels: constLabels,
+		},
+		append([]string{"pool"}, additionalLabelsKeys...),
+	)
+
+	p.gaugeReportersMap[WorkerPoolTotalWorkers] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace:   "pitaya",
+			Subsystem:   "worker_pool",
+			Name:        WorkerPoolTotalWorkers,
+			Help:        "the total number of workers of a goroutine pool",
+			ConstLabels: constLabels,
+		},
+		append([]string{"pool"}, additionalLabelsKeys...),
+	)
+
 	p.gaugeReportersMap[Goroutines] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace:   "pitaya",

@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nuid"
@@ -73,6 +74,10 @@ type (
 		agentFactory     agent.AgentFactory
 		handlerPool      *HandlerPool
 		handlers         map[string]*component.Handler // all handler method
+		// dispatch worker pool counters (atomic): numDispatch is the number of running
+		// Dispatch goroutines, busyDispatch how many are currently processing a message
+		numDispatch  int32
+		busyDispatch int32
 	}
 
 	unhandledMessage struct {
@@ -120,16 +125,24 @@ func (h *HandlerService) Dispatch(thread int) {
 	// TODO: This timer is being stopped multiple times, it probably doesn't need to be stopped here
 	defer timer.GlobalTicker.Stop()
 
+	// register this goroutine as part of the dispatch worker pool so its utilization
+	// can be reported (see ReportMetrics)
+	atomic.AddInt32(&h.numDispatch, 1)
+
 	for {
 		// Calls to remote servers block calls to local server
 		select {
 		case lm := <-h.chLocalProcess:
 			metrics.ReportMessageProcessDelayFromCtx(lm.ctx, h.metricsReporters, "local")
+			atomic.AddInt32(&h.busyDispatch, 1)
 			h.localProcess(lm.ctx, lm.agent, lm.route, lm.msg)
+			atomic.AddInt32(&h.busyDispatch, -1)
 
 		case rm := <-h.chRemoteProcess:
 			metrics.ReportMessageProcessDelayFromCtx(rm.ctx, h.metricsReporters, "remote")
+			atomic.AddInt32(&h.busyDispatch, 1)
 			h.remoteService.remoteProcess(rm.ctx, nil, rm.agent, rm.route, rm.msg)
+			atomic.AddInt32(&h.busyDispatch, -1)
 
 		case <-timer.GlobalTicker.C: // execute cron task
 			timer.Cron()
@@ -141,6 +154,23 @@ func (h *HandlerService) Dispatch(thread int) {
 			timer.RemoveTimer(id)
 		}
 	}
+}
+
+// ReportMetrics reports the fill level of the handler dispatch channels and the
+// utilization of the dispatch worker pool. It does a single reporting pass and is
+// meant to be called periodically (see App.periodicMetrics).
+func (h *HandlerService) ReportMetrics() {
+	if len(h.metricsReporters) == 0 {
+		return
+	}
+	metrics.ReportChannelCapacity(h.metricsReporters, "handler_chlocalprocess", cap(h.chLocalProcess)-len(h.chLocalProcess))
+	metrics.ReportChannelCapacity(h.metricsReporters, "handler_chremoteprocess", cap(h.chRemoteProcess)-len(h.chRemoteProcess))
+	metrics.ReportWorkerPoolUsage(
+		h.metricsReporters,
+		"handler_dispatch",
+		int(atomic.LoadInt32(&h.busyDispatch)),
+		int(atomic.LoadInt32(&h.numDispatch)),
+	)
 }
 
 // Register registers components
