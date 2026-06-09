@@ -281,6 +281,15 @@ func (app *App) periodicMetrics() {
 	period := app.config.Metrics.Period
 	go metrics.ReportSysMetrics(app.metricsReporters, period)
 
+	if app.handlerService != nil {
+		go func() {
+			for {
+				app.handlerService.ReportMetrics()
+				time.Sleep(period)
+			}
+		}()
+	}
+
 	if app.worker.Started() {
 		go worker.Report(app.metricsReporters, period)
 	}
