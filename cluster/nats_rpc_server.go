@@ -235,6 +235,28 @@ func (ns *NatsRPCServer) handleMessages() {
 				logger.Log.Error("error unmarshalling rpc message:", err.Error())
 				continue
 			}
+			// Defensive guard: a well-formed pitaya RPC always carries a Msg (see
+			// buildRequest). A payload that unmarshals without error but leaves Msg nil
+			// is malformed at the source — an empty publish, a non-Request proto, or a
+			// schema-skewed sender (e.g. a libpitaya client built against an older
+			// request.proto). Dereferencing req.Msg.Reply below would nil-panic and take
+			// the whole server down (handleMessages runs in its own goroutine), so we drop
+			// the message and log enough to trace the sender instead. Note the route lives
+			// inside Msg, so it is unavailable here; decode dataHexPrefix to recover it.
+			if req.Msg == nil {
+				dump := msg.Data
+				const maxDump = 512
+				truncated := len(dump) > maxDump
+				if truncated {
+					dump = dump[:maxDump]
+				}
+				logger.Log.Warnf(
+					"[rpc server] dropping malformed request with nil Msg on subject %q: rpcType=%v frontendID=%q sessionUID=%q metadata=%q reply=%q dataLen=%d dataHexPrefix=%x truncated=%t",
+					msg.Subject, req.GetType(), req.GetFrontendID(), req.GetSession().GetUid(),
+					req.GetMetadata(), msg.Reply, len(msg.Data), dump, truncated,
+				)
+				continue
+			}
 			req.Msg.Reply = msg.Reply
 			ns.unhandledReqCh <- req
 		case <-ns.stopChan:
