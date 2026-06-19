@@ -156,6 +156,7 @@ func (w *WSAcceptor) ListenAndServeTLS(cert, key string) {
 		logger.Log.Fatalf("Failed to listen: %s", err.Error())
 	}
 	w.listener = listener
+	w.running = true
 	w.serve(&upgrader)
 }
 
