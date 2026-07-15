@@ -406,6 +406,7 @@ func newDefaultMetricsConfig() *MetricsConfig {
 type PrometheusConfig struct {
 	Port    int  `mapstructure:"port"`
 	Enabled bool `mapstructure:"enabled"`
+	Objectives map[string]float64 `mapstructure:"objectives"`
 }
 
 // newDefaultPrometheusConfig provides default configuration for PrometheusReporter
