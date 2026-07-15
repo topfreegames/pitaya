@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/topfreegames/pitaya/v2/logger"
 
@@ -52,6 +53,52 @@ type PrometheusReporter struct {
 }
 
 var _ Reporter = (*PrometheusReporter)(nil)
+
+// defaultSummaryObjectives returns the historical hard-coded objectives used by
+// the built-in handler summaries. Kept as a constructor so callers get an
+// independent copy they can pass to Prometheus.
+func defaultSummaryObjectives() map[float64]float64 {
+	return map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001}
+}
+
+// buildObjectives converts the YAML/env-friendly quantile→error config map into
+// the map[float64]float64 Prometheus expects. A nil map falls back to the
+// historical default; an explicit (non-nil) empty map yields no quantile
+// series, leaving only _sum and _count.
+func buildObjectives(configured map[string]float64) (map[float64]float64, error) {
+	if configured == nil {
+		return defaultSummaryObjectives(), nil
+	}
+
+	objectives := make(map[float64]float64, len(configured))
+	for quantile, allowedError := range configured {
+		q, err := strconv.ParseFloat(quantile, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid prometheus summary objective quantile %q: %w", quantile, err)
+		}
+		objectives[q] = allowedError
+	}
+	return objectives, nil
+}
+
+func newSummaryVec(
+	subsystem, name, help string,
+	objectives map[float64]float64,
+	constLabels map[string]string,
+	labelKeys []string,
+) *prometheus.SummaryVec {
+	return prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Namespace:   "pitaya",
+			Subsystem:   subsystem,
+			Name:        name,
+			Help:        help,
+			Objectives:  objectives,
+			ConstLabels: constLabels,
+		},
+		labelKeys,
+	)
+}
 
 func (p *PrometheusReporter) registerCustomMetrics(
 	constLabels map[string]string,
@@ -115,6 +162,7 @@ func (p *PrometheusReporter) registerCustomMetrics(
 
 func (p *PrometheusReporter) registerMetrics(
 	constLabels, additionalLabels map[string]string,
+	objectives map[float64]float64,
 	spec *models.CustomMetricsSpec,
 ) {
 
@@ -130,15 +178,12 @@ func (p *PrometheusReporter) registerMetrics(
 	p.registerCustomMetrics(constLabels, additionalLabelsKeys, spec)
 
 	// HandlerResponseTimeMs summary
-	p.summaryReportersMap[ResponseTime] = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Namespace:   "pitaya",
-			Subsystem:   "handler",
-			Name:        ResponseTime,
-			Help:        "the time to process a msg in nanoseconds",
-			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
-			ConstLabels: constLabels,
-		},
+	p.summaryReportersMap[ResponseTime] = newSummaryVec(
+		"handler",
+		ResponseTime,
+		"the time to process a msg in nanoseconds",
+		objectives,
+		constLabels,
 		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
 	)
 
@@ -155,15 +200,12 @@ func (p *PrometheusReporter) registerMetrics(
 	)
 
 	// ProcessDelay summary
-	p.summaryReportersMap[ProcessDelay] = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Namespace:   "pitaya",
-			Subsystem:   "handler",
-			Name:        ProcessDelay,
-			Help:        "the delay to start processing a msg in nanoseconds",
-			Objectives:  map[float64]float64{0.7: 0.02, 0.95: 0.005, 0.99: 0.001},
-			ConstLabels: constLabels,
-		},
+	p.summaryReportersMap[ProcessDelay] = newSummaryVec(
+		"handler",
+		ProcessDelay,
+		"the delay to start processing a msg in nanoseconds",
+		objectives,
+		constLabels,
 		append([]string{"route", "type"}, additionalLabelsKeys...),
 	)
 
@@ -353,6 +395,15 @@ func getPrometheusReporter(
 	config config.MetricsConfig,
 	metricsSpecs *models.CustomMetricsSpec,
 ) (*PrometheusReporter, error) {
+	var configuredObjectives map[string]float64
+	if config.Prometheus != nil {
+		configuredObjectives = config.Prometheus.Objectives
+	}
+	objectives, err := buildObjectives(configuredObjectives)
+	if err != nil {
+		return nil, err
+	}
+
 	once.Do(func() {
 		prometheusReporter = &PrometheusReporter{
 			serverType:            serverType,
@@ -362,7 +413,7 @@ func getPrometheusReporter(
 			summaryReportersMap:   make(map[string]*prometheus.SummaryVec),
 			gaugeReportersMap:     make(map[string]*prometheus.GaugeVec),
 		}
-		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, metricsSpecs)
+		prometheusReporter.registerMetrics(config.ConstLabels, config.AdditionalLabels, objectives, metricsSpecs)
 		http.Handle("/metrics", promhttp.Handler())
 		go (func() {
 			err := http.ListenAndServe(fmt.Sprintf(":%d", config.Prometheus.Port), nil)

@@ -84,6 +84,45 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
+// The built-in summary objectives are intentionally NOT seeded with a viper
+// default. If they were, viper would deep-merge the default quantiles back into
+// any partial override, so dropping a percentile via config would silently fail.
+// Unset must therefore resolve to nil, which the reporter turns into the
+// historical default.
+func TestPrometheusObjectivesDefaultIsUnset(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewDefaultPitayaConfig()
+	assert.Nil(t, cfg.Metrics.Prometheus.Objectives)
+}
+
+func TestPrometheusObjectivesConfigResolution(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unset-resolves-to-nil", func(t *testing.T) {
+		cfg := NewPitayaConfig(NewConfig())
+		assert.Nil(t, cfg.Metrics.Prometheus.Objectives)
+	})
+
+	t.Run("partial-override-drops-unlisted-percentiles", func(t *testing.T) {
+		v := viper.New()
+		v.Set("pitaya.metrics.prometheus.objectives", map[string]interface{}{
+			"0.95": 0.005,
+			"0.99": 0.001,
+		})
+		cfg := NewPitayaConfig(NewConfig(v))
+		assert.Equal(t, map[string]float64{"0.95": 0.005, "0.99": 0.001}, cfg.Metrics.Prometheus.Objectives)
+	})
+
+	t.Run("explicit-empty-map-stays-empty", func(t *testing.T) {
+		v := viper.New()
+		v.Set("pitaya.metrics.prometheus.objectives", map[string]interface{}{})
+		cfg := NewPitayaConfig(NewConfig(v))
+		assert.NotNil(t, cfg.Metrics.Prometheus.Objectives)
+		assert.Empty(t, cfg.Metrics.Prometheus.Objectives)
+	})
+}
+
 func TestGetDuration(t *testing.T) {
 	t.Parallel()
 

@@ -320,6 +320,10 @@ Metrics Reporting
     - 9090
     - int
     - Port to expose prometheus metrics
+  * - pitaya.metrics.prometheus.objectives
+    - unset (equivalent to {"0.7": 0.02, "0.95": 0.005, "0.99": 0.001})
+    - map[string]float64
+    - Quantiles (keyed by the quantile string) and their allowed error for the built-in ``handler_response_time_ns`` and ``handler_handler_delay_ns`` summaries. When unset, the historical ``{0.7, 0.95, 0.99}`` objectives are used. Set a subset (e.g. only ``0.95``/``0.99``) to drop the percentiles you omit, or an empty map to emit only ``_sum``/``_count`` and no quantile series, reducing series cardinality. Note that client-side summary quantiles are per-pod and cannot be aggregated across pods.
   * - pitaya.metrics.constTags
     - map[string]string{}
     - map[string]string
