@@ -143,6 +143,13 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeMalformedRouteLengthDoesNotPanic(t *testing.T) {
+	// A routable message that declares a route but ends before the
+	// route-length byte (offset == len(data)) must error, not panic.
+	_, err := Decode([]byte{0x00, 0x01})
+	assert.Equal(t, ErrInvalidMessage, err)
+}
+
 var dictTables = map[string]struct {
 	dicts  []map[string]uint16
 	routes map[string]uint16

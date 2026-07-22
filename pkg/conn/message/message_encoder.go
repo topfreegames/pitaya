@@ -180,6 +180,9 @@ func Decode(data []byte) (*Message, error) {
 			offset += 2
 		} else {
 			m.compressed = false
+			if offset >= size {
+				return nil, ErrInvalidMessage
+			}
 			rl := data[offset]
 			offset++
 
