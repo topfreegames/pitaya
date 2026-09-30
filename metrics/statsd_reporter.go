@@ -38,10 +38,11 @@ type Client interface {
 
 // StatsdReporter sends application metrics to statsd
 type StatsdReporter struct {
-	client      Client
-	rate        float64
-	serverType  string
-	defaultTags []string
+	client             Client
+	rate               float64
+	serverType         string
+	defaultTags        []string
+	summaryAsHistogram bool
 }
 
 var _ Reporter = (*StatsdReporter)(nil)
@@ -61,8 +62,9 @@ func newStatsdReporter(
 	serverType string,
 	clientOrNil ...Client) (*StatsdReporter, error) {
 	sr := &StatsdReporter{
-		rate:       config.Statsd.Rate,
-		serverType: serverType,
+		rate:               config.Statsd.Rate,
+		serverType:         serverType,
+		summaryAsHistogram: config.Statsd.SummaryAsHistogram,
 	}
 
 	sr.buildDefaultTags(config.ConstLabels)
@@ -134,7 +136,12 @@ func (s *StatsdReporter) ReportSummary(metric string, tagsMap map[string]string,
 		fullTags = append(fullTags, fmt.Sprintf("%s:%s", k, v))
 	}
 
-	err := s.client.TimeInMilliseconds(metric, float64(value), fullTags, s.rate)
+	var err error
+	if s.summaryAsHistogram {
+		err = s.client.Histogram(metric, value, fullTags, s.rate)
+	} else {
+		err = s.client.TimeInMilliseconds(metric, value, fullTags, s.rate)
+	}
 	if err != nil {
 		logger.Log.Errorf("failed to report summary: %q", err)
 	}

@@ -312,6 +312,10 @@ Metrics Reporting
     - 1
     - int
     - Statsd metrics rate
+  * - pitaya.metrics.statsd.summaryashistogram
+    - false
+    - bool
+    - Report summaries as histograms (``|h``) instead of millisecond timers (``|ms``), so backends do not assume a millisecond unit for values such as ``response_time_ns``
   * - pitaya.metrics.prometheus.enabled
     - false
     - bool
