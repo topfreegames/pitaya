@@ -418,10 +418,11 @@ func newDefaultPrometheusConfig() *PrometheusConfig {
 
 // StatsdConfig provides configuration for statsd
 type StatsdConfig struct {
-	Enabled bool    `mapstructure:"enabled"`
-	Host    string  `mapstructure:"host"`
-	Prefix  string  `mapstructure:"prefix"`
-	Rate    float64 `mapstructure:"rate"`
+	Enabled            bool    `mapstructure:"enabled"`
+	Host               string  `mapstructure:"host"`
+	Prefix             string  `mapstructure:"prefix"`
+	Rate               float64 `mapstructure:"rate"`
+	SummaryAsHistogram bool    `mapstructure:"summaryashistogram"`
 }
 
 // newDefaultStatsdConfig provides default configuration for statsd

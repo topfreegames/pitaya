@@ -126,6 +126,7 @@ func (c *Config) fillDefaultValues() {
 		"pitaya.metrics.statsd.host":                       pitayaConfig.Metrics.Statsd.Host,
 		"pitaya.metrics.statsd.prefix":                     pitayaConfig.Metrics.Statsd.Prefix,
 		"pitaya.metrics.statsd.rate":                       pitayaConfig.Metrics.Statsd.Rate,
+		"pitaya.metrics.statsd.summaryashistogram":         pitayaConfig.Metrics.Statsd.SummaryAsHistogram,
 		"pitaya.modules.bindingstorage.etcd.dialtimeout":   pitayaConfig.Modules.BindingStorage.Etcd.DialTimeout,
 		"pitaya.modules.bindingstorage.etcd.endpoints":     pitayaConfig.Modules.BindingStorage.Etcd.Endpoints,
 		"pitaya.modules.bindingstorage.etcd.leasettl":      pitayaConfig.Modules.BindingStorage.Etcd.LeaseTTL,

@@ -97,6 +97,42 @@ func TestReportLatencyError(t *testing.T) {
 	assert.Equal(t, expectedError, err)
 }
 
+func TestReportSummaryAsHistogram(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
+
+	cfg := config.NewDefaultPitayaConfig().Metrics
+	cfg.Statsd.SummaryAsHistogram = true
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	assert.NoError(t, err)
+
+	expectedRoute := uuid.New().String()
+	mockClient.EXPECT().Histogram("response_time_ns", float64(123), gomock.Any(), sr.rate).Do(func(n string, d float64, tags []string, r float64) {
+		assert.Contains(t, tags, fmt.Sprintf("route:%s", expectedRoute))
+	})
+
+	err = sr.ReportSummary(ResponseTime, map[string]string{"route": expectedRoute}, float64(123))
+	assert.NoError(t, err)
+}
+
+func TestReportSummaryAsHistogramError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := metricsmocks.NewMockClient(ctrl)
+
+	cfg := config.NewDefaultPitayaConfig().Metrics
+	cfg.Statsd.SummaryAsHistogram = true
+	sr, err := NewStatsdReporter(cfg, "svType", mockClient)
+	assert.NoError(t, err)
+
+	expectedError := errors.New("some error")
+	mockClient.EXPECT().Histogram("response_time_ns", gomock.Any(), gomock.Any(), sr.rate).Return(expectedError)
+
+	err = sr.ReportSummary(ResponseTime, map[string]string{}, float64(123))
+	assert.Equal(t, expectedError, err)
+}
+
 func TestReportCount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
