@@ -2,7 +2,10 @@ package compression
 
 import (
 	"flag"
+	"fmt"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,4 +63,38 @@ func TestCompressionInflateIncorrectData(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, result)
 	})
+}
+
+func TestCompressionDeflateDoesNotAllocateWriterPerCall(t *testing.T) {
+	data := []byte(ins[2].data)
+	_, err := DeflateData(data)
+	require.NoError(t, err)
+
+	const runs = 100
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for i := 0; i < runs; i++ {
+		_, err = DeflateData(data)
+		require.NoError(t, err)
+	}
+	runtime.ReadMemStats(&after)
+
+	assert.Less(t, (after.TotalAlloc-before.TotalAlloc)/runs, uint64(400*1024))
+}
+
+func TestCompressionDeflateConcurrent(t *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			data := []byte(fmt.Sprintf("%s %d", ins[2].data, i))
+			b, err := DeflateData(data)
+			assert.NoError(t, err)
+			result, err := InflateData(b)
+			assert.NoError(t, err)
+			assert.Equal(t, data, result)
+		}(i)
+	}
+	wg.Wait()
 }
