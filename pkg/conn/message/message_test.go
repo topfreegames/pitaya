@@ -143,6 +143,11 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeTruncatedRoute(t *testing.T) {
+	_, err := Decode([]byte{0x00, 0x01})
+	assert.Equal(t, ErrInvalidMessage, err)
+}
+
 var dictTables = map[string]struct {
 	dicts  []map[string]uint16
 	routes map[string]uint16
