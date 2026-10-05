@@ -56,7 +56,8 @@ import (
 )
 
 var (
-	handlerType = "handler"
+	handlerType  = "handler"
+	invalidRoute = "invalid"
 )
 
 type (
@@ -321,8 +322,9 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 
 func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 	requestID := nuid.New().Next()
+	r, routeErr := route.Decode(msg.Route)
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, h.reportedRoute(msg.Route, r))
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID)
 
 	attributes := []attribute.KeyValue{
@@ -335,10 +337,9 @@ func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 	ctx, _ = tracing.StartSpan(ctx, msg.Route, attributes...)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.GetSession())
 
-	r, err := route.Decode(msg.Route)
-	if err != nil {
-		logger.Log.Errorf("Failed to decode route: %s", err.Error())
-		a.AnswerWithError(ctx, msg.ID, e.NewError(err, e.ErrBadRequestCode))
+	if routeErr != nil {
+		logger.Log.Errorf("Failed to decode route: %s", routeErr.Error())
+		a.AnswerWithError(ctx, msg.ID, e.NewError(routeErr, e.ErrBadRequestCode))
 		return
 	}
 
@@ -361,6 +362,19 @@ func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 			logger.Log.Warnf("request made to another server type but no remoteService running")
 		}
 	}
+}
+
+func (h *HandlerService) reportedRoute(raw string, r *route.Route) string {
+	if r == nil {
+		return invalidRoute
+	}
+	if r.SvType != "" && r.SvType != h.server.Type {
+		return raw
+	}
+	if _, err := h.handlerPool.getHandler(r); err != nil {
+		return invalidRoute
+	}
+	return raw
 }
 
 func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route *route.Route, msg *message.Message) {
