@@ -4,11 +4,18 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
+	"sync"
 )
+
+var writerPool = sync.Pool{
+	New: func() interface{} { return zlib.NewWriter(nil) },
+}
 
 func DeflateData(data []byte) ([]byte, error) {
 	var bb bytes.Buffer
-	z := zlib.NewWriter(&bb)
+	z := writerPool.Get().(*zlib.Writer)
+	defer writerPool.Put(z)
+	z.Reset(&bb)
 	_, err := z.Write(data)
 	if err != nil {
 		return nil, err
