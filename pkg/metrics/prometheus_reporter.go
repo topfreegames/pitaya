@@ -140,18 +140,6 @@ func (p *PrometheusReporter) registerMetrics(
 		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
 	)
 
-	p.histogramReportersMap[ResponseTime] = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace:   "pitaya",
-			Subsystem:   "handler",
-			Name:        ResponseTime,
-			Help:        "the time to process a msg in nanoseconds",
-			Buckets:     []float64{1, 5, 10, 50, 100, 300, 500, 1000, 5000, 10000},
-			ConstLabels: constLabels,
-		},
-		append([]string{"route", "status", "type", "code"}, additionalLabelsKeys...),
-	)
-
 	// ProcessDelay summary
 	p.summaryReportersMap[ProcessDelay] = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -320,6 +308,10 @@ func (p *PrometheusReporter) registerMetrics(
 	}
 
 	for _, c := range p.summaryReportersMap {
+		toRegister = append(toRegister, c)
+	}
+
+	for _, c := range p.histogramReportersMap {
 		toRegister = append(toRegister, c)
 	}
 
