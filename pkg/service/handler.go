@@ -369,10 +369,8 @@ func (h *HandlerService) reportedRoute(raw string, r *route.Route) string {
 		return invalidRoute
 	}
 	isLocal := r.SvType == "" || r.SvType == h.server.Type
-	if isLocal {
-		if _, err := h.handlerPool.getHandler(r); err != nil {
-			return invalidRoute
-		}
+	if isLocal && !h.handlerPool.hasHandler(r) {
+		return invalidRoute
 	}
 	return raw
 }

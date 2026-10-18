@@ -115,6 +115,11 @@ func (h *HandlerPool) ProcessHandlerMessage(
 	return ret, nil
 }
 
+func (h *HandlerPool) hasHandler(rt *route.Route) bool {
+	_, ok := h.handlers[rt.Service+"."+rt.Method]
+	return ok
+}
+
 func (h *HandlerPool) getHandler(rt *route.Route) (*component.Handler, error) {
 	handler, ok := h.handlers[rt.Short()]
 	if !ok {
