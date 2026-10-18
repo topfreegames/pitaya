@@ -50,6 +50,9 @@ import (
 	serializemocks "github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
 	"github.com/topfreegames/pitaya/v3/pkg/session/mocks"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -196,6 +199,10 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 		{"remote_process", &message.Message{ID: 1, Route: "k.k.k"}, nil, false, "k.k.k"},
 	}
 
+	prevProvider := otel.GetTracerProvider()
+	otel.SetTracerProvider(sdktrace.NewTracerProvider())
+	defer otel.SetTracerProvider(prevProvider)
+
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -232,6 +239,9 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 				ctx = recvMsg.ctx
 			}
 			assert.Equal(t, table.reportRoute, pcontext.GetFromPropagateCtx(ctx, constants.RouteKey))
+			span, ok := oteltrace.SpanFromContext(ctx).(sdktrace.ReadOnlySpan)
+			assert.True(t, ok)
+			assert.Equal(t, table.reportRoute, span.Name())
 		})
 	}
 }
