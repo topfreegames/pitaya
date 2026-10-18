@@ -323,8 +323,9 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 	requestID := nuid.New().Next()
 	r, routeErr := route.Decode(msg.Route)
+	reportedRoute := h.reportedRoute(msg.Route, r)
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, h.reportedRoute(msg.Route, r))
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, reportedRoute)
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID)
 
 	attributes := []attribute.KeyValue{
@@ -334,7 +335,7 @@ func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 		attribute.String("user.id", a.GetSession().UID()),
 		attribute.String("request.id", requestID),
 	}
-	ctx, _ = tracing.StartSpan(ctx, msg.Route, attributes...)
+	ctx, _ = tracing.StartSpan(ctx, reportedRoute, attributes...)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.GetSession())
 
 	if routeErr != nil {
