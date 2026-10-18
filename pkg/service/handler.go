@@ -371,7 +371,7 @@ func (h *HandlerService) reportedRoute(raw string, r *route.Route) string {
 	if r.SvType != "" && r.SvType != h.server.Type {
 		return raw
 	}
-	if _, err := h.handlerPool.getHandler(r); err != nil {
+	if !h.handlerPool.hasHandler(r) {
 		return invalidRoute
 	}
 	return raw
