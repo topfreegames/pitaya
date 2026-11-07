@@ -13,8 +13,9 @@ xk6 build --with github.com/topfreegames/pitaya/xk6-pitaya=./ --replace github.c
 ## Building the k6 docker image
 
 ```shell
-docker build --build-arg pitaya_revision=ac6eb29bdb -t xk6-pitaya
+docker build --build-arg pitaya_revision=ac6eb29bdb -t xk6-pitaya .
 # change the pitaya_revision to the revision you want to use
+# K6_VERSION (default 1.4.1) must match go.k6.io/k6 in go.mod
 ```
 
 ## Example usage
