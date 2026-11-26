@@ -196,7 +196,9 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 		{"failed_decode", &message.Message{ID: 1, Route: "k.k.k.k"}, &protos.Error{Msg: "invalid route", Code: "PIT-400"}, false, "invalid"},
 		{"local_process", &message.Message{ID: 1, Route: "k.k"}, nil, true, "k.k"},
 		{"local_unknown_handler", &message.Message{ID: 1, Route: "/var/www/html/.env"}, nil, true, "invalid"},
-		{"remote_process", &message.Message{ID: 1, Route: "k.k.k"}, nil, false, "k.k.k"},
+		{"local_with_server_type", &message.Message{ID: 1, Route: "conn.k.k"}, nil, true, "conn.k.k"},
+		{"local_with_server_type_unknown_handler", &message.Message{ID: 1, Route: "conn.x.y"}, nil, true, "invalid"},
+		{"remote_process",&message.Message{ID: 1, Route: "k.k.k"}, nil, false, "k.k.k"},
 	}
 
 	prevProvider := otel.GetTracerProvider()
@@ -208,7 +210,7 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			sv := &cluster.Server{}
+			sv := &cluster.Server{Type: "conn"}
 			handlerPool := NewHandlerPool()
 			handlerPool.Register("k", "k", &component.Handler{})
 			svc := NewHandlerService(nil, nil, 1, 1, sv, &RemoteService{}, nil, nil, nil, handlerPool)
