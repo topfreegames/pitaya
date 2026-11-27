@@ -192,10 +192,18 @@ func NewWSConn(conn *websocket.Conn) (*WSConn, error) {
 	return c, nil
 }
 
+// IsNotWsError
+func (c *WSConn) IsNotWsError(err error) bool {
+	// Ignore normal closure errors
+	// 1000: Normal closure
+	// 1001: Going away
+	return !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway)
+}
+
 // GetNextMessage reads the next message available in the stream
 func (c *WSConn) GetNextMessage() (b []byte, err error) {
 	_, msgBytes, err := c.conn.ReadMessage()
-	if err != nil {
+	if err != nil && c.IsNotWsError(err) {
 		return nil, err
 	}
 	if len(msgBytes) < codec.HeadLength {
