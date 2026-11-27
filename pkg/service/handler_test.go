@@ -50,6 +50,9 @@ import (
 	serializemocks "github.com/topfreegames/pitaya/v3/pkg/serialize/mocks"
 	"github.com/topfreegames/pitaya/v3/pkg/session"
 	"github.com/topfreegames/pitaya/v3/pkg/session/mocks"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -184,23 +187,32 @@ func TestHandlerServiceRegisterFailsIfNoHandlerMethods(t *testing.T) {
 
 func TestHandlerServiceProcessMessage(t *testing.T) {
 	tables := []struct {
-		name  string
-		msg   *message.Message
-		err   interface{}
-		local bool
+		name        string
+		msg         *message.Message
+		err         interface{}
+		local       bool
+		reportRoute string
 	}{
-		{"failed_decode", &message.Message{ID: 1, Route: "k.k.k.k"}, &protos.Error{Msg: "invalid route", Code: "PIT-400"}, false},
-		{"local_process", &message.Message{ID: 1, Route: "k.k"}, nil, true},
-		{"remote_process", &message.Message{ID: 1, Route: "k.k.k"}, nil, false},
+		{"failed_decode", &message.Message{ID: 1, Route: "k.k.k.k"}, &protos.Error{Msg: "invalid route", Code: "PIT-400"}, false, "invalid"},
+		{"local_process", &message.Message{ID: 1, Route: "k.k"}, nil, true, "k.k"},
+		{"local_unknown_handler", &message.Message{ID: 1, Route: "/var/www/html/.env"}, nil, true, "invalid"},
+		{"local_with_server_type", &message.Message{ID: 1, Route: "conn.k.k"}, nil, true, "conn.k.k"},
+		{"local_with_server_type_unknown_handler", &message.Message{ID: 1, Route: "conn.x.y"}, nil, true, "invalid"},
+		{"remote_process",&message.Message{ID: 1, Route: "k.k.k"}, nil, false, "k.k.k"},
 	}
+
+	prevProvider := otel.GetTracerProvider()
+	otel.SetTracerProvider(sdktrace.NewTracerProvider())
+	defer otel.SetTracerProvider(prevProvider)
 
 	for _, table := range tables {
 		t.Run(table.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			sv := &cluster.Server{}
+			sv := &cluster.Server{Type: "conn"}
 			handlerPool := NewHandlerPool()
+			handlerPool.Register("k", "k", &component.Handler{})
 			svc := NewHandlerService(nil, nil, 1, 1, sv, &RemoteService{}, nil, nil, nil, handlerPool)
 
 			mockSession := mocks.NewMockSession(ctrl)
@@ -208,23 +220,30 @@ func TestHandlerServiceProcessMessage(t *testing.T) {
 			mockAgent := agentmocks.NewMockAgent(ctrl)
 			mockAgent.EXPECT().GetSession().Return(mockSession).Times(2)
 
+			var ctx context.Context
 			if table.err != nil {
-				mockAgent.EXPECT().AnswerWithError(gomock.Any(), table.msg.ID, gomock.Any()).Times(1)
+				mockAgent.EXPECT().AnswerWithError(gomock.Any(), table.msg.ID, gomock.Any()).Do(
+					func(c context.Context, _ uint, _ error) { ctx = c },
+				).Times(1)
 			}
 
 			svc.processMessage(mockAgent, table.msg)
 
 			if table.err == nil {
 				var recvMsg unhandledMessage
-				if table.err == nil && table.local {
+				if table.local {
 					recvMsg = helpers.ShouldEventuallyReceive(t, svc.chLocalProcess).(unhandledMessage)
-				} else if table.err == nil {
+				} else {
 					recvMsg = helpers.ShouldEventuallyReceive(t, svc.chRemoteProcess).(unhandledMessage)
 				}
 				assert.Equal(t, table.msg, recvMsg.msg)
 				assert.NotNil(t, pcontext.GetFromPropagateCtx(recvMsg.ctx, constants.StartTimeKey))
-				assert.Equal(t, table.msg.Route, pcontext.GetFromPropagateCtx(recvMsg.ctx, constants.RouteKey))
+				ctx = recvMsg.ctx
 			}
+			assert.Equal(t, table.reportRoute, pcontext.GetFromPropagateCtx(ctx, constants.RouteKey))
+			span, ok := oteltrace.SpanFromContext(ctx).(sdktrace.ReadOnlySpan)
+			assert.True(t, ok)
+			assert.Equal(t, table.reportRoute, span.Name())
 		})
 	}
 }

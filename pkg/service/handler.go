@@ -56,7 +56,8 @@ import (
 )
 
 var (
-	handlerType = "handler"
+	handlerType  = "handler"
+	invalidRoute = "invalid"
 )
 
 type (
@@ -321,8 +322,10 @@ func (h *HandlerService) processPacket(a agent.Agent, p *packet.Packet) error {
 
 func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 	requestID := nuid.New().Next()
+	r, routeErr := route.Decode(msg.Route)
+	reportedRoute := h.reportedRoute(msg.Route, r)
 	ctx := pcontext.AddToPropagateCtx(context.Background(), constants.StartTimeKey, time.Now().UnixNano())
-	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, msg.Route)
+	ctx = pcontext.AddToPropagateCtx(ctx, constants.RouteKey, reportedRoute)
 	ctx = pcontext.AddToPropagateCtx(ctx, constants.RequestIDKey, requestID)
 
 	attributes := []attribute.KeyValue{
@@ -332,13 +335,12 @@ func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 		attribute.String("user.id", a.GetSession().UID()),
 		attribute.String("request.id", requestID),
 	}
-	ctx, _ = tracing.StartSpan(ctx, msg.Route, attributes...)
+	ctx, _ = tracing.StartSpan(ctx, reportedRoute, attributes...)
 	ctx = context.WithValue(ctx, constants.SessionCtxKey, a.GetSession())
 
-	r, err := route.Decode(msg.Route)
-	if err != nil {
-		logger.Log.Errorf("Failed to decode route: %s", err.Error())
-		a.AnswerWithError(ctx, msg.ID, e.NewError(err, e.ErrBadRequestCode))
+	if routeErr != nil {
+		logger.Log.Errorf("Failed to decode route: %s", routeErr.Error())
+		a.AnswerWithError(ctx, msg.ID, e.NewError(routeErr, e.ErrBadRequestCode))
 		return
 	}
 
@@ -361,6 +363,17 @@ func (h *HandlerService) processMessage(a agent.Agent, msg *message.Message) {
 			logger.Log.Warnf("request made to another server type but no remoteService running")
 		}
 	}
+}
+
+func (h *HandlerService) reportedRoute(raw string, r *route.Route) string {
+	if r == nil {
+		return invalidRoute
+	}
+	isLocal := r.SvType == "" || r.SvType == h.server.Type
+	if isLocal && !h.handlerPool.hasHandler(r) {
+		return invalidRoute
+	}
+	return raw
 }
 
 func (h *HandlerService) localProcess(ctx context.Context, a agent.Agent, route *route.Route, msg *message.Message) {
