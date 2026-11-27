@@ -421,6 +421,9 @@ func (a *agentImpl) Kick(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err = a.conn.SetDeadline(time.Now().Add(a.writeTimeout)); err != nil {
+		return err
+	}
 	_, err = a.conn.Write(p)
 	return err
 }
