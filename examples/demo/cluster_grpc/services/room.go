@@ -57,6 +57,14 @@ type (
 		Code   int    `json:"code"`
 		Result string `json:"result"`
 	}
+
+	// KickResponse represents the result of kick users from room
+	KickResponse struct {
+		Code      int      `json:"code"`
+		Result    string   `json:"result"`
+		NotKicked []string `json:"notkicked"`
+		Error     error    `json:"error"`
+	}
 )
 
 // Outbound gets the outbound status
@@ -172,4 +180,18 @@ func (r *Room) SendRPC(ctx context.Context, msg *protos.RPCMsg) (*protos.RPCRes,
 // MessageRemote just echoes the given message
 func (r *Room) MessageRemote(ctx context.Context, msg *UserMessage, b bool, s string) (*UserMessage, error) {
 	return msg, nil
+}
+
+func (r *Room) KickUsers(ctx context.Context) (*KickResponse, error) {
+	users, err := r.app.GroupMembers(ctx, "room")
+	if err != nil {
+		return &KickResponse{Result: "error getting group members", NotKicked: users, Error: err}, err
+	}
+
+	notKicked, err := r.app.SendKickToUsers(users, "connector")
+	if err != nil {
+		return &KickResponse{Result: "error sending kick to users", NotKicked: notKicked, Error: err}, err
+	}
+
+	return &KickResponse{Result: "success", NotKicked: notKicked}, nil
 }
