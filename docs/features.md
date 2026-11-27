@@ -140,7 +140,7 @@ ctx := pcontext.AddToPropagateCtx(context.Background(), constants.RequestTimeout
 
 then transfer the ctx to RPC() or RPCTo() function as the context parameter
 
-**Note**: this feature is only supportted while using nats currently.
+**Note**: this feature is only supported while using nats currently.
 
 ## Server operation mode
 
